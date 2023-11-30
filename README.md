@@ -50,18 +50,22 @@ installed on your computer. On Ubuntu you can install it with:
 1. Create a file named `config.yaml` in the root directory and copy the contents
 of `config.default.yaml` into it. And enter the required config parameters in
 `config.yaml`.
-1. Build the backend:
+1. Build the frontend and the backend: 
     ```shell
-    go build
+    ./build.sh
     ```
-1. Build the frontend:
+1. Run migrations:
     ```shell
-    cd ui && npm ci && npm run build:prod && cd ..
+    ./discuit -migrate
     ```
-1. Run Discuit: 
+1. Start the server: 
     ```shell
     ./discuit -serve
     ```
+
+Note: Do not install the `discuit` binary using `go install` or move it somewhere
+else. It uses files in this repository at runtime and so it should only be run 
+from the root of this repository.
 
 ### Source code layout
 
