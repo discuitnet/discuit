@@ -1,0 +1,1 @@
+alter table users add column last_seen_ip varchar(45);

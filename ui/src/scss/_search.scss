@@ -1,0 +1,43 @@
+@use 'mixins';
+
+.page-search {
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    .search-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        > * {
+            margin: var(--gap);
+        }
+        a {
+            margin-top: 0;
+        }
+    }
+    p {
+        text-decoration: line-through;
+        font-size: var(--fs-l);
+    }
+    .big-gulps {
+        width: 50%;
+        height: auto;
+        border-radius: var(--border-radius);
+        margin: 0 var(--gap);
+        max-height: 350px;
+        @include mixins.mobile() {
+            width: 90%;
+        }
+    }
+    .coming-to-town {
+        font-size: var(--fs-2xl);
+        font-weight: 600;
+        margin-bottom: 0;
+    }
+    &.is-mobile {
+    }
+}

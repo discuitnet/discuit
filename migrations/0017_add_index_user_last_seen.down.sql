@@ -1,0 +1,1 @@
+alter table users drop index last_seen;

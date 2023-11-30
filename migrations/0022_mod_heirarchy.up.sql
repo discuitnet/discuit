@@ -1,0 +1,1 @@
+alter table community_mods add column position int not null default 0; /* lower the value, higher up the mod */

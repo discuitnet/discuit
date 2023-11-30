@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+    <!-- If any assets are changed the service worker cache name must be updated. -->
+    <head>
+        <meta charset="UTF-8" />
+        <title>Discuit</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="color-scheme" content="dark light" />
+        <meta name="theme-color" content="#ffffff" />
+        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="rgb(32, 32, 32)" media="(prefers-color-scheme: dark)" />
+        <meta name="description" content="" />
+        <link rel="manifest" href="manifest.json" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-touch-fullscreen" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="Discuit" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="" />
+        <meta property="og:title" content="Discuit | An online discussion platform" />
+        <meta property="og:image" content="./src/assets/imgs/banner-og-image.jpg" />
+        <meta property="og:description" content="" />
+        <meta property="og:site_name" content="Discuit" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:site" content="@TheDiscuit" />
+        <meta
+            name="twitter:title"
+            content="Discuit | Making discussions better while avoiding enshitification"
+        />
+        <meta name="twitter:description" content="" />
+        <meta name="twitter:image" content="./src/assets/imgs/banner-og-image.jpg" />
+        <script>
+            (() => {
+                if ('onbeforeinstallprompt' in window) {
+                    window.addEventListener('beforeinstallprompt', (e) => {
+                        e.preventDefault();
+                        if (!window.appData) window.appData = {};
+                        window.appData.deferredInstallPrompt = e;
+                    });
+                }
+            })();
+            (() => {
+                const theme =
+                    localStorage.getItem('theme') ??
+                    (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+                        ? 'dark'
+                        : 'light');
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('theme-dark');
+                }
+
+                function changeMetaColorTheme(theme = 'light') {
+                    Array.from(document.head.querySelectorAll('meta[name="theme-color"]')).forEach(
+                        (item) => item.remove()
+                    );
+                    const meta = document.createElement('meta');
+                    meta.setAttribute('name', 'theme-color');
+                    meta.setAttribute(
+                        'content',
+                        getComputedStyle(document.documentElement).getPropertyValue('--color-bg')
+                    );
+                    document.head.appendChild(meta);
+                }
+                changeMetaColorTheme(theme);
+            })();
+            (() => {
+                if ('serviceWorker' in navigator) {
+                    try {
+                        navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
+                    } catch (error) {
+                        console.error(error);
+                    }
+                }
+            })();
+        </script>
+        <link rel="shortcut icon" href="./src/assets/imgs/favicon.png" />
+        <link rel="mask-icon" href="./src/assets/imgs/favicon.png" color="#6b02f2" />
+        <link rel="apple-touch-icon" href="./src/assets/imgs/logo-manifest-512.png" />
+    </head>
+    <body>
+        <noscript>Please enable javascript to continue.</noscript>
+        <div class="pull-to-refresh">
+            <div class="pull-to-refresh-target"></div>
+        </div>
+        <div id="root"></div>
+        <div id="modal-root"></div>
+        <div id="snacks-root"></div>
+    </body>
+</html>

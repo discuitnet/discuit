@@ -1,0 +1,1692 @@
+package core
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"math"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/discuitnet/discuit/internal/httperr"
+	"github.com/discuitnet/discuit/internal/httputil"
+	"github.com/discuitnet/discuit/internal/images"
+	msql "github.com/discuitnet/discuit/internal/sql"
+	"github.com/discuitnet/discuit/internal/uid"
+	"github.com/discuitnet/discuit/internal/utils"
+	"golang.org/x/exp/slices"
+)
+
+const (
+	publicPostIDLength   = 8
+	maxPostBodyLength    = 20000 // in runes.
+	maxPostTitleLength   = 255   // in runes.
+	maxPostLinkLength    = 2048  // in bytes
+	maxCommentDepth      = 15
+	maxCommentBodyLength = maxPostBodyLength
+	commentsFetchLimit   = 500
+)
+
+// PostType represents the type of a post.
+type PostType int
+
+// These are all the valid PostTypes.
+const (
+	PostTypeText = PostType(iota)
+	PostTypeImage
+	PostTypeLink
+)
+
+// Valid reports whether t is a valid PostType.
+func (t PostType) Valid() bool {
+	_, err := t.MarshalText()
+	return err == nil
+}
+
+// MarshalText implements encoding.TextMarshaler interface.
+func (t PostType) MarshalText() ([]byte, error) {
+	s := ""
+	switch t {
+	case PostTypeText:
+		s = "text"
+	case PostTypeImage:
+		s = "image"
+	case PostTypeLink:
+		s = "link"
+	default:
+		return nil, errPostTypeUnsupported
+	}
+	return []byte(s), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler interface.
+func (p *PostType) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "text":
+		*p = PostTypeText
+	case "image":
+		*p = PostTypeImage
+	case "link":
+		*p = PostTypeLink
+	default:
+		return errPostTypeUnsupported
+	}
+	return nil
+}
+
+type Post struct {
+	db *sql.DB
+
+	ID   uid.ID   `json:"id"`
+	Type PostType `json:"type"`
+
+	// ID as it appears in the URL.
+	PublicID string `json:"publicId"`
+
+	AuthorID       uid.ID `json:"userId"`
+	AuthorUsername string `json:"username"`
+
+	// In which capacity (as mod, admin, or normal user) the post was posted in.
+	PostedAs UserGroup `json:"userGroup"`
+
+	// Indicates Whether the account of the user who posted the post is deleted.
+	AuthorDeleted bool `json:"userDeleted"`
+
+	// Indicates whether the post is pinned to the community.
+	Pinned bool `json:"isPinned"`
+
+	// Indicates whether the post is pinned site-wide.
+	PinnedSite bool `json:"isPinnedSite"`
+
+	CommunityID          uid.ID        `json:"communityId"`
+	CommunityName        string        `json:"communityName"`
+	CommunityProPic      *images.Image `json:"communityProPic"`
+	CommunityBannerImage *images.Image `json:"communityBannerImage"`
+
+	Title string          `json:"title"`
+	Body  msql.NullString `json:"body"`
+
+	Image *images.Image `json:"image"`
+
+	link      *postLink     `json:"-"`              // what's saved to the DB
+	Link      *PostLink     `json:"link,omitempty"` // what's sent to the client
+	LinkImage *images.Image `json:"-"`
+
+	Locked   bool       `json:"locked"`
+	LockedBy uid.NullID `json:"lockedBy"`
+
+	// In what capacity (as owner, admin, or mod) the post was locked.
+	LockedAs UserGroup `json:"lockedByGroup,omitempty"`
+
+	LockedAt msql.NullTime `json:"lockedAt"`
+
+	Upvotes   int `json:"upvotes"`
+	Downvotes int `json:"downvotes"`
+	Points    int `json:"-"` // Upvotes - Downvotes
+
+	Hotness        int           `json:"hotness"`
+	CreatedAt      time.Time     `json:"createdAt"`
+	EditedAt       msql.NullTime `json:"editedAt"`
+	LastActivityAt time.Time     `json:"lastActivityAt"`
+	Deleted        bool          `json:"deleted"`
+	DeletedAt      msql.NullTime `json:"deletedAt,omitempty"`
+	DeletedBy      uid.NullID    `json:"-"`
+
+	// In what capacity (as owner, admin, or mod) the post was deleted.
+	DeletedAs UserGroup `json:"deletedAs,omitempty"`
+
+	// If true, all links and images contained in the post is deleted.
+	DeletedContent bool `json:"deletedContent"`
+
+	DeletedContentAt msql.NullTime `json:"-"`
+	DeletedContentBy uid.NullID    `json:"-"`
+	DeletedContentAs UserGroup     `json:"deletedContentAs,omitempty"`
+
+	NumComments  int             `json:"noComments"`
+	Comments     []*Comment      `json:"comments"`
+	CommentsNext msql.NullString `json:"commentsNext"` // pagination cursor
+
+	// Whether the logged in user have voted on this post.
+	ViewerVoted msql.NullBool `json:"userVoted"`
+
+	// Whether the logged in user have voted up.
+	ViewerVotedUp msql.NullBool `json:"userVotedUp"`
+
+	AuthorMutedByViewer    bool `json:"isAuthorMuted"`
+	CommunityMutedByViewer bool `json:"isCommunityMuted"`
+
+	Community *Community `json:"community,omitempty"`
+}
+
+var selectPostCols = []string{
+	"posts.id",
+	"posts.type",
+	"posts.public_id",
+	"posts.user_id",
+	"users.username",
+	"posts.user_group",
+	"users.deleted_at is not null",
+	"posts.community_id",
+	"communities.name",
+	"posts.title",
+	"posts.body",
+	"posts.link_info",
+	"posts.locked",
+	"posts.locked_at",
+	"posts.locked_by",
+	"posts.locked_by_group",
+	"posts.is_pinned",
+	"posts.is_pinned_site",
+	"posts.upvotes",
+	"posts.downvotes",
+	"posts.points",
+	"posts.hotness",
+	"posts.created_at",
+	"posts.edited_at",
+	"posts.last_activity_at",
+	"posts.deleted",
+	"posts.deleted_at",
+	"posts.deleted_by",
+	"posts.deleted_as",
+	"posts.no_comments",
+	"posts.deleted_by",
+	"posts.deleted_content",
+	"posts.deleted_content_at",
+	"posts.deleted_content_by",
+	"posts.deleted_content_as",
+}
+
+var selectPostJoins = []string{
+	"INNER JOIN communities ON posts.community_id = communities.id",
+	"INNER JOIN users ON posts.user_id = users.id",
+}
+
+func init() {
+	selectPostCols = append(selectPostCols, images.ImageColumns("link_image")...)
+	selectPostCols = append(selectPostCols, images.ImageColumns("comm_pro_pic")...)
+	selectPostCols = append(selectPostCols, images.ImageColumns("comm_banner")...)
+	selectPostJoins = append(selectPostJoins, "LEFT JOIN images AS link_image ON link_image.id = posts.link_image")
+	selectPostJoins = append(selectPostJoins, "LEFT JOIN images AS comm_pro_pic ON comm_pro_pic.id = communities.pro_pic_2")
+	selectPostJoins = append(selectPostJoins, "LEFT JOIN images AS comm_banner ON comm_banner.id = communities.banner_image_2")
+}
+
+func buildSelectPostQuery(loggedIn bool, where string) string {
+	if loggedIn {
+		joins := append(selectPostJoins, "LEFT OUTER JOIN post_votes ON posts.id = post_votes.post_id AND post_votes.user_id = ?")
+		cols := append(selectPostCols, "post_votes.id IS NOT NULL", "post_votes.up")
+		return msql.BuildSelectQuery("posts", cols, joins, where)
+	}
+	return msql.BuildSelectQuery("posts", selectPostCols, selectPostJoins, where)
+}
+
+// GetPosts returns a post using publicID, if publicID is not an empty string,
+// or using postID.
+func GetPost(ctx context.Context, db *sql.DB, postID *uid.ID, publicID string, viewer *uid.ID, getDeleted bool) (*Post, error) {
+	loggedIn := viewer != nil
+
+	where := "WHERE "
+	if publicID != "" {
+		where += "posts.public_id"
+	} else {
+		where += "posts.id"
+	}
+	where += " = ?"
+	if !getDeleted {
+		where += " AND posts.deleted_at IS NULL"
+	}
+
+	query, args := buildSelectPostQuery(loggedIn, where), []any{}
+	if loggedIn {
+		args = append(args, viewer)
+	}
+	if postID != nil {
+		args = append(args, postID)
+	} else {
+		args = append(args, publicID)
+	}
+
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("db error on query '%s' with args (%v)", query, args)
+	}
+
+	posts, err := scanPosts(ctx, db, rows, viewer)
+	if err != nil {
+		return nil, err
+	}
+	return posts[0], err
+}
+
+// scanPosts returns ErrPostNotFound is no posts are found.
+func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) ([]*Post, error) {
+	defer rows.Close()
+
+	var posts []*Post
+	loggedIn := viewer != nil
+	for rows.Next() {
+		post := &Post{db: db}
+		var linkBytes []byte
+		dest := []interface{}{
+			&post.ID,
+			&post.Type,
+			&post.PublicID,
+			&post.AuthorID,
+			&post.AuthorUsername,
+			&post.PostedAs,
+			&post.AuthorDeleted,
+			&post.CommunityID,
+			&post.CommunityName,
+			&post.Title,
+			&post.Body,
+			&linkBytes,
+			&post.Locked,
+			&post.LockedAt,
+			&post.LockedBy,
+			&post.LockedAs,
+			&post.Pinned,
+			&post.PinnedSite,
+			&post.Upvotes,
+			&post.Downvotes,
+			&post.Points,
+			&post.Hotness,
+			&post.CreatedAt,
+			&post.EditedAt,
+			&post.LastActivityAt,
+			&post.Deleted,
+			&post.DeletedAt,
+			&post.DeletedBy,
+			&post.DeletedAs,
+			&post.NumComments,
+			&post.DeletedBy,
+			&post.DeletedContent,
+			&post.DeletedContentAt,
+			&post.DeletedContentBy,
+			&post.DeletedContentAs,
+		}
+
+		linkImage := &images.Image{}
+		proPic := &images.Image{}
+		bannerImage := &images.Image{}
+		dest = append(dest, linkImage.ScanDestinations()...)
+		dest = append(dest, proPic.ScanDestinations()...)
+		dest = append(dest, bannerImage.ScanDestinations()...)
+		if loggedIn {
+			dest = append(dest, &post.ViewerVoted, &post.ViewerVotedUp)
+		}
+
+		err := rows.Scan(dest...)
+		if err != nil {
+			return nil, fmt.Errorf("scanning post rows.Scan: %w", err)
+		}
+
+		if proPic.ID != nil {
+			proPic.PostScan()
+			setCommunityProPicCopies(proPic)
+			post.CommunityProPic = proPic
+		}
+		if bannerImage.ID != nil {
+			bannerImage.PostScan()
+			setCommunityBannerCopies(bannerImage)
+			post.CommunityBannerImage = bannerImage
+		}
+		if linkBytes != nil {
+			dbLink := &postLink{}
+			if err = json.Unmarshal(linkBytes, dbLink); err != nil {
+				return nil, fmt.Errorf("unmarshaling linkBytes: %w", err)
+			}
+			link := dbLink.PostLink()
+			if linkImage.ID != nil {
+				link.Image = linkImage
+				post.LinkImage = linkImage
+			}
+			post.link = dbLink
+			post.Link = link
+			post.Link.SetImageCopies()
+		}
+		if post.DeletedContent {
+			// linkBytes = nil
+			post.Link = nil
+			post.Image = nil
+		}
+		posts = append(posts, post)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("scanning post rows.Err: %w", err)
+	}
+	if len(posts) == 0 {
+		return nil, errPostNotFound
+	}
+
+	// Strip deleted user info.
+	for _, p := range posts {
+		if p.AuthorDeleted {
+			p.AuthorUsername = "[deleted]"
+		}
+	}
+
+	if viewer != nil {
+		userMutes, err := GetMutedUsers(ctx, db, *viewer, false)
+		if err != nil {
+			return nil, err
+		}
+		commMutes, err := GetMutedCommunities(ctx, db, *viewer, false)
+		if err != nil {
+			return nil, err
+		}
+		for _, post := range posts {
+			for _, mute := range userMutes {
+				if *mute.MutedUserID == post.AuthorID {
+					post.AuthorMutedByViewer = true
+					break
+				}
+			}
+			for _, mute := range commMutes {
+				if *mute.MutedCommunityID == post.CommunityID {
+					post.CommunityMutedByViewer = true
+				}
+			}
+		}
+	}
+
+	if err := populatePostsImages(ctx, db, posts); err != nil {
+		return nil, err
+	}
+	return posts, nil
+}
+
+// populatePostsImages goes through posts and fetches the images of the posts
+// and sets posts[i].Image to a non-nil value (except for content deleted
+// posts). Not all items in posts have to be image posts.
+func populatePostsImages(ctx context.Context, db *sql.DB, posts []*Post) error {
+	imagePosts := []*Post{}
+	for _, post := range posts {
+		if post.Type == PostTypeImage && !post.DeletedContent {
+			// Exclude posts whose content is deleted, also.
+			imagePosts = append(imagePosts, post)
+		}
+	}
+	if len(imagePosts) == 0 {
+		return nil
+	}
+
+	cols := images.ImageRecordColumns()
+	cols = append(cols, "post_images.post_id")
+	query := msql.BuildSelectQuery("post_images", cols, []string{
+		"INNER JOIN images ON images.id = post_images.image_id",
+	}, "WHERE post_id IN "+msql.InClauseQuestionMarks(len(imagePosts)))
+
+	args := make([]any, len(imagePosts))
+	for i := range imagePosts {
+		args[i] = imagePosts[i].ID
+	}
+
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		record, postID := &images.ImageRecord{}, uid.ID{}
+		dest := record.ScanDestinations()
+		dest = append(dest, &postID)
+		if err = rows.Scan(dest...); err != nil {
+			return err
+		}
+
+		for _, post := range imagePosts {
+			if post.ID == postID {
+				img := record.Image()
+				img.PostScan()
+				img.AppendCopy("tiny", 120, 120, images.ImageFitCover, "")
+				img.AppendCopy("small", 325, 250, images.ImageFitCover, "")
+				img.AppendCopy("medium", 720, 1440, images.ImageFitContain, "")
+				img.AppendCopy("large", 1080, 2160, images.ImageFitContain, "")
+				img.AppendCopy("large", 2160, 4320, images.ImageFitContain, "")
+				post.Image = img
+				break
+			}
+		}
+	}
+
+	if err = rows.Err(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// validatePost always returns an httperr.Error on error.
+func validatePost(title, body string) error {
+	if len(title) < 3 {
+		return httperr.NewBadRequest("post/title-too-short", "Title too short.")
+	}
+	return nil
+}
+
+var (
+	postsTables         = []string{"posts_today", "posts_week", "posts_month", "posts_year"}
+	postsTablesValidity = []time.Duration{0 - time.Hour*24, 0 - time.Hour*24*7, 0 - time.Hour*24*30, 0 - time.Hour*24*365}
+)
+
+type createPostOpts struct {
+	// Required:
+	author    uid.ID
+	community uid.ID
+	postType  PostType
+	title     string
+
+	// Optional, depending on post type:
+	body      string // for text posts
+	link      postLink
+	linkImage []byte // for link posts (thumbnail image)
+	image     uid.ID // for image posts
+}
+
+func createPost(ctx context.Context, db *sql.DB, opts *createPostOpts) (*Post, error) {
+	if err := validatePost(opts.title, opts.body); err != nil {
+		return nil, err
+	}
+
+	// Check if the author is banned from community.
+	if is, err := IsUserBannedFromCommunity(ctx, db, opts.community, opts.author); err != nil {
+		return nil, err
+	} else if is {
+		return nil, errUserBannedFromCommunity
+	}
+
+	// Truncate title and body if max lengths are exceeded.
+	var post Post
+	post.Title = opts.title
+	post.Body.Valid, post.Body.String = opts.body != "", opts.body
+	post.truncateTitleAndBody()
+	post.CreatedAt = time.Now()
+	post.ID = uid.New()
+	post.PublicID = utils.GenerateStringID(publicPostIDLength)
+
+	cols := []msql.ColumnValue{
+		{Name: "id", Value: post.ID},
+		{Name: "type", Value: opts.postType},
+		{Name: "public_id", Value: post.PublicID},
+		{Name: "user_id", Value: opts.author},
+		{Name: "community_id", Value: opts.community},
+		{Name: "title", Value: post.Title},
+		{Name: "body", Value: post.Body},
+		{Name: "created_at", Value: post.CreatedAt},
+		{Name: "hotness", Value: PostHotness(0, 0, post.CreatedAt)},
+	}
+
+	if opts.postType == PostTypeLink {
+		data, err := json.Marshal(opts.link)
+		if err != nil {
+			return nil, err
+		}
+		cols = append(cols, msql.ColumnValue{Name: "link_info", Value: data})
+	}
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if opts.postType == PostTypeLink && opts.linkImage != nil {
+		// Save link post thumbnail.
+		imageID, err := images.SaveImageTx(ctx, tx, "disk", opts.linkImage, &images.ImageOptions{
+			Width:  1280,
+			Height: 720,
+			Format: images.ImageFormatJPEG,
+			Fit:    images.ImageFitCover,
+		})
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+		cols = append(cols, msql.ColumnValue{Name: "link_image", Value: imageID})
+	}
+
+	query, args := msql.BuildInsertQuery("posts", cols)
+	if _, err = tx.ExecContext(ctx, query, args...); err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	if opts.postType == PostTypeImage {
+		// Save image post image.
+		if _, err = tx.ExecContext(ctx, "INSERT INTO post_images (post_id, image_id) VALUES (?, ?)", post.ID, opts.image); err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+		// Delete row from temp images table.
+		if _, err = tx.ExecContext(ctx, "DELETE FROM temp_images_2 WHERE image_id = ?", opts.image); err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+	}
+
+	for _, table := range postsTables {
+		if _, err := tx.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s (community_id, post_id, user_id, created_at) VALUES (?, ?, ?, ?)", table),
+			opts.community, post.ID, opts.author, post.CreatedAt); err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+	}
+
+	// For the user profile page.
+	if _, err := tx.ExecContext(ctx, "INSERT INTO posts_comments (target_id, user_id, target_type) VALUES (?, ?, ?)",
+		post.ID, opts.author, postsCommentsTypePosts); err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	if _, err := tx.ExecContext(ctx, "UPDATE users SET no_posts = no_posts + 1 WHERE id = ?", opts.author); err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return GetPost(ctx, db, &post.ID, "", nil, false)
+}
+
+func CreateTextPost(ctx context.Context, db *sql.DB, author, community uid.ID, title string, body string) (*Post, error) {
+	return createPost(ctx, db, &createPostOpts{
+		postType:  PostTypeText,
+		author:    author,
+		community: community,
+		title:     title,
+		body:      body,
+	})
+}
+
+func CreateImagePost(ctx context.Context, db *sql.DB, author, community uid.ID, title string, imageID uid.ID) (*Post, error) {
+	// We don't check whether the image belongs to the person who uploaded it.
+	// This is not a big deal as image ids are hard to guess.
+
+	// Check if the image exists.
+	if _, err := images.GetImageRecord(ctx, db, imageID); err != nil {
+		if err == images.ErrImageNotFound {
+			return nil, errImageNotFound
+		}
+		return nil, err
+	}
+
+	return createPost(ctx, db, &createPostOpts{
+		postType:  PostTypeImage,
+		author:    author,
+		community: community,
+		title:     title,
+		image:     imageID,
+	})
+}
+
+// getLinkPostImage returns the og:image of the url or, if no og:image can be
+// found and the url is itself is an image, then that image. If no image is
+// found in either case, it returns nil.
+func getLinkPostImage(u *url.URL) []byte {
+	fullURL := u.String()
+	res, err := httputil.Get(fullURL)
+	if err != nil {
+		return nil
+	}
+	defer res.Body.Close()
+
+	imageURL, err := httputil.ExtractOpenGraphImage(res.Body)
+	if err != nil {
+		// TODO: Log this error.
+	}
+	if imageURL == "" {
+		// Since og:image not found, see if the link itself is an image.
+		probablyAnImage := slices.Contains([]string{"image/jpeg", "image/png", "image/webp"}, res.Header.Get("Content-Type"))
+		if !probablyAnImage {
+			exts := []string{".jpg", ".jpeg", ".png", ".webp"}
+			for _, v := range exts {
+				if strings.HasSuffix(u.Path, v) {
+					probablyAnImage = true
+					break
+				}
+			}
+		}
+		if probablyAnImage {
+			imageURL = fullURL
+		}
+	}
+	if imageURL != "" {
+		res, err := httputil.Get(imageURL)
+		if err != nil {
+			return nil
+		}
+		defer res.Body.Close()
+		image, err := io.ReadAll(res.Body)
+		if err != nil {
+			return nil
+		}
+		return image
+	}
+
+	return nil
+}
+
+func CreateLinkPost(ctx context.Context, db *sql.DB, author, community uid.ID, title string, link string) (*Post, error) {
+	errInvalidURL := httperr.NewBadRequest("invalid-url", "Invalid URL.")
+	if len(link) > maxPostLinkLength {
+		link = link[:maxPostLinkLength]
+	}
+
+	u, err := url.Parse(link)
+	if err != nil {
+		return nil, errInvalidURL
+	}
+	if !u.IsAbs() {
+		u.Scheme = "http"
+	}
+	if u.Hostname() == "" {
+		return nil, errInvalidURL
+	}
+
+	return createPost(ctx, db, &createPostOpts{
+		postType:  PostTypeLink,
+		author:    author,
+		community: community,
+		title:     title,
+		linkImage: getLinkPostImage(u),
+		link: postLink{
+			Version:  1,
+			URL:      u.String(),
+			Hostname: u.Hostname(),
+		},
+	})
+}
+
+func (p *Post) truncateTitleAndBody() {
+	p.Title = utils.TruncateUnicodeString(p.Title, maxPostTitleLength)
+	p.Body.String = utils.TruncateUnicodeString(p.Body.String, maxPostBodyLength)
+}
+
+// Save updates the post's updatable fields.
+func (p *Post) Save(ctx context.Context, user uid.ID) error {
+	if !p.AuthorID.EqualsTo(user) {
+		return errNotAuthor
+	}
+
+	if err := validatePost(p.Title, p.Body.String); err != nil {
+		return err
+	}
+
+	p.truncateTitleAndBody()
+
+	now := time.Now()
+	var args []any
+	query := "UPDATE posts SET title = ?"
+	args = append(args, p.Title)
+	if p.Type == PostTypeText && !p.DeletedContent {
+		query += ", body = ?"
+		args = append(args, p.Body)
+	}
+	query += ", edited_at = ? WHERE id = ?"
+	args = append(args, now, p.ID)
+
+	_, err := p.db.ExecContext(ctx, query, args...)
+	if err == nil {
+		p.EditedAt.Valid = true
+		p.EditedAt.Time = now
+	}
+	return err
+}
+
+// Delete deletes p on behalf of user, who's deleting the post in his capacity
+// as g. In case the post is deleted by an admin or a mod, a notification is
+// sent to the original poster.
+func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteContent bool) error {
+	if p.Deleted && !(deleteContent && !p.DeletedContent) {
+		return &httperr.Error{
+			HTTPStatus: http.StatusConflict,
+			Code:       "already-deleted",
+			Message:    "Post is already deleted.",
+		}
+	}
+
+	switch g {
+	case UserGroupNormal:
+		if !p.AuthorID.EqualsTo(user) {
+			return errNotAuthor
+		}
+	case UserGroupMods:
+		is, err := UserMod(ctx, p.db, p.CommunityID, user)
+		if err != nil {
+			return err
+		}
+		if !is {
+			return errNotMod
+		}
+	case UserGroupAdmins:
+		user, err := GetUser(ctx, p.db, user, nil)
+		if err != nil {
+			return err
+		}
+		if !user.Admin {
+			return errNotAdmin
+		}
+	default:
+		return errInvalidUserGroup
+	}
+
+	now := time.Now()
+	err := msql.Transact(ctx, p.db, func(tx *sql.Tx) (err error) {
+		if !deleteContent || (deleteContent && !p.Deleted) {
+			q := "UPDATE posts SET deleted = ?, deleted_at = ?, deleted_by = ?, deleted_as = ? WHERE id = ?"
+			if _, err := tx.ExecContext(ctx, q, true, now, user, g, p.ID); err != nil {
+				return err
+			}
+		}
+
+		if deleteContent {
+			q := `
+			UPDATE posts SET 
+				body = "", 
+				link_image = NULL,
+				deleted_content = TRUE, 
+				deleted_content_at = ?, 
+				deleted_content_by = ?, 
+				deleted_content_as = ? 
+			WHERE id = ?`
+			if _, err := tx.ExecContext(ctx, q, now, user, g, p.ID); err != nil {
+				return err
+			}
+			if p.Type == PostTypeImage {
+				if _, err := tx.ExecContext(ctx, "DELETE FROM post_images WHERE post_id = ?", p.ID); err != nil {
+					return err
+				}
+				if err := images.DeleteImageTx(ctx, tx, p.db, *p.Image.ID); err != nil {
+					return err
+				}
+			} else if p.Type == PostTypeLink && p.LinkImage != nil {
+				if err := images.DeleteImageTx(ctx, tx, p.db, *p.LinkImage.ID); err != nil {
+					return err
+				}
+			}
+		}
+
+		for _, table := range postsTables {
+			if _, err := tx.ExecContext(ctx, "DELETE FROM "+table+" WHERE post_id = ?", p.ID); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	p.Deleted = true
+	p.DeletedAt = msql.NewNullTime(now)
+	p.DeletedBy.Valid, p.DeletedBy.ID = true, user
+	p.DeletedAs = g
+
+	if g != UserGroupNormal {
+		RemoveAllReportsOfPost(ctx, p.db, p.ID)
+	}
+
+	if g == UserGroupAdmins || g == UserGroupMods {
+		go func() {
+			if err := CreatePostDeletedNotification(context.Background(), p.db, p.AuthorID, g, true, p.ID); err != nil {
+				log.Printf("Failed to create deleted_post notification on post %v\n", p.PublicID)
+			}
+		}()
+	}
+
+	return err
+}
+
+// Lock locks the post on behalf of user who's locking the post in his or her
+// capacity as g.
+func (p *Post) Lock(ctx context.Context, user uid.ID, g UserGroup) error {
+	switch g {
+	case UserGroupMods:
+		is, err := UserMod(ctx, p.db, p.CommunityID, user)
+		if err != nil {
+			return err
+		}
+		if !is {
+			return errNotMod
+		}
+	case UserGroupAdmins:
+		user, err := GetUser(ctx, p.db, user, nil)
+		if err != nil {
+			return err
+		}
+		if !user.Admin {
+			return errNotAdmin
+		}
+	default:
+		return errInvalidUserGroup
+	}
+
+	now := time.Now()
+	_, err := p.db.ExecContext(ctx, "UPDATE posts SET locked = ?, locked_by = ?, locked_by_group = ?, locked_at = ? WHERE id = ?", true, user, g, now, p.ID)
+	if err == nil {
+		p.Locked = true
+		p.LockedAt = msql.NewNullTime(now)
+		p.LockedBy.Valid, p.LockedBy.ID = true, user
+		p.LockedAs = g
+	}
+	return err
+}
+
+// Unlock unlocks the post on behalf of user.
+func (p *Post) Unlock(ctx context.Context, user uid.ID) error {
+	// TODO: Add a UserGroup argument to this method.
+
+	isMod, err := UserMod(ctx, p.db, p.CommunityID, user)
+	if err != nil {
+		return err
+	}
+	u, err := GetUser(ctx, p.db, user, nil)
+	if err != nil {
+		return err
+	}
+
+	if !(isMod || u.Admin) {
+		return httperr.NewForbidden("not-mod-not-admin", "User is neither a moderator nor an admin.")
+	}
+
+	_, err = p.db.ExecContext(ctx, "UPDATE posts SET locked = ?, locked_by = null, locked_by_group = ?, locked_at = null WHERE id = ?", false, UserGroupNaN, p.ID)
+	if err == nil {
+		p.Locked = false
+		p.LockedAt.Valid = false
+		p.LockedBy.Valid = false
+		p.LockedAs = UserGroupNaN
+	}
+	return err
+}
+
+const MaxPinnedPosts = 2
+
+// Pin pins a post on behalf of user to its community if siteWide is false,
+// otherwise it pins the post site-wide.
+func (p *Post) Pin(ctx context.Context, user uid.ID, siteWide, unpin bool) error {
+	maxPinnedReached := func(ctx context.Context, tx *sql.Tx, community *uid.ID) (reached bool, err error) {
+		count := 0
+		if community == nil {
+			err = tx.QueryRow("SELECT COUNT(*) FROM pinned_posts WHERE community_id IS NULL").Scan(&count)
+		} else {
+			err = tx.QueryRow("SELECT COUNT(*) FROM pinned_posts WHERE community_id = ?", *community).Scan(&count)
+		}
+		reached = count >= MaxPinnedPosts
+		return
+	}
+
+	// Check permissions.
+	if siteWide {
+		u, err := GetUser(ctx, p.db, user, nil)
+		if err != nil {
+			return err
+		}
+		if !u.Admin {
+			return errNotAdmin
+		}
+	} else {
+		isMod, err := UserMod(ctx, p.db, p.CommunityID, user)
+		if err != nil {
+			return err
+		}
+		if !isMod {
+			return errNotMod
+		}
+	}
+
+	return msql.Transact(ctx, p.db, func(tx *sql.Tx) (err error) {
+		var (
+			query string
+			args  []any
+		)
+
+		if unpin {
+			query = "DELETE FROM pinned_posts WHERE post_id = ? "
+			args = []any{p.ID}
+			if siteWide {
+				query += "AND community_id IS NULL"
+			} else {
+				query += "AND community_id = ?"
+				args = append(args, p.CommunityID)
+			}
+		} else {
+			query = "INSERT INTO pinned_posts (post_id, is_site_wide, community_id) VALUES (?, ?, ?)"
+			var community *uid.ID
+			if !siteWide {
+				community = &p.CommunityID
+			}
+			args = []any{p.ID, siteWide, community}
+
+			if reached, err := maxPinnedReached(ctx, tx, community); err != nil {
+				return err
+			} else if reached {
+				return httperr.NewForbidden("limit-reached", "Max pinned post limit reached.")
+			}
+		}
+
+		if _, err = tx.ExecContext(ctx, query, args...); err != nil {
+			return err
+		}
+
+		if siteWide {
+			_, err = tx.ExecContext(ctx, "UPDATE posts SET is_pinned_site = ? WHERE id = ?", !unpin, p.ID)
+		} else {
+			_, err = tx.ExecContext(ctx, "UPDATE posts SET is_pinned = ? WHERE id = ?", !unpin, p.ID)
+		}
+		return err
+	})
+}
+
+func (p *Post) updatePostsTablesPoints(ctx context.Context) error {
+	for _, table := range postsTables {
+		if _, err := p.db.ExecContext(ctx, "UPDATE "+table+" SET points = ? WHERE post_id = ?", p.Points, p.ID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *Post) Vote(ctx context.Context, user uid.ID, up bool) error {
+	if p.Locked {
+		return errPostLocked
+	}
+
+	tx, err := p.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.ExecContext(ctx, "INSERT INTO post_votes (post_id, user_id, up) VALUES (?, ?, ?)", p.ID, user, up)
+	if err != nil {
+		tx.Rollback()
+		if msql.IsErrDuplicateErr(err) {
+			return &httperr.Error{
+				HTTPStatus: http.StatusConflict,
+				Code:       "already-voted",
+				Message:    "User has already voted.",
+			}
+		}
+		return err
+	}
+
+	point := 1
+	if !up {
+		point = -1
+	}
+
+	query := "UPDATE posts SET points = points + ?, hotness = ?"
+	newUpvotes, newDownvotes := p.Upvotes, p.Downvotes
+	if up {
+		query += ", upvotes = upvotes + 1"
+		newUpvotes++
+	} else {
+		query += ", downvotes = downvotes + 1"
+		newDownvotes++
+	}
+	query += " WHERE id = ?"
+
+	_, err = tx.ExecContext(ctx, query, point, PostHotness(newUpvotes, newDownvotes, p.CreatedAt), p.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
+	p.Upvotes = newUpvotes
+	p.Downvotes = newDownvotes
+	p.Points += point
+	p.ViewerVoted = msql.NewNullBool(true)
+	p.ViewerVotedUp = msql.NewNullBool(up)
+
+	// Attempt to update user's points.
+	if up && !p.AuthorID.EqualsTo(user) {
+		incrementUserPoints(ctx, p.db, p.AuthorID, 1)
+	}
+
+	// Attempt to create a notification (only for upvotes).
+	if !p.AuthorID.EqualsTo(user) && up {
+		go func() {
+			if err := CreateNewVotesNotification(context.Background(), p.db, p.AuthorID, p.CommunityName, true, p.ID); err != nil {
+				log.Printf("Failed creating new_votes notification: %v\n", err)
+			}
+		}()
+	}
+
+	return p.updatePostsTablesPoints(ctx)
+}
+
+// DeleteVote undos users's vote on post.
+func (p *Post) DeleteVote(ctx context.Context, user uid.ID) error {
+	if p.Locked {
+		return errPostLocked
+	}
+
+	id, up := 0, false
+	row := p.db.QueryRowContext(ctx, "SELECT id, up FROM post_votes WHERE post_id = ? AND user_id = ?", p.ID, user)
+	if err := row.Scan(&id, &up); err != nil {
+		return err
+	}
+
+	tx, err := p.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.ExecContext(ctx, "DELETE FROM post_votes WHERE id = ?", id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	query := "UPDATE posts SET points = points + ?, hotness = ?"
+	point := 1
+	newUpvotes, newDownvotes := p.Upvotes, p.Downvotes
+	if up {
+		point = -1
+		query += ", upvotes = upvotes - 1"
+		newUpvotes--
+	} else {
+		query += ", downvotes = downvotes -1"
+		newDownvotes--
+	}
+	query += " WHERE id = ?"
+
+	_, err = tx.ExecContext(ctx, query, point, PostHotness(newUpvotes, newDownvotes, p.CreatedAt), p.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
+	p.Upvotes = newUpvotes
+	p.Downvotes = newDownvotes
+	p.Points += point
+	p.ViewerVoted.Valid = false
+	p.ViewerVotedUp.Valid = false
+
+	// Attempt to update user's points.
+	if up && !p.AuthorID.EqualsTo(user) {
+		incrementUserPoints(ctx, p.db, p.AuthorID, -1)
+	}
+
+	return p.updatePostsTablesPoints(ctx)
+}
+
+// ChangeVote changes user's vote on post.
+func (p *Post) ChangeVote(ctx context.Context, user uid.ID, up bool) error {
+	if p.Locked {
+		return errPostLocked
+	}
+
+	id, dbUp := 0, false
+	row := p.db.QueryRowContext(ctx, "SELECT id, up FROM post_votes WHERE post_id = ? AND user_id = ?", p.ID, user)
+	if err := row.Scan(&id, &dbUp); err != nil {
+		return err
+	}
+
+	if dbUp == up {
+		return nil
+	}
+
+	tx, err := p.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.ExecContext(ctx, "UPDATE post_votes SET up = ? WHERE id = ?", up, id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	query := "UPDATE posts SET points = points + ?, hotness = ?"
+	points := 2
+	newUpvotes, newDownvotes := p.Upvotes, p.Downvotes
+	if dbUp {
+		points = -2
+		query += ", upvotes = upvotes - 1, downvotes = downvotes + 1"
+		newUpvotes--
+		newDownvotes++
+	} else {
+		query += ", upvotes = upvotes + 1, downvotes = downvotes - 1"
+		newUpvotes++
+		newDownvotes--
+	}
+	query += " WHERE id = ?"
+
+	_, err = tx.ExecContext(ctx, query, points, PostHotness(newUpvotes, newDownvotes, p.CreatedAt), p.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
+	p.Upvotes = newUpvotes
+	p.Downvotes = newDownvotes
+	p.Points += points
+	p.ViewerVotedUp = msql.NewNullBool(up)
+
+	// Attempt to update user's points.
+	if !p.AuthorID.EqualsTo(user) {
+		point := 1
+		if dbUp {
+			point = -1
+		}
+		incrementUserPoints(ctx, p.db, p.AuthorID, point)
+	}
+
+	return p.updatePostsTablesPoints(ctx)
+}
+
+func getComments(ctx context.Context, db *sql.DB, viewer *uid.ID, where string, args ...interface{}) ([]*Comment, error) {
+	var (
+		loggedIn = viewer != nil
+		query    = buildSelectCommentsQuery(loggedIn, where)
+		rows     *sql.Rows
+		err      error
+	)
+
+	ret := func(c []*Comment, err error) ([]*Comment, error) {
+		if err == nil && c == nil {
+			return make([]*Comment, 0), nil
+		}
+		return c, err
+	}
+
+	if loggedIn {
+		args2 := make([]interface{}, len(args)+1)
+		args2[0] = viewer
+		for i := range args {
+			args2[i+1] = args[i]
+		}
+		rows, err = db.QueryContext(ctx, query, args2...)
+	} else {
+		rows, err = db.QueryContext(ctx, query, args...)
+	}
+	if err != nil {
+		return ret(nil, err)
+	}
+
+	c, err := scanComments(ctx, db, rows, viewer)
+	if err != nil {
+		if err == errCommentNotFound {
+			return ret(nil, nil)
+		}
+		return ret(nil, err)
+	}
+	return ret(c, nil)
+}
+
+func getCommentsList(ctx context.Context, db *sql.DB, viewer *uid.ID, IDs []uid.ID) ([]*Comment, error) {
+	where := fmt.Sprintf("WHERE comments.id IN %s", msql.InClauseQuestionMarks(len(IDs)))
+	args := make([]any, len(IDs))
+	for i := range IDs {
+		args[i] = IDs[i]
+	}
+
+	c, err := getComments(ctx, db, viewer, where, args...)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+// CommentsCursor is an API pagination cursor.
+type CommentsCursor struct {
+	Upvotes int
+	NextID  uid.ID
+}
+
+// GetComments populates c.Comments and returns the next comment's cursor.
+func (p *Post) GetComments(ctx context.Context, viewer *uid.ID, cursor *CommentsCursor) (*CommentsCursor, error) {
+	var args []any
+	where := "WHERE comments.post_id = ? "
+	args = append(args, p.ID)
+	if cursor != nil {
+		where += "AND (comments.upvotes, comments.id) <= (?, ?) "
+		args = append(args, cursor.Upvotes, cursor.NextID)
+	}
+	where += "ORDER BY upvotes DESC, comments.id DESC LIMIT ?"
+	args = append(args, commentsFetchLimit+1)
+
+	all, err := getComments(ctx, p.db, viewer, where, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	comments := all
+
+	var nextCursor *CommentsCursor
+	if len(all) >= commentsFetchLimit+1 {
+		nextCursor = new(CommentsCursor)
+		nextCursor.Upvotes = all[commentsFetchLimit].Upvotes
+		nextCursor.NextID = all[commentsFetchLimit].ID
+		comments = all[:commentsFetchLimit]
+	}
+	p.Comments = comments
+
+	ids := make(map[uid.ID]bool)
+	for _, c := range p.Comments {
+		ids[c.ID] = true
+	}
+
+	var orphans []*Comment
+	for _, c := range p.Comments {
+		if c.ParentID.Valid {
+			if _, ok := ids[c.ParentID.ID]; !ok {
+				orphans = append(orphans, c)
+			}
+		}
+	}
+
+	var toGet []uid.ID
+	for _, c := range orphans {
+		for _, a := range c.Ancestors {
+			if _, ok := ids[a]; !ok {
+				ids[a] = true
+				toGet = append(toGet, a)
+			}
+		}
+	}
+
+	if len(toGet) > 0 {
+		c2, err := getCommentsList(ctx, p.db, viewer, toGet)
+		if err != nil {
+			return nil, err
+		}
+		p.Comments = append(p.Comments, c2...)
+	}
+
+	if nextCursor != nil {
+		p.CommentsNext.String = strconv.Itoa(nextCursor.Upvotes) + "." + nextCursor.NextID.String()
+		p.CommentsNext.Valid = true
+	}
+	return nextCursor, nil
+}
+
+// GetCommentReplies returns all the replies of comment.
+func (p *Post) GetCommentReplies(ctx context.Context, viewer *uid.ID, comment uid.ID) ([]*Comment, error) {
+	rows, err := p.db.QueryContext(ctx, "SELECT reply_id FROM comment_replies WHERE parent_id = ?", comment)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ids, err := scanIDs(rows)
+	if err != nil {
+		return nil, err
+	}
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	return getCommentsList(ctx, p.db, viewer, ids)
+}
+
+// AddComment adds a new comment to post.
+func (p *Post) AddComment(ctx context.Context, user uid.ID, g UserGroup, parentComment *uid.ID, body string) (*Comment, error) {
+	if p.Locked {
+		return nil, errPostLocked
+	}
+
+	// Check if author is banned from community.
+	if is, err := IsUserBannedFromCommunity(ctx, p.db, p.CommunityID, user); err != nil {
+		return nil, err
+	} else if is {
+		return nil, errUserBannedFromCommunity
+	}
+
+	u, err := GetUser(ctx, p.db, user, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if u has permissions to comment as g.
+	switch g {
+	case UserGroupNormal:
+	case UserGroupMods:
+		is, err := UserMod(ctx, p.db, p.CommunityID, user)
+		if err != nil {
+			return nil, err
+		}
+		if !is {
+			return nil, errNotMod
+		}
+	case UserGroupAdmins:
+		if !u.Admin {
+			return nil, errNotAdmin
+		}
+	default:
+		return nil, errInvalidUserGroup
+	}
+
+	body = strings.TrimSpace(body)
+	comment, err := addComment(ctx, p.db, p, u, parentComment, body)
+	if err != nil {
+		return nil, err
+	}
+	comment.ChangeUserGroup(ctx, u.ID, g)
+	return comment, nil
+}
+
+// ChangeUserGroup changes the capacity in which the post's author submitted the
+// post.
+func (p *Post) ChangeUserGroup(ctx context.Context, user uid.ID, g UserGroup) error {
+	if !p.AuthorID.EqualsTo(user) {
+		return errNotAuthor
+	}
+	if p.PostedAs == g {
+		return nil
+	}
+
+	switch g {
+	case UserGroupNormal:
+	case UserGroupMods:
+		is, err := UserMod(ctx, p.db, p.CommunityID, user)
+		if err != nil {
+			return err
+		}
+		if !is {
+			return errNotMod
+		}
+	case UserGroupAdmins:
+		u, err := GetUser(ctx, p.db, user, nil)
+		if err != nil {
+			return err
+		}
+		if !u.Admin {
+			return errNotAdmin
+		}
+	default:
+		return errInvalidUserGroup
+	}
+
+	_, err := p.db.ExecContext(ctx, "UPDATE posts SET user_group = ? WHERE id = ? AND deleted_at IS NULL", g, p.ID)
+	if err == nil {
+		p.PostedAs = g
+	}
+	return err
+}
+
+// PurgePostsFromTempTables removes posts from posts_today, posts_week, etc
+// tables. Call this function periodically.
+func PurgePostsFromTempTables(ctx context.Context, db *sql.DB) error {
+	bulk := 100
+	for i, table := range postsTables {
+		again := true
+		total := 0
+		for again {
+			t := time.Now().Add(postsTablesValidity[i])
+			res, err := db.ExecContext(ctx, "DELETE FROM "+table+" WHERE created_at < ? LIMIT ?", t, bulk)
+			if err != nil {
+				return err
+			}
+			n, err := res.RowsAffected()
+			if err != nil {
+				return err
+			}
+			total += int(n)
+			if n == 0 {
+				again = false
+			}
+
+		}
+	}
+	return nil
+}
+
+// IsPostLocked checks if post is locked.
+func IsPostLocked(ctx context.Context, db *sql.DB, post uid.ID) (bool, error) {
+	row := db.QueryRowContext(ctx, "SELECT locked FROM posts WHERE id = ?", post)
+	is := true
+	err := row.Scan(&is)
+	return is, err
+}
+
+// PostHotness calculates the hotness score of a post.
+func PostHotness(upvotes, downvotes int, date time.Time) int {
+	s := 0
+	for i := 1; i < upvotes+1; i++ {
+		if i <= 3 {
+			s += 1
+		} else if i <= 6 {
+			s += 3
+		} else if i <= 10 {
+			s += 3
+		} else if i <= 20 {
+			s += 4
+		} else if i <= 40 {
+			s += 5
+		} else {
+			s += 6
+		}
+	}
+
+	order := math.Log10(math.Max(math.Abs(float64(s)), 1))
+	var sign float64
+	if s > 0 {
+		sign = 1
+	} else if s < 0 {
+		sign = -1
+	}
+
+	interval := float64(45000) // float64(69000)
+	seconds := float64(date.Unix())
+	hotness := order + float64(sign*seconds)/interval
+	return int(math.Round(hotness * 10000000))
+}
+
+// UpdateAllPostsHotness applies the PostHotness function to every row in the
+// posts table.
+func UpdateAllPostsHotness(ctx context.Context, db *sql.DB) error {
+	var (
+		limit      = 1000
+		lastID     uid.ID
+		goOn       = true
+		totalCount = 0
+	)
+
+	for goOn {
+		rows, err := db.QueryContext(ctx, "SELECT id, upvotes, downvotes, created_at FROM posts WHERE id > ? ORDER BY id LIMIT ?", lastID, limit)
+		if err != nil {
+			return err
+		}
+
+		count := 0
+		tx, err := db.BeginTx(ctx, nil)
+		if err != nil {
+			return err
+		}
+
+		for rows.Next() {
+			upvotes, downvotes := 0, 0
+			var createdAt time.Time
+			var postID uid.ID
+			if err := rows.Scan(&postID, &upvotes, &downvotes, &createdAt); err != nil {
+				tx.Rollback()
+				rows.Close()
+				return err
+			}
+			if _, err := tx.ExecContext(ctx, "UPDATE posts SET hotness = ? WHERE id = ?", PostHotness(upvotes, downvotes, createdAt), postID); err != nil {
+				log.Println(err)
+				goOn = false
+				break
+			}
+			lastID = postID
+			count++
+		}
+
+		if err := rows.Err(); err != nil {
+			tx.Rollback()
+			rows.Close()
+			return err
+		}
+
+		if err = tx.Commit(); err != nil {
+			return err
+		}
+
+		totalCount += count
+		if count < limit {
+			goOn = false
+		}
+
+		if err := rows.Close(); err != nil {
+			return err
+		}
+	}
+
+	log.Printf("Fixed %v posts", totalCount)
+	return nil
+}
+
+func SavePostImage(ctx context.Context, db *sql.DB, authorID uid.ID, image []byte) (*images.ImageRecord, error) {
+	var imageID uid.ID
+	err := msql.Transact(ctx, db, func(tx *sql.Tx) (err error) {
+		id, err := images.SaveImageTx(ctx, tx, "disk", image, &images.ImageOptions{
+			Width:  5000,
+			Height: 5000,
+			Format: images.ImageFormatJPEG,
+			Fit:    images.ImageFitContain,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to save post image (author: %v): %w", authorID, err)
+		}
+		imageID = id
+		if _, err := tx.ExecContext(ctx, "INSERT INTO temp_images_2 (user_id, image_id) values (?, ?)", authorID, imageID); err != nil {
+			return fmt.Errorf("failed to insert row into temp_images (author: %v, image: %v): %w", authorID, imageID, err)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return images.GetImageRecord(ctx, db, imageID)
+}
+
+// RemoveTempImages removes all temp images older than 12 hours and returns how
+// many were removed.
+func RemoveTempImages(ctx context.Context, db *sql.DB) (int, error) {
+	t := time.Now().Add(-time.Hour * 12)
+	rows, err := db.QueryContext(ctx, "select image_id from temp_images_2 where created_at < ?", t)
+	if err != nil {
+		return 0, err
+	}
+
+	var imageIDs []uid.ID
+	for rows.Next() {
+		var imageID uid.ID
+		if err = rows.Scan(&imageID); err != nil {
+			return 0, err
+		}
+		imageIDs = append(imageIDs, imageID)
+	}
+
+	if err = rows.Err(); err != nil {
+		return 0, err
+	}
+	if len(imageIDs) == 0 {
+		return 0, nil
+	}
+
+	err = msql.Transact(ctx, db, func(tx *sql.Tx) (err error) {
+		args := make([]any, len(imageIDs))
+		for i := range imageIDs {
+			args[i] = imageIDs[i]
+		}
+		query := fmt.Sprintf("DELETE FROM temp_images_2 WHERE image_id IN %s", msql.InClauseQuestionMarks(len(imageIDs)))
+		if _, err := db.ExecContext(ctx, query, args...); err != nil {
+			return fmt.Errorf("failed to delete %d rows from temp_images: %w", len(imageIDs), err)
+		}
+		for _, id := range imageIDs {
+			if err := images.DeleteImageTx(ctx, tx, db, id); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return len(imageIDs), nil
+}
+
+// postLink is the link metadata of a link post as stored in the database.
+type postLink struct {
+	Version  int    `json:"v"`
+	URL      string `json:"u"`
+	Hostname string `json:"h"`
+}
+
+func (pl *postLink) PostLink() *PostLink {
+	return &PostLink{
+		Version:  pl.Version,
+		URL:      pl.URL,
+		Hostname: pl.Hostname,
+	}
+}
+
+// PostLink is the object to be sent to the client.
+type PostLink struct {
+	Version  int           `json:"-"`
+	URL      string        `json:"url"`
+	Hostname string        `json:"hostname"`
+	Image    *images.Image `json:"image"`
+}
+
+func (pl *PostLink) SetImageCopies() {
+	if pl.Image != nil {
+		pl.Image.PostScan()
+		pl.Image.AppendCopy("small", 120, 120, images.ImageFitCover, "")
+		pl.Image.AppendCopy("desktop", 325, 250, images.ImageFitCover, "")
+		pl.Image.AppendCopy("mobile", 875, 500, images.ImageFitCover, "")
+	}
+}
+
+// If community is null, site-wide pinned posts are returned.
+func getPinnedPosts(ctx context.Context, db *sql.DB, viewer, community *uid.ID) ([]*Post, error) {
+	var args []any
+	where := "WHERE posts.id "
+	if viewer != nil {
+		args = append(args, *viewer)
+	}
+	if community != nil {
+		where += "IN (SELECT post_id FROM pinned_posts WHERE community_id = ?)"
+		args = append(args, *community)
+	} else {
+		where += "IN (SELECT post_id FROM pinned_posts WHERE community_id IS NULL)"
+	}
+
+	q := buildSelectPostQuery(viewer != nil, where)
+	rows, err := db.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	posts, err := scanPosts(ctx, db, rows, viewer)
+	if err != nil {
+		if err == errPostNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return posts, err
+}

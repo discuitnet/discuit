@@ -1,0 +1,225 @@
+@use 'mixins';
+
+.modtools {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 120px);
+    margin-bottom: calc(2 * var(--gap));
+    .sidebar-left {
+        display: none;
+    }
+    .modtools-head {
+        margin-bottom: var(--gap);
+        @include mixins.mobile() {
+            padding: var(--gap);
+        }
+    }
+    .modtools-dashboard {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 2fr 7fr;
+        grid-gap: var(--gap);
+        .sidebar {
+            background: rgba(var(--base-fg), 0.1);
+            border-radius: var(--border-radius);
+            padding: var(--card-padding);
+        }
+        @include mixins.mobile() {
+            grid-template-columns: 1fr;
+        }
+    }
+    .modtools-content {
+        @include mixins.card;
+        padding: var(--card-padding);
+        &.is-mod-none {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            > * {
+                opacity: 0.6;
+            }
+        }
+        .modtools-content-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            .modtools-title {
+                font-size: 1.4em;
+                font-weight: 600;
+            }
+            border-bottom: var(--seperator);
+            padding-bottom: calc(0.8 * var(--gap));
+            margin-bottom: var(--gap);
+        }
+        .label {
+            font-size: var(--fs-normal);
+        }
+    }
+    .modtools-settings {
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-template-rows: max-content auto max-content;
+        .modtools-settings-save-container {
+            margin-top: var(--gap);
+        }
+        .modtools-change-propic {
+            .label {
+                margin-bottom: 5px;
+            }
+            img {
+                width: 120px;
+                height: 120px;
+                border-radius: 50%;
+                border: 2px solid var(--color-fg);
+            }
+            .flex {
+                align-items: center;
+                button {
+                    margin-left: var(--gap);
+                }
+            }
+        }
+        .modtools-change-banner {
+            .label {
+                margin-bottom: 5px;
+            }
+            img.modtools-banner {
+                width: 100%;
+                max-width: max-content;
+                height: auto;
+                border-radius: var(--border-radius);
+                border: 2px solid var(--color-fg);
+                margin-bottom: 5px;
+            }
+            .modtools-change-banner-buttons {
+                margin: var(--gap) 0;
+                button {
+                    margin-right: var(--gap);
+                }
+            }
+        }
+    }
+    .modtools-reports {
+        --max-width: 750px;
+        display: flex;
+        flex-direction: column;
+        .modtools-reports-filters {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--gap);
+        }
+        .modtools-reports-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            .modtools-reports-posts {
+                display: flex;
+                flex-direction: column;
+                > .card {
+                    margin-bottom: var(--gap);
+                }
+            }
+        }
+    }
+    .modtools-banned {
+        .table {
+            .table-row {
+                align-items: center;
+                .table-column:last-child {
+                    justify-self: end;
+                }
+            }
+            button {
+                font-weight: normal;
+            }
+        }
+    }
+    .modtools-rules {
+        .modtools-rules-list {
+            .table-row {
+                grid-template-columns: 1fr 2fr 2fr 1fr 1fr;
+                align-items: center;
+                .table-column:last-child {
+                    justify-self: end;
+                }
+                @include mixins.mobile() {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-start;
+                    .table-column {
+                        margin: calc(var(--gap) / 2) 0;
+                    }
+                }
+            }
+        }
+    }
+
+    .card-report {
+        position: relative;
+        .card-report-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            .right {
+                opacity: 0.7;
+            }
+        }
+        .card-report-removed {
+            color: var(--color-red);
+            margin-top: 3px;
+        }
+        .card-report-item {
+            margin-top: var(--gap);
+        }
+        .card-report-buttons {
+            position: absolute;
+            bottom: 13px;
+            left: 50%;
+            display: flex;
+            opacity: 0;
+            transform: translateX(-50%) translateY(10px);
+            transition: all 0.3s;
+            button,
+            a.button {
+                min-width: 120px;
+            }
+            button {
+                border-top-right-radius: 0;
+                border-bottom-right-radius: 0;
+            }
+            a.button {
+                border-top-left-radius: 0;
+                border-bottom-left-radius: 0;
+            }
+            @include mixins.mobile() {
+                position: unset;
+                bottom: unset;
+                left: unset;
+                opacity: unset;
+                transform: unset;
+                transition: unset;
+                margin-top: var(--gap);
+                display: flex;
+                align-self: center;
+            }
+        }
+        &:hover .card-report-buttons {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0px);
+        }
+    }
+}
+
+@media screen and (max-width: 1100px) {
+    .modtools .modtools-reports {
+        .modtools-reports-filters {
+            align-self: stretch;
+            width: auto;
+        }
+        .modtools-reports-reports {
+            width: auto;
+        }
+    }
+}

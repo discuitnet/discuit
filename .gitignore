@@ -1,0 +1,8 @@
+node_modules
+.vscode
+/ui/dist/
+/config.yaml
+/cookies
+/logs
+/discuit
+/images

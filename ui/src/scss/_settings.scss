@@ -1,0 +1,45 @@
+.page-settings {
+    max-width: 740px;
+    .account-settings {
+        grid-column: 2 / 3;
+        padding: var(--card-padding);
+        display: flex;
+        flex-direction: column;
+        > * {
+            margin-bottom: var(--gap);
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+        .input-desc {
+            margin-top: 5px;
+        }
+        .button-red {
+            align-self: flex-start;
+        }
+    }
+    .settings-list {
+        display: flex;
+        flex-direction: column;
+        > * {
+            display: grid;
+            grid-template-columns: 1fr max-content;
+            align-items: center;
+            margin-bottom: var(--gap);
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+    }
+}
+
+.modal-change-password {
+    .modal-card-content {
+        > * {
+            margin-bottom: var(--gap);
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+    }
+}

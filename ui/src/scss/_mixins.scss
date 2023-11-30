@@ -1,0 +1,66 @@
+@mixin box-shadow {
+    box-shadow: var(--box-shadow);
+}
+
+@mixin card {
+    border-left: var(--card-border-left);
+    border-right: var(--card-border-left);
+    border-top: var(--card-border-top);
+    border-bottom: var(--card-border-top);
+    box-shadow: var(--card-shadow);
+    background-color: var(--color-bg);
+    border-radius: var(--border-radius);
+    @include mobile() {
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+}
+
+@mixin card-sub {
+    @include card;
+    // background-color: #fcfcfc;
+}
+
+@mixin undo-card {
+    box-shadow: none;
+    background-color: inherit;
+    border-radius: 0;
+}
+
+@mixin mobile {
+    @media screen and (max-width: 768px) {
+        @content;
+    }
+}
+
+@mixin not-mobile {
+    @media screen and (min-width: 768px) {
+        @content;
+    }
+}
+
+@mixin tablet {
+    // Changes should following literal value should be mirrored with
+    // changes to similar constant in App.jsx file.
+    @media screen and (max-width: 1170px) {
+        @content;
+    }
+}
+
+@mixin button-clear {
+    all: inherit;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    &:focus,
+    &:hover {
+        background: inherit;
+        text-decoration: none;
+    }
+}
+
+@mixin background-blur {
+    // background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: saturate(180%) blur(20px);
+}

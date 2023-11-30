@@ -1,0 +1,15 @@
+drop table posts_comments;
+drop table comment_votes;
+drop table comment_replies;
+drop table comments;
+drop table post_votes;
+drop table posts_year;
+drop table posts_month;
+drop table posts_week;
+drop table posts_today;
+drop table posts;
+drop table community_banned;
+drop table community_mods;
+drop table community_members;
+drop table communities;
+drop table users;

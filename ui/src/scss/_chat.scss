@@ -1,0 +1,89 @@
+@use 'mixins';
+
+.chat-main {
+    @include mixins.card;
+    @include mixins.box-shadow;
+    position: fixed;
+    bottom: 0;
+    right: 40px;
+    width: 600px;
+    height: 400px;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom: none;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    .chat-main-title {
+        padding: 0.5rem var(--card-padding);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        .button-icon {
+            transform: scale(0.75);
+        }
+        border-bottom: var(--seperator);
+    }
+    --padding: 0.4rem;
+    .chat-main-content {
+        display: grid;
+        grid-template-columns: 2fr 4fr;
+        overflow: hidden;
+        height: 100%;
+        .chat-main-contacts {
+            border-right: var(--seperator);
+            padding: var(--padding);
+            display: flex;
+            flex-direction: column;
+            .chat-main-contact {
+                padding: 0.4rem;
+                cursor: pointer;
+                border-radius: var(--border-radius);
+                margin-bottom: 4px;
+                &:hover {
+                    background: var(--color-lightgray);
+                }
+            }
+        }
+        .chat-main-chat {
+            display: grid;
+            grid-template-rows: auto max-content;
+            height: 100%;
+            overflow: hidden;
+            .chat-main-reply {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0.5rem;
+                textarea {
+                    flex: 1;
+                    margin-right: 0.5rem;
+                    min-height: var(--input-height);
+                    height: var(--input-height);
+                }
+                button {
+                    flex: 0;
+                }
+            }
+        }
+        .chat-main-msgs {
+            padding: var(--padding);
+            display: flex;
+            flex-direction: column;
+            overflow: auto;
+            .chat-msg {
+                border-radius: var(--border-radius);
+                background: tomato;
+                padding: 0.5rem;
+                color: #fff;
+                max-width: 47%;
+                align-self: flex-start;
+                margin-bottom: 0.5rem;
+                &.chat-msg-reply {
+                    background: gray;
+                    align-self: flex-end;
+                }
+            }
+        }
+    }
+}
