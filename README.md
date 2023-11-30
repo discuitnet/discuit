@@ -3,6 +3,12 @@
 This is the codebase that powers [Discuit](https://discuit.net), which is an
 open-source community platform, an alternative to Reddit. 
 
+Built with:
+- [Go](https://go.dev): The backend.
+- [React](https://react.dev/): The frontend.
+- [MariaDB](https://en.wikipedia.org/wiki/MariaDB): The main datastore.
+- [Redis](https://redis.io/): For transient data.
+
 ## Getting started
 
 ### Running locally
@@ -75,6 +81,16 @@ In the root directory are these directories:
 - `migrations`: Contains the SQL migration files.
 - `server`: Contains the REST API backend.
 - `ui` - Contains the React frontend.
+
+## Contributing
+
+Discuit is free and open-source software, and you're welcome to contribute to 
+its development.
+
+If you're thinking of working on something substantial, however, (like a major
+feature) please create an issue, or contact [the
+maintainer](https://discuit.net/@previnder), to discuss it before commencing
+work.
 
 ## License
 
