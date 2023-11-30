@@ -113,7 +113,7 @@ func NewReport(ctx context.Context, db *sql.DB, community uid.ID, post uid.NullI
 		report_type, 
 		target_id, 
 		created_by
-	) VALUES (?, ?, ?, ?, ?, ?)"`
+	) VALUES (?, ?, ?, ?, ?, ?)`
 	args := []any{
 		community,
 		post,
