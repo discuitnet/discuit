@@ -1,0 +1,34 @@
+siteName: Discuit
+siteDescription: A free and open-source community platform.
+emailContact:
+twitterURL:
+discordURL:
+substackURL:
+
+isDevelopment: true
+hmacSecret: <insert-your-secret-here>
+noLogToFile: false
+csrfOff: false
+
+addr:
+sessionCookieName: SID
+
+# MariaDB configuration:
+dbUser: root # Required
+dbPassword: # Required
+dbName: discuit # Required
+
+# ReCAPTCHA or hCaptcha secret and site-key:
+captchaSecret:
+captchaSiteKey:
+disableRateLimits: false
+
+# TLS certificate key-pair paths:
+certFile:
+keyFile:
+
+defaultFeedSort: hot
+disableForumCreation: true
+forumCreationReqPoints: 10
+maxForumsPerUser: 10
+imagesFolderPath: "images"
