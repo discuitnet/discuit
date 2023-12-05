@@ -29,6 +29,7 @@ function readYamlConfigFile() {
     'twitterURL',
     'instagramURL',
     'discordURL',
+    'githubURL',
     'substackURL',
     'disableImagePosts',
     'disableForumCreation',

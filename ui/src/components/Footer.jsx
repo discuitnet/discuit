@@ -47,6 +47,11 @@ const Footer = () => {
               Discord
             </a>
           )}
+          {CONFIG.githubURL && (
+            <a href={CONFIG.githubURL} className="footer-item" target="_blank" re="noopener">
+              Github
+            </a>
+          )}
         </div>
         <div className="footer-col">
           <div className="footer-title">Policies</div>
