@@ -199,6 +199,9 @@
                 }
             }
         }
+        .post-card-embed {
+            margin-top: 0;
+        }
         @include mixins.tablet() {
             .post-card-bottom {
                 flex-direction: row;

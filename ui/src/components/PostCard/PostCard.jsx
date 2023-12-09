@@ -12,6 +12,7 @@ import PostCardHeadingDetails from './PostCardHeadingDetails';
 import Image from './Image';
 import LinkImage from './LinkImage';
 import { useIsMobile } from '../../hooks';
+import getEmbedComponent from './embed';
 
 const PostCard = ({
   index = 100, // index in feed
@@ -64,6 +65,7 @@ const PostCard = ({
   const isMobile = useIsMobile();
   const isPinned = post.isPinned || post.isPinnedSite;
   const showLink = !post.deletedContent && post.type === 'link';
+  const { isEmbed, render: Embed, url: embedURL } = getEmbedComponent(post.link);
   const showImage = !post.deletedContent && post.type === 'image';
   const imageLoadingStyle = index < 3 ? 'eager' : 'lazy';
 
@@ -114,12 +116,13 @@ const PostCard = ({
                 </a>
               )}
             </div>
-            {showLink && post.link.image && (
+            {showLink && !isEmbed && post.link.image && (
               <Link className="post-card-link-image" to={postURL} target={target}>
                 <LinkImage link={post.link} loading={imageLoadingStyle} />
               </Link>
             )}
           </div>
+          {isEmbed && <Embed url={embedURL} />}
           {post.type === 'text' && (
             <div className="post-card-text">
               <ShowMoreBox maxHeight="200px">

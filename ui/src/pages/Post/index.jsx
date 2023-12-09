@@ -35,6 +35,7 @@ import { postAdded } from '../../slices/postsSlice';
 import { commentsAdded, newCommentAdded } from '../../slices/commentsSlice';
 import { communityAdded } from '../../slices/communitiesSlice';
 import { useLocation } from 'react-router-dom';
+import { getEmbedComponent } from '../../components/PostCard';
 
 const Post = () => {
   const { id, commentId, communityName } = useParams(); // id is post.publicId
@@ -252,6 +253,7 @@ const Post = () => {
   const votesCount = post.upvotes + post.downvotes;
   const upvotedPercent = votesCount > 0 ? Math.ceil((post.upvotes / votesCount) * 100) : 0;
   const showLink = !post.deletedContent && post.type === 'link';
+  const { isEmbed, render: Embed, url: embedURL } = getEmbedComponent(post.link);
   const showImage = !post.deletedContent && post.type === 'image';
 
   const canVote = !post.locked;
@@ -325,7 +327,7 @@ const Post = () => {
                     </div>
                   )}
                 </LinkOrDiv>
-                {showLink && post.link.image && (
+                {showLink && !isEmbed && post.link.image && (
                   <ExternalLink className="post-card-link-image" href={post.link.url}>
                     <LinkImage link={post.link} />
                     <svg
@@ -353,6 +355,7 @@ const Post = () => {
                 />
               )*/}
               {showImage && <PostImage post={post} />}
+              {isEmbed && <Embed url={embedURL} />}
               {(isLocked || post.deleted) && (
                 <div className="post-card-banners">
                   {isLocked && (

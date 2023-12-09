@@ -1,4 +1,5 @@
 import PostCard from './PostCard';
+import getEmbedComponent from './embed';
 
 const templatePost = {
   id: '0929348029384034',
@@ -11,4 +12,4 @@ const templatePost = {
 };
 
 export default PostCard;
-export { templatePost };
+export { templatePost, getEmbedComponent };
