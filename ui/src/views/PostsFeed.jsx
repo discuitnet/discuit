@@ -163,7 +163,11 @@ const PostsFeed = ({ name = 'Posts', feedType = 'all', communityId = null }) => 
     dispatch(feedItemHeightChanged(item.key, height));
   };
   const handleRenderItem = (item, index) => (
-    <MemorizedPostCard initialPost={item.item} index={index} />
+    <MemorizedPostCard
+      initialPost={item.item}
+      index={index}
+      disableEmbeds={user && user.embedsOff}
+    />
   );
   const itemsInitiallyInView = useSelector(selectFeedInViewItems(endpoint));
   const handleSaveVisibleItems = (items) => {

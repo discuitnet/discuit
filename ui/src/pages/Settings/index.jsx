@@ -51,12 +51,14 @@ const Settings = () => {
   const [homeFeed, setHomeFeed] = useState(user.homeFeed);
 
   const [rememberFeedSort, setRememberFeedSort] = useState(user.rememberFeedSort);
+  const [enableEmbeds, setEnableEmbeds] = useState(!user.embedsOff);
 
   const [changed, resetChanged] = useIsChanged([
     aboutMe /*, email*/,
     notifsSettings,
     homeFeed,
     rememberFeedSort,
+    enableEmbeds,
   ]);
 
   const applicationServerKey = useSelector((state) => state.main.vapidPublicKey);
@@ -109,6 +111,7 @@ const Settings = () => {
           replyNotificationsOff: !notifsSettings.replyNotifs,
           homeFeed,
           rememberFeedSort,
+          embedsOff: !enableEmbeds,
         }),
       });
       dispatch(userLoggedIn(ruser));
@@ -250,6 +253,16 @@ const Settings = () => {
                 type="checkbox"
                 checked={rememberFeedSort}
                 onChange={(e) => setRememberFeedSort(e.target.checked)}
+              />
+            </div>
+            <div className="checkbox is-check-last">
+              <label htmlFor="c4">Enable embeds</label>
+              <input
+                className="switch"
+                id="c4"
+                type="checkbox"
+                checked={enableEmbeds}
+                onChange={(e) => setEnableEmbeds(e.target.checked)}
               />
             </div>
           </div>

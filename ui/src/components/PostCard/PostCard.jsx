@@ -21,6 +21,7 @@ const PostCard = ({
   openInTab = false,
   compact = false,
   inModTools = false,
+  disableEmbeds = false,
 }) => {
   const history = useHistory();
 
@@ -65,7 +66,10 @@ const PostCard = ({
   const isMobile = useIsMobile();
   const isPinned = post.isPinned || post.isPinnedSite;
   const showLink = !post.deletedContent && post.type === 'link';
-  const { isEmbed, render: Embed, url: embedURL } = getEmbedComponent(post.link);
+
+  const { isEmbed: _isEmbed, render: Embed, url: embedURL } = getEmbedComponent(post.link);
+  const isEmbed = !disableEmbeds && _isEmbed;
+
   const showImage = !post.deletedContent && post.type === 'image';
   const imageLoadingStyle = index < 3 ? 'eager' : 'lazy';
 

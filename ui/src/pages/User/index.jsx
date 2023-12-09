@@ -174,7 +174,7 @@ const User = ({ username }) => {
 
   const handleRenderItem = (item) => {
     if (item.type === 'post') {
-      return <MemorizedPostCard initialPost={item.item} />;
+      return <MemorizedPostCard initialPost={item.item} disableEmbeds={user && user.embedsOff} />;
     }
     if (item.type === 'comment') {
       return <MemorizedComment comment={item.item} />;

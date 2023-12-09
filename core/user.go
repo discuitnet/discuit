@@ -101,6 +101,7 @@ type User struct {
 	ReplyNotificationsOff  bool     `json:"replyNotificationsOff"`
 	HomeFeed               FeedType `json:"homeFeed"`
 	RememberFeedSort       bool     `json:"rememberFeedSort"`
+	EmbedsOff              bool     `json:"embedsOff"`
 
 	// No banned users are supposed to be logged in. Make sure to log them out
 	// before banning.
@@ -198,6 +199,7 @@ func buildSelectUserQuery(where string) string {
 		"users.reply_notifications_off",
 		"users.home_feed",
 		"users.remember_feed_sort",
+		"users.embeds_off",
 	}
 	return msql.BuildSelectQuery("users", cols, nil, where)
 }
@@ -287,7 +289,8 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 			&u.UpvoteNotificationsOff,
 			&u.ReplyNotificationsOff,
 			&u.HomeFeed,
-			&u.RememberFeedSort)
+			&u.RememberFeedSort,
+			&u.EmbedsOff)
 		if err != nil {
 			return nil, err
 		}
@@ -502,7 +505,8 @@ func (u *User) Update(ctx context.Context) error {
 		upvote_notifications_off = ?,
 		reply_notifications_off = ?,
 		home_feed = ?,
-		remember_feed_sort = ?
+		remember_feed_sort = ?,
+		embeds_off = ?
 	WHERE id = ?`,
 		u.Email,
 		u.About,
@@ -510,6 +514,7 @@ func (u *User) Update(ctx context.Context) error {
 		u.ReplyNotificationsOff,
 		u.HomeFeed,
 		u.RememberFeedSort,
+		u.EmbedsOff,
 		u.ID)
 	return err
 }

@@ -253,7 +253,11 @@ const Post = () => {
   const votesCount = post.upvotes + post.downvotes;
   const upvotedPercent = votesCount > 0 ? Math.ceil((post.upvotes / votesCount) * 100) : 0;
   const showLink = !post.deletedContent && post.type === 'link';
-  const { isEmbed, render: Embed, url: embedURL } = getEmbedComponent(post.link);
+
+  const disableEmbeds = user && user.embedsOff;
+  const { isEmbed: _isEmbed, render: Embed, url: embedURL } = getEmbedComponent(post.link);
+  const isEmbed = !disableEmbeds && _isEmbed;
+
   const showImage = !post.deletedContent && post.type === 'image';
 
   const canVote = !post.locked;
