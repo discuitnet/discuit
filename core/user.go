@@ -337,17 +337,6 @@ func RegisterUser(ctx context.Context, db *sql.DB, username, email, password str
 			Message:    fmt.Sprintf("A user with username %s already exists.", username),
 		}
 	}
-	if email != "" {
-		if exists, _, err := userWithEmailExists(ctx, db, email); err != nil {
-			return nil, err
-		} else if exists {
-			return nil, &httperr.Error{
-				HTTPStatus: http.StatusConflict,
-				Code:       "email_exists",
-				Message:    fmt.Sprintf("A user with email %s already exists.", email),
-			}
-		}
-	}
 
 	// Check if username is valid.
 	if err := IsUsernameValid(username); err != nil {
@@ -358,13 +347,16 @@ func RegisterUser(ctx context.Context, db *sql.DB, username, email, password str
 	if err != nil {
 		return nil, err
 	}
+
+	// Note: Thet email address is not checked to be a valid email address. Any
+	// string can be stored as an email address currently.
 	nullEmail := msql.NullString{}
 	if email != "" {
 		nullEmail.Valid = true
 		nullEmail.String = email
 	}
-	id := uid.New()
 
+	id := uid.New()
 	query, args := msql.BuildInsertQuery("users", []msql.ColumnValue{
 		{Name: "id", Value: id},
 		{Name: "username", Value: username},

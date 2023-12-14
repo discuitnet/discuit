@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { ButtonClose } from './Button';
-import { InputPassword, InputWithCount } from './Input';
+import Input, { InputPassword, InputWithCount } from './Input';
 import Modal from './Modal';
 import { useDispatch } from 'react-redux';
 import { loginModalOpened, snackAlert, snackAlertError } from '../slices/mainSlice';
@@ -166,15 +166,14 @@ const Signup = ({ open, onClose }) => {
               style={{ marginBottom: 0 }}
               autoComplete="username"
             />
-            {/*
-          <Input
-            label="Email (optional)"
-            description="Warning: If you don't provide an email address, there's no way to recover your account in case you forget your password."
-            value={email}
-            error={emailError}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          */}
+            <Input
+              type="email"
+              label="Email (optional)"
+              description="Without an email address, there's no way to recover your account if you lose your password."
+              value={email}
+              error={emailError}
+              onChange={(e) => setEmail(e.target.value)}
+            />
             <InputPassword
               label="Password"
               value={password}

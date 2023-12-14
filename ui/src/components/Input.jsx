@@ -12,11 +12,15 @@ const Input = forwardRef(function Input(
         className={'input-with-label' + (className ? className : '') + (error ? ' is-error' : '')}
         style={style}
       >
-        {label && <div className="label">{label}</div>}
-        {description && <div className="input-desc">{description}</div>}
-        {error && (
-          <div className="form-error" style={{ textAlign: 'left' }}>
-            {error}
+        {(label || description || error) && (
+          <div className="input-label-box">
+            {label && <div className="label">{label}</div>}
+            {description && <div className="input-desc">{description}</div>}
+            {error && (
+              <div className="form-error" style={{ textAlign: 'left' }}>
+                {error}
+              </div>
+            )}
           </div>
         )}
         <input ref={ref} type={type} {...rest} />

@@ -191,7 +191,7 @@ func (s *Server) signup(w http.ResponseWriter, r *http.Request, ses *sessions.Se
 	}
 
 	username := values["username"]
-	// email, _ := values["email"]
+	email := values["email"]
 	password := values["password"]
 	captchaToken := values["captchaToken"]
 
@@ -215,7 +215,7 @@ func (s *Server) signup(w http.ResponseWriter, r *http.Request, ses *sessions.Se
 		return
 	}
 
-	user, err := core.RegisterUser(r.Context(), s.db, username, "", password)
+	user, err := core.RegisterUser(r.Context(), s.db, username, email, password)
 	if err != nil {
 		s.writeError(w, r, err)
 		return

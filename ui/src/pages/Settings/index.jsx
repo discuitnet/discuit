@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import Input from '../../components/Input';
-import { mfetchjson } from '../../helper';
+import { mfetchjson, validEmail } from '../../helper';
 import { useIsChanged } from '../../hooks';
 import {
   mutesAdded,
@@ -29,7 +29,7 @@ const Settings = () => {
 
   const mutes = useSelector((state) => state.main.mutes);
   const [aboutMe, setAboutMe] = useState(user.aboutMe || '');
-  // const [email, setEmail] = useState(user.email || '');
+  const [email, setEmail] = useState(user.email || '');
 
   const [notifsSettings, _setNotifsSettings] = useState({
     upvoteNotifs: !user.upvoteNotificationsOff,
@@ -59,6 +59,7 @@ const Settings = () => {
     homeFeed,
     rememberFeedSort,
     enableEmbeds,
+    email,
   ]);
 
   const applicationServerKey = useSelector((state) => state.main.vapidPublicKey);
@@ -102,6 +103,10 @@ const Settings = () => {
   const handleDisablePushNotifications = () => {};
 
   const handleSave = async () => {
+    if (email !== '' && !validEmail(email)) {
+      dispatch(snackAlert('Please enter a valid email'));
+      return;
+    }
     try {
       const ruser = await mfetchjson(`/api/_settings?action=updateProfile`, {
         method: 'POST',
@@ -112,6 +117,7 @@ const Settings = () => {
           homeFeed,
           rememberFeedSort,
           embedsOff: !enableEmbeds,
+          email,
         }),
       });
       dispatch(userLoggedIn(ruser));
@@ -209,7 +215,14 @@ const Settings = () => {
           <Input label="Username" value={user.username || ''} disabled />
           <p className="input-desc">Username cannot be changed.</p>
         </div>
-        {/* <Input label="Email" value={email} onChange={(e) => setEmail(e.target.value)} /> */}
+        <div className="flex-column">
+          <Input
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
         <div className="input-with-label">
           <div className="input-label-box">
             <div className="label">About me</div>
@@ -221,6 +234,8 @@ const Settings = () => {
             onChange={(e) => setAboutMe(e.target.value)}
           />
         </div>
+        <ChangePassword />
+        {/*<DeleteAccount />*/}
         <div className="input-with-label settings-prefs">
           <div className="input-label-box">
             <div className="label">Preferences</div>
@@ -335,9 +350,6 @@ const Settings = () => {
             )}
           </div>
         </div>
-        <ChangePassword />
-
-        {/*<DeleteAccount />*/}
         <button className="button-main" disabled={!changed} onClick={handleSave}>
           Save
         </button>
