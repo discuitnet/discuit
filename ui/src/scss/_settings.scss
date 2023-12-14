@@ -31,6 +31,13 @@
             }
         }
     }
+    .settings-propic {
+        display: flex;
+        align-items: center;
+        > * {
+            margin-right: var(--gap);
+        }
+    }
 }
 
 .modal-change-password {

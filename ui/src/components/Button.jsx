@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import PropTypes from 'prop-types';
 
 export const ButtonClose = ({ className, style = {}, ...props }) => {
@@ -172,4 +172,32 @@ export const ButtonNotifications = ({ count = 0, ...props }) => {
 
 ButtonNotifications.propTypes = {
   count: PropTypes.number,
+};
+
+export const ButtonUpload = ({ children, onChange, ...rest }) => {
+  const inputRef = useRef(null);
+  const handleInputChange = () => {
+    if (!onChange) {
+      return;
+    }
+    onChange(inputRef.current.files);
+  };
+  return (
+    <div className="button-upload">
+      <button onClick={() => inputRef.current.click()} {...rest}>
+        {children}
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        name="image"
+        style={{ visibility: 'hidden', width: 0, height: 0 }}
+        onChange={handleInputChange}
+      />
+    </div>
+  );
+};
+
+ButtonUpload.propTypes = {
+  onChange: PropTypes.func.isRequired,
 };

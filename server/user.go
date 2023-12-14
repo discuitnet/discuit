@@ -513,3 +513,58 @@ func (s *Server) deleteUser(w http.ResponseWriter, r *http.Request, ses *session
 	// Unavailable for now.
 	s.writeErrorCustom(w, r, http.StatusServiceUnavailable, "Account delete feature is yet to be implemented", "account_del_503")
 }
+
+// /api/users/{username}/pro_pic [POST, DELETE]
+func (s *Server) handleUserProPic(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
+	loggedIn, userID := isLoggedIn(ses)
+	if !loggedIn {
+		s.writeErrorNotLoggedIn(w, r)
+		return
+	}
+
+	ctx := r.Context()
+	user, err := core.GetUserByUsername(ctx, s.db, mux.Vars(r)["username"], userID)
+	if err != nil {
+		s.writeError(w, r, err)
+		return
+	}
+
+	// Only the owner of the account and admins can proceed.
+	if !(user.ID == *userID || user.Admin) {
+		s.writeErrorCustom(w, r, http.StatusUnauthorized, "", "")
+		return
+	}
+
+	if r.Method == "POST" {
+		r.Body = http.MaxBytesReader(w, r.Body, int64(s.config.MaxImageSize)) // limit max upload size
+		if err := r.ParseMultipartForm(int64(s.config.MaxImageSize)); err != nil {
+			s.writeErrorCustom(w, r, http.StatusBadRequest, "Max file size exceeded", "file_size_exceeded")
+			return
+		}
+
+		file, _, err := r.FormFile("image")
+		if err != nil {
+			s.writeError(w, r, err)
+			return
+		}
+		defer file.Close()
+
+		data, err := io.ReadAll(file)
+		if err != nil {
+			s.writeError(w, r, err)
+			return
+		}
+		if err := user.UpdateProPic(ctx, data); err != nil {
+			s.writeError(w, r, err)
+			return
+		}
+	} else if r.Method == "DELETE" {
+		if err := user.DeleteProPic(ctx); err != nil {
+			s.writeError(w, r, err)
+			return
+		}
+	}
+
+	data, _ := json.Marshal(user)
+	w.Write(data)
+}

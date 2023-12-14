@@ -21,6 +21,8 @@ import {
 import Dropdown from '../../components/Dropdown';
 import CommunityLink from '../../components/PostCard/CommunityLink';
 import { Link } from 'react-router-dom/cjs/react-router-dom.min';
+import { ButtonUpload } from '../../components/Button';
+import CommunityProPic from '../../components/CommunityProPic';
 
 const Settings = () => {
   const dispatch = useDispatch();
@@ -128,6 +130,55 @@ const Settings = () => {
     }
   };
 
+  const proPicAPIEndpoint = `/api/users/${user.username}/pro_pic`;
+  const [isProPicUploading, setIsProPicUploading] = useState(false);
+  const handleProPicUpload = async (files) => {
+    if (isProPicUploading) {
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append('image', files[0]);
+      setIsProPicUploading(true);
+      const res = await fetch(proPicAPIEndpoint, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) {
+        if (res.status === 400) {
+          const error = await res.json();
+          if (error.code === 'file_size_exceeded') {
+            dispatch(snackAlert('Maximum file size exceeded.'));
+            return;
+          } else if (error.code === 'unsupported_image') {
+            dispatch(snackAlert('Unsupported image.'));
+            return;
+          }
+          throw new APIError(res.status, await res.json());
+        }
+      }
+      const ruser = await res.json();
+      dispatch(userLoggedIn(ruser));
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    } finally {
+      setIsProPicUploading(false);
+    }
+  };
+  const handleProPicDelete = async () => {
+    if (isProPicUploading) {
+      return;
+    }
+    try {
+      const ruser = await mfetchjson(proPicAPIEndpoint, { method: 'DELETE' });
+      dispatch(userLoggedIn(ruser));
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    } finally {
+      setIsProPicUploading(false);
+    }
+  };
+
   const handleUnmute = async (mute) => {
     // try {
     //   await mfetchjson(`/api/mutes/${mute.id}`, {
@@ -211,6 +262,15 @@ const Settings = () => {
       </Helmet>
       <div className="account-settings card">
         <h1>Account settings</h1>
+        <div className="settings-propic">
+          <CommunityProPic name={user.username} proPic={user.proPic} size="standard" />
+          <ButtonUpload onChange={handleProPicUpload} disabled={isProPicUploading}>
+            Change
+          </ButtonUpload>
+          <button onClick={handleProPicDelete} disabled={isProPicUploading}>
+            Delete
+          </button>
+        </div>
         <div className="flex-column">
           <Input label="Username" value={user.username || ''} disabled />
           <p className="input-desc">Username cannot be changed.</p>

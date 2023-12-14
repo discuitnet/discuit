@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/discuitnet/discuit/internal/httperr"
+	"github.com/discuitnet/discuit/internal/images"
 	msql "github.com/discuitnet/discuit/internal/sql"
 	"github.com/discuitnet/discuit/internal/uid"
 	"github.com/discuitnet/discuit/internal/utils"
@@ -90,6 +91,7 @@ type User struct {
 	About             msql.NullString `json:"aboutMe"`
 	Points            int             `json:"points"`
 	Admin             bool            `json:"isAdmin"`
+	ProPic            *images.Image   `json:"proPic"`
 	NumPosts          int             `json:"noPosts"`
 	NumComments       int             `json:"noComments"`
 	LastSeen          time.Time       `json:"-"` // accurate to within 5 minutes
@@ -201,11 +203,15 @@ func buildSelectUserQuery(where string) string {
 		"users.remember_feed_sort",
 		"users.embeds_off",
 	}
-	return msql.BuildSelectQuery("users", cols, nil, where)
+	cols = append(cols, images.ImageColumns("pro_pic")...)
+	joins := []string{
+		"LEFT JOIN images AS pro_pic ON pro_pic.id = users.pro_pic",
+	}
+	return msql.BuildSelectQuery("users", cols, joins, where)
 }
 
 func GetUser(ctx context.Context, db *sql.DB, user uid.ID, viewer *uid.ID) (*User, error) {
-	rows, err := db.QueryContext(ctx, buildSelectUserQuery("WHERE id = ? AND deleted_at IS NULL"), user)
+	rows, err := db.QueryContext(ctx, buildSelectUserQuery("WHERE users.id = ? AND users.deleted_at IS NULL"), user)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +232,7 @@ func GetUsersIDs(ctx context.Context, db *sql.DB, IDs []uid.ID, viewer *uid.ID) 
 		args[i] = IDs[i]
 	}
 
-	query := buildSelectUserQuery(fmt.Sprintf("WHERE id IN %s AND deleted_at IS NULL", msql.InClauseQuestionMarks(len(IDs))))
+	query := buildSelectUserQuery(fmt.Sprintf("WHERE users.id IN %s AND users.deleted_at IS NULL", msql.InClauseQuestionMarks(len(IDs))))
 	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, err
@@ -239,7 +245,7 @@ func GetUsersIDs(ctx context.Context, db *sql.DB, IDs []uid.ID, viewer *uid.ID) 
 }
 
 func GetUserByUsername(ctx context.Context, db *sql.DB, username string, viewer *uid.ID) (*User, error) {
-	rows, err := db.QueryContext(ctx, buildSelectUserQuery("WHERE username_lc = ? AND deleted_at IS NULL"), strings.ToLower(username))
+	rows, err := db.QueryContext(ctx, buildSelectUserQuery("WHERE users.username_lc = ? AND users.deleted_at IS NULL"), strings.ToLower(username))
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +257,7 @@ func GetUserByUsername(ctx context.Context, db *sql.DB, username string, viewer 
 }
 
 func GetUserByEmail(ctx context.Context, db *sql.DB, email string, viewer *uid.ID) (*User, error) {
-	rows, err := db.QueryContext(ctx, buildSelectUserQuery("WHERE email = ? AND deleted_at IS NULL"), email)
+	rows, err := db.QueryContext(ctx, buildSelectUserQuery("WHERE users.email = ? AND users.deleted_at IS NULL"), email)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +275,7 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 	var users []*User
 	for rows.Next() {
 		u := &User{db: db}
-		err := rows.Scan(
+		dests := []any{
 			&u.ID,
 			&u.Username,
 			&u.UsernameLowerCase,
@@ -290,12 +296,22 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 			&u.ReplyNotificationsOff,
 			&u.HomeFeed,
 			&u.RememberFeedSort,
-			&u.EmbedsOff)
-		if err != nil {
+			&u.EmbedsOff,
+		}
+
+		proPic := &images.Image{}
+		dests = append(dests, proPic.ScanDestinations()...)
+
+		if err := rows.Scan(dests...); err != nil {
 			return nil, err
 		}
 		if u.BannedAt.Valid {
 			u.Banned = true
+		}
+		if proPic.ID != nil {
+			proPic.PostScan()
+			setCommunityProPicCopies(proPic)
+			u.ProPic = proPic
 		}
 		users = append(users, u)
 	}
@@ -659,4 +675,62 @@ func (u *User) LoadModdingList(ctx context.Context) error {
 		u.ModdingList = comms
 	}
 	return err
+}
+
+func (u *User) DeleteProPicTx(ctx context.Context, tx *sql.Tx) error {
+	if u.ProPic == nil {
+		return nil
+	}
+	if _, err := u.db.ExecContext(ctx, "UPDATE users SET pro_pic = NULL where id = ?", u.ID); err != nil {
+		return fmt.Errorf("failed to set users.pro_pic to null for user %s: %w", u.Username, err)
+	}
+	if err := images.DeleteImageTx(ctx, tx, u.db, *u.ProPic.ID); err != nil {
+		return fmt.Errorf("failed to delete pro pic of user %s: %w", u.Username, err)
+	}
+	u.ProPic = nil
+	return nil
+}
+
+func (u *User) DeleteProPic(ctx context.Context) error {
+	return msql.Transact(ctx, u.db, func(tx *sql.Tx) error {
+		return u.DeleteProPicTx(ctx, tx)
+	})
+}
+
+func (u *User) UpdateProPic(ctx context.Context, image []byte) error {
+	var newImageID uid.ID
+	err := msql.Transact(ctx, u.db, func(tx *sql.Tx) error {
+		if err := u.DeleteProPicTx(ctx, tx); err != nil {
+			return err
+		}
+		imageID, err := images.SaveImageTx(ctx, tx, "disk", image, &images.ImageOptions{
+			Width:  2000,
+			Height: 2000,
+			Format: images.ImageFormatJPEG,
+			Fit:    images.ImageFitContain,
+		})
+		if err != nil {
+			return fmt.Errorf("fail to save user pro pic: %w", err)
+		}
+		if _, err := tx.ExecContext(ctx, "UPDATE users SET pro_pic = ? WHERE id = ?", imageID, u.ID); err != nil {
+			// Attempt to delete the image
+			if err := images.DeleteImageTx(ctx, tx, u.db, imageID); err != nil {
+				log.Printf("failed to delete image (core.User.UpdateProPic): %v\n", err)
+			}
+			return fmt.Errorf("failed to set users.pro_pic to value: %w", err)
+		}
+		newImageID = imageID
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	record, err := images.GetImageRecord(ctx, u.db, newImageID)
+	if err != nil {
+		return err
+	}
+	u.ProPic = record.Image()
+	setCommunityProPicCopies(u.ProPic)
+	return nil
 }

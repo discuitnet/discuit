@@ -690,6 +690,11 @@ button,
     }
 }
 
+.button-upload {
+    display: flex;
+    height: max-content;
+}
+
 a,
 .button-link {
     text-decoration: none;

@@ -100,6 +100,7 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 
 	r.Handle("/api/users/{username}", s.withSession(s.getUser)).Methods("GET")
 	r.Handle("/api/users/{username}/feed", s.withSession(s.getUsersFeed)).Methods("GET")
+	r.Handle("/api/users/{username}/pro_pic", s.withSession(s.handleUserProPic)).Methods("POST", "DELETE")
 
 	r.Handle("/api/mutes", s.withSession(s.handleMutes)).Methods("GET", "POST", "DELETE")
 	r.Handle("/api/mutes/users/{mutedUserID}", s.withSession(s.deleteUserMute)).Methods("DELETE")
