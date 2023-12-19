@@ -445,12 +445,12 @@ func getPostsTopAll(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedRe
 		where, args = whereMuted(where, "posts", args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
 	}
 	if opts.Next != "" {
-		nextHotness, nextID, err := opts.nextPointsID()
+		nextPoints, nextID, err := opts.nextPointsID()
 		if err != nil {
 			return nil, err
 		}
-		where += "AND (posts.hotness, posts.id) <= (?, ?) "
-		args = append(args, nextHotness)
+		where += "AND (posts.points, posts.id) <= (?, ?) "
+		args = append(args, nextPoints)
 		args = append(args, nextID)
 	}
 	where += "ORDER BY posts.points DESC, posts.id DESC LIMIT ?"
@@ -482,7 +482,7 @@ func getPostsTop(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedResul
 	table := sortFeedToTable(opts.Sort)
 
 	var args []any
-	query := "SELECT post_id FROM " + table + " "
+	query := fmt.Sprintf("SELECT post_id FROM %s ", table)
 	where := ""
 	if opts.Homefeed {
 		where += whereSelectUserComms
@@ -497,15 +497,15 @@ func getPostsTop(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedResul
 		where, args = whereMuted(where, table, args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
 	}
 	if opts.Next != "" {
-		nextHotness, nextID, err := opts.nextPointsID()
+		nextPoints, nextID, err := opts.nextPointsID()
 		if err != nil {
 			return nil, err
 		}
 		if where != "" {
 			where += " AND "
 		}
-		where += "(posts.hotness, posts.id) <= (?, ?) "
-		args = append(args, nextHotness)
+		where += "(points, id) <= (?, ?) "
+		args = append(args, nextPoints)
 		args = append(args, nextID)
 	}
 	if where != "" {
