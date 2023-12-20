@@ -70,7 +70,7 @@ const PostCard = ({
   const { isEmbed: _isEmbed, render: Embed, url: embedURL } = getEmbedComponent(post.link);
   const isEmbed = !disableEmbeds && _isEmbed;
 
-  const showImage = !post.deletedContent && post.type === 'image';
+  const showImage = !post.deletedContent && post.type === 'image' && post.image;
   const imageLoadingStyle = index < 3 ? 'eager' : 'lazy';
 
   return (

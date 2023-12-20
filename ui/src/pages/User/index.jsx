@@ -30,6 +30,7 @@ import CommunityLink from '../../components/PostCard/CommunityLink';
 import Dropdown from '../../components/Dropdown';
 import { ButtonMore } from '../../components/Button';
 import { useMuteUser } from '../../hooks';
+import UserProPic from '../../components/UserProPic';
 
 const User = ({ username }) => {
   const dispatch = useDispatch();
@@ -293,10 +294,13 @@ const User = ({ username }) => {
       <main className="page-middle">
         <header className="user-card card card-padding">
           <div className="user-card-top">
-            <h1 className="user-card-username">
-              @{username}
-              {user.isAdmin && <span className="user-card-is-admin">Admin</span>}
-            </h1>
+            <div className="user-card-top-left">
+              <UserProPic username={username} proPic={user.proPic} size="large" />
+              <h1 className="user-card-username">
+                @{username}
+                {user.isAdmin && <span className="user-card-is-admin">Admin</span>}
+              </h1>
+            </div>
             <div className="user-card-points">{`${user.points.toLocaleString()} ${stringCount(
               user.points,
               true,

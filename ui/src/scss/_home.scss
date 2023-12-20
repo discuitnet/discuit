@@ -1,10 +1,10 @@
 @use 'mixins';
 
 :root {
-    --pro-pic-img-hover-opacity: 0.3;
+    --profile-picture-hover-opacity: 0.3;
 }
 
-.pro-pic-img {
+.profile-picture {
     --image-size: 80px;
     position: relative;
     width: var(--image-size);
@@ -29,8 +29,29 @@
         opacity: 0;
         transition: all 0.15s;
     }
-    &:not(.is-no-hover):hover::after {
-        opacity: var(--pro-pic-img-hover-opacity);
+}
+
+a {
+    .profile-picture {
+        &:not(.is-no-hover):hover::after {
+            opacity: var(--profile-picture-hover-opacity);
+        }
+    }
+}
+
+.user-default-propic {
+    width: 80px;
+    height: 80px;
+    background-color: darkcyan;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    svg {
+        text {
+            font-size: 40px;
+        }
     }
 }
 
@@ -40,7 +61,7 @@
     cursor: pointer;
     color: inherit;
     font-weight: 600;
-    .pro-pic-img {
+    .profile-picture {
         width: 25px;
         height: 25px;
     }
@@ -49,8 +70,8 @@
         margin-left: 5px;
     }
     &:hover {
-        .pro-pic-img::after {
-            opacity: var(--pro-pic-img-hover-opacity);
+        .profile-picture::after {
+            opacity: var(--profile-picture-hover-opacity);
         }
     }
 }

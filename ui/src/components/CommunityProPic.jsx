@@ -27,7 +27,7 @@ const CommunityProPic = ({ className, name, proPic, size = 'small', ...rest }) =
 
   return (
     <div
-      className={'pro-pic-img' + (className ? ` ${className}` : '')}
+      className={'profile-picture comm-propic' + (className ? ` ${className}` : '')}
       style={{ backgroundColor: averageColor, backgroundImage: loaded ? `url('${src}')` : 'none' }}
       {...rest}
     >

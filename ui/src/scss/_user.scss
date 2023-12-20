@@ -25,7 +25,14 @@
         .user-card-top {
             display: flex;
             justify-content: space-between;
-            align-items: baseline;
+            align-items: center;
+            .user-card-top-left {
+                display: flex;
+                align-items: center;
+                .user-card-username {
+                    margin-left: var(--gap);
+                }
+            }
             .user-card-username {
                 font-size: var(--fs-2xl);
                 font-weight: 600;

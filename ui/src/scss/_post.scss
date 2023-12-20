@@ -621,8 +621,8 @@
         color: inherit;
         &:hover {
             text-decoration: none;
-            .pro-pic-img::after {
-                opacity: var(--pro-pic-img-hover-opacity);
+            .profile-picture::after {
+                opacity: var(--profile-picture-hover-opacity);
             }
             .about-comm-name {
                 text-decoration: underline;
