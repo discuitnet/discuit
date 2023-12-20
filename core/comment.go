@@ -29,7 +29,7 @@ type Comment struct {
 	PostPublicID     string        `json:"postPublicId"`
 	CommunityID      uid.ID        `json:"communityId"`
 	CommunityName    string        `json:"communityName"`
-	AuthodID         uid.ID        `json:"userId,omitempty"`
+	AuthorID         uid.ID        `json:"userId,omitempty"`
 	AuthorUsername   string        `json:"username"`
 	PostedAs         UserGroup     `json:"userGroup"`
 	AuthorDeleted    bool          `json:"userDeleted"`
@@ -47,6 +47,8 @@ type Comment struct {
 	DeletedAt        msql.NullTime `json:"deletedAt"`
 	DeletedBy        uid.NullID    `json:"-"`
 	DeletedAs        UserGroup     `json:"deletedAs,omitempty"`
+
+	Author *User `json:"author,omitempty"`
 
 	// Reports whether the author of this comment is muted by the viewer.
 	IsAuthorMuted bool `json:"isAuthorMuted,omitempty"`
@@ -131,7 +133,7 @@ func scanComments(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.I
 			&c.PostPublicID,
 			&c.CommunityID,
 			&c.CommunityName,
-			&c.AuthodID,
+			&c.AuthorID,
 			&c.AuthorUsername,
 			&c.PostedAs,
 			&c.AuthorDeleted,
@@ -181,12 +183,16 @@ func scanComments(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.I
 		}
 		for _, comment := range comments {
 			for _, mute := range mutes {
-				if *mute.MutedUserID == comment.AuthodID {
+				if *mute.MutedUserID == comment.AuthorID {
 					comment.IsAuthorMuted = true
 					break
 				}
 			}
 		}
+	}
+
+	if err := populateCommentAuthors(ctx, db, comments); err != nil {
+		return nil, fmt.Errorf("failed to populate comments authors: %w", err)
 	}
 
 	return comments, nil
@@ -307,15 +313,15 @@ func addComment(ctx context.Context, db *sql.DB, post *Post, author *User, paren
 	}
 
 	// Send notifications.
-	if parent != nil && !parent.AuthodID.EqualsTo(author.ID) {
+	if parent != nil && !parent.AuthorID.EqualsTo(author.ID) {
 		go func() {
-			if err := CreateCommentReplyNotification(context.Background(), db, parent.AuthodID, parent.ID, id, author.Username, post); err != nil {
+			if err := CreateCommentReplyNotification(context.Background(), db, parent.AuthorID, parent.ID, id, author.Username, post); err != nil {
 				log.Printf("Create reply notification failed: %v\n", err)
 			}
 		}()
 
 	}
-	if !post.AuthorID.EqualsTo(author.ID) && (parent == nil || !(parent.AuthodID.EqualsTo(post.AuthorID))) {
+	if !post.AuthorID.EqualsTo(author.ID) && (parent == nil || !(parent.AuthorID.EqualsTo(post.AuthorID))) {
 		go func() {
 			if err := CreateNewCommentNotification(context.Background(), db, post, id, author.Username); err != nil {
 				log.Printf("Create new_comment notification failed: %v\n", err)
@@ -335,7 +341,7 @@ func (c *Comment) Save(ctx context.Context, user uid.ID) error {
 	if c.Deleted() {
 		return errCommentDeleted
 	}
-	if !c.AuthodID.EqualsTo(user) {
+	if !c.AuthorID.EqualsTo(user) {
 		return errNotAuthor
 	}
 
@@ -360,7 +366,7 @@ func (c *Comment) Delete(ctx context.Context, user uid.ID, g UserGroup) error {
 
 	switch g {
 	case UserGroupNormal:
-		if !c.AuthodID.EqualsTo(user) {
+		if !c.AuthorID.EqualsTo(user) {
 			return errNotAuthor
 		}
 	case UserGroupMods:
@@ -388,10 +394,10 @@ func (c *Comment) Delete(ctx context.Context, user uid.ID, g UserGroup) error {
 		if _, err := tx.ExecContext(ctx, `UPDATE comments SET body = "", deleted_at = ?, deleted_by = ?, deleted_as = ? WHERE id = ?`, now, user, g, c.ID); err != nil {
 			return err
 		}
-		if _, err := tx.ExecContext(ctx, "DELETE FROM posts_comments WHERE target_id = ? AND user_id = ?", c.ID, c.AuthodID); err != nil {
+		if _, err := tx.ExecContext(ctx, "DELETE FROM posts_comments WHERE target_id = ? AND user_id = ?", c.ID, c.AuthorID); err != nil {
 			return err
 		}
-		if _, err := tx.ExecContext(ctx, "UPDATE users SET no_comments = no_comments - 1 WHERE id = ?", c.AuthodID); err != nil {
+		if _, err := tx.ExecContext(ctx, "UPDATE users SET no_comments = no_comments - 1 WHERE id = ?", c.AuthorID); err != nil {
 			return err
 		}
 		return nil
@@ -412,7 +418,7 @@ func (c *Comment) stripDeletedInfo() {
 	if !c.Deleted() {
 		return
 	}
-	c.AuthodID.Clear()
+	c.AuthorID.Clear()
 	c.AuthorUsername = "Hidden"
 	c.PostedAs = UserGroupNaN
 	c.Body = "[Deleted comment]"
@@ -468,14 +474,14 @@ func (c *Comment) Vote(ctx context.Context, user uid.ID, up bool) error {
 	c.ViewerVotedUp.Bool = up
 
 	// Attempt to update user's points.
-	if up && !c.AuthodID.EqualsTo(user) {
-		incrementUserPoints(ctx, c.db, c.AuthodID, 1)
+	if up && !c.AuthorID.EqualsTo(user) {
+		incrementUserPoints(ctx, c.db, c.AuthorID, 1)
 	}
 
 	// Attempt to create a notification (only for upvotes).
-	if !c.AuthodID.EqualsTo(user) && up {
+	if !c.AuthorID.EqualsTo(user) && up {
 		go func() {
-			if err := CreateNewVotesNotification(context.Background(), c.db, c.AuthodID, c.CommunityName, false, c.ID); err != nil {
+			if err := CreateNewVotesNotification(context.Background(), c.db, c.AuthorID, c.CommunityName, false, c.ID); err != nil {
 				log.Printf("Failed creating new_votes notification: %v\n", err)
 			}
 		}()
@@ -535,8 +541,8 @@ func (c *Comment) DeleteVote(ctx context.Context, user uid.ID) error {
 	c.ViewerVotedUp.Valid = false
 
 	// Attempt to update user's points.
-	if up && !c.AuthodID.EqualsTo(user) {
-		incrementUserPoints(ctx, c.db, c.AuthodID, -1)
+	if up && !c.AuthorID.EqualsTo(user) {
+		incrementUserPoints(ctx, c.db, c.AuthorID, -1)
 	}
 
 	return nil
@@ -598,12 +604,12 @@ func (c *Comment) ChangeVote(ctx context.Context, user uid.ID, up bool) error {
 	c.ViewerVotedUp = msql.NewNullBool(up)
 
 	// Attemp to update user's points.
-	if !c.AuthodID.EqualsTo(user) {
+	if !c.AuthorID.EqualsTo(user) {
 		points := 1
 		if dbUp {
 			points = -1
 		}
-		incrementUserPoints(ctx, c.db, c.AuthodID, points)
+		incrementUserPoints(ctx, c.db, c.AuthorID, points)
 	}
 
 	return nil
@@ -612,7 +618,7 @@ func (c *Comment) ChangeVote(ctx context.Context, user uid.ID, up bool) error {
 // ChangeUserGroup changes the capacity in which the comment's author added the
 // post.
 func (c *Comment) ChangeUserGroup(ctx context.Context, author uid.ID, g UserGroup) error {
-	if !c.AuthodID.EqualsTo(author) {
+	if !c.AuthorID.EqualsTo(author) {
 		return errNotAuthor
 	}
 
@@ -658,4 +664,35 @@ func (c *Comment) loadPostDeleted(ctx context.Context) error {
 		c.PostDeleted = true
 	}
 	return err
+}
+
+func populateCommentAuthors(ctx context.Context, db *sql.DB, comments []*Comment) error {
+	var authorIDs []uid.ID
+	found := make(map[uid.ID]bool)
+	for _, c := range comments {
+		if !found[c.AuthorID] {
+			authorIDs = append(authorIDs, c.AuthorID)
+			found[c.AuthorID] = true
+		}
+	}
+
+	authors, err := GetUsersIDs(ctx, db, authorIDs, nil)
+	if err != nil {
+		return err
+	}
+
+	for _, c := range comments {
+		found := true
+		for _, author := range authors {
+			if c.AuthorID == author.ID {
+				c.Author = author
+				break
+			}
+		}
+		if !found {
+			panic("author not found")
+		}
+	}
+
+	return nil
 }

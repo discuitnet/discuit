@@ -39,19 +39,31 @@ a {
     }
 }
 
-.user-default-propic {
-    width: 80px;
-    height: 80px;
-    background-color: darkcyan;
-    border-radius: 50%;
+.profile-picture {
+    &.is-default {
+        width: 80px;
+        height: 80px;
+        background-color: darkcyan;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        svg {
+            text {
+                font-size: 40px;
+            }
+        }
+    }
+}
+
+.user-link {
     display: flex;
     align-items: center;
-    justify-content: center;
-    color: #fff;
-    svg {
-        text {
-            font-size: 40px;
-        }
+    .profile-picture {
+        width: 28px;
+        height: 28px;
+        margin-right: 8px;
     }
 }
 
@@ -62,8 +74,8 @@ a {
     color: inherit;
     font-weight: 600;
     .profile-picture {
-        width: 25px;
-        height: 25px;
+        width: 28px;
+        height: 28px;
     }
     span {
         color: var(--color-text);
@@ -276,6 +288,19 @@ a {
         padding-bottom: 0;
         display: flex;
         flex-direction: column;
+        .user-link {
+            margin-left: 5px;
+            margin-right: 5px;
+        }
+        .profile-picture {
+            width: 25px;
+            height: 25px;
+            margin-right: 5px;
+        }
+    }
+    .post-card-heading-by {
+        display: flex;
+        align-items: center;
     }
     .post-card-body {
         display: flex;
@@ -407,7 +432,7 @@ a {
             display: flex;
             align-items: center;
             > * {
-                margin-right: 10px;
+                margin-right: 8px;
             }
             @include mixins.mobile() {
                 justify-content: flex-start;

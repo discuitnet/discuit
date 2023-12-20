@@ -304,7 +304,12 @@ const Post = () => {
           />
           <article className="card post-card-card">
             <div className="post-card-heading">
-              <PostCardHeadingDetails post={post} userGroup={userGroup} showEdited />
+              <PostCardHeadingDetails
+                post={post}
+                userGroup={userGroup}
+                showEdited
+                showAuthorProPic
+              />
             </div>
             <div className="post-card-body">
               <header className="post-card-title">

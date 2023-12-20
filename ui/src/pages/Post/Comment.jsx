@@ -17,6 +17,8 @@ import MarkdownBody from '../../components/MarkdownBody';
 import ShowMoreBox from '../../components/ShowMoreBox';
 import { newCommentAdded, replyCommentsAdded } from '../../slices/commentsSlice';
 import { useVoting } from '../../hooks';
+import UserProPic, { DeletedUserProPic, UserLink } from '../../components/UserProPic';
+import { LinkOrDiv } from '../../components/Utils';
 
 const Diagnostics = false; // process.env.NODE_ENV !== 'production';
 const MaxCommentDepth = 15;
@@ -67,6 +69,9 @@ const Comment = ({
   };
   const handleAddCommentSuccess = (newComment) => {
     setIsReplying(false);
+    if (!newComment.author) {
+      newComment.author = user;
+    }
     dispatch(newCommentAdded(postId, newComment));
   };
 
@@ -227,23 +232,55 @@ const Comment = ({
 
   if (Diagnostics) console.log('Comment rendering.');
 
+  const showAuthorProPic = true;
+  const proPicRef = useRef(null);
+  const renderAuthorProPic = () => {
+    if (!showAuthorProPic) {
+      return <div className={'post-comment-collapse-minus' + (collapsed ? ' is-plus' : '')}></div>;
+    }
+    if (comment.author) {
+      const { author } = comment;
+      return (
+        <div className="post-comment-propic" ref={proPicRef}>
+          <LinkOrDiv
+            href={`/@${author.username}`}
+            isLink={!collapsed}
+            target="_self"
+            useReactRouter
+          >
+            <UserProPic username={author.username} proPic={author.proPic} />
+          </LinkOrDiv>
+        </div>
+      );
+    }
+    return (
+      <div className="post-comment-propic" ref={proPicRef}>
+        <DeletedUserProPic />
+      </div>
+    );
+  };
+
+  const topDivClassname = 'post-comment' + (showAuthorProPic ? ' has-propics' : '');
   if (collapsed) {
     return (
       <div
         ref={collapsedRef}
-        className="post-comment is-collapsed"
+        className={topDivClassname + ' is-collapsed'}
         onClick={() => handleCollapse(false)}
       >
         <div className="post-comment-left">
-          <div className="post-comment-collapse">
-            <div className="post-comment-collapse-minus is-plus"></div>
-          </div>
+          <div className="post-comment-collapse">{renderAuthorProPic()}</div>
         </div>
         <div className="post-comment-body">
           <div className="post-comment-body-head">
-            <div className={'post-comment-username' + (isUsernameHidden ? ' is-hidden' : '')}>
-              {username}
-            </div>
+            <UserLink
+              className={'post-comment-username' + (isUsernameHidden ? ' is-hidden' : '')}
+              username={username}
+              proPic={comment.author ? comment.author.proPic : null}
+              showProPic={isMobile}
+              noAtSign={showAuthorProPic}
+              noLink
+            />
             {isOP && (
               <div className="post-comment-head-item post-comment-is-op" title="Original poster">
                 OP
@@ -355,9 +392,18 @@ const Comment = ({
     zIndex,
   };
 
+  const handleLineClick = (e) => {
+    if (proPicRef.current) {
+      if (proPicRef.current.contains(e.target)) {
+        return;
+      }
+    }
+    handleCollapse(true);
+  };
+
   return (
     <div
-      className={`post-comment is-depth-${comment.depth}`}
+      className={topDivClassname + ` is-depth-${comment.depth}`}
       style={style}
       id={comment.id}
       ref={div}
@@ -371,8 +417,9 @@ const Comment = ({
         Are you sure you want to delete the comment?
       </ModalConfirm>
       <div className="post-comment-left">
-        <div className="post-comment-collapse" onClick={() => handleCollapse(true)}>
-          <div className="post-comment-collapse-minus"></div>
+        <div className="post-comment-collapse" onClick={handleLineClick}>
+          {/*<div className="post-comment-collapse-minus"></div>*/}
+          {renderAuthorProPic()}
           <div className="post-comment-line"></div>
         </div>
       </div>
@@ -381,9 +428,13 @@ const Comment = ({
           {isUsernameHidden ? (
             <div className="post-comment-username is-hidden">{username}</div>
           ) : (
-            <Link to={`/@${username}`} className="post-comment-username">
-              {username}
-            </Link>
+            <UserLink
+              className={'post-comment-username' + (isUsernameHidden ? ' is-hidden' : '')}
+              username={username}
+              proPic={comment.author ? comment.author.proPic : null}
+              showProPic={isMobile}
+              noAtSign
+            />
           )}
           {isOP && (
             <div className="post-comment-head-item post-comment-is-op" title="Original poster">

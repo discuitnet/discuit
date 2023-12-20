@@ -162,6 +162,7 @@ type Post struct {
 	CommunityMutedByViewer bool `json:"isCommunityMuted"`
 
 	Community *Community `json:"community,omitempty"`
+	Author    *User      `json:"author,omitempty"`
 }
 
 var selectPostCols = []string{
@@ -398,7 +399,39 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 	if err := populatePostsImages(ctx, db, posts); err != nil {
 		return nil, err
 	}
+
+	if err := populatePostAuthors(ctx, db, posts); err != nil {
+		return nil, fmt.Errorf("failed to populate post authors: %w", err)
+	}
+
 	return posts, nil
+}
+
+func populatePostAuthors(ctx context.Context, db *sql.DB, posts []*Post) error {
+	var authorIDs []uid.ID
+	found := make(map[uid.ID]bool)
+	for _, c := range posts {
+		if !found[c.AuthorID] {
+			authorIDs = append(authorIDs, c.AuthorID)
+			found[c.AuthorID] = true
+		}
+	}
+
+	authors, err := GetUsersIDs(ctx, db, authorIDs, nil)
+	if err != nil {
+		return err
+	}
+
+	for _, c := range posts {
+		for _, author := range authors {
+			if c.AuthorID == author.ID {
+				c.Author = author
+				break
+			}
+		}
+	}
+
+	return nil
 }
 
 // populatePostsImages goes through posts and fetches the images of the posts
@@ -1318,6 +1351,7 @@ func (p *Post) GetComments(ctx context.Context, viewer *uid.ID, cursor *Comments
 		p.CommentsNext.String = strconv.Itoa(nextCursor.Upvotes) + "." + nextCursor.NextID.String()
 		p.CommentsNext.Valid = true
 	}
+
 	return nextCursor, nil
 }
 

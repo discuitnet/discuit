@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { useImageLoaded } from '../hooks';
 import { selectImageCopyURL } from '../helper';
+import Link from './Link';
 
 const ProfilePicture = ({ name, proPic, size = 'small', ...rest }) => {
   let src;
@@ -41,25 +42,29 @@ const DefaultProfilePicture = ({ name, ...rest }) => {
     const n = letter.charCodeAt(0) % 8;
     switch (n) {
       case 0:
-        return 'tomato';
+        return '#e55454';
       case 1:
-        return 'darkcyan';
+        return '#158686';
       case 2:
-        return 'blue';
+        return '#5454e5';
       case 3:
-        return 'red';
+        return '#9d4040';
       case 4:
-        return 'gray';
+        return '#b854e5';
       case 5:
-        return 'black';
+        return '#000000';
       case 6:
-        return 'yellow';
+        return '#d0af4e';
       case 7:
-        return 'bisque';
+        return '#3da5ce';
     }
   };
   return (
-    <div className="user-default-propic" style={{ backgroundColor: color(letter) }} {...rest}>
+    <div
+      className="profile-picture is-default"
+      style={{ backgroundColor: color(letter) }}
+      {...rest}
+    >
       <svg
         viewBox="-50 -50 100 100"
         version="1.1"
@@ -95,11 +100,39 @@ UserProPic.propTypes = {
 
 export default UserProPic;
 
-export const UserLink = ({ className, username, proPic = null, showProPic = true, ...rest }) => {
+export const DeletedUserProPic = ({ className, ...rest }) => {
   return (
-    <div className={'user-link' + (className ? ` ${className}` : '')} {...rest}>
-      {showProPic && <UserProPic name={username} proPic={proPic} />}
-      <div className="user-link-name">@{username}</div>
+    <div className="user-propic" {...rest}>
+      <div
+        className="profile-picture user-deleted-propic"
+        style={{ backgroundColor: 'gray', opacity: '0.3' }}
+      >
+        <svg
+          viewBox="-50 -50 100 100"
+          version="1.1"
+          preserveAspectRatio="xMidYMid meet"
+          xmlns="http://www.w3.org/2000/svg"
+        ></svg>
+      </div>
     </div>
+  );
+};
+
+export const UserLink = ({
+  className,
+  username,
+  proPic = null,
+  showProPic = true,
+  noLink = false,
+  noAtSign = false,
+  ...rest
+}) => {
+  const El = noLink ? 'div' : Link;
+  const name = showProPic || noAtSign ? username : `@${username}`;
+  return (
+    <El className={'user-link' + (className ? ` ${className}` : '')} {...rest} to={`/@${username}`}>
+      {showProPic && <UserProPic name={username} proPic={proPic} />}
+      <div className="user-link-name">{name}</div>
+    </El>
   );
 };

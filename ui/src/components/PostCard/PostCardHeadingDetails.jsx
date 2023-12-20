@@ -16,8 +16,14 @@ import {
   unmuteCommunity,
   unmuteUser,
 } from '../../slices/mainSlice';
+import { UserLink } from '../UserProPic';
 
-const PostCardHeadingDetails = ({ post, userGroup, showEdited = false }) => {
+const PostCardHeadingDetails = ({
+  post,
+  userGroup,
+  showEdited = false,
+  showAuthorProPic = false,
+}) => {
   const userURL = `/@${post.username}`;
   userGroup = userGroup ?? post.userGroup;
   // Show if post was edited less than 5 mins ago.
@@ -60,7 +66,15 @@ const PostCardHeadingDetails = ({ post, userGroup, showEdited = false }) => {
         <CommunityLink name={post.communityName} proPic={post.communityProPic} />
         <div className="post-card-heading-by">
           <span>Posted by </span>
-          {post.userDeleted ? <span>[deleted]</span> : <Link to={userURL}>@{post.username}</Link>}
+          {post.userDeleted ? (
+            <span>[deleted]</span>
+          ) : (
+            <UserLink
+              username={post.username}
+              proPic={post.author ? post.author.proPic : null}
+              showProPic={showAuthorProPic}
+            />
+          )}
           {userGroup !== 'normal' && (
             <span className="post-card-heading-user-group">{` ${toTitleCase(
               userGroupSingular(userGroup)
