@@ -308,7 +308,7 @@ const Post = () => {
                 post={post}
                 userGroup={userGroup}
                 showEdited
-                showAuthorProPic
+                showAuthorProPic={user ? !user.hideUserProfilePictures : true}
               />
             </div>
             <div className="post-card-body">

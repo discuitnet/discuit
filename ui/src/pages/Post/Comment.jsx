@@ -232,7 +232,7 @@ const Comment = ({
 
   if (Diagnostics) console.log('Comment rendering.');
 
-  const showAuthorProPic = true;
+  const showAuthorProPic = user ? !user.hideUserProfilePictures : true;
   const proPicRef = useRef(null);
   const renderAuthorProPic = () => {
     if (!showAuthorProPic) {
@@ -278,7 +278,7 @@ const Comment = ({
               username={username}
               proPic={comment.author ? comment.author.proPic : null}
               showProPic={isMobile}
-              noAtSign={showAuthorProPic}
+              noAtSign
               noLink
             />
             {isOP && (

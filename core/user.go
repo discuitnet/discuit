@@ -99,11 +99,12 @@ type User struct {
 	DeletedAt         msql.NullTime   `json:"deletedAt,omitempty"`
 
 	// User preferences.
-	UpvoteNotificationsOff bool     `json:"upvoteNotificationsOff"`
-	ReplyNotificationsOff  bool     `json:"replyNotificationsOff"`
-	HomeFeed               FeedType `json:"homeFeed"`
-	RememberFeedSort       bool     `json:"rememberFeedSort"`
-	EmbedsOff              bool     `json:"embedsOff"`
+	UpvoteNotificationsOff  bool     `json:"upvoteNotificationsOff"`
+	ReplyNotificationsOff   bool     `json:"replyNotificationsOff"`
+	HomeFeed                FeedType `json:"homeFeed"`
+	RememberFeedSort        bool     `json:"rememberFeedSort"`
+	EmbedsOff               bool     `json:"embedsOff"`
+	HideUserProfilePictures bool     `json:"hideUserProfilePictures"`
 
 	// No banned users are supposed to be logged in. Make sure to log them out
 	// before banning.
@@ -202,6 +203,7 @@ func buildSelectUserQuery(where string) string {
 		"users.home_feed",
 		"users.remember_feed_sort",
 		"users.embeds_off",
+		"users.hide_user_profile_pictures",
 	}
 	cols = append(cols, images.ImageColumns("pro_pic")...)
 	joins := []string{
@@ -297,6 +299,7 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 			&u.HomeFeed,
 			&u.RememberFeedSort,
 			&u.EmbedsOff,
+			&u.HideUserProfilePictures,
 		}
 
 		proPic := &images.Image{}
@@ -514,7 +517,8 @@ func (u *User) Update(ctx context.Context) error {
 		reply_notifications_off = ?,
 		home_feed = ?,
 		remember_feed_sort = ?,
-		embeds_off = ?
+		embeds_off = ?,
+		hide_user_profile_pictures = ?
 	WHERE id = ?`,
 		u.Email,
 		u.About,
@@ -523,6 +527,7 @@ func (u *User) Update(ctx context.Context) error {
 		u.HomeFeed,
 		u.RememberFeedSort,
 		u.EmbedsOff,
+		u.HideUserProfilePictures,
 		u.ID)
 	return err
 }

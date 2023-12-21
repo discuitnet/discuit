@@ -54,6 +54,9 @@ const Settings = () => {
 
   const [rememberFeedSort, setRememberFeedSort] = useState(user.rememberFeedSort);
   const [enableEmbeds, setEnableEmbeds] = useState(!user.embedsOff);
+  const [showUserProfilePictures, setShowUserProfilePictures] = useState(
+    !user.hideUserProfilePictures
+  );
 
   const [changed, resetChanged] = useIsChanged([
     aboutMe /*, email*/,
@@ -62,6 +65,7 @@ const Settings = () => {
     rememberFeedSort,
     enableEmbeds,
     email,
+    showUserProfilePictures,
   ]);
 
   const applicationServerKey = useSelector((state) => state.main.vapidPublicKey);
@@ -120,6 +124,7 @@ const Settings = () => {
           rememberFeedSort,
           embedsOff: !enableEmbeds,
           email,
+          hideUserProfilePictures: !showUserProfilePictures,
         }),
       });
       dispatch(userLoggedIn(ruser));
@@ -338,6 +343,16 @@ const Settings = () => {
                 type="checkbox"
                 checked={enableEmbeds}
                 onChange={(e) => setEnableEmbeds(e.target.checked)}
+              />
+            </div>
+            <div className="checkbox is-check-last">
+              <label htmlFor="c5">Show user profile pictures</label>
+              <input
+                className="switch"
+                id="c5"
+                type="checkbox"
+                checked={showUserProfilePictures}
+                onChange={(e) => setShowUserProfilePictures(e.target.checked)}
               />
             </div>
           </div>
