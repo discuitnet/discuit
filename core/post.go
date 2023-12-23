@@ -1689,7 +1689,7 @@ type PostLink struct {
 func (pl *PostLink) SetImageCopies() {
 	if pl.Image != nil {
 		pl.Image.PostScan()
-		pl.Image.AppendCopy("small", 120, 120, images.ImageFitCover, "")
+		pl.Image.AppendCopy("tiny", 120, 120, images.ImageFitCover, "")
 		pl.Image.AppendCopy("desktop", 325, 250, images.ImageFitCover, "")
 		pl.Image.AppendCopy("mobile", 875, 500, images.ImageFitCover, "")
 	}

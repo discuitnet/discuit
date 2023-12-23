@@ -6,7 +6,7 @@ import {
   notificationsDeleted,
   snackAlertError,
 } from '../../slices/mainSlice';
-import { mfetchjson, stringCount } from '../../helper';
+import { mfetchjson, selectImageCopyURL, stringCount } from '../../helper';
 import { useHistory } from 'react-router';
 import TimeAgo from '../TimeAgo';
 import Dropdown from '../Dropdown';
@@ -117,20 +117,20 @@ const NotificationItem = ({ notification, ...rest }) => {
       switch (notif.post.type) {
         case 'image':
           if (notif.post.image) {
-            image = `${notif.post.image.url}?size=120x120&fit=cover`;
+            image = selectImageCopyURL('tiny', notif.post.image);
             background = notif.post.image.averageColor;
           }
           break;
         case 'link':
           if (notif.post.link && notif.post.link.image) {
-            image = `${notif.post.link.image.url}?size=120x120&fit=cover`;
+            image = selectImageCopyURL('tiny', notif.post.link.image);
             background = notif.post.link.image.averageColor;
           }
           break;
       }
     } else if (typeof notif.community === 'object' && notif.community !== null) {
       if (notif.community.proPic) {
-        image = `${notif.community.proPic.url}?size=120x120&fit=cover`;
+        image = selectImageCopyURL('small', notif.community.proPic);
         background = notif.community.proPic.averageColor;
       }
     }

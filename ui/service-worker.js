@@ -1,4 +1,4 @@
-import { stringCount } from './src/helper';
+import { selectImageCopyURL, stringCount } from './src/helper';
 
 const CACHE_VERSION = CONFIG.cacheStorageVersion;
 
@@ -220,18 +220,18 @@ const getNotificationInfo = (notification, csrfToken) => {
     switch (notif.post.type) {
       case 'image':
         if (notif.post.image) {
-          setImage(`${notif.post.image.url}?size=325x250&fit=cover`);
+          setImage(selectImageCopyURL('tiny', notif.post.image));
         }
         break;
       case 'link':
         if (notif.post.link && notif.post.link.image) {
-          setImage(`${notif.post.link.image.url}?size=325x250&fit=cover`);
+          setImage(selectImageCopyURL('tiny', notif.post.link.image));
         }
         break;
     }
   } else if (typeof notif.community === 'object' && notif.community !== null) {
     if (notif.community.proPic) {
-      setImage(`${notif.community.proPic.url}?size=200x200&fit=cover`);
+      setImage(selectImageCopyURL('small', notif.community.proPic));
     }
   }
 
