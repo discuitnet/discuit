@@ -446,7 +446,7 @@ func (c *Community) Join(ctx context.Context, user uid.ID) error {
 	err := msql.Transact(ctx, c.db, func(tx *sql.Tx) error {
 		if _, err := tx.ExecContext(ctx, "INSERT INTO community_members (community_id, user_id) VALUES (?, ?)", c.ID, user); err != nil {
 			if msql.IsErrDuplicateErr(err) {
-				return &httperr.Error{HTTPStatus: http.StatusConflict, Code: "already-member", Message: "User is already a member of the community."}
+				return nil // already a member, exit
 			}
 			return err
 		}
