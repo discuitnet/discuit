@@ -82,21 +82,24 @@ func (u *UserGroup) UnmarshalText(text []byte) error {
 type User struct {
 	db *sql.DB
 
-	ID                uid.ID          `json:"id"`
-	Username          string          `json:"username"`
-	UsernameLowerCase string          `json:"-"`
-	Email             msql.NullString `json:"email"`
-	EmailConfirmedAt  msql.NullTime   `json:"emailConfirmedAt"`
-	Password          string          `json:"-"`
-	About             msql.NullString `json:"aboutMe"`
-	Points            int             `json:"points"`
-	Admin             bool            `json:"isAdmin"`
-	ProPic            *images.Image   `json:"proPic"`
-	NumPosts          int             `json:"noPosts"`
-	NumComments       int             `json:"noComments"`
-	LastSeen          time.Time       `json:"-"` // accurate to within 5 minutes
-	CreatedAt         time.Time       `json:"createdAt"`
-	DeletedAt         msql.NullTime   `json:"deletedAt,omitempty"`
+	ID                uid.ID `json:"id"`
+	Username          string `json:"username"`
+	UsernameLowerCase string `json:"-"`
+
+	EmailPublic *string `json:"email"`
+
+	Email            msql.NullString `json:"-"`
+	EmailConfirmedAt msql.NullTime   `json:"emailConfirmedAt"`
+	Password         string          `json:"-"`
+	About            msql.NullString `json:"aboutMe"`
+	Points           int             `json:"points"`
+	Admin            bool            `json:"isAdmin"`
+	ProPic           *images.Image   `json:"proPic"`
+	NumPosts         int             `json:"noPosts"`
+	NumComments      int             `json:"noComments"`
+	LastSeen         time.Time       `json:"-"` // accurate to within 5 minutes
+	CreatedAt        time.Time       `json:"createdAt"`
+	DeletedAt        msql.NullTime   `json:"deletedAt,omitempty"`
 
 	// User preferences.
 	UpvoteNotificationsOff  bool     `json:"upvoteNotificationsOff"`
@@ -316,6 +319,12 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 			setCommunityProPicCopies(proPic)
 			u.ProPic = proPic
 		}
+		if viewer != nil && *viewer == u.ID {
+			if u.Email.Valid {
+				u.EmailPublic = new(string)
+				*u.EmailPublic = u.Email.String
+			}
+		}
 		users = append(users, u)
 	}
 
@@ -520,7 +529,7 @@ func (u *User) Update(ctx context.Context) error {
 		embeds_off = ?,
 		hide_user_profile_pictures = ?
 	WHERE id = ?`,
-		u.Email,
+		u.EmailPublic,
 		u.About,
 		u.UpvoteNotificationsOff,
 		u.ReplyNotificationsOff,
