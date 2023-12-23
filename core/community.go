@@ -133,7 +133,7 @@ func GetCommunitiesByIDs(ctx context.Context, db *sql.DB, ids []uid.ID, viewer *
 		args[i] = ids[i]
 	}
 
-	comms, err := getCommunities(ctx, db, viewer, fmt.Sprintf("WHERE id IN %s", msql.InClauseQuestionMarks(len(ids))), args...)
+	comms, err := getCommunities(ctx, db, viewer, fmt.Sprintf("WHERE communities.id IN %s", msql.InClauseQuestionMarks(len(ids))), args...)
 	if err != nil {
 		return nil, err
 	}
