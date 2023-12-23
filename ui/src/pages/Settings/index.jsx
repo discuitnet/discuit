@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import Input from '../../components/Input';
-import { mfetchjson, validEmail } from '../../helper';
+import { mfetch, mfetchjson, validEmail } from '../../helper';
 import { useIsChanged } from '../../hooks';
 import {
   mutesAdded,
@@ -145,7 +145,7 @@ const Settings = () => {
       const formData = new FormData();
       formData.append('image', files[0]);
       setIsProPicUploading(true);
-      const res = await fetch(proPicAPIEndpoint, {
+      const res = await mfetch(proPicAPIEndpoint, {
         method: 'POST',
         body: formData,
       });
