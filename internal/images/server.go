@@ -39,6 +39,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	w.Header().Add("Cache-Control", "public, max-age=31536000, immutable")
 	w.Write(image)
 }
 
