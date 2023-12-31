@@ -348,6 +348,10 @@ ul {
     // list-style-position: inside;
 }
 
+code {
+    font-family: monospace;
+}
+
 .card {
     @include mixins.card;
     display: flex;
