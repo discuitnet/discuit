@@ -35,7 +35,7 @@ const YoutubeEmbed = ({ url }) => {
 
   let videoId = '';
   const u = new URL(url);
-  if (u.hostname === 'youtube.com' || u.hostname == 'www.youtube.com') {
+  if (['youtube.com', 'www.youtube.com', 'm.youtube.com'].includes(u.hostname)) {
     const params = new URLSearchParams(u.search);
     videoId = params.get('v');
   } else if (u.hostname === 'youtu.be' || u.hostname === 'www.youtu.be') {
@@ -76,7 +76,7 @@ export default function getEmbedComponent(link) {
   }
   const mapping = {
     youtube: {
-      hostnames: ['youtube.com', 'www.youtube.com', 'youtu.be'],
+      hostnames: ['youtube.com', 'www.youtube.com', 'youtu.be', 'm.youtube.com'],
       render: YoutubeEmbed,
     },
     // vimeo: {
