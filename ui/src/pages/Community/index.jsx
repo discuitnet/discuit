@@ -212,7 +212,7 @@ const Community = ({ name }) => {
           )}
         </div>
       </main>
-      <aside className="sidebar-right">
+      <aside className="sidebar-right is-custom-scrollbar is-v2">
         {loggedIn && renderActionButtons()}
         {renderRules()}
         {renderModeratorsList()}

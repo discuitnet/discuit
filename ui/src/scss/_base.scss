@@ -117,7 +117,8 @@
 
     --navbar-height: 50px;
     --page-top-margin: var(--gap); // calc(var(--navbar-height) + var(--gap));
-    --grid-home: minmax(180px, max-content) 9fr 4fr;
+    --sidebar-left-width: 180px;
+    --grid-home: minmax(var(--sidebar-left-width), max-content) 9fr 4fr;
 
     --seperator: 1px solid rgba(var(--base-fg), 0.1);
 
@@ -779,6 +780,9 @@ a,
             max-height: calc(100vh - var(--navbar-height) - calc(2 * var(--gap)));
             overflow-y: auto;
             top: calc(var(--navbar-height) + var(--gap));
+        }
+        .sidebar-left {
+            width: var(--sidebar-left-width);
         }
     }
     @include mixins.tablet {

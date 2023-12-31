@@ -27,6 +27,8 @@ const initialState = {
   loginPromptOpen: false,
   reportReasons: [],
   sidebarOpen: false,
+  sidebarCommunitiesExpanded: false,
+  sidebarScrollY: 0,
   noUsers: 0,
   bannedFrom: [],
   loginModalOpen: false,
@@ -306,6 +308,18 @@ export default function mainReducer(state = initialState, action) {
         },
       };
     }
+    case 'main/sidebarCommunitiesExpandToggle': {
+      return {
+        ...state,
+        sidebarCommunitiesExpanded: !state.sidebarCommunitiesExpanded,
+      };
+    }
+    case 'main/sidebarScrollYUpdated': {
+      return {
+        ...state,
+        sidebarScrollY: action.payload,
+      };
+    }
     default:
       return state;
   }
@@ -573,4 +587,8 @@ export const selectIsCommunityMuted = (communityId) => (state) => {
     }
   }
   return muted;
+};
+
+export const sidebarScrollYUpdated = (scrollY) => {
+  return { type: 'main/sidebarScrollYUpdated', payload: scrollY };
 };

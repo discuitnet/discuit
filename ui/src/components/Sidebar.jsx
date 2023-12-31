@@ -1,10 +1,10 @@
 /* eslint-disable jsx-a11y/no-static-element-interactions */
 /* eslint-disable jsx-a11y/click-events-have-key-events */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import Link from '../components/Link';
-import { toggleSidebarOpen } from '../slices/mainSlice';
+import { sidebarScrollYUpdated, toggleSidebarOpen } from '../slices/mainSlice';
 import { ButtonClose } from './Button';
 import CommunityProPic from './CommunityProPic';
 import Search from './Navbar/Search';
@@ -41,7 +41,8 @@ const Sidebar = ({ isMobile = false }) => {
     return to;
   };
 
-  const [expanded, SetExpanded] = useState(false); // communities list
+  // const [expanded, SetExpanded] = useState(false); // communities list
+  const expanded = useSelector((state) => state.main.sidebarCommunitiesExpanded);
   const renderCommunitiesList = () => {
     const renderInitially = 10,
       length = communities ? communities.length : 0,
@@ -67,7 +68,10 @@ const Sidebar = ({ isMobile = false }) => {
             </Link>
           ))}
         {length > 10 && (
-          <div className="sidebar-item with-image" onClick={() => SetExpanded((prev) => !prev)}>
+          <div
+            className="sidebar-item with-image"
+            onClick={() => dispatch({ type: 'main/sidebarCommunitiesExpandToggle' })}
+          >
             <svg
               style={{
                 transform: expanded ? 'rotate(180deg)' : 'none',
@@ -90,8 +94,20 @@ const Sidebar = ({ isMobile = false }) => {
     );
   };
 
+  const ref = useRef(null);
+  const scrollY = useSelector((state) => state.main.sidebarScrollY);
+  useLayoutEffect(() => {
+    ref.current.scrollTo(0, scrollY);
+    return () => {
+      if (ref.current) {
+        dispatch(sidebarScrollYUpdated(ref.current.scrollTop));
+      }
+    };
+  }, []);
+
   return (
     <aside
+      ref={ref}
       className={
         'sidebar sidebar-left is-custom-scrollbar is-v2' +
         (isMobile ? ' is-mobile' : '') +

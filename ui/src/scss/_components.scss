@@ -712,6 +712,11 @@
         &.is-social svg {
             padding: 2px;
         }
+        span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-wrap: nowrap;
+        }
     }
     .social-links {
         padding: var(--item-padding);
