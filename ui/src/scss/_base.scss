@@ -768,6 +768,15 @@ a,
             grid-template-columns: 1fr;
         }
     }
+    @include mixins.not-mobile {
+        .sidebar-left,
+        .sidebar-right {
+            position: sticky;
+            max-height: calc(100vh - var(--navbar-height) - calc(2 * var(--gap)));
+            overflow-y: auto;
+            top: calc(var(--navbar-height) + var(--gap));
+        }
+    }
     @include mixins.tablet {
         .sidebar-left {
             display: none;

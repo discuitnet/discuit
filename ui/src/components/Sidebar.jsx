@@ -44,7 +44,7 @@ const Sidebar = ({ isMobile = false }) => {
   return (
     <aside
       className={
-        'sidebar sidebar-left' +
+        'sidebar sidebar-left is-custom-scrollbar is-v2' +
         (isMobile ? ' is-mobile' : '') +
         (open ? ' is-open' : '') +
         (visible ? ' is-visible' : '')

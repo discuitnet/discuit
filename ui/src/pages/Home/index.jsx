@@ -79,7 +79,7 @@ const Home = () => {
           <PostCard initialPost={templatePost} compact={true} />
         </div>
       </div>*/}
-      <aside className="sidebar-right">
+      <aside className="sidebar-right is-custom-scrollbar is-v2'">
         {!loggedIn && (
           <div className="card card-sub card-padding">
             <LoginForm />
