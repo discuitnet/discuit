@@ -533,7 +533,7 @@
         &.has-propics {
             .post-comment-text {
                 @include mixins.mobile() {
-                    margin-top: 16px;
+                    margin-top: 18px;
                 }
             }
         }

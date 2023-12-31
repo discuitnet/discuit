@@ -277,7 +277,7 @@ const Comment = ({
               className={'post-comment-username' + (isUsernameHidden ? ' is-hidden' : '')}
               username={username}
               proPic={comment.author ? comment.author.proPic : null}
-              showProPic={isMobile}
+              showProPic={isMobile && showAuthorProPic}
               noAtSign
               noLink
             />
@@ -432,7 +432,7 @@ const Comment = ({
               className={'post-comment-username' + (isUsernameHidden ? ' is-hidden' : '')}
               username={username}
               proPic={comment.author ? comment.author.proPic : null}
-              showProPic={isMobile}
+              showProPic={isMobile && showAuthorProPic}
               noAtSign
             />
           )}
