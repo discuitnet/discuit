@@ -113,6 +113,10 @@ func GetComment(ctx context.Context, db *sql.DB, id uid.ID, viewer *uid.ID) (*Co
 	}
 
 	comments, err := scanComments(ctx, db, rows, viewer)
+	if err != nil {
+		return nil, fmt.Errorf("scanComments (id: %v): %w", id, err)
+	}
+
 	if len(comments) == 0 {
 		return nil, errCommentNotFound
 	}
@@ -164,8 +168,6 @@ func scanComments(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.I
 				return nil, err
 			}
 		}
-
-		c.stripDeletedInfo()
 		comments = append(comments, c)
 	}
 
@@ -193,6 +195,10 @@ func scanComments(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.I
 
 	if err := populateCommentAuthors(ctx, db, comments); err != nil {
 		return nil, fmt.Errorf("failed to populate comments authors: %w", err)
+	}
+
+	for _, c := range comments {
+		c.stripDeletedInfo()
 	}
 
 	return comments, nil

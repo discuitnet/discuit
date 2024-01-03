@@ -332,8 +332,11 @@ func (s *Server) getNotifications(w http.ResponseWriter, r *http.Request, ses *s
 		return
 	}
 
-	b, _ := json.Marshal(out)
-
+	b, err := json.Marshal(out)
+	if err != nil {
+		s.writeError(w, r, err)
+		return
+	}
 	w.Write(b)
 }
 

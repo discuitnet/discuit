@@ -365,13 +365,6 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 		return nil, errPostNotFound
 	}
 
-	// Strip deleted user info.
-	for _, p := range posts {
-		if p.AuthorDeleted {
-			p.AuthorUsername = "[deleted]"
-		}
-	}
-
 	if viewer != nil {
 		userMutes, err := GetMutedUsers(ctx, db, *viewer, false)
 		if err != nil {
@@ -402,6 +395,13 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 
 	if err := populatePostAuthors(ctx, db, posts); err != nil {
 		return nil, fmt.Errorf("failed to populate post authors: %w", err)
+	}
+
+	// Strip deleted user info.
+	for _, p := range posts {
+		if p.AuthorDeleted {
+			p.AuthorUsername = "[deleted]"
+		}
 	}
 
 	return posts, nil
