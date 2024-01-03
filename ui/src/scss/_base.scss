@@ -750,7 +750,7 @@ a,
 
 .page-content {
     padding-top: var(--page-top-margin);
-    min-height: 100vh;
+    min-height: calc(100vh - var(--navbar-height));
     &.page-grid {
         display: grid;
         grid-template-columns: var(--grid-home);

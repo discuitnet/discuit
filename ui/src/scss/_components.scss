@@ -153,16 +153,20 @@
 // }
 
 .notifs {
+    position: relative;
     display: flex;
     flex-direction: column;
     background-color: var(--color-bg);
     border-radius: var(--border-radius);
     overflow-y: auto;
     .notifs-head {
+        position: sticky;
+        top: 0;
         display: flex;
         justify-content: space-between;
         align-items: center;
         z-index: 100;
+        background: var(--color-bg);
         .notifs-title {
             font-size: var(--fs-2xl);
         }
@@ -279,7 +283,7 @@
 
 .page-notifications {
     width: 100%;
-    height: calc(100vh - var(--page-top-margin) - var(--gap));
+    height: calc(100vh - var(--navbar-height));
     display: flex;
     justify-content: center;
     .notifs {
