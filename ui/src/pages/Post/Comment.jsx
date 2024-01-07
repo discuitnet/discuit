@@ -235,6 +235,13 @@ const Comment = ({
   const showAuthorProPic = user ? !user.hideUserProfilePictures : true;
   const proPicRef = useRef(null);
   const renderAuthorProPic = () => {
+    if (deleted) {
+      return (
+        <div className="post-comment-propic" ref={proPicRef}>
+          <DeletedUserProPic />
+        </div>
+      );
+    }
     if (!showAuthorProPic) {
       return <div className={'post-comment-collapse-minus' + (collapsed ? ' is-plus' : '')}></div>;
     }
