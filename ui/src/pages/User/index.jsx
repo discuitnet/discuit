@@ -28,6 +28,8 @@ import { Link } from 'react-router-dom/cjs/react-router-dom.min';
 import CommunityLink from '../../components/PostCard/CommunityLink';
 import { useMuteUser } from '../../hooks';
 import UserProPic from '../../components/UserProPic';
+import Badge from './Badge';
+import BadgesList from './BadgesList';
 
 const User = ({ username }) => {
   const dispatch = useDispatch();
@@ -306,24 +308,27 @@ const User = ({ username }) => {
     );
   };
 
-  const renderBadges = () => {
+  const renderBadgesList = () => {
     if (user.badges.length === 0) {
       return null;
     }
     return (
-      <div className="card card-sub page-user-modlist">
+      <div className="user-badges-list">
+        <BadgesList user={user} />
+      </div>
+    );
+  };
+
+  const renderBadges = (hideInMobile = true) => {
+    if (user.badges.length === 0) {
+      return null;
+    }
+    return (
+      <div className={'card card-sub page-user-modlist' + (hideInMobile ? ' is-no-m' : '')}>
         <div className="card-head">
           <div className="card-title">Badges</div>
         </div>
-        <div className="card-content">
-          <div className="card-list">
-            {user.badges.map((badge) => (
-              <div key={badge.id} className="cart-list-item">
-                {badge.type}
-              </div>
-            ))}
-          </div>
-        </div>
+        <div className="card-content">{renderBadgesList()}</div>
       </div>
     );
   };
@@ -359,9 +364,10 @@ const User = ({ username }) => {
               </ShowMoreBox>
             </div>
           )}
+          <div className="user-card-badges is-m">{renderBadgesList()}</div>
           <div className="user-card-joined">Joined on {dateString1(user.createdAt)}.</div>
           {loggedIn && (
-            <div className="user-card-buttons" style={{ alignItems: 'flex-start' }}>
+            <div className="user-card-buttons">
               <button onClick={toggleMute}>{isMuted ? 'Unmute user' : 'Mute user'}</button>
               {viewer.isAdmin && (
                 <>
@@ -454,6 +460,6 @@ User.propTypes = {
 
 export default User;
 
-function userHasSupporterBadge(user) {
+export function userHasSupporterBadge(user) {
   return user && user.badges.find((badge) => badge.type === 'supporter') !== undefined;
 }

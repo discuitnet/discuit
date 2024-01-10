@@ -22,6 +22,14 @@
                 margin-top: 0;
             }
         }
+        @include mixins.mobile {
+            > * {
+                margin-top: calc(var(--gap) / 2);
+            }
+        }
+        @include mixins.tablet {
+            margin-left: 0;
+        }
         .user-card-top {
             display: flex;
             justify-content: space-between;
@@ -42,8 +50,16 @@
         }
         .user-card-buttons {
             display: flex;
+            align-items: flex-start;
             > * {
                 margin-right: calc(0.5 * var(--gap));
+            }
+            @include mixins.mobile {
+                flex-direction: column;
+                > * {
+                    margin-right: 0;
+                    margin-bottom: var(--gap);
+                }
             }
         }
         .user-card-is-admin {
@@ -54,9 +70,6 @@
         }
         .tabs {
             padding-bottom: 0;
-        }
-        @include mixins.tablet() {
-            margin-left: 0;
         }
     }
     .page-right {
@@ -156,5 +169,75 @@
     .comment-score {
         font-size: var(--fs-xs);
         opacity: 0.8;
+    }
+}
+
+.user-badge {
+    --size: 60px;
+    width: var(--size);
+    height: var(--size);
+    img {
+        width: 100%;
+        height: 100%;
+    }
+}
+
+.user-badges {
+    .user-badge {
+        cursor: pointer;
+    }
+    .user-badges-items {
+        display: flex;
+        flex-wrap: wrap;
+        .user-badge {
+            margin: 1rem;
+            margin-left: 0;
+        }
+    }
+}
+
+.modal-badges {
+    display: flex;
+    flex-direction: column;
+    .modal-badges-head {
+        position: relative;
+        border-top-left-radius: var(--border-radius);
+        border-top-right-radius: var(--border-radius);
+        height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(1deg, rgba(28, 23, 120, 1) 0%, rgba(148, 113, 217, 1) 100%);
+        .modal-badges-close {
+            position: absolute;
+            right: 0;
+            top: 0;
+            margin: calc(var(--gap) / 2);
+            background: #3e3e3e;
+            color: #fff;
+            &:hover {
+                background: #fff;
+                color: #000;
+            }
+        }
+    }
+    .user-badge img {
+        --size: 120px;
+    }
+    .modal-badges-body {
+        display: flex;
+        flex-direction: column;
+        padding: var(--card-padding);
+        > * {
+            margin-top: calc(var(--gap) / 2);
+            &:first-child {
+                margin-top: 0;
+            }
+        }
+    }
+    .modal-badges-title {
+        font-weight: 600;
+        font-size: 2.1rem;
+        // align-self: center;
     }
 }

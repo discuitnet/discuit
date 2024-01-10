@@ -19,6 +19,7 @@ import { newCommentAdded, replyCommentsAdded } from '../../slices/commentsSlice'
 import { useVoting } from '../../hooks';
 import UserProPic, { DeletedUserProPic, UserLink } from '../../components/UserProPic';
 import { LinkOrDiv } from '../../components/Utils';
+import { userHasSupporterBadge } from '../User';
 
 const Diagnostics = false; // process.env.NODE_ENV !== 'production';
 const MaxCommentDepth = 15;
@@ -267,7 +268,11 @@ const Comment = ({
     );
   };
 
-  const topDivClassname = 'post-comment' + (showAuthorProPic ? ' has-propics' : '');
+  const isAuthorSupporter = userHasSupporterBadge(comment.author);
+  const topDivClassname =
+    'post-comment' +
+    (showAuthorProPic ? ' has-propics' : '') +
+    (isAuthorSupporter ? ' is-supporter' : '');
   if (collapsed) {
     return (
       <div
