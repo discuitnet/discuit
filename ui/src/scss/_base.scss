@@ -68,6 +68,8 @@
     --color-checkbox-disabled: #f6f8ff;
     --color-checkbox-disabled-inner: rgba(var(--base-brand), 0.8); // #e1e6f9;
 
+    --color-supporter: rgb(101, 54, 140);
+
     // Blur removed because it looks slightly ugly in PWA.
     --color-background-blur: var(--color-bg); // rgba(var(--base-bg), 0.8);
 
@@ -169,6 +171,8 @@ html.theme-dark {
     --color-comment-line: #d3d3d35e;
 
     --color-modal-overlay: rgba(var(--base-2), 0.59);
+
+    --color-supporter: #e9c8ff;
 
     --modal-box-shadow: none;
     --modal-box-border: 1px solid #ffffff29;
@@ -1112,4 +1116,8 @@ html.theme-dark select {
     @include mixins.mobile() {
         display: flex;
     }
+}
+
+.is-supporter {
+    color: var(--color-supporter);
 }

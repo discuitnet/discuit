@@ -17,6 +17,7 @@ import {
   unmuteUser,
 } from '../../slices/mainSlice';
 import { UserLink } from '../UserProPic';
+import { userHasSupporterBadge } from '../../pages/User';
 
 const PostCardHeadingDetails = ({
   post,
@@ -60,6 +61,8 @@ const PostCardHeadingDetails = ({
     communityName: post.communityName,
   });
 
+  const isAuthorSupporter = userHasSupporterBadge(post.author);
+
   return (
     <div className="post-card-heading-details">
       <div className="left">
@@ -73,6 +76,7 @@ const PostCardHeadingDetails = ({
               username={post.username}
               proPic={post.author ? post.author.proPic : null}
               showProPic={showAuthorProPic}
+              isSupporter={isAuthorSupporter}
             />
           )}
           {userGroup !== 'normal' && (

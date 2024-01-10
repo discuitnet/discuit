@@ -721,3 +721,14 @@ a {
         }
     }
 }
+
+.feed {
+    .post-card-heading-details {
+        .user-link {
+            color: inherit;
+            .user-link-name {
+                color: inherit;
+            }
+        }
+    }
+}

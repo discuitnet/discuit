@@ -262,10 +262,7 @@ const Comment = ({
   };
 
   const isAuthorSupporter = userHasSupporterBadge(comment.author);
-  const topDivClassname =
-    'post-comment' +
-    (showAuthorProPic ? ' has-propics' : '') +
-    (isAuthorSupporter ? ' is-supporter' : '');
+  const topDivClassname = 'post-comment' + (showAuthorProPic ? ' has-propics' : '');
   if (collapsed) {
     return (
       <div
@@ -285,6 +282,7 @@ const Comment = ({
               showProPic={isMobile && showAuthorProPic}
               noAtSign
               noLink
+              isSupporter={isAuthorSupporter}
             />
             {isOP && (
               <div className="post-comment-head-item post-comment-is-op" title="Original poster">
@@ -438,6 +436,7 @@ const Comment = ({
               username={username}
               proPic={comment.author ? comment.author.proPic : null}
               showProPic={isMobile && showAuthorProPic}
+              isSupporter={isAuthorSupporter}
               noAtSign
             />
           )}

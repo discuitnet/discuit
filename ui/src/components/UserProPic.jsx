@@ -122,6 +122,7 @@ export const UserLink = ({
   className,
   username,
   proPic = null,
+  isSupporter = false,
   showProPic = true,
   noLink = false,
   noAtSign = false,
@@ -129,10 +130,12 @@ export const UserLink = ({
 }) => {
   const El = noLink ? 'div' : Link;
   const name = showProPic || noAtSign ? username : `@${username}`;
+  const supporterCls = isSupporter ? ' is-supporter' : '';
+  const cls = 'user-link' + (className ? ` ${className}` : '') + supporterCls;
   return (
-    <El className={'user-link' + (className ? ` ${className}` : '')} {...rest} to={`/@${username}`}>
+    <El className={cls} {...rest} to={`/@${username}`}>
       {showProPic && <UserProPic name={username} proPic={proPic} />}
-      <div className="user-link-name">{name}</div>
+      <div className={'user-link-name' + supporterCls}>{name}</div>
     </El>
   );
 };

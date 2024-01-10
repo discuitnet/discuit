@@ -346,7 +346,7 @@ const User = ({ username }) => {
           <div className="user-card-top">
             <div className="user-card-top-left">
               <UserProPic username={username} proPic={user.proPic} size="large" />
-              <h1 className="user-card-username">
+              <h1 className={'user-card-username' + (hasSupporterBadge ? ' is-supporter' : '')}>
                 @{username}
                 {user.isAdmin && <span className="user-card-is-admin">Admin</span>}
               </h1>
