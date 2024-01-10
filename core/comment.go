@@ -673,6 +673,10 @@ func (c *Comment) loadPostDeleted(ctx context.Context) error {
 }
 
 func populateCommentAuthors(ctx context.Context, db *sql.DB, comments []*Comment) error {
+	if len(comments) == 0 {
+		return nil
+	}
+
 	var authorIDs []uid.ID
 	found := make(map[uid.ID]bool)
 	for _, c := range comments {

@@ -23,12 +23,9 @@ import PageLoading from '../../components/PageLoading';
 import Feed from '../../components/Feed';
 import NotFound from '../NotFound';
 import { Helmet } from 'react-helmet-async';
-import SelectBar from '../../components/SelectBar';
 import { useHistory } from 'react-router-dom';
 import { Link } from 'react-router-dom/cjs/react-router-dom.min';
 import CommunityLink from '../../components/PostCard/CommunityLink';
-import Dropdown from '../../components/Dropdown';
-import { ButtonMore } from '../../components/Button';
 import { useMuteUser } from '../../hooks';
 import UserProPic from '../../components/UserProPic';
 
@@ -133,6 +130,32 @@ const User = ({ username }) => {
       } else {
         alert('Failed to ban user: ' + (await res.text()));
       }
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    }
+  };
+
+  const refetchUser = async () => {
+    const user = await mfetchjson(url);
+    dispatch(userAdded(user));
+  };
+
+  const hasSupporterBadge = userHasSupporterBadge(user);
+  const handleGiveSupporterBadge = async () => {
+    try {
+      if (hasSupporterBadge) {
+        await mfetchjson(`/api/users/${user.username}/badges/supporter?byType=true`, {
+          method: 'DELETE',
+        });
+      } else {
+        await mfetchjson(`/api/users/${user.username}/badges`, {
+          method: 'POST',
+          body: JSON.stringify({
+            type: 'supporter',
+          }),
+        });
+      }
+      await refetchUser();
     } catch (error) {
       dispatch(snackAlertError(error));
     }
@@ -283,6 +306,28 @@ const User = ({ username }) => {
     );
   };
 
+  const renderBadges = () => {
+    if (user.badges.length === 0) {
+      return null;
+    }
+    return (
+      <div className="card card-sub page-user-modlist">
+        <div className="card-head">
+          <div className="card-title">Badges</div>
+        </div>
+        <div className="card-content">
+          <div className="card-list">
+            {user.badges.map((badge) => (
+              <div key={badge.id} className="cart-list-item">
+                {badge.type}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const items = feed ? feed.items : [];
 
   return (
@@ -319,9 +364,14 @@ const User = ({ username }) => {
             <div className="user-card-buttons" style={{ alignItems: 'flex-start' }}>
               <button onClick={toggleMute}>{isMuted ? 'Unmute user' : 'Mute user'}</button>
               {viewer.isAdmin && (
-                <button className="button-red" onClick={handleBanUser}>
-                  {user.isBanned ? `Unban user` : 'Ban user'}
-                </button>
+                <>
+                  <button className="button-red" onClick={handleBanUser}>
+                    {user.isBanned ? `Unban user` : 'Ban user'}
+                  </button>
+                  <button className="button-green" onClick={handleGiveSupporterBadge}>
+                    {hasSupporterBadge ? 'Remove supporter badge' : 'Give supporter badge'}
+                  </button>
+                </>
               )}
               {viewer.isAdmin && user.isBanned && (
                 <div style={{ marginTop: '1rem' }}>
@@ -374,6 +424,7 @@ const User = ({ username }) => {
           {tab === 'about' && (
             <>
               {renderSummary()}
+              {renderBadges()}
               {renderModOf()}
             </>
           )}
@@ -381,6 +432,7 @@ const User = ({ username }) => {
       </main>
       <aside className="page-right">
         {renderSummary()}
+        {renderBadges()}
         {renderModOf()}
         {/* <div className="card card-sub user-moderates">
           <div className="card-head">
@@ -401,3 +453,7 @@ User.propTypes = {
 };
 
 export default User;
+
+function userHasSupporterBadge(user) {
+  return user && user.badges.find((badge) => badge.type === 'supporter') !== undefined;
+}

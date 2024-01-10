@@ -194,6 +194,8 @@ func parseFlags(db *sql.DB, c *config.Config) (bool, error) {
 	runFixHotness := flag.Bool("fix-hotness", false, "Fix hotness of all posts")
 	addAllUsersToCommunity := flag.String("add-all-users-to-community", "", "Add all users to community") // Uses -community flag
 
+	newBadge := flag.String("new-badge", "", "New user badge")
+
 	flag.Parse()
 	serve := *runServer
 
@@ -363,6 +365,12 @@ func parseFlags(db *sql.DB, c *config.Config) (bool, error) {
 		}
 		fmt.Printf("Image path: %s\n", images.ImagePath(id))
 		return false, nil
+	}
+
+	if *newBadge != "" {
+		if err := core.NewBadgeType(db, *newBadge); err != nil {
+			log.Fatal("error creating new badge: ", err)
+		}
 	}
 
 	return serve, nil

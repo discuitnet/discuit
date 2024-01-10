@@ -95,6 +95,7 @@ type User struct {
 	Points           int             `json:"points"`
 	Admin            bool            `json:"isAdmin"`
 	ProPic           *images.Image   `json:"proPic"`
+	Badges           Badges          `json:"badges"`
 	NumPosts         int             `json:"noPosts"`
 	NumComments      int             `json:"noComments"`
 	LastSeen         time.Time       `json:"-"` // accurate to within 5 minutes
@@ -279,7 +280,10 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 
 	var users []*User
 	for rows.Next() {
-		u := &User{db: db}
+		u := &User{
+			db:     db,
+			Badges: make(Badges, 0),
+		}
 		dests := []any{
 			&u.ID,
 			&u.Username,
@@ -348,6 +352,10 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 				}
 			}
 		}
+	}
+
+	if err := fetchBadges(db, users...); err != nil {
+		return nil, fmt.Errorf("fetching badges: %w", err)
 	}
 
 	return users, nil
@@ -746,5 +754,120 @@ func (u *User) UpdateProPic(ctx context.Context, image []byte) error {
 	}
 	u.ProPic = record.Image()
 	setCommunityProPicCopies(u.ProPic)
+	return nil
+}
+
+// badgeTypeInt returns the int badge type of badgeType.
+func badgeTypeInt(db *sql.DB, badgeType string) (int, error) {
+	var badgeTypeID int
+	if err := db.QueryRow("SELECT id FROM badge_types WHERE name = ?", badgeType).Scan(&badgeTypeID); err != nil {
+		if err == sql.ErrNoRows {
+			return 0, httperr.NewNotFound("badge_type_not_found", "Badge type not found.")
+		}
+		return 0, err
+	}
+	return badgeTypeID, nil
+}
+
+// AddBadge addes new badge to u. Also, u.Badges is refetched upon a successful
+// add.
+func (u *User) AddBadge(badgeType string) error {
+	badgeTypeInt, err := badgeTypeInt(u.db, badgeType)
+	if err != nil {
+		return err
+	}
+	_, err = u.db.Exec("INSERT INTO user_badges (type, user_id) VALUES (?, ?)", badgeTypeInt, u.ID)
+	if err != nil && !msql.IsErrDuplicateErr(err) {
+		return err
+	}
+	return fetchBadges(u.db, u)
+}
+
+func (u *User) RemoveBadgesByType(badgeType string) error {
+	badgeTypeInt, err := badgeTypeInt(u.db, badgeType)
+	if err != nil {
+		return err
+	}
+	_, err = u.db.Exec("DELETE FROM user_badges WHERE type = ? AND user_id = ?", badgeTypeInt, u.ID)
+	return err
+}
+
+func (u *User) RemoveBadge(id int) error {
+	_, err := u.db.Exec("DELTE FROM user_badges WHERE id = ? and user_id = ?", id, u.ID)
+	return err
+}
+
+func NewBadgeType(db *sql.DB, name string) error {
+	_, err := db.Exec("INSERT INTO badge_types (name) VALUES (?)", name)
+	return err
+}
+
+// A Badge corresponds to a row in the user_badges table.
+type Badge struct {
+	ID        int       `json:"id"`
+	Type      int       `json:"-"`
+	TypeName  string    `json:"type"`
+	UserID    uid.ID    `json:"-"`
+	CreatedAt time.Time `json:"-"`
+}
+
+type Badges []*Badge
+
+// fetchBadges retrives all the badges of users from DB and populates each users
+// Badges field.
+func fetchBadges(db *sql.DB, users ...*User) error {
+	if len(users) == 0 {
+		return nil
+	}
+	if len(users) > 1000 {
+		log.Printf("Warning: fetching more than %d users badges at once\n", len(users))
+	}
+
+	userIDs := make([]any, len(users))
+	m := make(map[uid.ID]*User)
+	for i, user := range users {
+		userIDs[i] = user.ID
+		m[user.ID] = user
+	}
+
+	query := fmt.Sprintf(`
+		SELECT	b.id, 
+				b.type, 
+				t.name,
+				b.user_id, 
+				b.created_at 
+		FROM user_badges AS b 
+		INNER JOIN badge_types AS t ON b.type = t.id 
+		WHERE user_id IN %s`, msql.InClauseQuestionMarks(len(userIDs)))
+	rows, err := db.Query(query, userIDs...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	badges := Badges{}
+	for rows.Next() {
+		b := &Badge{}
+		rows.Scan(
+			&b.ID,
+			&b.Type,
+			&b.TypeName,
+			&b.UserID,
+			&b.CreatedAt)
+		badges = append(badges, b)
+	}
+
+	if err = rows.Err(); err != nil {
+		return err
+	}
+
+	for _, b := range badges {
+		user, ok := m[b.UserID]
+		if !ok {
+			return fmt.Errorf("fetching badges user (%v) not found for badge %s", b.UserID, b.TypeName)
+		}
+		user.Badges = append(user.Badges, b)
+	}
+
 	return nil
 }

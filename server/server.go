@@ -101,6 +101,8 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/users/{username}", s.withSession(s.getUser)).Methods("GET")
 	r.Handle("/api/users/{username}/feed", s.withSession(s.getUsersFeed)).Methods("GET")
 	r.Handle("/api/users/{username}/pro_pic", s.withSession(s.handleUserProPic)).Methods("POST", "DELETE")
+	r.Handle("/api/users/{username}/badges", s.withSession(s.addBadge)).Methods("POST")
+	r.Handle("/api/users/{username}/badges/{badgeId}", s.withSession(s.deleteBadge)).Methods("DELETE")
 
 	r.Handle("/api/mutes", s.withSession(s.handleMutes)).Methods("GET", "POST", "DELETE")
 	r.Handle("/api/mutes/users/{mutedUserID}", s.withSession(s.deleteUserMute)).Methods("DELETE")
@@ -453,8 +455,14 @@ func (s *Server) writeErrorCustom(w http.ResponseWriter, r *http.Request, status
 	})
 }
 
+var errNotLoggedIn = &httperr.Error{
+	HTTPStatus: http.StatusUnauthorized,
+	Code:       "not_logged_in",
+	Message:    "User is not logged in.",
+}
+
 func (s *Server) writeErrorNotLoggedIn(w http.ResponseWriter, r *http.Request) {
-	s.writeErrorCustom(w, r, http.StatusUnauthorized, "", "not_logged_in")
+	s.writeError(w, r, errNotLoggedIn)
 }
 
 // Omitting code will set to "too_many_requests".
@@ -911,6 +919,24 @@ func (s *Server) modOrAdmin(w http.ResponseWriter, r *http.Request, comm *core.C
 	}
 
 	return g, nil
+}
+
+// viewerAdmin returns nil if the logged in user is an admin. The returned error
+// is likely an httperr.Err.
+func (s *Server) viewerAdmin(ses *sessions.Session, r *http.Request) error {
+	loggedIn, userID := isLoggedIn(ses)
+	if !loggedIn {
+		return errNotLoggedIn
+	}
+	ctx := r.Context()
+	admin, err := core.GetUser(ctx, s.db, *userID, nil)
+	if err != nil {
+		return err
+	}
+	if !admin.Admin {
+		return httperr.NewForbidden("not_admin", "")
+	}
+	return nil
 }
 
 func (s *Server) unmarshalJSON(w http.ResponseWriter, r *http.Request, data []byte, v interface{}) error {

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/SherClockHolmes/webpush-go"
@@ -569,5 +571,96 @@ func (s *Server) handleUserProPic(w http.ResponseWriter, r *http.Request, ses *s
 	}
 
 	data, _ := json.Marshal(user)
+	w.Write(data)
+}
+
+// /api/users/{username}/badges/{badgeId}[?byType=false] [DELETE]
+func (s *Server) deleteBadge(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
+	loggedIn, userID := isLoggedIn(ses)
+	if !loggedIn {
+		s.writeErrorNotLoggedIn(w, r)
+		return
+	}
+
+	ctx := r.Context()
+	admin, err := core.GetUser(ctx, s.db, *userID, nil)
+	if err != nil {
+		s.writeError(w, r, err)
+		return
+	}
+
+	if !admin.Admin {
+		s.writeError(w, r, httperr.NewForbidden("not_admin", ""))
+		return
+	}
+
+	muxVars := mux.Vars(r)
+	badgeID, username := muxVars["badgeId"], muxVars["username"]
+	user, err := core.GetUserByUsername(r.Context(), s.db, username, nil)
+	if err != nil {
+		s.writeError(w, r, err)
+		return
+	}
+
+	byType := strings.ToLower(r.URL.Query().Get("byType")) == "true"
+	if byType {
+		if err = user.RemoveBadgesByType(badgeID); err != nil {
+			s.writeError(w, r, err)
+			return
+		}
+	} else {
+		intID, err := strconv.Atoi(badgeID)
+		if err != nil {
+			s.writeError(w, r, httperr.NewBadRequest("bad_badge_id", ""))
+			return
+		}
+		if err := user.RemoveBadge(intID); err != nil {
+			s.writeError(w, r, err)
+			return
+		}
+	}
+	w.Write([]byte(`{"success":true}`))
+}
+
+// /api/users/{username}/badges [POST]
+func (s *Server) addBadge(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
+	if err := s.viewerAdmin(ses, r); err != nil {
+		s.writeError(w, r, err)
+		return
+	}
+
+	username := mux.Vars(r)["username"]
+	user, err := core.GetUserByUsername(r.Context(), s.db, username, nil)
+	if err != nil {
+		s.writeError(w, r, err)
+		return
+	}
+
+	reqBody := struct {
+		BadgeType string `json:"type"`
+	}{}
+
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		s.writeError(w, r, err)
+		return
+	}
+
+	if err := json.Unmarshal(data, &reqBody); err != nil {
+		s.writeError(w, r, httperr.NewBadRequest("invalid_request_body", ""))
+		return
+	}
+
+	if err := user.AddBadge(reqBody.BadgeType); err != nil {
+		s.writeError(w, r, err)
+		return
+	}
+
+	data, err = json.Marshal(user.Badges)
+	if err != nil {
+		s.writeError(w, r, err)
+		return
+	}
+
 	w.Write(data)
 }
