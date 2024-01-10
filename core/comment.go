@@ -430,6 +430,7 @@ func (c *Comment) stripDeletedInfo() {
 	c.Body = "[Deleted comment]"
 	c.ViewerVoted.Valid = false
 	c.ViewerVotedUp.Valid = false
+	c.Author = nil
 }
 
 // Vote votes on comment (if the comment is not deleted or the post locked).
@@ -672,18 +673,22 @@ func (c *Comment) loadPostDeleted(ctx context.Context) error {
 	return err
 }
 
+// populateCommentAuthors populates the Author field of each comment of comments
+// (except for deleted comments).
 func populateCommentAuthors(ctx context.Context, db *sql.DB, comments []*Comment) error {
-	if len(comments) == 0 {
-		return nil
-	}
-
 	var authorIDs []uid.ID
 	found := make(map[uid.ID]bool)
 	for _, c := range comments {
-		if !found[c.AuthorID] {
-			authorIDs = append(authorIDs, c.AuthorID)
-			found[c.AuthorID] = true
+		if !c.Deleted() {
+			if !found[c.AuthorID] {
+				authorIDs = append(authorIDs, c.AuthorID)
+				found[c.AuthorID] = true
+			}
 		}
+	}
+
+	if len(authorIDs) == 0 {
+		return nil
 	}
 
 	authors, err := GetUsersIDs(ctx, db, authorIDs, nil)
