@@ -651,7 +651,8 @@ func (s *Server) addBadge(w http.ResponseWriter, r *http.Request, ses *sessions.
 		return
 	}
 
-	if err := user.AddBadge(reqBody.BadgeType); err != nil {
+	ctx := r.Context()
+	if err := user.AddBadge(ctx, reqBody.BadgeType); err != nil {
 		s.writeError(w, r, err)
 		return
 	}

@@ -771,7 +771,7 @@ func badgeTypeInt(db *sql.DB, badgeType string) (int, error) {
 
 // AddBadge addes new badge to u. Also, u.Badges is refetched upon a successful
 // add.
-func (u *User) AddBadge(badgeType string) error {
+func (u *User) AddBadge(ctx context.Context, badgeType string) error {
 	badgeTypeInt, err := badgeTypeInt(u.db, badgeType)
 	if err != nil {
 		return err
@@ -780,6 +780,11 @@ func (u *User) AddBadge(badgeType string) error {
 	if err != nil && !msql.IsErrDuplicateErr(err) {
 		return err
 	}
+
+	if err := CreateNewBadgeNotification(ctx, u.db, u.ID, badgeType); err != nil {
+		log.Printf("Error creating new badge notification: %v\n", err)
+	}
+
 	return fetchBadges(u.db, u)
 }
 

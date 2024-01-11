@@ -1,4 +1,5 @@
 import { selectImageCopyURL, stringCount } from './src/helper';
+import { badgeImage } from './src/pages/User/Badge';
 
 const CACHE_VERSION = CONFIG.cacheStorageVersion;
 
@@ -210,6 +211,13 @@ const getNotificationInfo = (notification, csrfToken) => {
     case 'mod_add':
       ret.title = `You are added as a moderator of /${notif.communityName} by @${notif.addedBy}`;
       setToURL(`/${notif.post.communityName}/post/${notif.post.publicId}`);
+      break;
+    case 'new_badge':
+      ret.title =
+        "You are awarded the 'supporter' badge for your contribution to supporting Discuit.";
+      setToURL(`/@${notif.user.username}`);
+      const { src } = badgeImage(notif.badgeType);
+      setImage(src);
       break;
     default: {
       throw new Error('Unkown notification type');

@@ -1,9 +1,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import BannerImg from '../../assets/imgs/community-banner.jpg';
 
 function Badge({ className = '', badge, ...props }) {
   const renderImage = () => {
-    const { src, alt } = badgeImage(badge);
+    const { src, alt } = badgeImage(badge.type);
     return <img src={src} alt={alt} />;
   };
   return (
@@ -20,16 +21,16 @@ Badge.propTypes = {
 
 export default Badge;
 
-export function badgeImage(badge) {
+export function badgeImage(type) {
   let src = '',
     alt = '';
-  switch (badge.type) {
+  switch (type) {
     case 'supporter':
-      src = '/favicon.png';
+      src = BannerImg;
       alt = 'supporter badge';
       break;
     default:
-      throw new Error(`unkown badge type '${badge.type}'`);
+      throw new Error(`unknown badge type '${type}'`);
   }
   return {
     src,

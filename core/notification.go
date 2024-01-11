@@ -45,6 +45,7 @@ const (
 	NotificationTypeUpvote       = NotificationType("new_votes") // TODO: change string
 	NotificationTypeDeletePost   = NotificationType("deleted_post")
 	NotificationTypeModAdd       = NotificationType("mod_add")
+	NotificationTypeNewBadge     = NotificationType("new_badge")
 )
 
 func (t NotificationType) Valid() bool {
@@ -54,6 +55,7 @@ func (t NotificationType) Valid() bool {
 		NotificationTypeUpvote,
 		NotificationTypeDeletePost,
 		NotificationTypeModAdd,
+		NotificationTypeNewBadge,
 	}, t)
 }
 
@@ -165,6 +167,12 @@ func scanNotifications(db *sql.DB, rows *sql.Rows) ([]*Notification, error) {
 			notif.Notif = nc
 		case NotificationTypeModAdd:
 			nc := &NotificationModAdd{}
+			if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
+				return nil, err
+			}
+			notif.Notif = nc
+		case NotificationTypeNewBadge:
+			nc := &NotificationNewBadge{}
 			if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
 				return nil, err
 			}
@@ -473,7 +481,7 @@ func CreateNewCommentNotification(ctx context.Context, db *sql.DB, post *Post, c
 		CommentAuthor:  author,
 		FirstCreatedAt: time.Now(),
 	}
-	return CreateNotification(ctx, db, post.AuthorID, "new_comment", n)
+	return CreateNotification(ctx, db, post.AuthorID, NotificationTypeNewComment, n)
 }
 
 // NotificationCommentReply is for when a comment receives a reply. It is sent to the
@@ -546,7 +554,7 @@ func CreateCommentReplyNotification(ctx context.Context, db *sql.DB, user uid.ID
 		NumComments:     1,
 		FirstCreatedAt:  time.Now(),
 	}
-	return CreateNotification(ctx, db, user, "comment_reply", n)
+	return CreateNotification(ctx, db, user, NotificationTypeCommentReply, n)
 }
 
 func updateNewNotificationsCount(ctx context.Context, db *sql.DB, user uid.ID) error {
@@ -651,7 +659,7 @@ func CreateNewVotesNotification(ctx context.Context, db *sql.DB, user uid.ID, co
 		TargetID:   targetID,
 		NoVotes:    1,
 	}
-	return CreateNotification(ctx, db, user, "new_votes", n)
+	return CreateNotification(ctx, db, user, NotificationTypeUpvote, n)
 }
 
 // NotificationPostDeleted is sent when a mod or an admin removes a post or a comment.
@@ -700,7 +708,7 @@ func CreatePostDeletedNotification(ctx context.Context, db *sql.DB, user uid.ID,
 		TargetID:   targetID,
 		DeletedAs:  deletedAs,
 	}
-	return CreateNotification(ctx, db, user, "deleted_post", n)
+	return CreateNotification(ctx, db, user, NotificationTypeDeletePost, n)
 }
 
 // NotificationModAdd is sent when someone is added as a mod to a community.
@@ -731,7 +739,7 @@ func CreateNewModAddNotification(ctx context.Context, db *sql.DB, user uid.ID, c
 		CommunityName: community,
 		AddedBy:       addedBy,
 	}
-	return CreateNotification(ctx, db, user, "mod_add", n)
+	return CreateNotification(ctx, db, user, NotificationTypeModAdd, n)
 }
 
 // VAPIDKeys is an application server key-pair used by the Web Push API.
@@ -880,4 +888,36 @@ func SendPushNotification(ctx context.Context, db *sql.DB, user uid.ID, payload 
 		return fmt.Errorf("%v errors trying to send %v web push notifications", len(errors), len(subs))
 	}
 	return nil
+}
+
+type NotificationNewBadge struct {
+	UserID    uid.ID `json:"userId"`
+	BadgeType string `json:"badgeType"`
+}
+
+func (n NotificationNewBadge) marshalJSONForAPI(ctx context.Context, db *sql.DB) ([]byte, error) {
+	user, err := GetUser(ctx, db, n.UserID, nil)
+	if err != nil {
+		return nil, err
+	}
+	out := struct {
+		BadgeType string `json:"badgeType"`
+		User      *User  `json:"user"`
+	}{
+		BadgeType: n.BadgeType,
+		User:      user,
+	}
+	return json.Marshal(out)
+}
+
+func CreateNewBadgeNotification(ctx context.Context, db *sql.DB, user uid.ID, badgeType string) error {
+	// Check if badgeType is valid.
+	if _, err := badgeTypeInt(db, badgeType); err != nil {
+		return err
+	}
+	n := NotificationNewBadge{
+		BadgeType: badgeType,
+		UserID:    user,
+	}
+	return CreateNotification(ctx, db, user, NotificationTypeNewBadge, n)
 }

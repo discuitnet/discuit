@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import PropTypes from 'prop-types';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   markNotificationAsSeen,
   notificationsDeleted,
@@ -13,9 +13,12 @@ import Dropdown from '../Dropdown';
 import { ButtonMore } from '../Button';
 import Image from '../Image';
 import Favicon from '../../assets/imgs/favicon.png';
+import { badgeImage } from '../../pages/User/Badge';
 
 const NotificationItem = ({ notification, ...rest }) => {
   const { type, seen, createdAt, notif } = notification;
+
+  const viewer = useSelector((state) => state.main.user);
 
   const [actionBtnHovering, setActionBtnHovering] = useState(false);
   const [dropdownActive, setDropdownActive] = useState(false);
@@ -103,6 +106,13 @@ const NotificationItem = ({ notification, ...rest }) => {
           </>
         );
       }
+      case 'new_badge': {
+        return (
+          <>
+            You are awarded the <b>supporter</b> badge for your contribution to supporting Discuit.
+          </>
+        );
+      }
       default: {
         return 'Unknown notification type';
       }
@@ -168,6 +178,13 @@ const NotificationItem = ({ notification, ...rest }) => {
     case 'mod_add':
       to = `/${notif.communityName}`;
       image = getNotifImage(notif);
+    case 'new_badge':
+      to = `/@${viewer.username}`;
+      const { src } = badgeImage(notif.badgeType);
+      image = {
+        url: src,
+        backgroundColor: 'transparent',
+      };
       break;
   }
 
