@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import BannerImg from '../../assets/imgs/community-banner.jpg';
+import BadgeSupporter from '../../assets/imgs/badge-supporter.png';
 
 function Badge({ className = '', badge, ...props }) {
   const renderImage = () => {
@@ -26,7 +26,7 @@ export function badgeImage(type) {
     alt = '';
   switch (type) {
     case 'supporter':
-      src = BannerImg;
+      src = BadgeSupporter;
       alt = 'supporter badge';
       break;
     default:

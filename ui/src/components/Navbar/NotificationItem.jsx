@@ -109,7 +109,7 @@ const NotificationItem = ({ notification, ...rest }) => {
       case 'new_badge': {
         return (
           <>
-            You are awarded the <b>supporter</b> badge for your contribution to supporting Discuit.
+            You are awarded the <b>supporter</b> badge for your contribution to Discuit.
           </>
         );
       }

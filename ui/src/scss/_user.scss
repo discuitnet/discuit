@@ -179,6 +179,7 @@
     img {
         width: 100%;
         height: 100%;
+        border-radius: 50%;
     }
 }
 
@@ -223,6 +224,9 @@
     }
     .user-badge {
         --size: 90px;
+        img {
+            // border: 4px solid #fff;
+        }
     }
     .modal-badges-body {
         display: flex;
