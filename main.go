@@ -63,6 +63,11 @@ func main() {
 	}
 	images.SetImagesRootFolder(p)
 
+	// Create default badges.
+	if err = core.NewBadgeType(db, "supporter"); err != nil {
+		log.Fatalf("Error creating 'supporter' user badge: %v\n", err)
+	}
+
 	go func() {
 		// This go-routine runs a set of periodic functions every hour.
 		time.Sleep(time.Second * 5) // Just so the first console output isn't from this goroutine.

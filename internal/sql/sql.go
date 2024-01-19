@@ -318,6 +318,9 @@ func BuildSelectQuery(table string, columns, joins []string, whereClause string)
 // IsErrDuplicateErr checks MySQL/MariaDB error string
 // to see a '1062' can be found.
 func IsErrDuplicateErr(err error) bool {
+	if err == nil {
+		return false
+	}
 	return strings.Contains(err.Error(), "1062")
 }
 

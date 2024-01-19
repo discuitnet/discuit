@@ -802,9 +802,13 @@ func (u *User) RemoveBadge(id int) error {
 	return err
 }
 
+// NewBadgeType creates a new type of user badge. Calling this function more
+// than once with the same name will not result in an error.
 func NewBadgeType(db *sql.DB, name string) error {
-	_, err := db.Exec("INSERT INTO badge_types (name) VALUES (?)", name)
-	return err
+	if _, err := db.Exec("INSERT INTO badge_types (name) VALUES (?)", name); err != nil && !msql.IsErrDuplicateErr(err) {
+		return err
+	}
+	return nil
 }
 
 // A Badge corresponds to a row in the user_badges table.
