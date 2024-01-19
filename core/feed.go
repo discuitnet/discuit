@@ -239,9 +239,12 @@ func GetFeed(ctx context.Context, db *sql.DB, opts *FeedOptions) (_ *FeedResultS
 	} else {
 		set, err = getPostsTop(ctx, db, opts)
 	}
+	if err != nil {
+		return nil, err
+	}
 	if opts.DefaultSort {
 		// Merge pinned posts.
-		set, err = mergePinnedPosts(ctx, db, opts.Viewer, opts.Community, opts.Next, set)
+		return mergePinnedPosts(ctx, db, opts.Viewer, opts.Community, opts.Next, set)
 	}
 	return set, err
 }
