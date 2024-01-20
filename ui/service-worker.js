@@ -214,7 +214,7 @@ const getNotificationInfo = (notification, csrfToken) => {
       break;
     case 'new_badge':
       ret.title =
-        "You are awarded the 'supporter' badge for your contribution to Discuit.";
+        "You are awarded the 'supporter' badge for your contribution to Discuit and for sheer awesomeness!";
       setToURL(`/@${notif.user.username}`);
       const { src } = badgeImage(notif.badgeType);
       setImage(src);
