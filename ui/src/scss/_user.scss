@@ -51,6 +51,7 @@
         .user-card-buttons {
             display: flex;
             align-items: flex-start;
+            flex-wrap: wrap;
             > * {
                 margin-right: calc(0.5 * var(--gap));
             }
