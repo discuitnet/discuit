@@ -114,7 +114,7 @@ const NotificationItem = ({ notification, ...rest }) => {
         );
       }
       default: {
-        return 'Unknown notification type';
+        return null; // unknown notification type
       }
     }
   };
@@ -203,6 +203,11 @@ const NotificationItem = ({ notification, ...rest }) => {
     }
   };
 
+  const notifText = renderText()
+  if (notifText === null) {
+    return null; // notification type is unknown
+  }
+
   return (
     <a
       href={to}
@@ -218,7 +223,7 @@ const NotificationItem = ({ notification, ...rest }) => {
         <Image src={image.url} backgroundColor={image.backgroundColor} alt="" />
       </div>
       <div className="notif-body">
-        <div className="notif-text">{renderText()}</div>
+        <div className="notif-text">{notifText}</div>
         <div className="notif-time">
           <TimeAgo time={createdAt} inline={false} />
         </div>
