@@ -178,6 +178,7 @@ const NotificationItem = ({ notification, ...rest }) => {
     case 'mod_add':
       to = `/${notif.communityName}`;
       image = getNotifImage(notif);
+      break;
     case 'new_badge':
       to = `/@${viewer.username}`;
       const { src } = badgeImage(notif.badgeType);
