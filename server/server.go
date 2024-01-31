@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -356,6 +357,35 @@ func (s *Server) setInitialCookies(w http.ResponseWriter, r *http.Request, ses *
 	s.setCsrfCookie(ses, w, r)
 }
 
+type logField struct {
+	name string
+	val  any
+	off  bool // if off is true, don't print it
+}
+
+// let color be empty if you don't want color codes to appear in the log line.
+func constructLogLine(fields []logField, color string) string {
+	b := strings.Builder{}
+	args := make([]any, 0, len(fields))
+	oneWritten := false
+	if color != "" {
+		b.WriteString(color)
+	}
+	for _, field := range fields {
+		if !field.off {
+			if oneWritten {
+				b.WriteString(" ")
+			}
+			b.WriteString(field.name)
+			b.WriteString("=%v")
+			args = append(args, field.val)
+			oneWritten = true
+		}
+	}
+	b.WriteString("\033[0m")
+	return fmt.Sprintf(b.String(), args...)
+}
+
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	beginT := time.Now()
 
@@ -374,14 +404,30 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	sid := ""
+	sid := "" // session id
 	if c, err := r.Cookie(s.config.SessionCookieName); err == nil {
 		sid = c.Value
 	}
 
 	took := time.Since(beginT)
-	s.httpLogger.Printf("took=%v url=%v ip=%v method=%v sid=%v user-agent=\"%v\"\n",
-		took, r.URL, httputil.GetIP(r), r.Method, sid, r.Header.Get("User-Agent"))
+
+	logFields := []logField{
+		{name: "took", val: took},
+		{name: "url", val: r.URL},
+		{name: "ip", val: httputil.GetIP(r)},
+		{name: "method", val: r.Method},
+		{name: "sid", val: sid},
+		{name: "user-agent", val: r.Header.Get("User-Agent")},
+	}
+	s.httpLogger.Println(constructLogLine(logFields, ""))
+	if s.config.IsDevelopment {
+		logFields[len(logFields)-1].off = true
+		var color string
+		if took > time.Millisecond*10 {
+			color = "\033[0;33m"
+		}
+		log.Println(constructLogLine(logFields, color))
+	}
 }
 
 func (s *Server) apiNotFoundHandler(w http.ResponseWriter, r *http.Request) {
