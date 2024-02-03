@@ -14,36 +14,28 @@ import (
 	"github.com/discuitnet/discuit/internal/hcaptcha"
 	"github.com/discuitnet/discuit/internal/httperr"
 	"github.com/discuitnet/discuit/internal/httputil"
-	"github.com/discuitnet/discuit/internal/sessions"
 	"github.com/discuitnet/discuit/internal/uid"
 	"github.com/gorilla/mux"
 )
 
 // /api/users/{username} [GET]
-func (s *Server) getUser(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	_, viewerID := isLoggedIn(ses)
-	username := mux.Vars(r)["username"]
-	ctx := r.Context()
-	user, err := core.GetUserByUsername(ctx, s.db, username, viewerID)
+func (s *Server) getUser(w *responseWriter, r *request) error {
+	username := r.muxVar("username")
+	user, err := core.GetUserByUsername(r.ctx, s.db, username, r.viewer)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	if err := user.LoadModdingList(ctx); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err := user.LoadModdingList(r.ctx); err != nil {
+		return err
 	}
 
-	bytes, _ := json.Marshal(user)
-	w.Write(bytes)
+	return w.writeJSON(user)
 }
 
 // /api/_initial [GET]
-func (s *Server) initial(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	isLoggedIn, userID := isLoggedIn(ses)
+func (s *Server) initial(w *responseWriter, r *request) error {
 	var err error
-
 	response := struct {
 		ReportReasons  []core.ReportReason `json:"reportReasons"`
 		User           *core.User          `json:"user"`
@@ -62,95 +54,77 @@ func (s *Server) initial(w http.ResponseWriter, r *http.Request, ses *sessions.S
 	response.Mutes.CommunityMutes = []*core.Mute{}
 	response.Mutes.UserMutes = []*core.Mute{}
 
-	ctx := r.Context()
-	if isLoggedIn {
-		if response.User, err = core.GetUser(ctx, s.db, *userID, userID); err != nil {
+	if r.loggedIn {
+		if response.User, err = core.GetUser(r.ctx, s.db, *r.viewer, r.viewer); err != nil {
 			if httperr.IsNotFound(err) {
 				// Possible deleted user.
 				// Reset session.
 				// s.logoutUser(response.User, ses, w, r)
 				// TODO: Things are weird here.
 			}
-			s.writeError(w, r, err)
-			return
+			return err
 		}
-		if response.BannedFrom, err = response.User.GetBannedFromCommunities(ctx); err != nil {
-			s.writeError(w, r, err)
-			return
+		if response.BannedFrom, err = response.User.GetBannedFromCommunities(r.ctx); err != nil {
+			return err
 		}
-		if communityMutes, err := core.GetMutedCommunities(ctx, s.db, *userID, true); err != nil {
-			s.writeError(w, r, err)
-			return
+		if communityMutes, err := core.GetMutedCommunities(r.ctx, s.db, *r.viewer, true); err != nil {
+			return err
 		} else if communityMutes != nil {
 			response.Mutes.CommunityMutes = communityMutes
 		}
-		if userMutes, err := core.GetMutedUsers(ctx, s.db, *userID, true); err != nil {
-			s.writeError(w, r, err)
-			return
+		if userMutes, err := core.GetMutedUsers(r.ctx, s.db, *r.viewer, true); err != nil {
+			return err
 		} else if userMutes != nil {
 			response.Mutes.UserMutes = userMutes
 		}
 	}
 
-	if response.ReportReasons, err = core.GetReportReasons(ctx, s.db); err != nil && err != sql.ErrNoRows {
-		s.writeError(w, r, err)
-		return
+	if response.ReportReasons, err = core.GetReportReasons(r.ctx, s.db); err != nil && err != sql.ErrNoRows {
+		return err
 	}
 
 	commsSet := core.CommunitiesSetDefault
-	if isLoggedIn {
+	if r.loggedIn {
 		commsSet = core.CommunitiesSetSubscribed
 	}
 
-	if response.Communities, err = core.GetCommunities(ctx, s.db, core.CommunitiesSortDefault, commsSet, -1, userID); err != nil && err != sql.ErrNoRows {
-		s.writeError(w, r, err)
-		return
+	if response.Communities, err = core.GetCommunities(r.ctx, s.db, core.CommunitiesSortDefault, commsSet, -1, r.viewer); err != nil && err != sql.ErrNoRows {
+		return err
 	}
-	if response.NoUsers, err = core.CountAllUsers(ctx, s.db); err != nil {
-		s.writeError(w, r, err)
-		return
+	if response.NoUsers, err = core.CountAllUsers(r.ctx, s.db); err != nil {
+		return err
 	}
 
-	bytes, _ := json.Marshal(response)
-	w.Write(bytes)
+	return w.writeJSON(response)
 }
 
 // /api/_login [POST]
-func (s *Server) login(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
-
-	ctx := r.Context()
-	if loggedIn {
-		user, err := core.GetUser(ctx, s.db, *userID, userID)
+func (s *Server) login(w *responseWriter, r *request) error {
+	if r.loggedIn {
+		user, err := core.GetUser(r.ctx, s.db, *r.viewer, r.viewer)
 		if err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
 
-		action := r.URL.Query().Get("action")
+		action := r.urlQueryValue("action")
 		if action != "" {
 			switch action {
 			case "logout":
-				if err := s.logoutUser(user, ses, w, r); err != nil {
-					s.writeError(w, r, err)
-					return
+				if err = s.logoutUser(user, r.ses, w, r.req); err != nil {
+					return err
 				}
 				w.WriteHeader(http.StatusOK)
-				return
+				return nil
 			default:
-				s.writeErrorCustom(w, r, http.StatusBadRequest, "Unsupported action.", "")
-				return
+				return httperr.NewBadRequest("invalid_action", "Unsupported action.")
 			}
 		}
-
-		data, _ := json.Marshal(user)
-		w.Write(data)
-		return
+		return w.writeJSON(user)
 	}
 
-	values, err := s.bodyToMap(w, r, true)
+	values, err := s.bodyToMap(w, r.req, true)
 	if err != nil {
-		return
+		return nil
 	}
 	username := values["username"]
 	password := values["password"]
@@ -158,38 +132,35 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request, ses *sessions.Ses
 	// TODO: Require a captcha if user is suspicious looking.
 
 	// Limits.
-	ip := httputil.GetIP(r)
-	if err := s.rateLimit(w, r, "login_1_"+ip, time.Second, 10); err != nil {
-		return
+	ip := httputil.GetIP(r.req)
+	if err := s.rateLimit(w, r.req, "login_1_"+ip, time.Second, 10); err != nil {
+		return nil
 	}
-	if err := s.rateLimit(w, r, "login_2_"+ip+username, time.Hour, 20); err != nil {
-		return
+	if err := s.rateLimit(w, r.req, "login_2_"+ip+username, time.Hour, 20); err != nil {
+		return nil
 	}
 
-	user, err := core.MatchLoginCredentials(ctx, s.db, username, password)
+	user, err := core.MatchLoginCredentials(r.ctx, s.db, username, password)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	if err = s.loginUser(user, ses, w, r); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err = s.loginUser(user, r.ses, w, r.req); err != nil {
+		return err
 	}
-	data, _ := json.Marshal(user)
-	w.Write(data)
+
+	return w.writeJSON(user)
 }
 
 // /api/_signup [POST]
-func (s *Server) signup(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	if is, _ := isLoggedIn(ses); is {
-		s.writeErrorCustom(w, r, http.StatusBadRequest, "You are already logged in", "already_logged_in")
-		return
+func (s *Server) signup(w *responseWriter, r *request) error {
+	if r.loggedIn {
+		return httperr.NewBadRequest("already_logged_in", "You are already logged in")
 	}
 
-	values, err := s.bodyToMap(w, r, true)
+	values, err := s.bodyToMap(w, r.req, true)
 	if err != nil {
-		return
+		return nil
 	}
 
 	username := values["username"]
@@ -200,468 +171,372 @@ func (s *Server) signup(w http.ResponseWriter, r *http.Request, ses *sessions.Se
 	// Verify captcha.
 	if s.config.CaptchaSecret != "" {
 		if ok, err := hcaptcha.VerifyReCaptcha(s.config.CaptchaSecret, captchaToken); err != nil {
-			s.writeErrorCustom(w, r, http.StatusForbidden, "Captha verification failed", "captcha_verify_fail_1")
-			return
+			return httperr.NewForbidden("captcha_verify_fail_1", "Captha verification failed.")
 		} else if !ok {
-			s.writeErrorCustom(w, r, http.StatusForbidden, "Captha verification failed", "captcha_verify_fail_2")
-			return
+			return httperr.NewForbidden("captcha_verify_fail_2", "Captha verification failed.")
 		}
 	}
 
 	// Limits.
-	ip := httputil.GetIP(r)
-	if err := s.rateLimit(w, r, "signup_1_"+ip, time.Minute, 2); err != nil {
-		return
+	ip := httputil.GetIP(r.req)
+	if err := s.rateLimit(w, r.req, "signup_1_"+ip, time.Minute, 2); err != nil {
+		return nil
 	}
-	if err := s.rateLimit(w, r, "signup_2_"+ip, time.Hour*6, 10); err != nil {
-		return
+	if err := s.rateLimit(w, r.req, "signup_2_"+ip, time.Hour*6, 10); err != nil {
+		return nil
 	}
 
-	user, err := core.RegisterUser(r.Context(), s.db, username, email, password)
+	user, err := core.RegisterUser(r.ctx, s.db, username, email, password)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
 	// Try logging in user.
-	s.loginUser(user, ses, w, r)
+	s.loginUser(user, r.ses, w, r.req)
 
-	data, _ := json.Marshal(user)
 	w.WriteHeader(http.StatusCreated)
-	w.Write(data)
+	return w.writeJSON(user)
 }
 
 // /api/_user [GET]
-func (s *Server) getLoggedInUser(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) getLoggedInUser(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	ctx := r.Context()
-	user, err := core.GetUser(ctx, s.db, *userID, userID)
+	user, err := core.GetUser(r.ctx, s.db, *r.viewer, r.viewer)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	if err := user.LoadModdingList(ctx); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err := user.LoadModdingList(r.ctx); err != nil {
+		return err
 	}
 
-	bytes, _ := json.Marshal(user)
-	w.Write(bytes)
+	return w.writeJSON(user)
 }
 
 // /api/notifications [POST]
-func (s *Server) updateNotifications(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	isLoggedIn, userID := isLoggedIn(ses)
-	if !isLoggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) updateNotifications(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
 	// Limits.
-	if err := s.rateLimit(w, r, "update_notifs_1_"+userID.String(), time.Second*1, 5); err != nil {
-		return
+	if err := s.rateLimit(w, r.req, "update_notifs_1_"+r.viewer.String(), time.Second*1, 5); err != nil {
+		return nil
 	}
 
-	ctx := r.Context()
-	user, err := core.GetUser(ctx, s.db, *userID, nil)
+	user, err := core.GetUser(r.ctx, s.db, *r.viewer, nil)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	query := r.URL.Query()
-	action := query.Get("action")
-	switch action {
+	query := r.urlQuery()
+	switch query.Get("action") {
 	case "resetNewCount":
-		if err = user.ResetNewNotificationsCount(ctx); err != nil {
-			s.writeError(w, r, err)
-			return
+		if err = user.ResetNewNotificationsCount(r.ctx); err != nil {
+			return err
 		}
 	case "markAllAsSeen":
-		if err = user.MarkAllNotificationsAsSeen(ctx, core.NotificationType(query.Get("type"))); err != nil {
-			s.writeError(w, r, err)
-			return
+		if err = user.MarkAllNotificationsAsSeen(r.ctx, core.NotificationType(query.Get("type"))); err != nil {
+			return err
 		}
 	case "deleteAll":
-		if err = user.DeleteAllNotifications(ctx); err != nil {
-			s.writeError(w, r, err)
-			return
+		if err = user.DeleteAllNotifications(r.ctx); err != nil {
+			return err
 		}
 	default:
-		s.writeErrorCustom(w, r, http.StatusBadRequest, "Invalid action.", "")
-		return
+		return httperr.NewBadRequest("invalid_action", "Unsupported action.")
 	}
 
-	w.Write([]byte(`{"success":true}`))
+	return w.writeString(`{"success":true}`)
 }
 
 // /api/notifications [GET]
-func (s *Server) getNotifications(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	isLoggedIn, userID := isLoggedIn(ses)
-	if !isLoggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) getNotifications(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	ctx := r.Context()
-	user, err := core.GetUser(ctx, s.db, *userID, nil)
+	user, err := core.GetUser(r.ctx, s.db, *r.viewer, nil)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	out := struct {
+	res := struct {
 		Count    int                  `json:"count"`
 		NewCount int                  `json:"newCount"`
 		Items    []*core.Notification `json:"items"`
 		Next     string               `json:"next"`
 	}{}
-	if out.Count, err = core.NotificationsCount(ctx, s.db, user.ID); err != nil {
-		s.writeError(w, r, err)
-		return
+	if res.Count, err = core.NotificationsCount(r.ctx, s.db, user.ID); err != nil {
+		return err
 	}
-	out.NewCount = user.NumNewNotifications
+	res.NewCount = user.NumNewNotifications
 
-	query := r.URL.Query()
-	if out.Items, out.Next, err = core.GetNotifications(ctx, s.db, user.ID, 10, query.Get("next")); err != nil {
-		s.writeError(w, r, err)
-		return
+	query := r.urlQuery()
+	if res.Items, res.Next, err = core.GetNotifications(r.ctx, s.db, user.ID, 10, query.Get("next")); err != nil {
+		return err
 	}
 
-	b, err := json.Marshal(out)
-	if err != nil {
-		s.writeError(w, r, err)
-		return
-	}
-	w.Write(b)
+	return w.writeJSON(res)
 }
 
 // /api/notifications/{notificationID} [GET, PUT]
-func (s *Server) getNotification(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	isLoggedIn, userID := isLoggedIn(ses)
-	if !isLoggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) getNotification(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	ctx := r.Context()
-
-	notifID := mux.Vars(r)["notificationID"]
-	notif, err := core.GetNotification(ctx, s.db, notifID)
+	notifID := r.muxVar("notificationID")
+	notif, err := core.GetNotification(r.ctx, s.db, notifID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			s.writeErrorCustom(w, r, http.StatusNotFound, "Notification not found", "")
-			return
+			return httperr.NewNotFound("notif_not_found", "Notification not found.")
 		}
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	if !notif.UserID.EqualsTo(*userID) {
-		s.writeErrorCustom(w, r, http.StatusForbidden, "", "")
-		return
+	if !notif.UserID.EqualsTo(*r.viewer) {
+		return httperr.NewForbidden("not_owner", "")
 	}
 
-	query := r.URL.Query()
-	if r.Method == "PUT" {
+	query := r.urlQuery()
+	if r.req.Method == "PUT" {
 		action := query.Get("action")
 		switch action {
 		case "markAsSeen":
-			if err = notif.Saw(ctx, query.Get("seen") != "false"); err != nil {
-				s.writeError(w, r, err)
-				return
+			if err = notif.Saw(r.ctx, query.Get("seen") != "false"); err != nil {
+				return err
 			}
 			if query.Get("seenFrom") == "webpush" {
-				notif.ResetUserNewNotificationsCount(ctx) // attempt
+				notif.ResetUserNewNotificationsCount(r.ctx) // attempt
 			}
 		default:
-			s.writeErrorCustom(w, r, http.StatusBadRequest, "Unsupported action", "")
-			return
+			return httperr.NewBadRequest("invalid_action", "Unsupported action.")
 		}
 	}
 
-	data, _ := json.Marshal(notif)
-	w.Write(data)
+	return w.writeJSON(notif)
 }
 
 // /api/notifications/{notificationID} [DELETE]
-func (s *Server) deleteNotification(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	isLoggedIn, userID := isLoggedIn(ses)
-	if !isLoggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) deleteNotification(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	ctx := r.Context()
-
-	notifID := mux.Vars(r)["notificationID"]
-	notif, err := core.GetNotification(ctx, s.db, notifID)
+	notifID := r.muxVar("notificationID")
+	notif, err := core.GetNotification(r.ctx, s.db, notifID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			s.writeErrorCustom(w, r, http.StatusNotFound, "Notification not found", "")
-			return
+			return httperr.NewNotFound("notif_not_found", "Notification not found.")
 		}
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	if !notif.UserID.EqualsTo(*userID) {
-		s.writeErrorCustom(w, r, http.StatusForbidden, "", "")
-		return
+	if !notif.UserID.EqualsTo(*r.viewer) {
+		return httperr.NewForbidden("not_owner", "")
 	}
 
-	if err = notif.Delete(ctx); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err = notif.Delete(r.ctx); err != nil {
+		return err
 	}
 
-	data, _ := json.Marshal(notif)
-	w.Write(data)
+	return w.writeJSON(notif)
 }
 
 // /api/push_subscriptions [POST]
-func (s *Server) pushSubscriptions(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	isLoggedIn, viewer := isLoggedIn(ses)
-	if !isLoggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) pushSubscriptions(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	data, err := io.ReadAll(r.Body)
-	if err != nil {
-		s.writeError(w, r, err)
-		return
+	var sub webpush.Subscription
+	if err := r.unmarshalJSONBody(&sub); err != nil {
+		return err
 	}
 
-	sub := webpush.Subscription{}
-	if err := json.Unmarshal(data, &sub); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err := core.SaveWebPushSubscription(r.ctx, s.db, r.ses.ID, *r.viewer, sub); err != nil {
+		return err
 	}
 
-	if err := core.SaveWebPushSubscription(r.Context(), s.db, ses.ID, *viewer, sub); err != nil {
-		s.writeError(w, r, err)
-		return
-	}
-
-	w.Write([]byte(`{"success":true}`))
+	return w.writeString(`{"success":true}`)
 }
 
 // /api/_settings [POST]
-func (s *Server) updateUserSettings(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	isLoggedIn, userID := isLoggedIn(ses)
-	if !isLoggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) updateUserSettings(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
 	// Limits.
-	if err := s.rateLimit(w, r, "update_settings_1_"+userID.String(), time.Second*1, 5); err != nil {
-		return
+	if err := s.rateLimit(w, r.req, "update_settings_1_"+r.viewer.String(), time.Second*1, 5); err != nil {
+		return nil
 	}
-	if err := s.rateLimit(w, r, "update_settings_2_"+userID.String(), time.Hour, 100); err != nil {
-		return
+	if err := s.rateLimit(w, r.req, "update_settings_2_"+r.viewer.String(), time.Hour, 100); err != nil {
+		return nil
 	}
 
-	ctx := r.Context()
-	user, err := core.GetUser(ctx, s.db, *userID, userID)
+	user, err := core.GetUser(r.ctx, s.db, *r.viewer, r.viewer)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	query := r.URL.Query()
+	query := r.urlQuery()
 	switch query.Get("action") {
 	case "updateProfile":
-		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-			s.writeError(w, r, err)
-			return
+		if err = r.unmarshalJSONBody(&user); err != nil {
+			return err
 		}
 
-		if err = user.Update(ctx); err != nil {
-			s.writeError(w, r, err)
-			return
+		if err = user.Update(r.ctx); err != nil {
+			return err
 		}
 	case "changePassword":
-		m, err := s.bodyToMap(w, r, true)
+		m, err := s.bodyToMap(w, r.req, true)
 		if err != nil {
-			return
+			return nil
 		}
 		password := m["password"]
 		newPassword := m["newPassword"]
 		repeatPassword := m["repeatPassword"]
 		if newPassword != repeatPassword {
-			s.writeErrorCustom(w, r, http.StatusBadRequest, "Passwords do not match", "password_not_match")
-			return
+			return httperr.NewBadRequest("password_not_match", "Passwords do not match.")
 		}
-		if err = user.ChangePassword(ctx, password, newPassword); err != nil {
-			s.writeError(w, r, err)
-			return
+		if err = user.ChangePassword(r.ctx, password, newPassword); err != nil {
+			return err
 		}
 	default:
-		s.writeErrorCustom(w, r, http.StatusBadRequest, "Unsupported action", "")
-		return
+		return httperr.NewBadRequest("invalid_action", "Unsupported action.")
 	}
 
-	data, _ := json.Marshal(user)
-	w.Write(data)
+	return w.writeJSON(user)
 }
 
 // /api/_settings [DELETE]
-func (s *Server) deleteUser(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
+func (s *Server) deleteUser(w *responseWriter, r *request) error {
 	// Unavailable for now.
-	s.writeErrorCustom(w, r, http.StatusServiceUnavailable, "Account delete feature is yet to be implemented", "account_del_503")
+	return &httperr.Error{
+		HTTPStatus: http.StatusServiceUnavailable,
+		Code:       "account_del_503",
+		Message:    "Account delete feature is yet to be implemented",
+	}
 }
 
 // /api/users/{username}/pro_pic [POST, DELETE]
-func (s *Server) handleUserProPic(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) handleUserProPic(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	ctx := r.Context()
-	user, err := core.GetUserByUsername(ctx, s.db, mux.Vars(r)["username"], userID)
+	user, err := core.GetUserByUsername(r.ctx, s.db, r.muxVar("username"), r.viewer)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
 	// Only the owner of the account and admins can proceed.
-	if !(user.ID == *userID || user.Admin) {
-		s.writeErrorCustom(w, r, http.StatusUnauthorized, "", "")
-		return
+	if !(user.ID == *r.viewer || user.Admin) {
+		return httperr.NewForbidden("not_owner", "")
 	}
 
-	if r.Method == "POST" {
-		r.Body = http.MaxBytesReader(w, r.Body, int64(s.config.MaxImageSize)) // limit max upload size
-		if err := r.ParseMultipartForm(int64(s.config.MaxImageSize)); err != nil {
-			s.writeErrorCustom(w, r, http.StatusBadRequest, "Max file size exceeded", "file_size_exceeded")
-			return
+	if r.req.Method == "POST" {
+		r.req.Body = http.MaxBytesReader(w, r.req.Body, int64(s.config.MaxImageSize)) // limit max upload size
+		if err := r.req.ParseMultipartForm(int64(s.config.MaxImageSize)); err != nil {
+			return httperr.NewBadRequest("file_size_exceeded", "Max file size exceeded.")
 		}
 
-		file, _, err := r.FormFile("image")
+		file, _, err := r.req.FormFile("image")
 		if err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
 		defer file.Close()
 
 		data, err := io.ReadAll(file)
 		if err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
-		if err := user.UpdateProPic(ctx, data); err != nil {
-			s.writeError(w, r, err)
-			return
+		if err := user.UpdateProPic(r.ctx, data); err != nil {
+			return err
 		}
-	} else if r.Method == "DELETE" {
-		if err := user.DeleteProPic(ctx); err != nil {
-			s.writeError(w, r, err)
-			return
+	} else if r.req.Method == "DELETE" {
+		if err := user.DeleteProPic(r.ctx); err != nil {
+			return err
 		}
 	}
 
-	data, _ := json.Marshal(user)
-	w.Write(data)
+	return w.writeJSON(user)
 }
 
 // /api/users/{username}/badges/{badgeId}[?byType=false] [DELETE]
-func (s *Server) deleteBadge(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) deleteBadge(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	ctx := r.Context()
-	admin, err := core.GetUser(ctx, s.db, *userID, nil)
+	admin, err := core.GetUser(r.ctx, s.db, *r.viewer, nil)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
 	if !admin.Admin {
-		s.writeError(w, r, httperr.NewForbidden("not_admin", ""))
-		return
+		return httperr.NewForbidden("not_admin", "Not admin.")
 	}
 
-	muxVars := mux.Vars(r)
+	muxVars := mux.Vars(r.req)
 	badgeID, username := muxVars["badgeId"], muxVars["username"]
-	user, err := core.GetUserByUsername(r.Context(), s.db, username, nil)
+	user, err := core.GetUserByUsername(r.ctx, s.db, username, nil)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	byType := strings.ToLower(r.URL.Query().Get("byType")) == "true"
+	byType := strings.ToLower(r.urlQueryValue("byType")) == "true"
 	if byType {
 		if err = user.RemoveBadgesByType(badgeID); err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
 	} else {
 		intID, err := strconv.Atoi(badgeID)
 		if err != nil {
-			s.writeError(w, r, httperr.NewBadRequest("bad_badge_id", ""))
-			return
+			return httperr.NewBadRequest("bad_badge_id", "Bad badge id.")
 		}
 		if err := user.RemoveBadge(intID); err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
 	}
-	w.Write([]byte(`{"success":true}`))
+
+	return w.writeString(`{"success":true}`)
 }
 
 // /api/users/{username}/badges [POST]
-func (s *Server) addBadge(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	if err := s.viewerAdmin(ses, r); err != nil {
-		s.writeError(w, r, err)
-		return
+func (s *Server) addBadge(w *responseWriter, r *request) error {
+	if err := s.viewerAdmin(r.ses, r.req); err != nil {
+		return err
 	}
 
-	username := mux.Vars(r)["username"]
-	user, err := core.GetUserByUsername(r.Context(), s.db, username, nil)
+	username := r.muxVar("username")
+	user, err := core.GetUserByUsername(r.ctx, s.db, username, nil)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
 	reqBody := struct {
 		BadgeType string `json:"type"`
 	}{}
 
-	data, err := io.ReadAll(r.Body)
+	data, err := io.ReadAll(r.req.Body)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
 	if err := json.Unmarshal(data, &reqBody); err != nil {
-		s.writeError(w, r, httperr.NewBadRequest("invalid_request_body", ""))
-		return
+		return httperr.NewBadRequest("invalid_request_body", "")
 	}
 
-	ctx := r.Context()
-	if err := user.AddBadge(ctx, reqBody.BadgeType); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err := user.AddBadge(r.ctx, reqBody.BadgeType); err != nil {
+		return err
 	}
 
-	data, err = json.Marshal(user.Badges)
-	if err != nil {
-		s.writeError(w, r, err)
-		return
-	}
-
-	w.Write(data)
+	return w.writeJSON(user.Badges)
 }

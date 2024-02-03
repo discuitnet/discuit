@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/url"
 
 	"github.com/discuitnet/discuit/internal/httperr"
 	"github.com/discuitnet/discuit/internal/sessions"
@@ -35,6 +36,11 @@ func (rw *responseWriter) WriteHeader(statusCode int) {
 
 func (rw *responseWriter) writeJSON(v any) error {
 	return json.NewEncoder(rw).Encode(v)
+}
+
+func (rw *responseWriter) writeString(s string) error {
+	_, err := rw.Write([]byte(s))
+	return err
 }
 
 // A request represents an HTTP request specific to Server.
@@ -81,8 +87,18 @@ func (r *request) unmarshalJSONBody(v any) error {
 	return err
 }
 
+func (r *request) urlQuery() url.Values {
+	return r.req.URL.Query()
+}
+
+func (r *request) urlQueryValue(name string) string {
+	return r.urlQuery().Get(name)
+}
+
 // The error returned from handler is used to handle http error cases (non-1xx
 // and non-2xx http responses) in conjunction with httperr.Error. The caller of
 // handler should check the error and write the appropriate error message, with
 // the appropriate HTTP headers, to responseWriter.
 type handler func(*responseWriter, *request) error
+
+type anymap map[string]any

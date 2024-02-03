@@ -1,55 +1,46 @@
 package server
 
 import (
-	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/discuitnet/discuit/core"
-	"github.com/discuitnet/discuit/internal/sessions"
+	"github.com/discuitnet/discuit/internal/httperr"
 	"github.com/discuitnet/discuit/internal/uid"
-	"github.com/gorilla/mux"
 )
 
 // /api/posts [POST]
-func (s *Server) addPost(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) addPost(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
-
-	var err error
 
 	// Limits.
-	if err := s.rateLimit(w, r, "add_post_1_"+userID.String(), time.Second*10, 1); err != nil {
-		return
+	if err := s.rateLimit(w, r.req, "add_post_1_"+r.viewer.String(), time.Second*10, 1); err != nil {
+		return nil
 	}
 	// Limits.
-	if err := s.rateLimit(w, r, "add_post_2_"+userID.String(), time.Hour*24, 70); err != nil {
-		return
+	if err := s.rateLimit(w, r.req, "add_post_2_"+r.viewer.String(), time.Hour*24, 70); err != nil {
+		return nil
 	}
 
-	values, err := s.bodyToMap(w, r, true)
+	values, err := s.bodyToMap(w, r.req, true)
 	if err != nil {
-		return
+		return nil
 	}
 
 	var postType core.PostType = core.PostTypeText
 	if values["type"] != "" {
 		if err = postType.UnmarshalText([]byte(values["type"])); err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
 	}
 
 	if s.config.DisableImagePosts && postType == core.PostTypeImage {
 		// Disallow image post creation.
-		s.writeErrorCustom(w, r, http.StatusForbidden, "Image posts are not allowed", "no_image_posts")
-		return
+		return httperr.NewForbidden("no_image_posts", "Image posts are not allowed")
 	}
 
 	title := values["title"] // required
@@ -59,129 +50,97 @@ func (s *Server) addPost(w http.ResponseWriter, r *http.Request, ses *sessions.S
 	userGroup := core.UserGroupNormal
 	if text := values["userGroup"]; text != "" {
 		if err := userGroup.UnmarshalText([]byte(text)); err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
 	}
 
-	ctx := r.Context()
-	comm, err := core.GetCommunityByName(ctx, s.db, commName, nil)
+	comm, err := core.GetCommunityByName(r.ctx, s.db, commName, nil)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
 	var post *core.Post
 	switch postType {
 	case core.PostTypeText:
-		post, err = core.CreateTextPost(ctx, s.db, *userID, comm.ID, title, body)
+		post, err = core.CreateTextPost(r.ctx, s.db, *r.viewer, comm.ID, title, body)
 	case core.PostTypeImage:
 		imageID, idErr := uid.FromString(values["imageId"])
 		if idErr != nil {
-			s.writeErrorCustom(w, r, http.StatusBadRequest, "Invalid image id", "")
-			return
+			return httperr.NewBadRequest("invalid_image_id", "Invalid image ID.")
 		}
-		post, err = core.CreateImagePost(ctx, s.db, *userID, comm.ID, title, imageID)
+		post, err = core.CreateImagePost(r.ctx, s.db, *r.viewer, comm.ID, title, imageID)
 	case core.PostTypeLink:
-		post, err = core.CreateLinkPost(ctx, s.db, *userID, comm.ID, title, values["url"])
+		post, err = core.CreateLinkPost(r.ctx, s.db, *r.viewer, comm.ID, title, values["url"])
 	default:
-		s.writeError(w, r, errors.New("invalid post type"))
-		return
+		return httperr.NewBadRequest("invalid_post_type", "Invalid post type.")
 	}
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
 	if userGroup != core.UserGroupNormal {
-		if err := post.ChangeUserGroup(ctx, *userID, userGroup); err != nil {
-			s.writeError(w, r, err)
-			return
+		if err := post.ChangeUserGroup(r.ctx, *r.viewer, userGroup); err != nil {
+			return err
 		}
 	}
 
 	// +1 your own post.
-	post.Vote(ctx, *userID, true)
-
-	data, _ := json.Marshal(post)
-	w.Write(data)
+	post.Vote(r.ctx, *r.viewer, true)
+	return w.writeJSON(post)
 }
 
 // /api/posts/:postID [GET]
-func (s *Server) getPost(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	postID := mux.Vars(r)["postID"] // PublicID
-
-	ctx := r.Context()
-	_, userID := isLoggedIn(ses)
-	post, err := core.GetPost(ctx, s.db, nil, postID, userID, true)
+func (s *Server) getPost(w *responseWriter, r *request) error {
+	postID := r.muxVar("postID") // public post id
+	post, err := core.GetPost(r.ctx, s.db, nil, postID, r.viewer, true)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	if _, err = post.GetComments(ctx, userID, nil); err != nil {
-		s.writeError(w, r, err)
-		return
+	if _, err = post.GetComments(r.ctx, r.viewer, nil); err != nil {
+		return err
 	}
 
-	if fetchCommunity := r.URL.Query().Get("fetchCommunity"); fetchCommunity == "" || fetchCommunity == "true" {
-		comm, err := core.GetCommunityByID(ctx, s.db, post.CommunityID, userID)
+	if fetchCommunity := r.urlQueryValue("fetchCommunity"); fetchCommunity == "" || fetchCommunity == "true" {
+		comm, err := core.GetCommunityByID(r.ctx, s.db, post.CommunityID, r.viewer)
 		if err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
-		if err = comm.FetchRules(ctx); err != nil {
-			s.writeError(w, r, err)
-			return
+		if err = comm.FetchRules(r.ctx); err != nil {
+			return err
 		}
-		if err = comm.PopulateMods(ctx); err != nil {
-			s.writeError(w, r, err)
-			return
+		if err = comm.PopulateMods(r.ctx); err != nil {
+			return err
 		}
 		post.Community = comm
 	}
 
-	b, err := json.Marshal(post)
-	if err != nil {
-		s.writeError(w, r, err)
-		return
-	}
-	w.Write(b)
+	return w.writeJSON(post)
 }
 
 // /api/posts/:postID [PUT]
-func (s *Server) updatePost(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	postID := mux.Vars(r)["postID"] // PublicID
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) updatePost(w *responseWriter, r *request) error {
+	postID := r.muxVar("postID") // public post id
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	// Limits.
-	if err := s.rateLimitUpdateContent(w, r, *userID); err != nil {
-		return
+	if err := s.rateLimitUpdateContent(w, r.req, *r.viewer); err != nil {
+		return nil
 	}
 
-	ctx := r.Context()
-	post, err := core.GetPost(ctx, s.db, nil, postID, userID, true)
+	post, err := core.GetPost(r.ctx, s.db, nil, postID, r.viewer, true)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	query := r.URL.Query()
+	query := r.urlQuery()
 	action := query.Get("action")
 	if action == "" {
 		// Update post.
 		var tpost core.Post
-		data, err := io.ReadAll(r.Body)
-		if err != nil {
-			s.writeError(w, r, err)
-			return
-		}
-		if err = s.unmarshalJSON(w, r, data, &tpost); err != nil {
-			return
+		if err = r.unmarshalJSONBody(&tpost); err != nil {
+			return err
 		}
 		tpost.Title = strings.TrimSpace(tpost.Title)
 		tpost.Body.String = strings.TrimSpace(tpost.Body.String)
@@ -200,9 +159,8 @@ func (s *Server) updatePost(w http.ResponseWriter, r *http.Request, ses *session
 		}
 
 		if needSaving {
-			if err = post.Save(ctx, *userID); err != nil {
-				s.writeError(w, r, err)
-				return
+			if err = post.Save(r.ctx, *r.viewer); err != nil {
+				return err
 			}
 		}
 	} else {
@@ -210,188 +168,152 @@ func (s *Server) updatePost(w http.ResponseWriter, r *http.Request, ses *session
 		case "lock", "unlock":
 			var as core.UserGroup
 			if err = as.UnmarshalText([]byte(query.Get("lockAs"))); err != nil {
-				s.writeError(w, r, err)
-				return
+				return err
 			}
 			if action == "lock" {
-				err = post.Lock(ctx, *userID, as)
+				err = post.Lock(r.ctx, *r.viewer, as)
 			} else {
-				err = post.Unlock(ctx, *userID)
+				err = post.Unlock(r.ctx, *r.viewer)
 			}
 			if err != nil {
-				s.writeError(w, r, err)
-				return
+				return err
 			}
 		case "changeAsUser":
 			var as core.UserGroup
 			if err = as.UnmarshalText([]byte(query.Get("userGroup"))); err != nil {
-				s.writeError(w, r, err)
-				return
+				return err
 			}
-			if err = post.ChangeUserGroup(ctx, *userID, as); err != nil {
-				s.writeError(w, r, err)
-				return
+			if err = post.ChangeUserGroup(r.ctx, *r.viewer, as); err != nil {
+				return err
 			}
 		case "pin", "unpin":
 			siteWide := strings.ToLower(query.Get("siteWide")) == "true"
-			if err = post.Pin(ctx, *userID, siteWide, action == "unpin"); err != nil {
-				s.writeError(w, r, err)
-				return
+			if err = post.Pin(r.ctx, *r.viewer, siteWide, action == "unpin"); err != nil {
+				return err
 			}
 		default:
-			s.writeErrorCustom(w, r, http.StatusBadRequest, "Unsupported action.", "")
-			return
+			return httperr.NewBadRequest("invalid_action", "Unsupported action.")
 		}
 	}
 
-	b, _ := json.Marshal(post)
-	w.Write(b)
+	return w.writeJSON(post)
 }
 
 // /api/posts/:postID [DELETE]
-func (s *Server) deletePost(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	postID := mux.Vars(r)["postID"] // PublicID
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) deletePost(w *responseWriter, r *request) error {
+	postID := r.muxVar("postID") // public post id
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
 	// Limits.
-	if err := s.rateLimitUpdateContent(w, r, *userID); err != nil {
-		return
+	if err := s.rateLimitUpdateContent(w, r.req, *r.viewer); err != nil {
+		return nil
 	}
 
-	ctx := r.Context()
-	post, err := core.GetPost(ctx, s.db, nil, postID, userID, true)
+	post, err := core.GetPost(r.ctx, s.db, nil, postID, r.viewer, true)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
-	query := r.URL.Query()
+	query := r.urlQuery()
 
 	var as core.UserGroup
 	if err = as.UnmarshalText([]byte(query.Get("deleteAs"))); err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 	deleteContent := false
 	if dc := strings.ToLower(query.Get("deleteContent")); dc != "" {
 		if dc == "true" {
 			deleteContent = true
 		} else if dc != "false" {
-			s.writeErrorCustom(w, r, http.StatusBadRequest, "deletedContent must be a bool", "")
-			return
+			return httperr.NewBadRequest("", "deletedContent must be a bool.")
 		}
 	}
-	if err := post.Delete(ctx, *userID, as, deleteContent); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err := post.Delete(r.ctx, *r.viewer, as, deleteContent); err != nil {
+		return err
 	}
 
-	b, _ := json.Marshal(post)
-	w.Write(b)
+	return w.writeJSON(post)
 }
 
 // /api/_postVote [ POST ]
-func (s *Server) postVote(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) postVote(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
 	// Limits.
-	if err := s.rateLimitVoting(w, r, *userID); err != nil {
-		return
+	if err := s.rateLimitVoting(w, r.req, *r.viewer); err != nil {
+		return nil
 	}
 
 	req := struct {
 		PostID uid.ID `json:"postId"`
 		Up     bool   `json:"up"`
 	}{Up: true}
-
-	data, err := io.ReadAll(r.Body)
-	if err != nil {
-		s.writeError(w, r, err)
-		return
-	}
-	if err = s.unmarshalJSON(w, r, data, &req); err != nil {
-		return
+	if err := r.unmarshalJSONBody(&req); err != nil {
+		return err
 	}
 
-	ctx := r.Context()
-	post, err := core.GetPost(ctx, s.db, &req.PostID, "", userID, true)
+	post, err := core.GetPost(r.ctx, s.db, &req.PostID, "", r.viewer, true)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
 	if post.ViewerVoted.Bool {
 		if req.Up == post.ViewerVotedUp.Bool {
-			err = post.DeleteVote(ctx, *userID)
+			err = post.DeleteVote(r.ctx, *r.viewer)
 		} else {
-			err = post.ChangeVote(ctx, *userID, req.Up)
+			err = post.ChangeVote(r.ctx, *r.viewer, req.Up)
 		}
 	} else {
-		err = post.Vote(ctx, *userID, req.Up)
+		err = post.Vote(r.ctx, *r.viewer, req.Up)
 	}
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	bytes, _ := json.Marshal(post)
-	w.Write(bytes)
+	return w.writeJSON(post)
 }
 
 // /api/_uploads [ POST ]
-func (s *Server) imageUpload(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
+func (s *Server) imageUpload(w *responseWriter, r *request) error {
 	if s.config.DisableImagePosts {
-		s.writeErrorCustom(w, r, http.StatusForbidden, "Image posts are not all allowed", "no_image_posts")
-		return
+		return httperr.NewForbidden("no_image_posts", "Image posts are not all allowed.")
 	}
-
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
 	// Limits.
-	if err := s.rateLimit(w, r, "uploads_1_"+userID.String(), time.Second*2, 1); err != nil {
-		return
+	if err := s.rateLimit(w, r.req, "uploads_1_"+r.viewer.String(), time.Second*2, 1); err != nil {
+		return nil
 	}
 	// Limits.
-	if err := s.rateLimit(w, r, "uploads_2_"+userID.String(), time.Hour*24, 40); err != nil {
-		return
+	if err := s.rateLimit(w, r.req, "uploads_2_"+r.viewer.String(), time.Hour*24, 40); err != nil {
+		return nil
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, int64(s.config.MaxImageSize)) // limit max upload size
-	if err := r.ParseMultipartForm(int64(s.config.MaxImageSize)); err != nil {
-		s.writeErrorCustom(w, r, http.StatusBadRequest, "Max file size exceeded", "file_size_exceeded")
-		return
+	r.req.Body = http.MaxBytesReader(w, r.req.Body, int64(s.config.MaxImageSize)) // limit max upload size
+	if err := r.req.ParseMultipartForm(int64(s.config.MaxImageSize)); err != nil {
+		return httperr.NewBadRequest("file_size_exceeded", "Max file size exceeded.")
 	}
 
-	file, _, err := r.FormFile("image")
+	file, _, err := r.req.FormFile("image")
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 	defer file.Close()
 
 	fileData, err := io.ReadAll(file)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	image, err := core.SavePostImage(r.Context(), s.db, *userID, fileData)
+	image, err := core.SavePostImage(r.ctx, s.db, *r.viewer, fileData)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	data, _ := json.Marshal(image.Image())
-	w.Write(data)
+	return w.writeJSON(image.Image())
 }

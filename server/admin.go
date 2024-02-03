@@ -4,82 +4,73 @@ import (
 	"net/http"
 
 	"github.com/discuitnet/discuit/core"
-	"github.com/discuitnet/discuit/internal/sessions"
+	"github.com/discuitnet/discuit/internal/httperr"
 )
 
 // /api/_admin [POST]
-func (s *Server) adminActions(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	ctx := r.Context()
-	loggedIn, adminID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) adminActions(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	admin, err := core.GetUser(ctx, s.db, *adminID, adminID)
+	admin, err := core.GetUser(r.ctx, s.db, *r.viewer, r.viewer)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 	if !admin.Admin {
-		s.writeErrorCustom(w, r, http.StatusForbidden, "You are not an admin", "not_admin")
-		return
+		return httperr.NewForbidden("not_admin", "You are not an admin.")
 	}
-	// user is an admin, proceed
 
-	reqBody, err := s.bodyToMap(w, r, true)
+	// User is an admin, proceed.
+
+	reqBody, err := s.bodyToMap(w, r.req, true)
 	if err != nil {
-		return
+		return nil
 	}
 
 	action := reqBody["action"]
 	switch action {
 	case "ban_user":
 		username := reqBody["username"]
-		user, err := core.GetUserByUsername(ctx, s.db, username, nil)
+		user, err := core.GetUserByUsername(r.ctx, s.db, username, nil)
 		if err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
 		if err := s.logoutAllSessionsOfUser(user); err != nil {
-			s.writeErrorCustom(w, r, http.StatusInternalServerError, "Error logging out user: "+err.Error(), "error_loggin_out_user")
-			return
+			// s.writeErrorCustom(w, r, http.StatusInternalServerError, "Error logging out user: "+err.Error(), "error_loggin_out_user")
+			// return
+			return &httperr.Error{
+				HTTPStatus: http.StatusInternalServerError,
+				Code:       "error_loggin_out_user",
+				Message:    "Error logging out user: " + err.Error(),
+			}
 		}
 		if user.Admin {
-			s.writeErrorCustom(w, r, http.StatusForbidden, "Admin can't ban admin yo!", "no_ban_admin")
-			return
+			return httperr.NewForbidden("no_ban_admin", "Admin can't ban another admin, yo!")
 		}
-		// now you can ban
-		if err := user.Ban(ctx); err != nil {
-			s.writeError(w, r, err)
-			return
+		if err := user.Ban(r.ctx); err != nil {
+			return err
 		}
 	case "unban_user":
-		user, err := core.GetUserByUsername(ctx, s.db, reqBody["username"], nil)
+		user, err := core.GetUserByUsername(r.ctx, s.db, reqBody["username"], nil)
 		if err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
-		if err := user.Unban(ctx); err != nil {
-			s.writeError(w, r, err)
-			return
+		if err := user.Unban(r.ctx); err != nil {
+			return err
 		}
-		return
 	case "add_default_forum", "remove_default_forum":
 		name := reqBody["name"]
-		comm, err := core.GetCommunityByName(ctx, s.db, name, adminID)
+		comm, err := core.GetCommunityByName(r.ctx, s.db, name, r.viewer)
 		if err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
-		if err = comm.SetDefault(ctx, action == "add_default_forum"); err != nil {
-			s.writeError(w, r, err)
-			return
+		if err = comm.SetDefault(r.ctx, action == "add_default_forum"); err != nil {
+			return err
 		}
 	default:
-		s.writeErrorCustom(w, r, http.StatusBadRequest, "Unsupported admin action", "unsupported_action")
-		return
+		return httperr.NewBadRequest("unsupported_action", "Unsupported admin action.")
 	}
 
-	w.Write([]byte(`{"success:":true}`))
+	return w.writeString(`{"success:":true}`)
 }

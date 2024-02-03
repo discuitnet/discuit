@@ -2,7 +2,6 @@ package server
 
 import (
 	"database/sql"
-	"encoding/json"
 	"io"
 	"net/http"
 	"strconv"
@@ -11,593 +10,472 @@ import (
 
 	"github.com/discuitnet/discuit/core"
 	"github.com/discuitnet/discuit/internal/httperr"
-	"github.com/discuitnet/discuit/internal/sessions"
 	msql "github.com/discuitnet/discuit/internal/sql"
 	"github.com/discuitnet/discuit/internal/uid"
 	"github.com/gorilla/mux"
 )
 
 // /api/community [POST]
-func (s *Server) createCommunity(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) createCommunity(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
 	// TODO: Limits. Fine for now, as long as no admin account is compromised.
 
-	values, err := s.bodyToMap(w, r, true)
+	values, err := s.bodyToMap(w, r.req, true)
 	if err != nil {
-		return
+		return nil
 	}
 
 	name := values["name"]
 	about := values["about"]
-	comm, err := core.CreateCommunity(r.Context(), s.db, *userID, s.config.ForumCreationReqPoints, s.config.MaxForumsPerUser, name, about)
+	comm, err := core.CreateCommunity(r.ctx, s.db, *r.viewer, s.config.ForumCreationReqPoints, s.config.MaxForumsPerUser, name, about)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	data, _ := json.Marshal(comm)
-	w.Write(data)
+	return w.writeJSON(comm)
 }
 
 // /api/communities [GET] (?set=subscribed&sort=size)
-func (s *Server) getCommunities(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
+func (s *Server) getCommunities(w *responseWriter, r *request) error {
+	query := r.urlQuery()
+	search := query.Get("q")
 
-	queries := r.URL.Query()
-	q := queries.Get("q")
-
-	set := queries.Get("set") // Either "all" or "default" or "subscribed".
+	set := query.Get("set") // Either "all" or "default" or "subscribed".
 	if set == "" {
 		set = core.CommunitiesSetAll
 	}
 
 	sort := core.CommunitiesSortDefault
-	__sort := queries.Get("sort")
+	__sort := query.Get("sort")
 	if __sort != "" {
 		sort = core.CommunitiesSort(__sort)
 	}
 
 	limit := -1
-	limit_str := queries.Get("limit")
+	limit_str := query.Get("limit")
 	if limit_str != "" {
 		var err error
 		limit, err = strconv.Atoi(limit_str)
 		if err != nil {
-			s.writeErrorCustom(w, r, http.StatusBadRequest, "Invalid limit", "invalid_limit")
-			return
+			return httperr.NewBadRequest("invalid_limit", "Invalid limit.")
 		}
 	}
 
 	var comms []*core.Community
 	var err error
-	ctx := r.Context()
 
-	if q != "" { // Search communities.
-		comms, err = core.GetCommunitiesPrefix(ctx, s.db, q)
+	if search != "" { // Search communities.
+		comms, err = core.GetCommunitiesPrefix(r.ctx, s.db, search)
 	} else {
 		switch set {
 		case core.CommunitiesSetAll, core.CommunitiesSetDefault:
-			comms, err = core.GetCommunities(ctx, s.db, sort, set, limit, nil)
+			comms, err = core.GetCommunities(r.ctx, s.db, sort, set, limit, nil)
 		case core.CommunitiesSetSubscribed:
-			if !loggedIn {
-				s.writeErrorNotLoggedIn(w, r)
-				return
+			if !r.loggedIn {
+				return errNotLoggedIn
 			}
-			comms, err = core.GetCommunities(ctx, s.db, sort, set, limit, userID)
+			comms, err = core.GetCommunities(r.ctx, s.db, sort, set, limit, r.viewer)
 		}
 	}
 	if err != nil {
 		if httperr.IsNotFound(err) {
-			w.Write([]byte("[]"))
-			return
+			return w.writeString("[]")
 		}
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	if loggedIn {
+	if r.loggedIn {
 		for _, comm := range comms {
-			if err = comm.PopulateViewerFields(ctx, *userID); err != nil {
-				s.writeError(w, r, err)
-				return
+			if err = comm.PopulateViewerFields(r.ctx, *r.viewer); err != nil {
+				return err
 			}
 		}
 	}
 
 	if len(comms) == 0 {
-		w.Write([]byte("[]"))
+		return w.writeString("[]")
 	}
 
-	data, _ := json.Marshal(comms)
-	w.Write(data)
+	return w.writeJSON(comms)
 }
 
 // /api/communities/:communityID [GET]
-func (s *Server) getCommunity(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	_, userID := isLoggedIn(ses)
-	ctx := r.Context()
-
+func (s *Server) getCommunity(w *responseWriter, r *request) error {
 	var (
-		communityID = mux.Vars(r)["communityID"] // Community ID or name.
-		query       = r.URL.Query()
+		communityID = r.muxVar("communityID") // Community ID or name.
+		query       = r.urlQuery()
 		comm        *core.Community
 		byName      = strings.ToLower(query.Get("byName")) == "true"
-
-		err error
+		err         error
 	)
 
 	if byName {
-		comm, err = core.GetCommunityByName(ctx, s.db, communityID, userID)
+		comm, err = core.GetCommunityByName(r.ctx, s.db, communityID, r.viewer)
 	} else {
 		var cid uid.ID
 		cid, err = uid.FromString(communityID)
 		if err != nil {
-			s.writeErrorCustom(w, r, http.StatusBadRequest, "Invalid ID.", "")
-			return
+			return httperr.NewBadRequest("invalid_id", "Invalid ID.")
 		}
-		comm, err = core.GetCommunityByID(ctx, s.db, cid, userID)
+		comm, err = core.GetCommunityByID(r.ctx, s.db, cid, r.viewer)
 	}
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	if err = comm.PopulateMods(ctx); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err = comm.PopulateMods(r.ctx); err != nil {
+		return err
 	}
-	if err = comm.FetchRules(ctx); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err = comm.FetchRules(r.ctx); err != nil {
+		return err
 	}
-	if _, err = comm.Default(ctx); err != nil {
-		s.writeError(w, r, err)
-		return
+	if _, err = comm.Default(r.ctx); err != nil {
+		return err
 	}
 
-	data, _ := json.Marshal(comm)
-	w.Write(data)
+	return w.writeJSON(comm)
 }
 
 // /api/communities/:communityID [PUT]
-func (s *Server) updateCommunity(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) updateCommunity(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
 	var (
-		ctx         = r.Context()
-		communityID = mux.Vars(r)["communityID"] // Community ID or name.
-		query       = r.URL.Query()
+		communityID = r.muxVar("communityID") // Community ID or name.
+		query       = r.urlQuery()
 		byName      = strings.ToLower(query.Get("byName")) == "true"
-
-		comm *core.Community
-		err  error
+		comm        *core.Community
+		err         error
 	)
 
 	if byName {
-		comm, err = core.GetCommunityByName(ctx, s.db, communityID, userID)
+		comm, err = core.GetCommunityByName(r.ctx, s.db, communityID, r.viewer)
 	} else {
 		var cid uid.ID
 		cid, err = uid.FromString(communityID)
 		if err != nil {
-			s.writeErrorCustom(w, r, http.StatusBadRequest, "Invalid ID.", "")
-			return
+			return httperr.NewBadRequest("invalid_id", "Invalid ID.")
 		}
-		comm, err = core.GetCommunityByID(ctx, s.db, cid, userID)
+		comm, err = core.GetCommunityByID(r.ctx, s.db, cid, r.viewer)
 	}
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	if err = comm.PopulateMods(ctx); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err = comm.PopulateMods(r.ctx); err != nil {
+		return err
 	}
-	if err = comm.FetchRules(ctx); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err = comm.FetchRules(r.ctx); err != nil {
+		return err
 	}
 
-	data, err := io.ReadAll(r.Body)
-	if err != nil {
-		s.writeError(w, r, err)
-		return
-	}
 	rcomm := core.Community{}
-	if err = s.unmarshalJSON(w, r, data, &rcomm); err != nil {
-		return
+	if err = r.unmarshalJSONBody(&rcomm); err != nil {
+		return err
 	}
 	comm.NSFW = rcomm.NSFW
 	comm.About = rcomm.About
-	if err = comm.Update(ctx, *userID); err != nil {
-		s.writeError(w, r, err)
-		return
+
+	if err = comm.Update(r.ctx, *r.viewer); err != nil {
+		return err
 	}
 
-	data, _ = json.Marshal(comm)
-	w.Write(data)
+	return w.writeJSON(comm)
 }
 
 // /api/_joinCommunity [POST]
-func (s *Server) joinCommunity(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) joinCommunity(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
 	// Limits.
-	if err := s.rateLimit(w, r, "join_community_1_"+userID.String(), time.Second*1, 1); err != nil {
-		return
+	if err := s.rateLimit(w, r.req, "join_community_1_"+r.viewer.String(), time.Second*1, 1); err != nil {
+		return nil
 	}
-	if err := s.rateLimit(w, r, "join_community_2_"+userID.String(), time.Hour, 500); err != nil {
-		return
+	if err := s.rateLimit(w, r.req, "join_community_2_"+r.viewer.String(), time.Hour, 500); err != nil {
+		return nil
 	}
 
 	req := struct {
 		CommunityID uid.ID `json:"communityId"`
 		Leave       bool   `json:"leave"`
 	}{}
-	data, err := io.ReadAll(r.Body)
-	if err != nil {
-		s.writeError(w, r, err)
-		return
-	}
-	if err = s.unmarshalJSON(w, r, data, &req); err != nil {
-		return
+	if err := r.unmarshalJSONBody(&req); err != nil {
+		return err
 	}
 
-	ctx := r.Context()
-	user, err := core.GetUser(ctx, s.db, *userID, nil)
+	user, err := core.GetUser(r.ctx, s.db, *r.viewer, nil)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	community, err := core.GetCommunityByID(ctx, s.db, req.CommunityID, userID)
+	community, err := core.GetCommunityByID(r.ctx, s.db, req.CommunityID, r.viewer)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
 	if req.Leave {
-		err = community.Leave(ctx, user.ID)
+		err = community.Leave(r.ctx, user.ID)
 	} else {
-		err = community.Join(ctx, user.ID)
+		err = community.Join(r.ctx, user.ID)
 	}
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
 	community.ViewerJoined = msql.NewNullBool(!req.Leave)
 	community.ViewerMod = msql.NewNullBool(false)
-	data, _ = json.Marshal(community)
-	w.Write(data)
+
+	return w.writeJSON(community)
 }
 
 // /api/communities/{communityID}/mods [GET]
-func (s *Server) getCommunityMods(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	cid, err := s.getID(w, r, mux.Vars(r)["communityID"])
+func (s *Server) getCommunityMods(w *responseWriter, r *request) error {
+	cid, err := s.getID(w, r.req, r.muxVar("communityID"))
 	if err != nil {
-		return
+		return nil
 	}
 
-	ctx := r.Context()
-	comm, err := core.GetCommunityByID(ctx, s.db, cid, nil)
+	comm, err := core.GetCommunityByID(r.ctx, s.db, cid, nil)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	mods, err := core.GetCommunityMods(ctx, s.db, comm.ID)
+	mods, err := core.GetCommunityMods(r.ctx, s.db, comm.ID)
 	if err != nil {
 		if httperr.IsNotFound(err) {
-			w.Write([]byte("[]"))
-			return
+			return w.writeString("[]")
 		}
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	b, _ := json.Marshal(mods)
-	w.Write(b)
+	return w.writeJSON(mods)
 }
 
 // /api/communities/{communityID}/mods [POST]
-func (s *Server) addCommunityMod(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) addCommunityMod(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	cid, err := s.getID(w, r, mux.Vars(r)["communityID"])
+	cid, err := s.getID(w, r.req, r.muxVar("communityID"))
 	if err != nil {
-		return
+		return nil
 	}
 
-	ctx := r.Context()
-	comm, err := core.GetCommunityByID(ctx, s.db, cid, userID)
+	comm, err := core.GetCommunityByID(r.ctx, s.db, cid, r.viewer)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	m, err := s.bodyToMap(w, r, true)
+	m, err := s.bodyToMap(w, r.req, true)
 	if err != nil {
-		return
+		return nil
 	}
 
 	username, ok := m["username"]
 	if !ok {
-		s.writeErrorCustom(w, r, http.StatusBadRequest, "Empty username.", "")
-		return
+		return httperr.NewBadRequest("empty_username", "Empty username.")
 	}
 
-	user, err := core.GetUserByUsername(ctx, s.db, username, nil)
+	user, err := core.GetUserByUsername(r.ctx, s.db, username, nil)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	if err = core.MakeUserMod(ctx, s.db, comm, *userID, user.ID, true); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err = core.MakeUserMod(r.ctx, s.db, comm, *r.viewer, user.ID, true); err != nil {
+		return err
 	}
 
-	mods, err := core.GetCommunityMods(ctx, s.db, comm.ID)
+	mods, err := core.GetCommunityMods(r.ctx, s.db, comm.ID)
 	if err != nil {
 		if httperr.IsNotFound(err) {
-			w.Write([]byte("[]"))
-			return
+			return w.writeString("[]")
 		}
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	b, _ := json.Marshal(mods)
-	w.Write(b)
-
+	return w.writeJSON(mods)
 }
 
 // /api/communities/{communityID}/mods/{mod} [DELETE]
-func (s *Server) removeCommunityMod(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) removeCommunityMod(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	vars := mux.Vars(r)
-	cid, err := s.getID(w, r, vars["communityID"])
+	vars := mux.Vars(r.req)
+	cid, err := s.getID(w, r.req, vars["communityID"])
 	if err != nil {
-		return
+		return nil
 	}
 
-	ctx := r.Context()
-	comm, err := core.GetCommunityByID(ctx, s.db, cid, userID)
+	comm, err := core.GetCommunityByID(r.ctx, s.db, cid, r.viewer)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
 	username, ok := vars["mod"]
 	if !ok {
-		s.writeErrorCustom(w, r, http.StatusBadRequest, "No username", "")
-		return
+		return httperr.NewBadRequest("empty_username", "Empty username.")
 	}
 
-	user, err := core.GetUserByUsername(ctx, s.db, username, nil)
+	user, err := core.GetUserByUsername(r.ctx, s.db, username, nil)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	if err = core.MakeUserMod(ctx, s.db, comm, *userID, user.ID, false); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err = core.MakeUserMod(r.ctx, s.db, comm, *r.viewer, user.ID, false); err != nil {
+		return err
 	}
 
-	b, _ := json.Marshal(user)
-	w.Write(b)
+	return w.writeJSON(user)
 }
 
 // /api/communities/{communityID}/rules [GET]
-func (s *Server) getCommunityRules(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	_, userID := isLoggedIn(ses)
-
-	cid, err := s.getID(w, r, mux.Vars(r)["communityID"])
+func (s *Server) getCommunityRules(w *responseWriter, r *request) error {
+	cid, err := s.getID(w, r.req, r.muxVar("communityID"))
 	if err != nil {
-		return
+		return nil
 	}
 
-	ctx := r.Context()
-	comm, err := core.GetCommunityByID(ctx, s.db, cid, userID)
+	comm, err := core.GetCommunityByID(r.ctx, s.db, cid, r.viewer)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
-	if err = comm.FetchRules(ctx); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err = comm.FetchRules(r.ctx); err != nil {
+		return err
 	}
 
 	if comm.Rules == nil {
-		w.Write([]byte("[]"))
-		return
+		return w.writeString("[]")
 	}
-	b, _ := json.Marshal(comm.Rules)
-	w.Write(b)
+	return w.writeJSON(comm.Rules)
 }
 
 // /api/communities/{communityID}/rules [POST]
-func (s *Server) addCommunityRule(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) addCommunityRule(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	cid, err := s.getID(w, r, mux.Vars(r)["communityID"])
+	cid, err := s.getID(w, r.req, r.muxVar("communityID"))
 	if err != nil {
-		return
+		return nil
 	}
 
-	ctx := r.Context()
-	comm, err := core.GetCommunityByID(ctx, s.db, cid, userID)
+	comm, err := core.GetCommunityByID(r.ctx, s.db, cid, r.viewer)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
 	rule := core.CommunityRule{}
-	b, err := io.ReadAll(r.Body)
-	if err != nil {
-		s.writeError(w, r, err)
-		return
-	}
-	if err = s.unmarshalJSON(w, r, b, &rule); err != nil {
-		return
+	if err := r.unmarshalJSONBody(&rule); err != nil {
+		return err
 	}
 
-	if err = comm.AddRule(ctx, rule.Rule, rule.Description.String, *userID); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err = comm.AddRule(r.ctx, rule.Rule, rule.Description.String, *r.viewer); err != nil {
+		return err
 	}
 
-	if err = comm.FetchRules(ctx); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err = comm.FetchRules(r.ctx); err != nil {
+		return err
 	}
 
 	if comm.Rules == nil {
-		w.Write([]byte("[]"))
-		return
+		return w.writeString("[]")
 	}
-	b, _ = json.Marshal(comm.Rules)
-	w.Write(b)
+
+	return w.writeJSON(comm.Rules)
 }
 
 // /api/communities/{communityID}/rules/{ruleID} [GET]
-func (s *Server) getCommunityRule(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	vars := mux.Vars(r)
-	ruleID, err := strconv.Atoi(vars["ruleID"])
+func (s *Server) getCommunityRule(w *responseWriter, r *request) error {
+	ruleID, err := strconv.Atoi(r.muxVar("ruleID"))
 	if err != nil {
-		s.writeErrorCustom(w, r, http.StatusNotFound, "Rule not found.", "")
-		return
+		return httperr.NewNotFound("rule_not_found", "Rule not found.")
 	}
 
-	rule, err := core.GetCommunityRule(r.Context(), s.db, uint(ruleID))
+	rule, err := core.GetCommunityRule(r.ctx, s.db, uint(ruleID))
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	b, _ := json.Marshal(rule)
-	w.Write(b)
-
+	return w.writeJSON(rule)
 }
 
 // /api/communities/{communityID}/rules/{ruleID} [PUT]
-func (s *Server) updateCommunityRule(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) updateCommunityRule(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	vars := mux.Vars(r)
-	ruleID, err := strconv.Atoi(vars["ruleID"])
+	ruleID, err := strconv.Atoi(r.muxVar("ruleID"))
 	if err != nil {
-		s.writeErrorCustom(w, r, http.StatusNotFound, "Rule not found.", "")
-		return
+		return httperr.NewNotFound("rule_not_found", "Rule not found.")
 	}
 
-	ctx := r.Context()
-	rule, err := core.GetCommunityRule(ctx, s.db, uint(ruleID))
+	rule, err := core.GetCommunityRule(r.ctx, s.db, uint(ruleID))
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
 	req := core.CommunityRule{}
-	data, err := io.ReadAll(r.Body)
-	if err != nil {
-		s.writeError(w, r, err)
-		return
+	if err := r.unmarshalJSONBody(&req); err != nil {
+		return err
 	}
-	if err = s.unmarshalJSON(w, r, data, &req); err != nil {
-		return
-	}
-
 	rule.Rule = req.Rule
 	rule.Description = req.Description
 	rule.ZIndex = req.ZIndex
 
-	if err = rule.Update(ctx, *userID); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err = rule.Update(r.ctx, *r.viewer); err != nil {
+		return err
 	}
 
-	b, _ := json.Marshal(rule)
-	w.Write(b)
+	return w.writeJSON(rule)
 }
 
 // /api/communities/{communityID}/rules/{ruleID} [DELETE]
-func (s *Server) deleteCommunityRule(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) deleteCommunityRule(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	vars := mux.Vars(r)
-	ruleID, err := strconv.Atoi(vars["ruleID"])
+	ruleID, err := strconv.Atoi(r.muxVar("ruleID"))
 	if err != nil {
-		s.writeErrorCustom(w, r, http.StatusNotFound, "Rule not found.", "")
-		return
+		return httperr.NewNotFound("rule_not_found", "Rule not found.")
 	}
 
-	ctx := r.Context()
-	rule, err := core.GetCommunityRule(ctx, s.db, uint(ruleID))
+	rule, err := core.GetCommunityRule(r.ctx, s.db, uint(ruleID))
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	if err = rule.Delete(ctx, *userID); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err = rule.Delete(r.ctx, *r.viewer); err != nil {
+		return err
 	}
 
-	b, _ := json.Marshal(rule)
-	w.Write(b)
+	return w.writeJSON(rule)
 }
 
 // /api/_report [POST]
-func (s *Server) report(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	isLoggedIn, userID := isLoggedIn(ses)
-	if !isLoggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) report(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
 	// Limits.
-	if err := s.rateLimit(w, r, "reporting_1_"+userID.String(), time.Second*5, 1); err != nil {
-		return
+	if err := s.rateLimit(w, r.req, "reporting_1_"+r.viewer.String(), time.Second*5, 1); err != nil {
+		return nil
 	}
-	if err := s.rateLimit(w, r, "reporting_2_"+userID.String(), time.Hour*24, 50); err != nil {
-		return
+	if err := s.rateLimit(w, r.req, "reporting_2_"+r.viewer.String(), time.Hour*24, 50); err != nil {
+		return nil
 	}
 
 	inc := struct {
@@ -605,75 +483,58 @@ func (s *Server) report(w http.ResponseWriter, r *http.Request, ses *sessions.Se
 		TargetID uid.ID          `json:"targetId"`
 		Reason   int             `json:"reason"`
 	}{}
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		s.writeError(w, r, err)
-		return
+	if err := r.unmarshalJSONBody(&inc); err != nil {
+		return err
 	}
-	if err = s.unmarshalJSON(w, r, body, &inc); err != nil {
-		return
-	}
-
-	ctx := r.Context()
 
 	var report *core.Report
-	var rerr error
+	var err error
 	if inc.Type == core.ReportTypePost {
-		report, rerr = core.NewPostReport(ctx, s.db, inc.TargetID, inc.Reason, *userID)
+		report, err = core.NewPostReport(r.ctx, s.db, inc.TargetID, inc.Reason, *r.viewer)
 	} else if inc.Type == core.ReportTypeComment {
-		report, rerr = core.NewCommentReport(ctx, s.db, inc.TargetID, inc.Reason, *userID)
+		report, err = core.NewCommentReport(r.ctx, s.db, inc.TargetID, inc.Reason, *r.viewer)
 	} else {
-		s.writeErrorCustom(w, r, http.StatusBadRequest, "Invalid report type.", "")
-		return
+		return httperr.NewBadRequest("invalid_report_type", "Invalid report type.")
 	}
-	if rerr != nil {
-		s.writeError(w, r, rerr)
-		return
+	if err != nil {
+		return err
 	}
 
-	b, err := json.Marshal(report)
-	if err != nil {
-		s.writeError(w, r, err)
-		return
-	}
-	w.Write(b)
+	return w.writeJSON(report)
 }
 
 // /api/communities/{communityID}/reports [GET]
-func (s *Server) getCommunityReports(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	isLoggedIn, userID := isLoggedIn(ses)
-	if !isLoggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) getCommunityReports(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	cid, err := s.getID(w, r, mux.Vars(r)["communityID"])
+	cid, err := s.getID(w, r.req, r.muxVar("communityID"))
 	if err != nil {
-		return
+		return nil
 	}
 
-	ctx := r.Context()
-	comm, err := core.GetCommunityByID(ctx, s.db, cid, userID)
+	comm, err := core.GetCommunityByID(r.ctx, s.db, cid, r.viewer)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
 	// Only mods and admins have access.
-	if _, err := s.modOrAdmin(w, r, comm, *userID); err != nil {
-		return
+	if _, err := s.modOrAdmin(w, r.req, comm, *r.viewer); err != nil {
+		return nil
 	}
 
-	query := r.URL.Query()
-	limit, err := s.getFeedLimit(w, r, query)
+	query := r.urlQuery()
+
+	limit, err := getFeedLimit(query, s.config.PaginationLimit, s.config.PaginationLimitMax)
 	if err != nil {
-		return
+		return err
 	}
+
 	page := 1
 	if spage := query.Get("page"); spage != "" {
 		if page, err = strconv.Atoi(spage); err != nil {
-			s.writeErrorCustom(w, r, http.StatusBadRequest, "Invalid page.", "")
-			return
+			return httperr.NewBadRequest("invalid_page", "Invalid page.")
 		}
 	}
 
@@ -687,8 +548,7 @@ func (s *Server) getCommunityReports(w http.ResponseWriter, r *http.Request, ses
 	case "all", "":
 		t = core.ReportTypeAll
 	default:
-		s.writeErrorCustom(w, r, http.StatusBadRequest, "Unsupported filter.", "")
-		return
+		return errInvalidFeedFilter
 	}
 
 	response := struct {
@@ -698,333 +558,275 @@ func (s *Server) getCommunityReports(w http.ResponseWriter, r *http.Request, ses
 		Page    int                          `json:"page"`
 	}{Limit: limit, Page: page}
 
-	response.Details, err = core.FetchReportsDetails(ctx, s.db, cid)
+	response.Details, err = core.FetchReportsDetails(r.ctx, s.db, cid)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	response.Reports, err = core.GetReports(ctx, s.db, cid, t, limit, page)
+	response.Reports, err = core.GetReports(r.ctx, s.db, cid, t, limit, page)
 	if err != nil && err != sql.ErrNoRows {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	b, err := json.Marshal(response)
-	if err != nil {
-		s.writeError(w, r, err)
-		return
-	}
-	w.Write(b)
+	return w.writeJSON(response)
 }
 
 // /api/communities/{communityID}/reports/{reportID} [DELETE]
-func (s *Server) deleteReport(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	isLoggedIn, userID := isLoggedIn(ses)
-	if !isLoggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) deleteReport(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	vars := mux.Vars(r)
-	cid, err := s.getID(w, r, vars["communityID"])
+	vars := mux.Vars(r.req)
+	cid, err := s.getID(w, r.req, vars["communityID"])
 	if err != nil {
-		return
+		return nil
 	}
 
-	ctx := r.Context()
-	comm, err := core.GetCommunityByID(ctx, s.db, cid, userID)
+	comm, err := core.GetCommunityByID(r.ctx, s.db, cid, r.viewer)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
 	// Only mods and admins have access.
-	if _, err := s.modOrAdmin(w, r, comm, *userID); err != nil {
-		return
+	if _, err := s.modOrAdmin(w, r.req, comm, *r.viewer); err != nil {
+		return nil
 	}
 
 	reportID, err := strconv.Atoi(vars["reportID"])
 	if err != nil {
-		s.writeErrorCustom(w, r, http.StatusBadRequest, "Invalid reportId.", "")
-		return
+		return httperr.NewBadRequest("invalid_report_id", "Invalid report ID.")
 	}
-	report, err := core.GetReport(ctx, s.db, reportID)
+	report, err := core.GetReport(r.ctx, s.db, reportID)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
-	if err = report.FetchTarget(ctx); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err = report.FetchTarget(r.ctx); err != nil {
+		return err
 	}
-
-	if err = report.Delete(ctx, *userID); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err = report.Delete(r.ctx, *r.viewer); err != nil {
+		return err
 	}
 
-	b, _ := json.Marshal(report)
-	w.Write(b)
+	return w.writeJSON(report)
 }
 
 // /api/communities/{communityID}/banned [GET, POST, DELETE]
-func (s *Server) handleCommunityBanned(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) handleCommunityBanned(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	cid, err := s.getID(w, r, mux.Vars(r)["communityID"])
+	cid, err := s.getID(w, r.req, r.muxVar("communityID"))
 	if err != nil {
-		return
+		return nil
 	}
 
-	ctx := r.Context()
-	comm, err := core.GetCommunityByID(ctx, s.db, cid, userID)
+	comm, err := core.GetCommunityByID(r.ctx, s.db, cid, r.viewer)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
 	// Only mods and admins have access.
-	if _, err := s.modOrAdmin(w, r, comm, *userID); err != nil {
-		return
+	if _, err := s.modOrAdmin(w, r.req, comm, *r.viewer); err != nil {
+		return nil
 	}
 
-	if r.Method == "GET" {
-		users, err := comm.GetBannedUsers(ctx)
+	if r.req.Method == "GET" {
+		users, err := comm.GetBannedUsers(r.ctx)
 		if err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
 		if users == nil {
-			w.Write([]byte("[]"))
-		} else {
-			b, _ := json.Marshal(users)
-			w.Write(b)
+			return w.writeString("[]")
 		}
-		return
+		return w.writeJSON(users)
 	}
 
-	if r.Method == "POST" || r.Method == "DELETE" {
-		m, err := s.bodyToMap(w, r, true)
+	if r.req.Method == "POST" || r.req.Method == "DELETE" {
+		m, err := s.bodyToMap(w, r.req, true)
 		if err != nil {
-			return
+			return nil
 		}
 
 		username, ok := m["username"]
 		if !ok {
-			s.writeErrorCustom(w, r, http.StatusBadRequest, "No username", "")
-			return
+			return httperr.NewBadRequest("no_username", "No username.")
 		}
 
-		user, err := core.GetUserByUsername(ctx, s.db, username, nil)
+		user, err := core.GetUserByUsername(r.ctx, s.db, username, nil)
 		if err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
-		if isMod, err := comm.UserMod(ctx, user.ID); err != nil {
-			s.writeError(w, r, err)
-			return
-		} else if r.Method == "POST" && (isMod || user.Admin) {
+		if isMod, err := comm.UserMod(r.ctx, user.ID); err != nil {
+			return err
+		} else if r.req.Method == "POST" && (isMod || user.Admin) {
 			// Cannot ban mod or admin.
-			s.writeErrorCustom(w, r, http.StatusForbidden, "", "")
-			return
+			return httperr.NewForbidden("not_admin_nor_mod", "Neither an admin nor a mod.")
 		}
 
 		var expires *time.Time
 		if expiresText, ok := m["expires"]; ok {
 			expires = new(time.Time)
 			if err = expires.UnmarshalText([]byte(expiresText)); err != nil {
-				s.writeErrorCustom(w, r, http.StatusBadRequest, "Invalid expires", "")
-				return
+				return httperr.NewBadRequest("invalid_expires", "Invalid expires.")
 			}
 		}
 
-		if r.Method == "POST" {
-			err = comm.BanUser(ctx, *userID, user.ID, expires)
+		if r.req.Method == "POST" {
+			err = comm.BanUser(r.ctx, *r.viewer, user.ID, expires)
 		} else {
 			// Unban user.
-			err = comm.UnbanUser(ctx, *userID, user.ID)
+			err = comm.UnbanUser(r.ctx, *r.viewer, user.ID)
 		}
 		if err != nil {
 			if msql.IsErrDuplicateErr(err) {
-				s.writeErrorCustom(w, r, http.StatusConflict, "", "")
-			} else {
-				s.writeError(w, r, err)
+				return &httperr.Error{
+					HTTPStatus: http.StatusConflict,
+					Code:       "conflict",
+					Message:    "There's a duplicate row.",
+				}
 			}
-			return
+			return err
 		}
-		b, _ := json.Marshal(user)
-		w.Write(b)
-		return
+		return w.writeJSON(user)
 	}
+
+	return httperr.NewBadRequest("", "Unsupported HTTP method.")
 }
 
 // /api/communities/{communityID}/pro_pic [POST, DELETE]
-func (s *Server) handleCommunityProPic(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) handleCommunityProPic(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	cid, err := s.getID(w, r, mux.Vars(r)["communityID"])
+	cid, err := s.getID(w, r.req, r.muxVar("communityID"))
 	if err != nil {
-		return
+		return nil
 	}
 
-	ctx := r.Context()
-	comm, err := core.GetCommunityByID(ctx, s.db, cid, userID)
+	comm, err := core.GetCommunityByID(r.ctx, s.db, cid, r.viewer)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
 	// Only mods and admins have access.
-	if _, err := s.modOrAdmin(w, r, comm, *userID); err != nil {
-		return
+	if _, err := s.modOrAdmin(w, r.req, comm, *r.viewer); err != nil {
+		return nil
 	}
 
-	if r.Method == "POST" {
-		r.Body = http.MaxBytesReader(w, r.Body, int64(s.config.MaxImageSize)) // limit max upload size
-		if err := r.ParseMultipartForm(int64(s.config.MaxImageSize)); err != nil {
-			s.writeErrorCustom(w, r, http.StatusBadRequest, "Max file size exceeded", "file_size_exceeded")
-			return
+	if r.req.Method == "POST" {
+		r.req.Body = http.MaxBytesReader(w, r.req.Body, int64(s.config.MaxImageSize)) // limit max upload size
+		if err := r.req.ParseMultipartForm(int64(s.config.MaxImageSize)); err != nil {
+			return httperr.NewBadRequest("file_size_exceeded", "Max file size exceeded.")
 		}
 
-		file, _, err := r.FormFile("image")
+		file, _, err := r.req.FormFile("image")
 		if err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
 		defer file.Close()
 
 		buf, err := io.ReadAll(file)
 		if err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
-		if err = comm.UpdateProPic(ctx, buf); err != nil {
-			s.writeError(w, r, err)
-			return
+		if err = comm.UpdateProPic(r.ctx, buf); err != nil {
+			return err
 		}
-	} else if r.Method == "DELETE" {
-		if err = comm.DeleteProPic(ctx); err != nil {
-			s.writeError(w, r, err)
-			return
+	} else if r.req.Method == "DELETE" {
+		if err = comm.DeleteProPic(r.ctx); err != nil {
+			return err
 		}
 	}
 
-	data, _ := json.Marshal(comm)
-	w.Write(data)
+	return w.writeJSON(comm)
 }
 
 // /api/communities/{communityID}/banner_image [POST, DELETE]
-func (s *Server) handleCommunityBannerImage(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) handleCommunityBannerImage(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	cid, err := s.getID(w, r, mux.Vars(r)["communityID"])
+	cid, err := s.getID(w, r.req, r.muxVar("communityID"))
 	if err != nil {
-		return
+		return nil
 	}
 
-	ctx := r.Context()
-	comm, err := core.GetCommunityByID(ctx, s.db, cid, userID)
+	comm, err := core.GetCommunityByID(r.ctx, s.db, cid, r.viewer)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
 	// Only mods and admins have access.
-	if _, err := s.modOrAdmin(w, r, comm, *userID); err != nil {
-		return
+	if _, err := s.modOrAdmin(w, r.req, comm, *r.viewer); err != nil {
+		return nil
 	}
 
-	if r.Method == "POST" {
-		r.Body = http.MaxBytesReader(w, r.Body, int64(s.config.MaxImageSize)) // limit max upload size
-		if err := r.ParseMultipartForm(int64(s.config.MaxImageSize)); err != nil {
-			s.writeErrorCustom(w, r, http.StatusBadRequest, "Max file size exceeded", "file_size_exceeded")
-			return
+	if r.req.Method == "POST" {
+		r.req.Body = http.MaxBytesReader(w, r.req.Body, int64(s.config.MaxImageSize)) // limit max upload size
+		if err := r.req.ParseMultipartForm(int64(s.config.MaxImageSize)); err != nil {
+			return httperr.NewBadRequest("file_size_exceeded", "Max file size exceeded.")
 		}
 
-		file, _, err := r.FormFile("image")
+		file, _, err := r.req.FormFile("image")
 		if err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
 		defer file.Close()
 
 		buf, err := io.ReadAll(file)
 		if err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
-		if err = comm.UpdateBannerImage(ctx, buf); err != nil {
-			s.writeError(w, r, err)
-			return
+		if err = comm.UpdateBannerImage(r.ctx, buf); err != nil {
+			return err
 		}
-	} else if r.Method == "DELETE" {
-		if err = comm.DeleteBannerImage(ctx); err != nil {
-			s.writeError(w, r, err)
-			return
+	} else if r.req.Method == "DELETE" {
+		if err = comm.DeleteBannerImage(r.ctx); err != nil {
+			return err
 		}
 	}
 
-	data, _ := json.Marshal(comm)
-	w.Write(data)
+	return w.writeJSON(comm)
 }
 
 // /api/community_requests [GET, POST]
-func (s *Server) handleCommunityRequests(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) handleCommunityRequests(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	ctx := r.Context()
-	user, err := core.GetUser(ctx, s.db, *userID, nil)
+	user, err := core.GetUser(r.ctx, s.db, *r.viewer, nil)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	if r.Method == "GET" {
+	if r.req.Method == "GET" {
 		if !user.Admin {
-			s.writeErrorCustom(w, r, http.StatusForbidden, "", "")
-			return
+			return httperr.NewForbidden("", "Not admin.")
 		}
 
-		items, err := core.GetCommunityRequests(ctx, s.db)
+		items, err := core.GetCommunityRequests(r.ctx, s.db)
 		if err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
-
 		if len(items) == 0 {
-			w.Write([]byte("[]"))
-			return
+			return w.writeString("[]")
 		}
-
-		data, _ := json.Marshal(items)
-		w.Write(data)
+		return w.writeJSON(items)
 	} else { // r.Method == "POST"
 
 		// Limits.
-		if err := s.rateLimit(w, r, "req_comm_1_"+userID.String(), time.Hour*12, 5); err != nil {
-			return
+		if err := s.rateLimit(w, r.req, "req_comm_1_"+r.viewer.String(), time.Hour*12, 5); err != nil {
+			return nil
 		}
 
-		body, err := s.bodyToMap(w, r, true)
+		body, err := s.bodyToMap(w, r.req, true)
 		if err != nil {
-			return
+			return nil
 		}
 
 		note := body["note"]
@@ -1032,48 +834,38 @@ func (s *Server) handleCommunityRequests(w http.ResponseWriter, r *http.Request,
 			note = note[:2048]
 		}
 
-		if err := core.CreateCommunityRequest(ctx, s.db, user.Username, body["name"], note); err != nil {
-			s.writeError(w, r, err)
-			return
+		if err := core.CreateCommunityRequest(r.ctx, s.db, user.Username, body["name"], note); err != nil {
+			return err
 		}
 		w.WriteHeader(http.StatusOK)
+		return nil
 	}
 }
 
 // /api/community_requests/{requestID} [DELETE]
-func (s *Server) deleteCommunityRequest(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) deleteCommunityRequest(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	ctx := r.Context()
-	user, err := core.GetUser(ctx, s.db, *userID, nil)
+	user, err := core.GetUser(r.ctx, s.db, *r.viewer, nil)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
 	if !user.Admin {
-		s.writeErrorCustom(w, r, http.StatusForbidden, "", "")
-		return
+		return httperr.NewForbidden("", "Not admin.")
 	}
 
-	id_str := mux.Vars(r)["requestID"]
-
-	id := 0
-
-	id, err = strconv.Atoi(id_str)
+	id, err := strconv.Atoi(r.muxVar("requestID"))
 	if err != nil {
-		s.writeErrorCustom(w, r, http.StatusBadRequest, "", "invalid_id")
-		return
+		return httperr.NewBadRequest("invalid_id", "Invalid request ID.")
 	}
 
-	if err := core.DeleteCommunityRequest(ctx, s.db, id); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err := core.DeleteCommunityRequest(r.ctx, s.db, id); err != nil {
+		return err
 	}
 
 	w.WriteHeader(http.StatusOK)
+	return nil
 }

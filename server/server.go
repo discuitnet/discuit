@@ -94,77 +94,77 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	s.openLoggers()
 
 	// API routes.
-	r.Handle("/api/_initial", s.withSession(s.initial)).Methods("GET")
-	r.Handle("/api/_login", s.withSession(s.login)).Methods("POST")
-	r.Handle("/api/_signup", s.withSession(s.signup)).Methods("POST")
-	r.Handle("/api/_user", s.withSession(s.getLoggedInUser)).Methods("GET")
+	r.Handle("/api/_initial", s.withNewHandler(s.initial)).Methods("GET")
+	r.Handle("/api/_login", s.withNewHandler(s.login)).Methods("POST")
+	r.Handle("/api/_signup", s.withNewHandler(s.signup)).Methods("POST")
+	r.Handle("/api/_user", s.withNewHandler(s.getLoggedInUser)).Methods("GET")
 
-	r.Handle("/api/users/{username}", s.withSession(s.getUser)).Methods("GET")
-	r.Handle("/api/users/{username}/feed", s.withSession(s.getUsersFeed)).Methods("GET")
-	r.Handle("/api/users/{username}/pro_pic", s.withSession(s.handleUserProPic)).Methods("POST", "DELETE")
-	r.Handle("/api/users/{username}/badges", s.withSession(s.addBadge)).Methods("POST")
-	r.Handle("/api/users/{username}/badges/{badgeId}", s.withSession(s.deleteBadge)).Methods("DELETE")
+	r.Handle("/api/users/{username}", s.withNewHandler(s.getUser)).Methods("GET")
+	r.Handle("/api/users/{username}/feed", s.withNewHandler(s.getUsersFeed)).Methods("GET")
+	r.Handle("/api/users/{username}/pro_pic", s.withNewHandler(s.handleUserProPic)).Methods("POST", "DELETE")
+	r.Handle("/api/users/{username}/badges", s.withNewHandler(s.addBadge)).Methods("POST")
+	r.Handle("/api/users/{username}/badges/{badgeId}", s.withNewHandler(s.deleteBadge)).Methods("DELETE")
 
-	r.Handle("/api/mutes", s.withSession(s.handleMutes)).Methods("GET", "POST", "DELETE")
-	r.Handle("/api/mutes/users/{mutedUserID}", s.withSession(s.deleteUserMute)).Methods("DELETE")
-	r.Handle("/api/mutes/communities/{mutedCommunityID}", s.withSession(s.deleteCommunityMute)).Methods("DELETE")
-	r.Handle("/api/mutes/{muteID}", s.withSession(s.deleteMute)).Methods("DELETE")
+	r.Handle("/api/mutes", s.withNewHandler(s.handleMutes)).Methods("GET", "POST", "DELETE")
+	r.Handle("/api/mutes/users/{mutedUserID}", s.withNewHandler(s.deleteUserMute)).Methods("DELETE")
+	r.Handle("/api/mutes/communities/{mutedCommunityID}", s.withNewHandler(s.deleteCommunityMute)).Methods("DELETE")
+	r.Handle("/api/mutes/{muteID}", s.withNewHandler(s.deleteMute)).Methods("DELETE")
 
-	r.Handle("/api/posts", s.withSession(s.feed)).Methods("GET")
-	r.Handle("/api/posts", s.withSession(s.addPost)).Methods("POST")
-	r.Handle("/api/posts/{postID}", s.withSession(s.getPost)).Methods("GET")
-	r.Handle("/api/posts/{postID}", s.withSession(s.updatePost)).Methods("PUT")
-	r.Handle("/api/posts/{postID}", s.withSession(s.deletePost)).Methods("DELETE")
-	r.Handle("/api/_postVote", s.withSession(s.postVote)).Methods("POST")
-	r.Handle("/api/_uploads", s.withSession(s.imageUpload)).Methods("POST")
+	r.Handle("/api/posts", s.withNewHandler(s.feed)).Methods("GET")
+	r.Handle("/api/posts", s.withNewHandler(s.addPost)).Methods("POST")
+	r.Handle("/api/posts/{postID}", s.withNewHandler(s.getPost)).Methods("GET")
+	r.Handle("/api/posts/{postID}", s.withNewHandler(s.updatePost)).Methods("PUT")
+	r.Handle("/api/posts/{postID}", s.withNewHandler(s.deletePost)).Methods("DELETE")
+	r.Handle("/api/_postVote", s.withNewHandler(s.postVote)).Methods("POST")
+	r.Handle("/api/_uploads", s.withNewHandler(s.imageUpload)).Methods("POST")
 
-	r.Handle("/api/posts/{postID}/comments", s.withSession(s.getComments)).Methods("GET")
-	r.Handle("/api/posts/{postID}/comments", s.withSession(s.addComment)).Methods("POST")
-	r.Handle("/api/posts/{postID}/comments/{commentID}", s.withSession(s.updateComment)).Methods("PUT")
-	r.Handle("/api/posts/{postID}/comments/{commentID}", s.withSession(s.deleteComment)).Methods("DELETE")
-	r.Handle("/api/comments/{commentID}", s.withSession(s.getComment)).Methods("GET")
-	r.Handle("/api/_commentVote", s.withSession(s.commentVote)).Methods("POST")
+	r.Handle("/api/posts/{postID}/comments", s.withNewHandler(s.getComments)).Methods("GET")
+	r.Handle("/api/posts/{postID}/comments", s.withNewHandler(s.addComment)).Methods("POST")
+	r.Handle("/api/posts/{postID}/comments/{commentID}", s.withNewHandler(s.updateComment)).Methods("PUT")
+	r.Handle("/api/posts/{postID}/comments/{commentID}", s.withNewHandler(s.deleteComment)).Methods("DELETE")
+	r.Handle("/api/comments/{commentID}", s.withNewHandler(s.getComment)).Methods("GET")
+	r.Handle("/api/_commentVote", s.withNewHandler(s.commentVote)).Methods("POST")
 
-	r.Handle("/api/communities", s.withSession(s.getCommunities)).Methods("GET")
-	r.Handle("/api/communities", s.withSession(s.createCommunity)).Methods("POST")
-	r.Handle("/api/_joinCommunity", s.withSession(s.joinCommunity)).Methods("POST")
-	r.Handle("/api/communities/{communityID}", s.withSession(s.getCommunity)).Methods("GET")
-	r.Handle("/api/communities/{communityID}", s.withSession(s.updateCommunity)).Methods("PUT")
+	r.Handle("/api/communities", s.withNewHandler(s.getCommunities)).Methods("GET")
+	r.Handle("/api/communities", s.withNewHandler(s.createCommunity)).Methods("POST")
+	r.Handle("/api/_joinCommunity", s.withNewHandler(s.joinCommunity)).Methods("POST")
+	r.Handle("/api/communities/{communityID}", s.withNewHandler(s.getCommunity)).Methods("GET")
+	r.Handle("/api/communities/{communityID}", s.withNewHandler(s.updateCommunity)).Methods("PUT")
 
-	r.Handle("/api/communities/{communityID}/rules", s.withSession(s.getCommunityRules)).Methods("GET")
-	r.Handle("/api/communities/{communityID}/rules", s.withSession(s.addCommunityRule)).Methods("POST")
-	r.Handle("/api/communities/{communityID}/rules/{ruleID}", s.withSession(s.getCommunityRule)).Methods("GET")
-	r.Handle("/api/communities/{communityID}/rules/{ruleID}", s.withSession(s.updateCommunityRule)).Methods("PUT")
-	r.Handle("/api/communities/{communityID}/rules/{ruleID}", s.withSession(s.deleteCommunityRule)).Methods("DELETE")
+	r.Handle("/api/communities/{communityID}/rules", s.withNewHandler(s.getCommunityRules)).Methods("GET")
+	r.Handle("/api/communities/{communityID}/rules", s.withNewHandler(s.addCommunityRule)).Methods("POST")
+	r.Handle("/api/communities/{communityID}/rules/{ruleID}", s.withNewHandler(s.getCommunityRule)).Methods("GET")
+	r.Handle("/api/communities/{communityID}/rules/{ruleID}", s.withNewHandler(s.updateCommunityRule)).Methods("PUT")
+	r.Handle("/api/communities/{communityID}/rules/{ruleID}", s.withNewHandler(s.deleteCommunityRule)).Methods("DELETE")
 
-	r.Handle("/api/communities/{communityID}/mods", s.withSession(s.getCommunityMods)).Methods("GET")
-	r.Handle("/api/communities/{communityID}/mods", s.withSession(s.addCommunityMod)).Methods("POST")
-	r.Handle("/api/communities/{communityID}/mods/{mod}", s.withSession(s.removeCommunityMod)).Methods("DELETE")
+	r.Handle("/api/communities/{communityID}/mods", s.withNewHandler(s.getCommunityMods)).Methods("GET")
+	r.Handle("/api/communities/{communityID}/mods", s.withNewHandler(s.addCommunityMod)).Methods("POST")
+	r.Handle("/api/communities/{communityID}/mods/{mod}", s.withNewHandler(s.removeCommunityMod)).Methods("DELETE")
 
-	r.Handle("/api/communities/{communityID}/reports", s.withSession(s.getCommunityReports)).Methods("GET")
-	r.Handle("/api/communities/{communityID}/reports/{reportID}", s.withSession(s.deleteReport)).Methods("DELETE")
+	r.Handle("/api/communities/{communityID}/reports", s.withNewHandler(s.getCommunityReports)).Methods("GET")
+	r.Handle("/api/communities/{communityID}/reports/{reportID}", s.withNewHandler(s.deleteReport)).Methods("DELETE")
 
-	r.Handle("/api/communities/{communityID}/banned", s.withSession(s.handleCommunityBanned)).Methods("GET", "POST", "DELETE")
+	r.Handle("/api/communities/{communityID}/banned", s.withNewHandler(s.handleCommunityBanned)).Methods("GET", "POST", "DELETE")
 
-	r.Handle("/api/communities/{communityID}/pro_pic", s.withSession(s.handleCommunityProPic)).Methods("POST", "DELETE")
-	r.Handle("/api/communities/{communityID}/banner_image", s.withSession(s.handleCommunityBannerImage)).Methods("POST", "DELETE")
+	r.Handle("/api/communities/{communityID}/pro_pic", s.withNewHandler(s.handleCommunityProPic)).Methods("POST", "DELETE")
+	r.Handle("/api/communities/{communityID}/banner_image", s.withNewHandler(s.handleCommunityBannerImage)).Methods("POST", "DELETE")
 
-	r.Handle("/api/notifications", s.withSession(s.getNotifications)).Methods("GET")
-	r.Handle("/api/notifications", s.withSession(s.updateNotifications)).Methods("POST")
-	r.Handle("/api/notifications/{notificationID}", s.withSession(s.getNotification)).Methods("GET", "PUT")
-	r.Handle("/api/notifications/{notificationID}", s.withSession(s.deleteNotification)).Methods("DELETE")
+	r.Handle("/api/notifications", s.withNewHandler(s.getNotifications)).Methods("GET")
+	r.Handle("/api/notifications", s.withNewHandler(s.updateNotifications)).Methods("POST")
+	r.Handle("/api/notifications/{notificationID}", s.withNewHandler(s.getNotification)).Methods("GET", "PUT")
+	r.Handle("/api/notifications/{notificationID}", s.withNewHandler(s.deleteNotification)).Methods("DELETE")
 
-	r.Handle("/api/push_subscriptions", s.withSession(s.pushSubscriptions)).Methods("POST")
+	r.Handle("/api/push_subscriptions", s.withNewHandler(s.pushSubscriptions)).Methods("POST")
 
-	r.Handle("/api/community_requests", s.withSession(s.handleCommunityRequests)).Methods("GET", "POST")
-	r.Handle("/api/community_requests/{requestID}", s.withSession(s.deleteCommunityRequest)).Methods("DELTE")
+	r.Handle("/api/community_requests", s.withNewHandler(s.handleCommunityRequests)).Methods("GET", "POST")
+	r.Handle("/api/community_requests/{requestID}", s.withNewHandler(s.deleteCommunityRequest)).Methods("DELTE")
 
-	r.Handle("/api/_report", s.withSession(s.report)).Methods("POST")
+	r.Handle("/api/_report", s.withNewHandler(s.report)).Methods("POST")
 
-	r.Handle("/api/_settings", s.withSession(s.updateUserSettings)).Methods("POST")
-	r.Handle("/api/_settings", s.withSession(s.deleteUser)).Methods("DELETE")
+	r.Handle("/api/_settings", s.withNewHandler(s.updateUserSettings)).Methods("POST")
+	r.Handle("/api/_settings", s.withNewHandler(s.deleteUser)).Methods("DELETE")
 
-	r.Handle("/api/_admin", s.withSession(s.adminActions)).Methods("POST")
+	r.Handle("/api/_admin", s.withNewHandler(s.adminActions)).Methods("POST")
 
 	r.Handle("/api/_link_info", s.withSession(s.getLinkInfo)).Methods("GET")
 
@@ -258,6 +258,38 @@ func updateUserLastSeen(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return update()
 	}
 	return nil
+}
+
+func (s *Server) withNewHandler(h handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ses, err := s.sessions.Get(r)
+		if err != nil {
+			s.writeError(w, r, err)
+			return
+		}
+
+		s.setInitialCookies(w, r, ses)
+
+		if err := updateUserLastSeen(r.Context(), w, r, s.db, ses); err != nil { // could be changed by a csrf attack request
+			log.Printf("Error updating last seen value: %v\n", err)
+		}
+
+		adminKey := r.URL.Query().Get("adminKey")
+		skipCsrfCheck := s.config.CSRFOff || adminKey == s.config.AdminApiKey || r.Method == "GET"
+		if !skipCsrfCheck {
+			csrftoken := r.Header.Get("X-Csrf-Token")
+			valid, _ := utils.ValidMAC(ses.ID, csrftoken, s.config.HMACSecret)
+			if !valid {
+				s.writeErrorCustom(w, r, http.StatusUnauthorized, "", "")
+				return
+			}
+		}
+
+		if err = h(&responseWriter{w: w}, newRequest(r, ses)); err != nil {
+			s.writeError(w, r, err)
+			return
+		}
+	})
 }
 
 // Used only for api handlers.

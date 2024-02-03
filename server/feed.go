@@ -1,86 +1,80 @@
 package server
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/url"
 	"strconv"
 
 	"github.com/discuitnet/discuit/core"
 	"github.com/discuitnet/discuit/internal/httperr"
-	"github.com/discuitnet/discuit/internal/sessions"
 	"github.com/discuitnet/discuit/internal/uid"
-	"github.com/gorilla/mux"
 )
 
-func (s *Server) getFeedLimit(w http.ResponseWriter, r *http.Request, q url.Values) (n int, err error) {
-	apiError := httperr.NewBadRequest("invalid_limit", "Invalid feed limit.")
+func getFeedLimit(q url.Values, defaultValue, maxValue int) (n int, err error) {
+	hErr := &httperr.Error{
+		HTTPStatus: http.StatusBadRequest,
+		Code:       "invalid_limit",
+	}
 	if limitText := q.Get("limit"); limitText != "" {
-		if n, err = strconv.Atoi(limitText); err != nil {
-			s.writeError(w, r, apiError)
+		n, err = strconv.Atoi(limitText)
+		if err != nil {
+			hErr.Message = "Invalid feed limit (limit is not a number)."
+			err = hErr
 			return
 		}
-		if n > s.config.PaginationLimitMax || n < 1 {
-			s.writeError(w, r, apiError)
+		if n > maxValue || n < 1 {
+			hErr.Message = "Invalid feed limit (not within the valid range)."
+			err = hErr
+			return
 		}
 		return
 	}
-	n = s.config.PaginationLimit
+	n = defaultValue
 	return
 }
 
 // /api/users/{username}/feed [GET]
-func (s *Server) getUsersFeed(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, viewerID := isLoggedIn(ses)
-
-	ctx := r.Context()
-	user, err := core.GetUserByUsername(ctx, s.db, mux.Vars(r)["username"], viewerID)
+func (s *Server) getUsersFeed(w *responseWriter, r *request) error {
+	user, err := core.GetUserByUsername(r.ctx, s.db, r.muxVar("username"), r.viewer)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
 	if user.Banned { // Forbid viewing profile of banned users except for admins.
-		if !loggedIn {
-			s.writeErrorCustom(w, r, http.StatusUnauthorized, "", "user_banned")
-			return
+		if !r.loggedIn {
+			return &httperr.Error{
+				HTTPStatus: http.StatusUnauthorized,
+				Code:       "user_banned",
+				Message:    "User is banned.",
+			}
 		}
-		viewer, err := core.GetUser(ctx, s.db, *viewerID, nil)
+		viewer, err := core.GetUser(r.ctx, s.db, *r.viewer, nil)
 		if err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
 		if !viewer.Admin {
-			s.writeErrorCustom(w, r, http.StatusForbidden, "Not an admin", "not_admin")
-			return
+			return httperr.NewForbidden("not_admin", "You are not an admin.")
 		}
 	}
 
-	query := r.URL.Query()
-	limit, err := s.getFeedLimit(w, r, query)
+	query := r.urlQuery()
+	limit, err := getFeedLimit(query, s.config.PaginationLimit, s.config.PaginationLimitMax)
 	if err != nil {
-		return
+		return err
 	}
 	var next *uid.ID
 	if nextText := query.Get("next"); nextText != "" {
 		next = new(uid.ID)
 		if err = next.UnmarshalText([]byte(nextText)); err != nil {
-			s.writeErrorCustom(w, r, http.StatusBadRequest, "Invalid cursor", "invalid_cursor")
-			return
+			return core.ErrInvalidFeedCursor
 		}
 	}
-	set, err := core.GetUserFeed(ctx, s.db, viewerID, user.ID, limit, next)
+	set, err := core.GetUserFeed(r.ctx, s.db, r.viewer, user.ID, limit, next)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
-	data, err := json.Marshal(set)
-	if err != nil {
-		s.writeError(w, r, err)
-		return
-	}
-	w.Write(data)
+	return w.writeJSON(set)
 }
 
 func isFilterValid(filter string) bool {
@@ -96,27 +90,22 @@ func isFilterValid(filter string) bool {
 var errInvalidFeedFilter = httperr.NewBadRequest("invalid_filter", "Invalid feed filter.")
 
 // /api/posts [GET]
-func (s *Server) feed(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
-	var err error
-	query := r.URL.Query()
-
+func (s *Server) feed(w *responseWriter, r *request) error {
+	query := r.urlQuery()
 	communityIDText := query.Get("communityId")
 	filter := query.Get("filter")
 	if !isFilterValid(filter) {
-		s.writeError(w, r, errInvalidFeedFilter)
-		return
+		return errInvalidFeedFilter
 	}
 	sort := core.FeedSortLatest
 	if query.Get("sort") != "" {
-		if err = sort.UnmarshalText([]byte(query.Get("sort"))); err != nil {
-			s.writeError(w, r, core.ErrInvalidFeedSort)
-			return
+		if err := sort.UnmarshalText([]byte(query.Get("sort"))); err != nil {
+			return core.ErrInvalidFeedSort
 		}
 	}
-	limit, err := s.getFeedLimit(w, r, query)
+	limit, err := getFeedLimit(query, s.config.PaginationLimit, s.config.PaginationLimitMax)
 	if err != nil {
-		return
+		return err
 	}
 
 	nextText := query.Get("next")
@@ -126,61 +115,55 @@ func (s *Server) feed(w http.ResponseWriter, r *http.Request, ses *sessions.Sess
 	var set *core.FeedResultSet
 
 	feed := query.Get("feed") // All or home or community.
-
-	ctx := r.Context()
 	if filter == "" {
 		// Home, all and community feeds.
 		homeFeed := feed == "home"
 		var cid *uid.ID
 		if communityIDText != "" {
-			c, err := s.getID(w, r, communityIDText)
+			c, err := s.getID(w, r.req, communityIDText)
 			if err != nil {
-				return
+				return nil
 			}
 			cid = &c
 		}
 		if cid != nil {
 			homeFeed = false
 		}
-		set, err = core.GetFeed(ctx, s.db, &core.FeedOptions{
+		set, err = core.GetFeed(r.ctx, s.db, &core.FeedOptions{
 			Sort:        sort,
 			DefaultSort: sort == s.config.DefaultFeedSort,
-			Viewer:      userID,
+			Viewer:      r.viewer,
 			Community:   cid,
 			Homefeed:    homeFeed,
 			Limit:       limit,
 			Next:        nextText,
 		})
 		if err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
 	} else {
 		// Modtools feeds.
-		if !loggedIn {
-			s.writeErrorNotLoggedIn(w, r)
-			return
+		if !r.loggedIn {
+			return errNotLoggedIn
 		}
 
 		page, err := strconv.Atoi(query.Get("page"))
 		if err != nil {
-			s.writeErrorCustom(w, r, http.StatusBadRequest, "Invalid page.", "invalid_page")
-			return
+			return httperr.NewBadRequest("invalid_page", "Invalid page.")
 		}
 
-		communityID, err := s.getID(w, r, communityIDText)
+		communityID, err := s.getID(w, r.req, communityIDText)
 		if err != nil {
-			return
+			return nil
 		}
-		comm, err := core.GetCommunityByID(ctx, s.db, communityID, userID)
+		comm, err := core.GetCommunityByID(r.ctx, s.db, communityID, r.viewer)
 		if err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
 
 		// Only admins and mods.
-		if _, err := s.modOrAdmin(w, r, comm, *userID); err != nil {
-			return
+		if _, err := s.modOrAdmin(w, r.req, comm, *r.viewer); err != nil {
+			return nil
 		}
 
 		res := struct {
@@ -194,25 +177,20 @@ func (s *Server) feed(w http.ResponseWriter, r *http.Request, ses *sessions.Sess
 		}
 
 		if filter == "deleted" {
-			res.NoPosts, res.Posts, err = core.GetPostsDeleted(ctx, s.db, communityID, limit, page)
+			res.NoPosts, res.Posts, err = core.GetPostsDeleted(r.ctx, s.db, communityID, limit, page)
 		} else if filter == "locked" {
-			res.NoPosts, res.Posts, err = core.GetPostsLocked(ctx, s.db, communityID, limit, page)
+			res.NoPosts, res.Posts, err = core.GetPostsLocked(r.ctx, s.db, communityID, limit, page)
 		} else {
-			s.writeError(w, r, errInvalidFeedFilter)
-			return
+			return errInvalidFeedFilter
 		}
 		if err != nil {
 			if !httperr.IsNotFound(err) {
-				s.writeError(w, r, err)
-				return
+				return err
 			}
 		}
 
-		data, _ := json.Marshal(res)
-		w.Write(data)
-		return
+		return w.writeJSON(res)
 	}
 
-	data, _ := json.Marshal(set)
-	w.Write(data)
+	return w.writeJSON(set)
 }
