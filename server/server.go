@@ -33,13 +33,15 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
-var errNotLoggedIn = &httperr.Error{
-	HTTPStatus: http.StatusUnauthorized,
-	Code:       "not_logged_in",
-	Message:    "User is not logged in.",
-}
+var (
+	errNotLoggedIn = &httperr.Error{
+		HTTPStatus: http.StatusUnauthorized,
+		Code:       "not_logged_in",
+		Message:    "User is not logged in.",
+	}
 
-var errNotAdminNorMod = httperr.NewForbidden("not_admin_nor_mod", "User neither an admin nor a mod.")
+	errNotAdminNorMod = httperr.NewForbidden("not_admin_nor_mod", "User neither an admin nor a mod.")
+)
 
 type Server struct {
 	config *config.Config
@@ -56,22 +58,21 @@ type Server struct {
 	sessions *sessions.RedisStore
 
 	// react serve
-	spaPath  string
-	spaIndex string
+	reactPath  string
+	reactIndex string
 
 	httpLogger        *log.Logger
 	httpLoggerFile    *os.File
 	http500Logger     *log.Logger
 	http500LoggerFile *os.File
 
-	vapidKeys core.VAPIDKeys
+	webPushVAPIDKeys core.VAPIDKeys
 }
 
-// New returns a new http server.
 func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r := mux.NewRouter()
 
-	rstore, err := sessions.NewRedisStore("tcp", conf.RedisAddress, conf.SessionCookieName)
+	redisStore, err := sessions.NewRedisStore("tcp", conf.RedisAddress, conf.SessionCookieName)
 	if err != nil {
 		return nil, err
 	}
@@ -85,16 +86,16 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 		},
 		router:       r,
 		staticRouter: mux.NewRouter(),
-		sessions:     rstore,
+		sessions:     redisStore,
 		config:       conf,
-		spaPath:      "./ui/dist/",
-		spaIndex:     "index.html",
+		reactPath:    "./ui/dist/",
+		reactIndex:   "index.html",
 	}
 
 	if keys, err := core.GetApplicationVAPIDKeys(context.Background(), db); err != nil {
 		log.Printf("Error generating vapid keys: %v (you might want to run migrations)\n", err)
 	} else {
-		s.vapidKeys = *keys
+		s.webPushVAPIDKeys = *keys
 		core.EnablePushNotifications(keys, "discuit@previnder.com")
 	}
 
@@ -788,7 +789,7 @@ func (s *Server) serveSPA(w http.ResponseWriter, r *http.Request) {
 	}
 
 	serveIndexFile := func() {
-		file, err := os.Open(filepath.Join(s.spaPath, s.spaIndex))
+		file, err := os.Open(filepath.Join(s.reactPath, s.reactIndex))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -818,7 +819,7 @@ func (s *Server) serveSPA(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fpath := filepath.Join(s.spaPath, path)
+	fpath := filepath.Join(s.reactPath, path)
 	_, err = os.Stat(fpath)
 	if os.IsNotExist(err) {
 		serveIndexFile()
@@ -828,7 +829,7 @@ func (s *Server) serveSPA(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httputil.FileServer(http.Dir(s.spaPath)).ServeHTTP(w, r)
+	httputil.FileServer(http.Dir(s.reactPath)).ServeHTTP(w, r)
 }
 
 // isLoggedIn returns whether user is logged in and the user's ID if so. ID is

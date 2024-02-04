@@ -47,7 +47,7 @@ func (s *Server) initial(w *responseWriter, r *request) error {
 			UserMutes      []*core.Mute `json:"userMutes"`
 		} `json:"mutes"`
 	}{
-		VAPIDPublicKey: s.vapidKeys.Public,
+		VAPIDPublicKey: s.webPushVAPIDKeys.Public,
 	}
 
 	response.Mutes.CommunityMutes = []*core.Mute{}
