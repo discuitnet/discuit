@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/discuitnet/discuit/internal/httperr"
 	"github.com/discuitnet/discuit/internal/sessions"
@@ -91,14 +92,24 @@ func (r *request) unmarshalJSONBody(v any) error {
 // unmarshal the request body to a map. It may return other types of errors.
 func (r *request) unmarshalJSONBodyToMap() (map[string]any, error) {
 	m := make(map[string]any)
-	err := json.NewDecoder(r.req.Body).Decode(&m)
-	if err != nil {
-		//lint:ignore S1020 this is an error with the linter
-		if _, ok := err.(*json.SyntaxError); ok {
-			return nil, httperr.NewBadRequest("invalid_json", "Invalid JSON body.")
+	err := r.unmarshalJSONBody(&m)
+	return m, err
+}
+
+// If trim is true, all the strings of the returning map are space trimmed.
+func (r *request) unmarshalJSONBodyToStringsMap(trim bool) (map[string]string, error) {
+	m := make(map[string]string)
+	if err := r.unmarshalJSONBody(&m); err != nil {
+		return nil, err
+	}
+
+	if trim {
+		for key, val := range m {
+			m[key] = strings.TrimSpace(val)
 		}
 	}
-	return m, err
+
+	return m, nil
 }
 
 func (r *request) urlQuery() url.Values {

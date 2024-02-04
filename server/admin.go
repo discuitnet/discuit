@@ -23,9 +23,9 @@ func (s *Server) adminActions(w *responseWriter, r *request) error {
 
 	// User is an admin, proceed.
 
-	reqBody, err := s.bodyToMap(w, r.req, true)
+	reqBody, err := r.unmarshalJSONBodyToStringsMap(true)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	action := reqBody["action"]

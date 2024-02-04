@@ -293,31 +293,6 @@ func (s *Server) withHandler(h handler) http.Handler {
 	})
 }
 
-// bodyToMap returns HTTP body (JSON) as a map[string]string or an error on
-// failure. In case of failure a 401 response with an api error message is sent.
-//
-// Strings in the returned map are space-trimmed.
-func (s *Server) bodyToMap(w http.ResponseWriter, r *http.Request, trim bool) (m map[string]string, err error) {
-	m = make(map[string]string)
-	b, err := io.ReadAll(r.Body)
-	if err != nil {
-		s.writeError(w, r, err)
-		return
-	}
-
-	err = json.Unmarshal(b, &m)
-	if err != nil {
-		s.writeErrorCustom(w, r, http.StatusBadRequest, "Invalid JSON", "invalid_json")
-	}
-
-	if trim {
-		for key := range m {
-			m[key] = strings.TrimSpace(m[key])
-		}
-	}
-	return
-}
-
 // setCsrfCookie sets the CSRF cookie if the cookie is not present or if the
 // cookie is invalid. It also includes the CSRF token in a "Csrf-Token" HTTP
 // header (this header is sent on every response).
@@ -1050,13 +1025,16 @@ func (s *Server) handleAnalytics(w *responseWriter, r *request) error {
 		return nil
 	}
 
-	m, err := s.bodyToMap(w, r.req, true)
-	if err != nil {
+	body := struct {
+		Event string `json:"event"`
+	}{}
+	if err := r.unmarshalJSONBody(&body); err != nil {
 		return err
 	}
+
 	var payload, uniqueKey string
 
-	switch m["event"] {
+	switch body.Event {
 	case "pwa_use":
 		uniqueKey = "pwa_use_" + r.ses.ID
 		data := make(map[string]any)
@@ -1076,7 +1054,7 @@ func (s *Server) handleAnalytics(w *responseWriter, r *request) error {
 		return httperr.NewBadRequest("bad_event", "Bad event.")
 	}
 
-	if err := core.CreateAnalyticsEvent(r.ctx, s.db, m["event"], uniqueKey, payload); err != nil {
+	if err := core.CreateAnalyticsEvent(r.ctx, s.db, body.Event, uniqueKey, payload); err != nil {
 		return err
 	}
 

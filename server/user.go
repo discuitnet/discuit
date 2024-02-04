@@ -121,11 +121,12 @@ func (s *Server) login(w *responseWriter, r *request) error {
 		return w.writeJSON(user)
 	}
 
-	values, err := s.bodyToMap(w, r.req, true)
+	values, err := r.unmarshalJSONBodyToStringsMap(true)
 	if err != nil {
-		return nil
+		return err
 	}
 	username := values["username"]
+	// Important: Passwords values have always been space trimmed (using strings.TrimSpace).
 	password := values["password"]
 
 	// TODO: Require a captcha if user is suspicious looking.
@@ -157,9 +158,9 @@ func (s *Server) signup(w *responseWriter, r *request) error {
 		return httperr.NewBadRequest("already_logged_in", "You are already logged in")
 	}
 
-	values, err := s.bodyToMap(w, r.req, true)
+	values, err := r.unmarshalJSONBodyToStringsMap(true)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	username := values["username"]
@@ -394,13 +395,13 @@ func (s *Server) updateUserSettings(w *responseWriter, r *request) error {
 			return err
 		}
 	case "changePassword":
-		m, err := s.bodyToMap(w, r.req, true)
+		values, err := r.unmarshalJSONBodyToStringsMap(true)
 		if err != nil {
-			return nil
+			return err
 		}
-		password := m["password"]
-		newPassword := m["newPassword"]
-		repeatPassword := m["repeatPassword"]
+		password := values["password"]
+		newPassword := values["newPassword"]
+		repeatPassword := values["repeatPassword"]
 		if newPassword != repeatPassword {
 			return httperr.NewBadRequest("password_not_match", "Passwords do not match.")
 		}

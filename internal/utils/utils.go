@@ -180,3 +180,18 @@ func TruncateUnicodeString(s string, length int) string {
 	}
 	return s
 }
+
+// ExtractStringsFromMap returns a new map with all the string values from m. If
+// trim is true, the string values of the returned map are space trimmed.
+func ExtractStringsFromMap(m map[string]any, trim bool) map[string]string {
+	strMap := make(map[string]string)
+	for key, val := range m {
+		if strVal, ok := val.(string); ok {
+			if trim {
+				strVal = strings.TrimSpace(strVal)
+			}
+			strMap[key] = strVal
+		}
+	}
+	return strMap
+}

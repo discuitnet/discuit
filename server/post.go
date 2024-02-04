@@ -26,9 +26,9 @@ func (s *Server) addPost(w *responseWriter, r *request) error {
 		return nil
 	}
 
-	values, err := s.bodyToMap(w, r.req, true)
+	values, err := r.unmarshalJSONBodyToStringsMap(true)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	var postType core.PostType = core.PostTypeText

@@ -23,9 +23,9 @@ func (s *Server) createCommunity(w *responseWriter, r *request) error {
 
 	// TODO: Limits. Fine for now, as long as no admin account is compromised.
 
-	values, err := s.bodyToMap(w, r.req, true)
+	values, err := r.unmarshalJSONBodyToStringsMap(true)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	name := values["name"]
@@ -274,12 +274,12 @@ func (s *Server) addCommunityMod(w *responseWriter, r *request) error {
 		return err
 	}
 
-	m, err := s.bodyToMap(w, r.req, true)
+	values, err := r.unmarshalJSONBodyToStringsMap(true)
 	if err != nil {
-		return nil
+		return err
 	}
 
-	username, ok := m["username"]
+	username, ok := values["username"]
 	if !ok {
 		return httperr.NewBadRequest("empty_username", "Empty username.")
 	}
@@ -644,12 +644,12 @@ func (s *Server) handleCommunityBanned(w *responseWriter, r *request) error {
 	}
 
 	if r.req.Method == "POST" || r.req.Method == "DELETE" {
-		m, err := s.bodyToMap(w, r.req, true)
+		values, err := r.unmarshalJSONBodyToStringsMap(true)
 		if err != nil {
-			return nil
+			return err
 		}
 
-		username, ok := m["username"]
+		username, ok := values["username"]
 		if !ok {
 			return httperr.NewBadRequest("no_username", "No username.")
 		}
@@ -666,7 +666,7 @@ func (s *Server) handleCommunityBanned(w *responseWriter, r *request) error {
 		}
 
 		var expires *time.Time
-		if expiresText, ok := m["expires"]; ok {
+		if expiresText, ok := values["expires"]; ok {
 			expires = new(time.Time)
 			if err = expires.UnmarshalText([]byte(expiresText)); err != nil {
 				return httperr.NewBadRequest("invalid_expires", "Invalid expires.")
@@ -824,9 +824,9 @@ func (s *Server) handleCommunityRequests(w *responseWriter, r *request) error {
 			return nil
 		}
 
-		body, err := s.bodyToMap(w, r.req, true)
+		body, err := r.unmarshalJSONBodyToStringsMap(true)
 		if err != nil {
-			return nil
+			return err
 		}
 
 		note := body["note"]
