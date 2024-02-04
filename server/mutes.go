@@ -109,9 +109,9 @@ func (s *Server) deleteUserMute(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	mutedUserID, err := s.getID(w, r.req, r.muxVar("mutedUserID"))
+	mutedUserID, err := strToID(r.muxVar("mutedUserID"))
 	if err != nil {
-		return nil
+		return err
 	}
 
 	if err := core.UnmuteUser(r.ctx, s.db, *r.viewer, mutedUserID); err != nil {
@@ -127,9 +127,9 @@ func (s *Server) deleteCommunityMute(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	mutedCommunityID, err := s.getID(w, r.req, r.muxVar("mutedCommunityID"))
+	mutedCommunityID, err := strToID(r.muxVar("mutedCommunityID"))
 	if err != nil {
-		return nil
+		return err
 	}
 
 	if err := core.UnmuteCommunity(r.ctx, s.db, *r.viewer, mutedCommunityID); err != nil {

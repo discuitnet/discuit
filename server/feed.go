@@ -120,9 +120,9 @@ func (s *Server) feed(w *responseWriter, r *request) error {
 		homeFeed := feed == "home"
 		var cid *uid.ID
 		if communityIDText != "" {
-			c, err := s.getID(w, r.req, communityIDText)
+			c, err := strToID(communityIDText)
 			if err != nil {
-				return nil
+				return err
 			}
 			cid = &c
 		}
@@ -152,18 +152,20 @@ func (s *Server) feed(w *responseWriter, r *request) error {
 			return httperr.NewBadRequest("invalid_page", "Invalid page.")
 		}
 
-		communityID, err := s.getID(w, r.req, communityIDText)
+		communityID, err := strToID(communityIDText)
 		if err != nil {
-			return nil
+			return err
 		}
 		comm, err := core.GetCommunityByID(r.ctx, s.db, communityID, r.viewer)
 		if err != nil {
 			return err
 		}
 
-		// Only admins and mods.
-		if _, err := s.modOrAdmin(w, r.req, comm, *r.viewer); err != nil {
-			return nil
+		// Only mods and admins have access.
+		if ok, err := userModOrAdmin(r.ctx, s.db, *r.viewer, comm); err != nil {
+			return err
+		} else if !ok {
+			return errNotAdminNorMod
 		}
 
 		res := struct {

@@ -34,6 +34,14 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
+var errNotLoggedIn = &httperr.Error{
+	HTTPStatus: http.StatusUnauthorized,
+	Code:       "not_logged_in",
+	Message:    "User is not logged in.",
+}
+
+var errNotAdminNorMod = httperr.NewForbidden("not_admin_nor_mod", "User neither an admin nor a mod.")
+
 type Server struct {
 	config *config.Config
 
@@ -479,16 +487,6 @@ func (s *Server) writeErrorCustom(w http.ResponseWriter, r *http.Request, status
 	})
 }
 
-var errNotLoggedIn = &httperr.Error{
-	HTTPStatus: http.StatusUnauthorized,
-	Code:       "not_logged_in",
-	Message:    "User is not logged in.",
-}
-
-func (s *Server) writeErrorNotLoggedIn(w http.ResponseWriter, r *http.Request) {
-	s.writeError(w, r, errNotLoggedIn)
-}
-
 // Omitting code will set to "too_many_requests".
 func (s *Server) writeErrorTooManyRequests(w http.ResponseWriter, r *http.Request, code string) {
 	if code == "" {
@@ -852,8 +850,12 @@ func isLoggedIn(ses *sessions.Session) (bool, *uid.ID) {
 	return true, &userID
 }
 
-// username should be all lowercase.
-func sessionsSetKey(username string) string {
+// userSessionsSetRedisKey returns the Redis key where the set of session IDs of the user
+// are stored. This is so that when deleting or banning an account, all sessions
+// of that user can be purged.
+//
+// Username should be all lowercase.
+func userSessionsSetRedisKey(username string) string {
 	return "sessions:" + username
 }
 
@@ -866,7 +868,7 @@ func (s *Server) loginUser(u *core.User, ses *sessions.Session, w http.ResponseW
 	conn := s.redisPool.Get()
 	defer conn.Close()
 
-	if _, err := conn.Do("SADD", sessionsSetKey(u.UsernameLowerCase), ses.ID); err != nil {
+	if _, err := conn.Do("SADD", userSessionsSetRedisKey(u.UsernameLowerCase), ses.ID); err != nil {
 		return err
 	}
 
@@ -880,6 +882,7 @@ func (s *Server) logoutUser(u *core.User, ses *sessions.Session, w http.Response
 	}
 
 	ses.Clear()
+
 	if err := ses.Save(w, r); err != nil {
 		return err
 	}
@@ -887,7 +890,7 @@ func (s *Server) logoutUser(u *core.User, ses *sessions.Session, w http.Response
 	conn := s.redisPool.Get()
 	defer conn.Close()
 
-	_, err := conn.Do("SREM", sessionsSetKey(u.UsernameLowerCase), ses.ID)
+	_, err := conn.Do("SREM", userSessionsSetRedisKey(u.UsernameLowerCase), ses.ID)
 	return err
 }
 
@@ -895,7 +898,7 @@ func (s *Server) logoutAllSessionsOfUser(u *core.User) error {
 	conn := s.redisPool.Get()
 	defer conn.Close()
 
-	sessionIDs, err := redis.Strings(conn.Do("SMEMBERS", sessionsSetKey(u.UsernameLowerCase)))
+	sessionIDs, err := redis.Strings(conn.Do("SMEMBERS", userSessionsSetRedisKey(u.UsernameLowerCase)))
 	if err != nil {
 		return err
 	}
@@ -906,43 +909,16 @@ func (s *Server) logoutAllSessionsOfUser(u *core.User) error {
 		}
 	}
 
-	_, err = conn.Do("DEL", sessionsSetKey(u.UsernameLowerCase))
+	_, err = conn.Do("DEL", userSessionsSetRedisKey(u.UsernameLowerCase))
 	return err
 }
 
-// getID writes an error to w if textID is invalid.
-func (s *Server) getID(w http.ResponseWriter, r *http.Request, textID string) (id uid.ID, err error) {
-	if id, err = uid.FromString(textID); err != nil {
-		s.writeErrorCustom(w, r, http.StatusBadRequest, "Invalid ID", "")
+// strToID always returns either a nil-error or an error of type httperr.Error.
+func strToID(s string) (id uid.ID, err error) {
+	if id, err = uid.FromString(s); err != nil {
+		err = httperr.NewBadRequest("invalid_id", "Invalid ID.")
 	}
 	return
-}
-
-// modOrAdmin return a nil error if user is either an admin or a moderator (if
-// no other error occurs). Returned UserGroup is the user's group in that case.
-// If the user is both an admin and a moderator core.UserGroupMods is returned.
-//
-// If error is non-nil appropriate HTTP responses are sent.
-func (s *Server) modOrAdmin(w http.ResponseWriter, r *http.Request, comm *core.Community, user uid.ID) (core.UserGroup, error) {
-	g := core.UserGroupNaN
-
-	if comm.ViewerMod.Bool {
-		g = core.UserGroupMods
-	} else {
-		user, err := core.GetUser(r.Context(), s.db, user, nil)
-		if err != nil {
-			s.writeError(w, r, err)
-			return g, err
-		}
-		if user.Admin {
-			g = core.UserGroupAdmins
-		} else {
-			s.writeError(w, r, err)
-			return g, errors.New("user is nether an admin or a mod")
-		}
-	}
-
-	return g, nil
 }
 
 // If error is non-nil, abort.

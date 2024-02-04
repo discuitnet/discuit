@@ -21,9 +21,9 @@ func (s *Server) getComments(w *responseWriter, r *request) error {
 	// Reply comments.
 	parentIDText := query.Get("parentId")
 	if parentIDText != "" {
-		parentID, err := s.getID(w, r.req, parentIDText)
+		parentID, err := strToID(parentIDText)
 		if err != nil {
-			return nil
+			return err
 		}
 		comments, err := post.GetCommentReplies(r.ctx, r.viewer, parentID)
 		if err != nil {
@@ -66,9 +66,9 @@ func (s *Server) getComments(w *responseWriter, r *request) error {
 
 // /api/:commentID [GET]
 func (s *Server) getComment(w *responseWriter, r *request) error {
-	commentID, err := s.getID(w, r.req, r.muxVar("commentID"))
+	commentID, err := strToID(r.muxVar("commentID"))
 	if err != nil {
-		return nil
+		return err
 	}
 
 	comment, err := core.GetComment(r.ctx, s.db, commentID, r.viewer)
@@ -141,9 +141,9 @@ func (s *Server) updateComment(w *responseWriter, r *request) error {
 		return nil
 	}
 
-	commentID, err := s.getID(w, r.req, r.muxVar("commentID"))
+	commentID, err := strToID(r.muxVar("commentID"))
 	if err != nil {
-		return nil
+		return err
 	}
 	comment, err := core.GetComment(r.ctx, s.db, commentID, r.viewer)
 	if err != nil {
@@ -191,9 +191,9 @@ func (s *Server) deleteComment(w *responseWriter, r *request) error {
 		return nil
 	}
 
-	commentID, err := s.getID(w, r.req, r.muxVar("commentID"))
+	commentID, err := strToID(r.muxVar("commentID"))
 	if err != nil {
-		return nil
+		return err
 	}
 	comment, err := core.GetComment(r.ctx, s.db, commentID, r.viewer)
 	if err != nil {

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"database/sql"
 	"io"
 	"net/http"
@@ -14,6 +15,22 @@ import (
 	"github.com/discuitnet/discuit/internal/uid"
 	"github.com/gorilla/mux"
 )
+
+// userModOrAdmin returns true is user is either a mod of c or an admin or both.
+func userModOrAdmin(ctx context.Context, db *sql.DB, user uid.ID, c *core.Community) (bool, error) {
+	if c.ViewerMod.Bool {
+		return true, nil
+	} else {
+		user, err := core.GetUser(ctx, db, user, nil)
+		if err != nil {
+			return false, err
+		}
+		if user.Admin {
+			return true, nil
+		}
+	}
+	return false, nil
+}
 
 // /api/community [POST]
 func (s *Server) createCommunity(w *responseWriter, r *request) error {
@@ -237,9 +254,9 @@ func (s *Server) joinCommunity(w *responseWriter, r *request) error {
 
 // /api/communities/{communityID}/mods [GET]
 func (s *Server) getCommunityMods(w *responseWriter, r *request) error {
-	cid, err := s.getID(w, r.req, r.muxVar("communityID"))
+	cid, err := strToID(r.muxVar("communityID"))
 	if err != nil {
-		return nil
+		return err
 	}
 
 	comm, err := core.GetCommunityByID(r.ctx, s.db, cid, nil)
@@ -264,9 +281,9 @@ func (s *Server) addCommunityMod(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	cid, err := s.getID(w, r.req, r.muxVar("communityID"))
+	cid, err := strToID(r.muxVar("communityID"))
 	if err != nil {
-		return nil
+		return err
 	}
 
 	comm, err := core.GetCommunityByID(r.ctx, s.db, cid, r.viewer)
@@ -311,9 +328,9 @@ func (s *Server) removeCommunityMod(w *responseWriter, r *request) error {
 	}
 
 	vars := mux.Vars(r.req)
-	cid, err := s.getID(w, r.req, vars["communityID"])
+	cid, err := strToID(vars["communityID"])
 	if err != nil {
-		return nil
+		return err
 	}
 
 	comm, err := core.GetCommunityByID(r.ctx, s.db, cid, r.viewer)
@@ -340,9 +357,9 @@ func (s *Server) removeCommunityMod(w *responseWriter, r *request) error {
 
 // /api/communities/{communityID}/rules [GET]
 func (s *Server) getCommunityRules(w *responseWriter, r *request) error {
-	cid, err := s.getID(w, r.req, r.muxVar("communityID"))
+	cid, err := strToID(r.muxVar("communityID"))
 	if err != nil {
-		return nil
+		return err
 	}
 
 	comm, err := core.GetCommunityByID(r.ctx, s.db, cid, r.viewer)
@@ -365,9 +382,9 @@ func (s *Server) addCommunityRule(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	cid, err := s.getID(w, r.req, r.muxVar("communityID"))
+	cid, err := strToID(r.muxVar("communityID"))
 	if err != nil {
-		return nil
+		return err
 	}
 
 	comm, err := core.GetCommunityByID(r.ctx, s.db, cid, r.viewer)
@@ -509,9 +526,9 @@ func (s *Server) getCommunityReports(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	cid, err := s.getID(w, r.req, r.muxVar("communityID"))
+	cid, err := strToID(r.muxVar("communityID"))
 	if err != nil {
-		return nil
+		return err
 	}
 
 	comm, err := core.GetCommunityByID(r.ctx, s.db, cid, r.viewer)
@@ -520,8 +537,10 @@ func (s *Server) getCommunityReports(w *responseWriter, r *request) error {
 	}
 
 	// Only mods and admins have access.
-	if _, err := s.modOrAdmin(w, r.req, comm, *r.viewer); err != nil {
-		return nil
+	if ok, err := userModOrAdmin(r.ctx, s.db, *r.viewer, comm); err != nil {
+		return err
+	} else if !ok {
+		return errNotAdminNorMod
 	}
 
 	query := r.urlQuery()
@@ -578,9 +597,9 @@ func (s *Server) deleteReport(w *responseWriter, r *request) error {
 	}
 
 	vars := mux.Vars(r.req)
-	cid, err := s.getID(w, r.req, vars["communityID"])
+	cid, err := strToID(vars["communityID"])
 	if err != nil {
-		return nil
+		return err
 	}
 
 	comm, err := core.GetCommunityByID(r.ctx, s.db, cid, r.viewer)
@@ -589,8 +608,10 @@ func (s *Server) deleteReport(w *responseWriter, r *request) error {
 	}
 
 	// Only mods and admins have access.
-	if _, err := s.modOrAdmin(w, r.req, comm, *r.viewer); err != nil {
-		return nil
+	if ok, err := userModOrAdmin(r.ctx, s.db, *r.viewer, comm); err != nil {
+		return err
+	} else if !ok {
+		return errNotAdminNorMod
 	}
 
 	reportID, err := strconv.Atoi(vars["reportID"])
@@ -617,9 +638,9 @@ func (s *Server) handleCommunityBanned(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	cid, err := s.getID(w, r.req, r.muxVar("communityID"))
+	cid, err := strToID(r.muxVar("communityID"))
 	if err != nil {
-		return nil
+		return err
 	}
 
 	comm, err := core.GetCommunityByID(r.ctx, s.db, cid, r.viewer)
@@ -628,8 +649,10 @@ func (s *Server) handleCommunityBanned(w *responseWriter, r *request) error {
 	}
 
 	// Only mods and admins have access.
-	if _, err := s.modOrAdmin(w, r.req, comm, *r.viewer); err != nil {
-		return nil
+	if ok, err := userModOrAdmin(r.ctx, s.db, *r.viewer, comm); err != nil {
+		return err
+	} else if !ok {
+		return errNotAdminNorMod
 	}
 
 	if r.req.Method == "GET" {
@@ -701,9 +724,9 @@ func (s *Server) handleCommunityProPic(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	cid, err := s.getID(w, r.req, r.muxVar("communityID"))
+	cid, err := strToID(r.muxVar("communityID"))
 	if err != nil {
-		return nil
+		return err
 	}
 
 	comm, err := core.GetCommunityByID(r.ctx, s.db, cid, r.viewer)
@@ -712,8 +735,10 @@ func (s *Server) handleCommunityProPic(w *responseWriter, r *request) error {
 	}
 
 	// Only mods and admins have access.
-	if _, err := s.modOrAdmin(w, r.req, comm, *r.viewer); err != nil {
-		return nil
+	if ok, err := userModOrAdmin(r.ctx, s.db, *r.viewer, comm); err != nil {
+		return err
+	} else if !ok {
+		return errNotAdminNorMod
 	}
 
 	if r.req.Method == "POST" {
@@ -750,9 +775,9 @@ func (s *Server) handleCommunityBannerImage(w *responseWriter, r *request) error
 		return errNotLoggedIn
 	}
 
-	cid, err := s.getID(w, r.req, r.muxVar("communityID"))
+	cid, err := strToID(r.muxVar("communityID"))
 	if err != nil {
-		return nil
+		return err
 	}
 
 	comm, err := core.GetCommunityByID(r.ctx, s.db, cid, r.viewer)
@@ -761,8 +786,10 @@ func (s *Server) handleCommunityBannerImage(w *responseWriter, r *request) error
 	}
 
 	// Only mods and admins have access.
-	if _, err := s.modOrAdmin(w, r.req, comm, *r.viewer); err != nil {
-		return nil
+	if ok, err := userModOrAdmin(r.ctx, s.db, *r.viewer, comm); err != nil {
+		return err
+	} else if !ok {
+		return errNotAdminNorMod
 	}
 
 	if r.req.Method == "POST" {
