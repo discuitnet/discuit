@@ -2,7 +2,6 @@ package server
 
 import (
 	"database/sql"
-	"encoding/json"
 	"io"
 	"net/http"
 	"strconv"
@@ -511,8 +510,17 @@ func (s *Server) deleteBadge(w *responseWriter, r *request) error {
 
 // /api/users/{username}/badges [POST]
 func (s *Server) addBadge(w *responseWriter, r *request) error {
-	if err := s.viewerAdmin(r.ses, r.req); err != nil {
+	if !r.loggedIn {
+		return errNotLoggedIn
+	}
+
+	admin, err := core.GetUser(r.ctx, s.db, *r.viewer, nil)
+	if err != nil {
 		return err
+	}
+
+	if !admin.Admin {
+		return httperr.NewForbidden("not_admin", "User not admin.")
 	}
 
 	username := r.muxVar("username")
@@ -525,13 +533,8 @@ func (s *Server) addBadge(w *responseWriter, r *request) error {
 		BadgeType string `json:"type"`
 	}{}
 
-	data, err := io.ReadAll(r.req.Body)
-	if err != nil {
+	if err = r.unmarshalJSONBody(&reqBody); err != nil {
 		return err
-	}
-
-	if err := json.Unmarshal(data, &reqBody); err != nil {
-		return httperr.NewBadRequest("invalid_request_body", "")
 	}
 
 	if err := user.AddBadge(r.ctx, reqBody.BadgeType); err != nil {

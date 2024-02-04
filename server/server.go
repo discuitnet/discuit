@@ -166,9 +166,9 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 
 	r.Handle("/api/_admin", s.withNewHandler(s.adminActions)).Methods("POST")
 
-	r.Handle("/api/_link_info", s.withSession(s.getLinkInfo)).Methods("GET")
+	r.Handle("/api/_link_info", s.withNewHandler(s.getLinkInfo)).Methods("GET")
 
-	r.Handle("/api/analytics", s.withSession(s.handleAnalytics)).Methods("POST")
+	r.Handle("/api/analytics", s.withNewHandler(s.handleAnalytics)).Methods("POST")
 
 	r.NotFoundHandler = http.HandlerFunc(s.apiNotFoundHandler)
 	r.MethodNotAllowedHandler = http.HandlerFunc(s.apiMethodNotAllowedHandler)
@@ -229,8 +229,9 @@ func (s *Server) Close() error {
 	return s.sessions.Close()
 }
 
-// updateUserLastSeen updates last_seen value in Redis and persists it (and also
-// the remote IP address of the user) to MariaDB.
+// updateUserLastSeen updates the last seen time and the last seen IP address of
+// the logged in user, if the user is logged in, in Redis and persists it to
+// MariaDB.
 func updateUserLastSeen(ctx context.Context, w http.ResponseWriter, r *http.Request, db *sql.DB, ses *sessions.Session) error {
 	loggedIn, uid := isLoggedIn(ses)
 	if !loggedIn {
@@ -289,36 +290,6 @@ func (s *Server) withNewHandler(h handler) http.Handler {
 			s.writeError(w, r, err)
 			return
 		}
-	})
-}
-
-// Used only for api handlers.
-func (s *Server) withSession(f func(http.ResponseWriter, *http.Request, *sessions.Session)) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ses, err := s.sessions.Get(r)
-		if err != nil {
-			s.writeError(w, r, err)
-			return
-		}
-
-		s.setInitialCookies(w, r, ses)
-
-		if err := updateUserLastSeen(r.Context(), w, r, s.db, ses); err != nil { // could be changed by a csrf attack request
-			log.Printf("Error updating last seen value: %v\n", err)
-		}
-
-		adminKey := r.URL.Query().Get("adminKey")
-		skipCsrfCheck := s.config.CSRFOff || adminKey == s.config.AdminApiKey || r.Method == "GET"
-		if !skipCsrfCheck {
-			csrftoken := r.Header.Get("X-Csrf-Token")
-			valid, _ := utils.ValidMAC(ses.ID, csrftoken, s.config.HMACSecret)
-			if !valid {
-				s.writeErrorCustom(w, r, http.StatusUnauthorized, "", "")
-				return
-			}
-		}
-
-		f(w, r, ses)
 	})
 }
 
@@ -999,32 +970,6 @@ func (s *Server) modOrAdmin(w http.ResponseWriter, r *http.Request, comm *core.C
 	return g, nil
 }
 
-// viewerAdmin returns nil if the logged in user is an admin. The returned error
-// is likely an httperr.Err.
-func (s *Server) viewerAdmin(ses *sessions.Session, r *http.Request) error {
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		return errNotLoggedIn
-	}
-	ctx := r.Context()
-	admin, err := core.GetUser(ctx, s.db, *userID, nil)
-	if err != nil {
-		return err
-	}
-	if !admin.Admin {
-		return httperr.NewForbidden("not_admin", "")
-	}
-	return nil
-}
-
-func (s *Server) unmarshalJSON(w http.ResponseWriter, r *http.Request, data []byte, v interface{}) error {
-	err := json.Unmarshal(data, v)
-	if err != nil {
-		s.writeErrorCustom(w, r, http.StatusBadRequest, "Invalid JSON", "")
-	}
-	return err
-}
-
 // If error is non-nil, abort.
 func (s *Server) rateLimit(w http.ResponseWriter, r *http.Request, bucketID string, interval time.Duration, maxTokens int) error {
 	if s.config.DisableRateLimits {
@@ -1071,82 +1016,69 @@ func (s *Server) rateLimitVoting(w http.ResponseWriter, r *http.Request, userID 
 }
 
 // /api/_get_link_info [GET]
-func (s *Server) getLinkInfo(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	loggedIn, userID := isLoggedIn(ses)
-	if !loggedIn {
-		s.writeErrorNotLoggedIn(w, r)
-		return
+func (s *Server) getLinkInfo(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
 	}
 
-	if err := s.rateLimit(w, r, "get_link_info_"+userID.String(), time.Hour, 1000); err != nil {
-		return
+	if err := s.rateLimit(w, r.req, "get_link_info_"+r.viewer.String(), time.Hour, 1000); err != nil {
+		return nil
 	}
 
-	url := r.URL.Query().Get("url")
-
+	url := r.urlQueryValue("url")
 	res, err := httputil.Get(url)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 	defer res.Body.Close()
 
 	title, err := httputil.ExtractOpenGraphTitle(res.Body)
 	if err != nil {
-		s.writeError(w, r, err)
-		return
+		return err
 	}
 
 	out := struct {
 		Title string `json:"title"`
 	}{Title: title}
 
-	data, _ := json.Marshal(out)
-	w.Write(data)
+	return w.writeJSON(out)
 }
 
-func (s *Server) handleAnalytics(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
-	_, userID := isLoggedIn(ses)
-
-	ip := httputil.GetIP(r)
-	if err := s.rateLimit(w, r, "analytics_ip_1_"+ip, time.Second*1, 2); err != nil {
-		return
+func (s *Server) handleAnalytics(w *responseWriter, r *request) error {
+	ip := httputil.GetIP(r.req)
+	if err := s.rateLimit(w, r.req, "analytics_ip_1_"+ip, time.Second*1, 2); err != nil {
+		return nil
 	}
 
-	m, err := s.bodyToMap(w, r, true)
+	m, err := s.bodyToMap(w, r.req, true)
 	if err != nil {
-		return
+		return err
 	}
-
 	var payload, uniqueKey string
 
 	switch m["event"] {
 	case "pwa_use":
-		uniqueKey = "pwa_use_" + ses.ID
+		uniqueKey = "pwa_use_" + r.ses.ID
 		data := make(map[string]any)
 
-		data["userId"] = userID // may be nil
-		data["sessionId"] = ses.ID
-		data["userAgent"] = r.Header.Get("User-Agent")
+		data["userId"] = r.viewer // may be nil
+		data["sessionId"] = r.ses.ID
+		data["userAgent"] = r.req.Header.Get("User-Agent")
 		data["ip"] = ip
 
 		dataBytes, err := json.Marshal(data)
 		if err != nil {
-			s.writeError(w, r, err)
-			return
+			return err
 		}
 
 		payload = string(dataBytes)
-
 	default:
-		s.writeErrorCustom(w, r, http.StatusBadRequest, "", "bad_event")
-		return
+		return httperr.NewBadRequest("bad_event", "Bad event.")
 	}
 
-	if err := core.CreateAnalyticsEvent(r.Context(), s.db, m["event"], uniqueKey, payload); err != nil {
-		s.writeError(w, r, err)
-		return
+	if err := core.CreateAnalyticsEvent(r.ctx, s.db, m["event"], uniqueKey, payload); err != nil {
+		return err
 	}
 
-	w.Write([]byte(`{"success":true}`))
+	return w.writeString(`{"success":true}`)
 }

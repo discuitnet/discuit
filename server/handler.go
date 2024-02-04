@@ -75,7 +75,7 @@ func (r *request) muxVar(name string) string {
 }
 
 // unmarshalJSONBody returns a bad request httperr.Error on failure to unmarshal
-// the request body to v.
+// the request body to v. It may return other types of errors.
 func (r *request) unmarshalJSONBody(v any) error {
 	err := json.NewDecoder(r.req.Body).Decode(v)
 	if err != nil {
@@ -85,6 +85,20 @@ func (r *request) unmarshalJSONBody(v any) error {
 		}
 	}
 	return err
+}
+
+// unmarshalJSONBodyToMap returns a bad request httperr.Error on failure to
+// unmarshal the request body to a map. It may return other types of errors.
+func (r *request) unmarshalJSONBodyToMap() (map[string]any, error) {
+	m := make(map[string]any)
+	err := json.NewDecoder(r.req.Body).Decode(&m)
+	if err != nil {
+		//lint:ignore S1020 this is an error with the linter
+		if _, ok := err.(*json.SyntaxError); ok {
+			return nil, httperr.NewBadRequest("invalid_json", "Invalid JSON body.")
+		}
+	}
+	return m, err
 }
 
 func (r *request) urlQuery() url.Values {
