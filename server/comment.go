@@ -85,12 +85,11 @@ func (s *Server) addComment(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	// Limits.
-	if err := s.rateLimit(w, r.req, "add_comment_1_"+r.viewer.String(), time.Second*5, 2); err != nil {
-		return nil
+	if err := s.rateLimit(r, "add_comment_1_"+r.viewer.String(), time.Second*5, 2); err != nil {
+		return err
 	}
-	if err := s.rateLimit(w, r.req, "add_comment_2_"+r.viewer.String(), time.Hour*24, 300); err != nil {
-		return nil
+	if err := s.rateLimit(r, "add_comment_2_"+r.viewer.String(), time.Hour*24, 300); err != nil {
+		return err
 	}
 
 	req := struct {
@@ -136,9 +135,8 @@ func (s *Server) updateComment(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	// Limits.
-	if err := s.rateLimitUpdateContent(w, r.req, *r.viewer); err != nil {
-		return nil
+	if err := s.rateLimitUpdateContent(r, *r.viewer); err != nil {
+		return err
 	}
 
 	commentID, err := strToID(r.muxVar("commentID"))
@@ -186,9 +184,8 @@ func (s *Server) deleteComment(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	// Limits.
-	if err := s.rateLimitUpdateContent(w, r.req, *r.viewer); err != nil {
-		return nil
+	if err := s.rateLimitUpdateContent(r, *r.viewer); err != nil {
+		return err
 	}
 
 	commentID, err := strToID(r.muxVar("commentID"))
@@ -221,9 +218,8 @@ func (s *Server) commentVote(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	// Limits.
-	if err := s.rateLimitVoting(w, r.req, *r.viewer); err != nil {
-		return nil
+	if err := s.rateLimitVoting(r, *r.viewer); err != nil {
+		return err
 	}
 
 	req := struct {

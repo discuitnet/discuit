@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -921,49 +920,51 @@ func strToID(s string) (id uid.ID, err error) {
 	return
 }
 
-// If error is non-nil, abort.
-func (s *Server) rateLimit(w http.ResponseWriter, r *http.Request, bucketID string, interval time.Duration, maxTokens int) error {
+// rateLimit returns an error if the rate limit is reached for the bucket or if
+// some other error occurs in the process of checking it. If rateLimit returns
+// a non-nil error, the handler should return immediately.
+func (s *Server) rateLimit(r *request, bucketID string, interval time.Duration, maxTokens int) error {
 	if s.config.DisableRateLimits {
-		return nil
+		return nil // skip rate limits
 	}
 
 	if s.config.AdminApiKey != "" {
-		adminKey := r.URL.Query().Get("adminKey")
+		adminKey := r.urlQueryValue("adminKey")
 		if adminKey == s.config.AdminApiKey {
-			return nil
+			return nil // skip rate limits
 		}
 	}
 
 	conn, err := s.redisPool.Dial()
 	if err != nil {
-		s.writeError(w, r, err)
 		return err
 	}
 	defer conn.Close()
 
 	if ok, err := ratelimits.Limit(conn, bucketID, interval, maxTokens); err != nil {
-		s.writeError(w, r, err)
 		return err
 	} else if !ok {
-		s.writeErrorTooManyRequests(w, r, "")
-		return errors.New("HTTP 429")
+		return &httperr.Error{
+			HTTPStatus: http.StatusTooManyRequests,
+			Code:       "",
+			Message:    "",
+		}
 	}
 	return nil
 }
 
-// If error is non-nil abort.
-func (s *Server) rateLimitUpdateContent(w http.ResponseWriter, r *http.Request, userID uid.ID) error {
-	if err := s.rateLimit(w, r, "update_stuff_1_"+userID.String(), time.Second*2, 1); err != nil {
+func (s *Server) rateLimitUpdateContent(r *request, userID uid.ID) error {
+	if err := s.rateLimit(r, "update_stuff_1_"+userID.String(), time.Second*2, 1); err != nil {
 		return err
 	}
-	return s.rateLimit(w, r, "update_stuff_2_"+userID.String(), time.Hour*24, 2000)
+	return s.rateLimit(r, "update_stuff_2_"+userID.String(), time.Hour*24, 2000)
 }
 
-func (s *Server) rateLimitVoting(w http.ResponseWriter, r *http.Request, userID uid.ID) error {
-	if err := s.rateLimit(w, r, "voting_1_"+userID.String(), time.Second, 4); err != nil {
+func (s *Server) rateLimitVoting(r *request, userID uid.ID) error {
+	if err := s.rateLimit(r, "voting_1_"+userID.String(), time.Second, 4); err != nil {
 		return err
 	}
-	return s.rateLimit(w, r, "voting_2_"+userID.String(), time.Hour*24, 2000)
+	return s.rateLimit(r, "voting_2_"+userID.String(), time.Hour*24, 2000)
 }
 
 // /api/_get_link_info [GET]
@@ -972,8 +973,8 @@ func (s *Server) getLinkInfo(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	if err := s.rateLimit(w, r.req, "get_link_info_"+r.viewer.String(), time.Hour, 1000); err != nil {
-		return nil
+	if err := s.rateLimit(r, "get_link_info_"+r.viewer.String(), time.Hour, 1000); err != nil {
+		return err
 	}
 
 	url := r.urlQueryValue("url")
@@ -997,8 +998,8 @@ func (s *Server) getLinkInfo(w *responseWriter, r *request) error {
 
 func (s *Server) handleAnalytics(w *responseWriter, r *request) error {
 	ip := httputil.GetIP(r.req)
-	if err := s.rateLimit(w, r.req, "analytics_ip_1_"+ip, time.Second*1, 2); err != nil {
-		return nil
+	if err := s.rateLimit(r, "analytics_ip_1_"+ip, time.Second*1, 2); err != nil {
+		return err
 	}
 
 	body := struct {

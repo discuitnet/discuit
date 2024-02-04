@@ -211,12 +211,11 @@ func (s *Server) joinCommunity(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	// Limits.
-	if err := s.rateLimit(w, r.req, "join_community_1_"+r.viewer.String(), time.Second*1, 1); err != nil {
-		return nil
+	if err := s.rateLimit(r, "join_community_1_"+r.viewer.String(), time.Second*1, 1); err != nil {
+		return err
 	}
-	if err := s.rateLimit(w, r.req, "join_community_2_"+r.viewer.String(), time.Hour, 500); err != nil {
-		return nil
+	if err := s.rateLimit(r, "join_community_2_"+r.viewer.String(), time.Hour, 500); err != nil {
+		return err
 	}
 
 	req := struct {
@@ -487,12 +486,11 @@ func (s *Server) report(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	// Limits.
-	if err := s.rateLimit(w, r.req, "reporting_1_"+r.viewer.String(), time.Second*5, 1); err != nil {
-		return nil
+	if err := s.rateLimit(r, "reporting_1_"+r.viewer.String(), time.Second*5, 1); err != nil {
+		return err
 	}
-	if err := s.rateLimit(w, r.req, "reporting_2_"+r.viewer.String(), time.Hour*24, 50); err != nil {
-		return nil
+	if err := s.rateLimit(r, "reporting_2_"+r.viewer.String(), time.Hour*24, 50); err != nil {
+		return err
 	}
 
 	inc := struct {
@@ -846,9 +844,8 @@ func (s *Server) handleCommunityRequests(w *responseWriter, r *request) error {
 		return w.writeJSON(items)
 	} else { // r.Method == "POST"
 
-		// Limits.
-		if err := s.rateLimit(w, r.req, "req_comm_1_"+r.viewer.String(), time.Hour*12, 5); err != nil {
-			return nil
+		if err := s.rateLimit(r, "req_comm_1_"+r.viewer.String(), time.Hour*12, 5); err != nil {
+			return err
 		}
 
 		body, err := r.unmarshalJSONBodyToStringsMap(true)

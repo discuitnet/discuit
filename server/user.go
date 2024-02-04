@@ -131,13 +131,12 @@ func (s *Server) login(w *responseWriter, r *request) error {
 
 	// TODO: Require a captcha if user is suspicious looking.
 
-	// Limits.
 	ip := httputil.GetIP(r.req)
-	if err := s.rateLimit(w, r.req, "login_1_"+ip, time.Second, 10); err != nil {
-		return nil
+	if err := s.rateLimit(r, "login_1_"+ip, time.Second, 10); err != nil {
+		return err
 	}
-	if err := s.rateLimit(w, r.req, "login_2_"+ip+username, time.Hour, 20); err != nil {
-		return nil
+	if err := s.rateLimit(r, "login_2_"+ip+username, time.Hour, 20); err != nil {
+		return err
 	}
 
 	user, err := core.MatchLoginCredentials(r.ctx, s.db, username, password)
@@ -177,13 +176,12 @@ func (s *Server) signup(w *responseWriter, r *request) error {
 		}
 	}
 
-	// Limits.
 	ip := httputil.GetIP(r.req)
-	if err := s.rateLimit(w, r.req, "signup_1_"+ip, time.Minute, 2); err != nil {
-		return nil
+	if err := s.rateLimit(r, "signup_1_"+ip, time.Minute, 2); err != nil {
+		return err
 	}
-	if err := s.rateLimit(w, r.req, "signup_2_"+ip, time.Hour*6, 10); err != nil {
-		return nil
+	if err := s.rateLimit(r, "signup_2_"+ip, time.Hour*6, 10); err != nil {
+		return err
 	}
 
 	user, err := core.RegisterUser(r.ctx, s.db, username, email, password)
@@ -222,9 +220,8 @@ func (s *Server) updateNotifications(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	// Limits.
-	if err := s.rateLimit(w, r.req, "update_notifs_1_"+r.viewer.String(), time.Second*1, 5); err != nil {
-		return nil
+	if err := s.rateLimit(r, "update_notifs_1_"+r.viewer.String(), time.Second*1, 5); err != nil {
+		return err
 	}
 
 	user, err := core.GetUser(r.ctx, s.db, *r.viewer, nil)
@@ -371,12 +368,11 @@ func (s *Server) updateUserSettings(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	// Limits.
-	if err := s.rateLimit(w, r.req, "update_settings_1_"+r.viewer.String(), time.Second*1, 5); err != nil {
-		return nil
+	if err := s.rateLimit(r, "update_settings_1_"+r.viewer.String(), time.Second*1, 5); err != nil {
+		return err
 	}
-	if err := s.rateLimit(w, r.req, "update_settings_2_"+r.viewer.String(), time.Hour, 100); err != nil {
-		return nil
+	if err := s.rateLimit(r, "update_settings_2_"+r.viewer.String(), time.Hour, 100); err != nil {
+		return err
 	}
 
 	user, err := core.GetUser(r.ctx, s.db, *r.viewer, r.viewer)

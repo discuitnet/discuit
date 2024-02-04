@@ -17,13 +17,11 @@ func (s *Server) addPost(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	// Limits.
-	if err := s.rateLimit(w, r.req, "add_post_1_"+r.viewer.String(), time.Second*10, 1); err != nil {
-		return nil
+	if err := s.rateLimit(r, "add_post_1_"+r.viewer.String(), time.Second*10, 1); err != nil {
+		return err
 	}
-	// Limits.
-	if err := s.rateLimit(w, r.req, "add_post_2_"+r.viewer.String(), time.Hour*24, 70); err != nil {
-		return nil
+	if err := s.rateLimit(r, "add_post_2_"+r.viewer.String(), time.Hour*24, 70); err != nil {
+		return err
 	}
 
 	values, err := r.unmarshalJSONBodyToStringsMap(true)
@@ -125,8 +123,8 @@ func (s *Server) updatePost(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	if err := s.rateLimitUpdateContent(w, r.req, *r.viewer); err != nil {
-		return nil
+	if err := s.rateLimitUpdateContent(r, *r.viewer); err != nil {
+		return err
 	}
 
 	post, err := core.GetPost(r.ctx, s.db, nil, postID, r.viewer, true)
@@ -206,9 +204,8 @@ func (s *Server) deletePost(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	// Limits.
-	if err := s.rateLimitUpdateContent(w, r.req, *r.viewer); err != nil {
-		return nil
+	if err := s.rateLimitUpdateContent(r, *r.viewer); err != nil {
+		return err
 	}
 
 	post, err := core.GetPost(r.ctx, s.db, nil, postID, r.viewer, true)
@@ -242,9 +239,8 @@ func (s *Server) postVote(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	// Limits.
-	if err := s.rateLimitVoting(w, r.req, *r.viewer); err != nil {
-		return nil
+	if err := s.rateLimitVoting(r, *r.viewer); err != nil {
+		return err
 	}
 
 	req := struct {
@@ -285,13 +281,11 @@ func (s *Server) imageUpload(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	// Limits.
-	if err := s.rateLimit(w, r.req, "uploads_1_"+r.viewer.String(), time.Second*2, 1); err != nil {
-		return nil
+	if err := s.rateLimit(r, "uploads_1_"+r.viewer.String(), time.Second*2, 1); err != nil {
+		return err
 	}
-	// Limits.
-	if err := s.rateLimit(w, r.req, "uploads_2_"+r.viewer.String(), time.Hour*24, 40); err != nil {
-		return nil
+	if err := s.rateLimit(r, "uploads_2_"+r.viewer.String(), time.Hour*24, 40); err != nil {
+		return err
 	}
 
 	r.req.Body = http.MaxBytesReader(w, r.req.Body, int64(s.config.MaxImageSize)) // limit max upload size
