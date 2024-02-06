@@ -368,7 +368,9 @@ func constructLogLine(fields []logField, color string) string {
 			oneWritten = true
 		}
 	}
-	b.WriteString("\033[0m")
+	if color != "" {
+		b.WriteString("\033[0m")
+	}
 	return fmt.Sprintf(b.String(), args...)
 }
 
