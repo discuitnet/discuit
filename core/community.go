@@ -395,7 +395,20 @@ func GetCommunitiesPrefix(ctx context.Context, db *sql.DB, s string) ([]*Communi
 	if len(total) > limit {
 		total = total[:limit]
 	}
-	return total, nil
+
+	deduped := make([]*Community, 0, len(total))
+	{
+		// Remove duplicate communities.
+		added := make(map[uid.ID]bool)
+		for _, comm := range total {
+			if !added[comm.ID] {
+				deduped = append(deduped, comm)
+				added[comm.ID] = true
+			}
+		}
+	}
+
+	return deduped, nil
 }
 
 // Update updates c.About and c.NSFW.
