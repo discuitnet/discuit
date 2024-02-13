@@ -38,7 +38,7 @@ export const shouldAskForNotificationsPermissions = (
     const ts = parseInt(localStorage.getItem(timestampKey), 10);
     if (!isNaN(ts)) {
       const current = Math.round(Date.now() / 1000);
-      if (current - ts > 3600 * 24 * 7) {
+      if (current - ts > 3600 * 24 * 30) {
         return true;
       } else {
         return false;

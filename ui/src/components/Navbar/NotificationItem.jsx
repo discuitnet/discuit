@@ -109,7 +109,8 @@ const NotificationItem = ({ notification, ...rest }) => {
       case 'new_badge': {
         return (
           <>
-            You are awarded the <b>supporter</b> badge for your contribution to Discuit and for sheer awesomeness!
+            You are awarded the <b>supporter</b> badge for your contribution to Discuit and for
+            sheer awesomeness!
           </>
         );
       }
@@ -204,7 +205,7 @@ const NotificationItem = ({ notification, ...rest }) => {
     }
   };
 
-  const notifText = renderText()
+  const notifText = renderText();
   if (notifText === null) {
     return null; // notification type is unknown
   }
