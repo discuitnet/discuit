@@ -70,7 +70,7 @@ func Parse(path string) (*Config, error) {
 		PaginationLimit:    10,
 		PaginationLimitMax: 50,
 		DefaultFeedSort:    core.FeedSortHot,
-		MaxImageSize:       10 << 20,
+		MaxImageSize:       25 * (1 << 20),
 
 		// Required fields:
 		ForumCreationReqPoints: -1,
