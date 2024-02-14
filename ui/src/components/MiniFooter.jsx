@@ -9,7 +9,7 @@ const MiniFooter = () => {
       <Link to="/privacy-policy">Privacy</Link>
       <Link to="/guidelines">Guidelines</Link>
       <a href={`mailto:${CONFIG.emailContact}`}>Contact</a>
-      <span>© 2023 {CONFIG.siteName}.</span>
+      <span>© 2024 {CONFIG.siteName}.</span>
     </footer>
   );
 };
