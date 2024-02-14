@@ -204,7 +204,7 @@ var selectPostCols = []string{
 }
 
 var selectPostJoins = []string{
-	"INNER JOIN communities ON posts.community_id = communities.id",
+	"STRAIGHT_JOIN communities ON posts.community_id = communities.id",
 	"INNER JOIN users ON posts.user_id = users.id",
 }
 

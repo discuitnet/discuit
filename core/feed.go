@@ -591,6 +591,7 @@ func getPostsActivity(ctx context.Context, db *sql.DB, opts *FeedOptions) (*Feed
 	return newFeedResultSet(posts, opts.Limit, FeedSortActivity), nil
 }
 
+// getPostsList returns a slice of posts that are ordered by points.
 func getPostsList(ctx context.Context, db *sql.DB, viewer *uid.ID, ids ...uid.ID) ([]*Post, error) {
 	loggedIn := viewer != nil
 	where := fmt.Sprintf("WHERE posts.id IN %s ORDER BY posts.points DESC, posts.id DESC", msql.InClauseQuestionMarks(len(ids)))
