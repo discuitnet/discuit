@@ -39,7 +39,7 @@ func main() {
 	}
 
 	// Connect to MariaDB.
-	db := openDatabase(conf.DBUser, conf.DBPassword, conf.DBName)
+	db := openDatabase(conf.DBAddr, conf.DBUser, conf.DBPassword, conf.DBName)
 	defer db.Close()
 
 	// Parse flags.
@@ -155,7 +155,8 @@ func (ml *migrationsLogger) Verbose() bool {
 // If steps is 0, all migrations are run. Otherwise, steps migrations are run up
 // or down depending on steps > 0 or not.
 func migrate(c *config.Config, log bool, steps int) error {
-	m, err := gomigrate.New("file://migrations/", "mysql://"+mysqlDSN(c.DBUser, c.DBPassword, c.DBName))
+	fmt.Println("Running migrations")
+	m, err := gomigrate.New("file://migrations/", "mysql://"+mysqlDSN(c.DBAddr, c.DBUser, c.DBPassword, c.DBName))
 	if err != nil {
 		return err
 	}
@@ -383,8 +384,10 @@ func parseFlags(db *sql.DB, c *config.Config) (bool, error) {
 
 // mysqlDSN returns a DSN that could be used to connect to a MySQL database. You
 // may want to append mysql:// to the beginning of the returned string.
-func mysqlDSN(user, password, dbName string) string {
+func mysqlDSN(addr, user, password, dbName string) string {
 	cfg := mysql.NewConfig()
+	cfg.Net = "tcp"
+	cfg.Addr = addr
 	cfg.User = user
 	cfg.Passwd = password
 	cfg.DBName = dbName
@@ -393,12 +396,12 @@ func mysqlDSN(user, password, dbName string) string {
 }
 
 // openDatabase returns a connection to mysql.
-func openDatabase(user, password, dbName string) *sql.DB {
+func openDatabase(addr, user, password, dbName string) *sql.DB {
 	if dbName == "" {
 		log.Fatal("No database selected")
 	}
 
-	db, err := sql.Open("mysql", mysqlDSN(user, password, dbName))
+	db, err := sql.Open("mysql", mysqlDSN(addr, user, password, dbName))
 	if err != nil {
 		log.Fatal(err)
 	}
