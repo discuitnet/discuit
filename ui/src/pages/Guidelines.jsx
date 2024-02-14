@@ -65,12 +65,12 @@ const Guidelines = () => {
             <strong>No brigading.</strong> Don't organize campaigns to 1) downvote posts and
             comments of a community you don't like or 2) to leave hostile posts and comments in a
             community you don't like. If you don't like the rules of a particular community or how
-            it moderates content, you can create a new community as *you* like (coming soon).
+            it moderates content, you can create a new community as <i>you</i> like.
           </li>
         </ol>
         <p>
           Breaking these rules may result in the offending material being removed and/or temporary
-          or permanent suspension of the user account.
+          or permanent suspension of the user accounts involved.
         </p>
         <p>
           Discuit is a work in progress, and these rules are not set in stone. They may change in
