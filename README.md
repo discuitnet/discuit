@@ -21,22 +21,20 @@ To setup a development environment of Discuit on your local computer:
 1.  Install MariaDB, Redis, Node.js (and NPM). On Ubuntu, for instance, you might
     have to run the following commands:
 
-    ````shell
+    ```shell
     sudo apt update
 
-        # Install and start MariaDB
-        sudo apt install mariadb-server
-        sudo systemctl start mariadb.service
+    # Install and start MariaDB
+    sudo apt install mariadb-server
+    sudo systemctl start mariadb.service
 
-        # Install and start Redis
-        sudo apt install redis-server
-        sudo systemctl start redis.service
+    # Install and start Redis
+    sudo apt install redis-server
+    sudo systemctl start redis.service
 
-        # Install Node.js and NPM
-        sudo apt install nodejs npm
-        ```
-
-    ````
+    # Install Node.js and NPM
+    sudo apt install nodejs npm
+    ```
 
 1.  Create a MariaDB database.
 
