@@ -52,7 +52,7 @@ To setup a development environment of Discuit on your local computer:
 1.  Discuit uses `libvips` for fast image transformations. Make sure it's
     installed on your computer. On Ubuntu you can install it with:
     `shell
-sudo apt install libvips
+sudo apt install libvips-dev
 `
 1.  Clone this repository:
     ```shell
