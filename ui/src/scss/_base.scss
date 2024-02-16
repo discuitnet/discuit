@@ -227,11 +227,11 @@ body {
     overflow-y: scroll;
     font-size: var(--fs-normal);
     @include mixins.tablet() {
-        --fs-xs: 1.3rem;
-        --fs-s: 1.4rem;
-        --fs-normal: 1.5rem;
-        --fs-l: 1.6rem;
-        --fs-xl: 1.7rem;
+        --fs-xs: 1.4rem;
+        --fs-s: 1.5rem;
+        --fs-normal: 1.6rem;
+        --fs-l: 1.7rem;
+        --fs-xl: 1.8rem;
     }
 }
 
