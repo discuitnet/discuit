@@ -12,72 +12,89 @@ Built with:
 
 ## Getting started
 
-### Running locally
+Ensure that Go, Node.js, npm and [libvips](https://github.com/libvips/libvips) are installed on your system.
 
-To setup a development environment of Discuit on your local computer:
+If not already, follow these instructions:
 
-1.  Install Go by following the instructions at
-    [go.dev.](https://go.dev/doc/install)
-1.  Install MariaDB, Redis, Node.js (and NPM). On Ubuntu, for instance, you might
-    have to run the following commands:
+- Install Go: Follow the instructions provided at [go.dev.](https://go.dev/doc/install).
+- Install Node.js and npm: On Ubuntu for instance, you can install them with the following command: `sudo apt install nodejs npm`.
+- Install `libvips`: Discuit uses libvips for fast image transformations.
+  On Ubuntu, you can install libvips development files using the following command: `sudo apt install libvips-dev`.
 
-    ```shell
-    sudo apt update
+### Setup external services
 
-    # Install and start MariaDB
-    sudo apt install mariadb-server
-    sudo systemctl start mariadb.service
+#### With Docker Compose
 
-    # Install and start Redis
-    sudo apt install redis-server
-    sudo systemctl start redis.service
+- Clone the repository.
+- Make sure you have [Docker Compose installed](https://docs.docker.com/compose/install/).
+- Run the following command to start the services:
+  `docker compose up` (or `docker-compose up` if running [Compose V1](https://docs.docker.com/compose/migrate/)).
 
-    # Install Node.js and NPM
-    sudo apt install nodejs npm
-    ```
+#### Without Docker Compose
 
-1.  Create a MariaDB database.
+- Install [MariaDB](https://mariadb.com/kb/en/getting-installing-and-upgrading-mariadb/) and [Redis](https://redis.io/docs/install/install-redis/).
+  On Ubuntu, for instance, you can install them by running the following commands:
 
-    ```shell
-    # Open MariaDB CLI
-    mariadb -u root -p --binary-as-hex
+  ```shell
+  sudo apt update
 
-    # Create a database named discuit (you may use a different name)
-    create database discuit;
+  # Install and start MariaDB
+  sudo apt install mariadb-server
+  sudo systemctl start mariadb.service
 
-    # Enter exit (or press Ctrl+D) to exit
-    exit;
-    ```
+  # Install and start Redis
+  sudo apt install redis-server
+  sudo systemctl start redis.service
+  ```
 
-1.  Discuit uses `libvips` for fast image transformations. Make sure it's
-    installed on your computer. On Ubuntu you can install it with:
-    `shell
-sudo apt install libvips
-`
-1.  Clone this repository:
-    ```shell
-    git clone https://github.com/discuitnet/discuit.git && cd discuit
-    ```
-1.  Create a file named `config.yaml` in the root directory and copy the contents
-    of `config.default.yaml` into it. And enter the required config parameters in
-    `config.yaml`.
-1.  Build the frontend and the backend:
-    ```shell
-    ./build.sh
-    ```
-1.  Run migrations:
-    ```shell
-    ./discuit -migrate
-    ```
-1.  Start the server:
-    ```shell
-    ./discuit -serve
-    ```
+- Create a MariaDB database
 
-After creating an account, you can run `./discuit -make-admin username` to make
-a user an admin of the site.
+  ```shell
+  # Open MariaDB CLI (there is no password by default, just press Enter)
+  sudo mariadb -u root -p --binary-as-hex
 
-Note: Do not install the `discuit` binary using `go install` or move it somewhere
+  # Create a database named discuit (you may use a different name)
+  create database discuit;
+
+  # Set the root password (you can replace 'password' by something more robust if you want)
+  ALTER USER 'root'@'localhost' IDENTIFIED BY 'password';
+
+  # Enter exit (or press Ctrl+D) to exit
+  exit;
+  ```
+
+### Build and run Discuit
+
+1. **Clone the repository** if not already done.
+
+2. **Create configuration file:** Copy `config.default.yaml` and rename it to `config.yaml`.
+   Adjust parameters in `config.yaml` if needed (review required parameters).
+
+3. **Build Discuit**, the frontend and the backend:
+
+   ```shell
+   ./build.sh
+   ```
+
+4. **Run migrations:**
+
+   ```shell
+   ./discuit -migrate
+   ```
+
+5. **Start the server:**
+
+   ```shell
+   ./discuit -serve
+   ```
+
+6. **Access Discuit:** Open [http://localhost:8080](http://localhost:8080) in your browser.
+
+7. **Create an account**
+
+8. **(Optional) Grant admin privileges:** You can run `./discuit -make-admin <username>` to make a user an admin of the site.
+
+**Note:** Do not install the `discuit` binary using `go install` or move it somewhere
 else. It uses files in this repository at runtime and so it should only be run
 from the root of this repository.
 
