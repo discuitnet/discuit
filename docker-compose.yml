@@ -1,0 +1,37 @@
+version: "3.8"
+
+services:
+  db:
+    image: mariadb:10.11
+    container_name: db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-discuit}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS:-password}
+      MYSQL_USER: ${DB_USER:-discuit}
+      MYSQL_PASSWORD: ${DB_PASS:-password}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "healthcheck.sh",
+          "--su-mysql",
+          "--connect",
+          "--innodb_initialized",
+        ]
+    volumes:
+      - mariadb_data:/var/lib/mysql:rw
+    ports:
+      - 3306:3306
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+    ports:
+      - 6379:6379
+
+volumes:
+  mariadb_data: {}
