@@ -8,7 +8,7 @@
     "build": "webpack --config webpack.dev.js",
     "build:prod": "webpack --config webpack.prod.js",
     "build:local": "webpack --config webpack.local.js",
-    "watch": "webpak --watch",
+    "watch": "webpack --watch --config webpack.dev.js",
     "lint": "eslint --fix . --ext .jsx --ext .js",
     "format": "prettier --write './**/*.{js,jsx,ts,tsx,css,md,json,scss,html}' --config ./.prettierrc",
     "test": "echo \"Error: no test specified\" && exit 1"
