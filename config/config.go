@@ -18,6 +18,7 @@ type Config struct {
 	SiteDescription string `yaml:"siteDescription"` // Used for meta tags.
 
 	// Primary DB credentials.
+	DBAddr     string `yaml:"dbAddr"`
 	DBUser     string `yaml:"dbUser"`
 	DBPassword string `yaml:"dbPassword"`
 	DBName     string `yaml:"dbName"`
