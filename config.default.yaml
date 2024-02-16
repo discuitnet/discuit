@@ -11,13 +11,13 @@ hmacSecret: <insert-your-secret-here>
 noLogToFile: false
 csrfOff: false
 
-addr:
+addr: localhost:8080
 sessionCookieName: SID
 
 # MariaDB configuration:
 dbAddr: 127.0.0.1 # Required
 dbUser: root # Required
-dbPassword: # Required
+dbPassword: password # Required
 dbName: discuit # Required
 
 # ReCAPTCHA or hCaptcha secret and site-key:
