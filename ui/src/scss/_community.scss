@@ -64,6 +64,7 @@
             z-index: 1;
             border-radius: 50%;
             border: 2px solid var(--color-bg);
+            box-shadow: var(--card-shadow);
         }
         .comm-main-top-bar {
             grid-row: 3 / 4;
