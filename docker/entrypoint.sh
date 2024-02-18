@@ -11,9 +11,9 @@ service redis-server start
 echo "Creating the discuit database if it doesn't already exist..."
 mysql -e "CREATE DATABASE IF NOT EXISTS discuit;"
 
-# TODO: Ensure root access with no password is enabled
-mysql -e "CREATE USER IF NOT EXISTS 'discuit'@'%' IDENTIFIED BY 'discuit';" # !!! FUCK: Don't give access from anywhere !!!
-mysql -e "GRANT ALL PRIVILEGES ON discuit.* TO 'discuit'@'%';"              # !!! FUCK: Don't give access from anywhere !!!
+# Create a user for the Discuit server
+mysql -e "CREATE USER IF NOT EXISTS 'discuit'@'127.0.0.1' IDENTIFIED BY 'discuit';"
+mysql -e "GRANT ALL PRIVILEGES ON discuit.* TO 'discuit'@'127.0.0.1';"
 
 # Run migrations
 echo "Running migrations..."
