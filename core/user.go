@@ -23,7 +23,7 @@ const (
 	maxUsernameLength = 21
 	minUsernameLength = 3
 
-	maxPasswordLength = 128
+	maxPasswordLength = 72 // in bytes (limit set by bcrypt)
 	minPasswordLength = 8
 
 	maxUserProfileAboutLength = 10000
@@ -163,6 +163,13 @@ func IsUsernameValid(name string) error {
 	return nil
 }
 
+func trimPassword(password []byte) []byte {
+	if len(password) > maxPasswordLength {
+		password = password[:maxPasswordLength]
+	}
+	return password
+}
+
 // HashPassword returns the hashed password if the password is acceptable,
 // otherwise it returns an httperr.Error.
 func HashPassword(password []byte) ([]byte, error) {
@@ -173,10 +180,7 @@ func HashPassword(password []byte) ([]byte, error) {
 		return nil, httperr.NewBadRequest("invalid-password", "Password too short.")
 	}
 
-	if len(password) > maxPasswordLength {
-		password = password[:maxPasswordLength]
-	}
-
+	password = trimPassword(password)
 	hash, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
 	if err != nil {
 		return nil, fmt.Errorf("error hashing password: %w", err)
@@ -485,7 +489,7 @@ func MatchLoginCredentials(ctx context.Context, db *sql.DB, username, password s
 		return nil, err
 	}
 
-	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), trimPassword([]byte(password))); err != nil {
 		return nil, ErrWrongPassword
 	}
 	return user, nil
