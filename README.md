@@ -12,7 +12,7 @@ Built with:
 
 ## Getting started
 
-Ensure that Go, Node.js, npm and [libvips](https://github.com/libvips/libvips) are installed on your system.
+Ensure that Go (1.21 or higher), Node.js, npm and [libvips](https://github.com/libvips/libvips) are installed on your system.
 
 If not already, follow these instructions:
 
