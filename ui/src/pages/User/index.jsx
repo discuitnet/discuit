@@ -436,7 +436,7 @@ const User = ({ username }) => {
           )}
         </div>
       </main>
-      <aside className="page-right">
+      <aside className="sidebar-right is-custom-scrollbar is-v2">
         {renderSummary()}
         {renderBadges()}
         {renderModOf()}
