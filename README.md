@@ -53,7 +53,7 @@ To setup a development environment of Discuit on your local computer:
     installed on your computer. On Ubuntu you can install it with:
     `shell
 sudo apt install libvips
-`
+`, `libvips-dev` is also necessary on Linux systems.
 1.  Clone this repository:
     ```shell
     git clone https://github.com/discuitnet/discuit.git && cd discuit
