@@ -16,10 +16,12 @@ import Image from './Image';
 import Spinner from '../../components/Spinner';
 import { postAdded } from '../../slices/postsSlice';
 import { useLocation } from 'react-router-dom/cjs/react-router-dom.min';
+import CommunityCard from '../Post/CommunityCard';
 
 const NewPost = () => {
   const dispatch = useDispatch();
   const history = useHistory();
+  const location = useLocation();
 
   const user = useSelector((state) => state.main.user);
   const loggedIn = user !== null;
@@ -56,6 +58,11 @@ const NewPost = () => {
     try {
       const rcomm = await mfetchjson(`/api/communities/${ncomm.id}`);
       setCommunity(rcomm);
+      const query = new URLSearchParams(history.location.search);
+      if (query.get('community') !== ncomm.name) {
+        query.set('community', ncomm.name);
+        history.replace(`${history.location.pathname}?${query.toString()}`);
+      }
     } catch (error) {
       snackAlertError(error);
     }
@@ -158,7 +165,6 @@ const NewPost = () => {
   };
 
   // For only when editing a post.
-  const location = useLocation();
   const returnToWhence = (post) => {
     const state = location.state;
     if (state && state.fromPostPage) {
@@ -529,8 +535,11 @@ const NewPost = () => {
           </div>
         </div>
         <div className="new-page-sidebar">
-          {community && community.rules && (
-            <Rules rules={community.rules} communityName={community.name} unordered />
+          {community && (
+            <>
+              <CommunityCard community={community} />
+              <Rules rules={community.rules} communityName={community.name} unordered />
+            </>
           )}
         </div>
         <div className="page-new-buttons is-m">

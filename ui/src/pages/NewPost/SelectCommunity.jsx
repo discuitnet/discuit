@@ -13,7 +13,7 @@ const SelectCommunity = ({ initial = '', onFocus, onChange, disabled = false }) 
   useEffect(() => {
     (async function () {
       try {
-        const communities = await mfetchjson('/api/communities');
+        const communities = await mfetchjson('/api/communities?limit=10');
         setSuggestions(communities);
       } catch (error) {
         dispatch(snackAlertError(error));
