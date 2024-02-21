@@ -30,7 +30,13 @@ const Image = ({ image, onClose, disabled = false }) => {
 
   return (
     <div className="page-new-image" ref={divref}>
-      {!disabled && <ButtonClose className="button-close" onClick={() => onClose()} />}
+      {!disabled && (
+        <ButtonClose
+          className="button-close"
+          onClick={() => onClose()}
+          style={{ padding: '6px' }}
+        />
+      )}
       <div className="contain-image">
         <Img
           src={url}
