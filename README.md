@@ -84,6 +84,8 @@ sudo apt install libvips-dev
 After creating an account, you can run `./discuit -make-admin username` to make
 a user an admin of the site.
 
+Note: Do not install the discuit binary using go install or move it somewhere else. It uses files in this repository at runtime and so it should only be run from the root of this repository.
+
 ### Running with Docker
 
 1. **Build the Docker Image**
