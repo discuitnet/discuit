@@ -18,7 +18,7 @@ To setup a development environment of Discuit on your local computer:
 
 1.  Install Go (1.21 or higher) by following the instructions at
     [go.dev.](https://go.dev/doc/install)
-1.  Install MariaDB, Redis, Node.js (and NPM). On Ubuntu, for instance, you might
+1. Install MariaDB, Redis, Node.js (and NPM). On Ubuntu, for instance, you might
     have to run the following commands:
 
     ```shell
@@ -36,7 +36,7 @@ To setup a development environment of Discuit on your local computer:
     sudo apt install nodejs npm
     ```
 
-1.  Create a MariaDB database.
+1. Create a MariaDB database.
 
     ```shell
     # Open MariaDB CLI
@@ -49,27 +49,34 @@ To setup a development environment of Discuit on your local computer:
     exit;
     ```
 
-1.  Discuit uses `libvips` for fast image transformations. Make sure it's
+1. Discuit uses `libvips` for fast image transformations. Make sure it's
     installed on your computer. On Ubuntu you can install it with:
     `shell
 sudo apt install libvips-dev
 `
-1.  Clone this repository:
+1. Clone this repository:
+
     ```shell
     git clone https://github.com/discuitnet/discuit.git && cd discuit
     ```
-1.  Create a file named `config.yaml` in the root directory and copy the contents
+
+1. Create a file named `config.yaml` in the root directory and copy the contents
     of `config.default.yaml` into it. And enter the required config parameters in
     `config.yaml`.
-1.  Build the frontend and the backend:
+1. Build the frontend and the backend:
+
     ```shell
     ./build.sh
     ```
-1.  Run migrations:
+
+1. Run migrations:
+
     ```shell
     ./discuit -migrate
     ```
-1.  Start the server:
+
+1. Start the server:
+
     ```shell
     ./discuit -serve
     ```
@@ -77,9 +84,37 @@ sudo apt install libvips-dev
 After creating an account, you can run `./discuit -make-admin username` to make
 a user an admin of the site.
 
-Note: Do not install the `discuit` binary using `go install` or move it somewhere
-else. It uses files in this repository at runtime and so it should only be run
-from the root of this repository.
+Note: Do not install the discuit binary using go install or move it somewhere else. It uses files in this repository at runtime and so it should only be run from the root of this repository.
+
+### Running with Docker
+
+1. **Build the Docker Image**
+
+    ```shell
+    docker build -t discuit .
+    ```
+
+2. **Run the Docker Container**
+
+    > **Note**: The following command while having a persistent database, the included config.yaml file is not. You will need to mount the file to the container if you want to persist the configuration.
+
+    ```shell
+    docker run -d --name discuit -v discuit-db:/var/lib/mysql -v discuit-redis:/var/lib/redis -v discuit-images:/app/images -p 8080:80 discuit
+    ```
+
+3. **Accessing Discuit**: After the container starts, you can access Discuit by navigating to `http://localhost:8080` on your web browser, or to the specific port if you customized the port mapping.
+
+4. **Stopping the Container**: When you're done, you can stop the container by running:
+
+    ```shell
+    docker stop discuit
+    ```
+
+5. **Starting the Container Again**: To start the container again, use:
+
+    ```shell
+    docker start discuit
+    ```
 
 ### Source code layout
 

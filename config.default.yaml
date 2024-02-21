@@ -16,8 +16,8 @@ sessionCookieName: SID
 
 # MariaDB configuration:
 dbAddr: 127.0.0.1 # Required
-dbUser: root # Required
-dbPassword: # Required
+dbUser: discuit # Required
+dbPassword: discuit # Required
 dbName: discuit # Required
 
 # ReCAPTCHA or hCaptcha secret and site-key:
