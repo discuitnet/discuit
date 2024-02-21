@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useIsMobile } from '../hooks';
-import { Link, useHistory } from 'react-router-dom';
 import Dropdown from './Dropdown';
 
 const SelectBar = ({ name, options, value, onChange, ...rest }) => {

@@ -945,11 +945,20 @@
         > * {
             margin-left: 7px;
         }
+        @include mixins.tablet {
+            > * {
+                margin-left: 5px;
+            }
+        }
         .select-bar-item {
             padding: var(--button-padding);
             font-weight: normal;
             position: relative;
             transition: none;
+            @include mixins.tablet {
+                padding-left: 8px;
+                padding-right: 8px;
+            }
             &::after {
                 content: '';
                 position: absolute;

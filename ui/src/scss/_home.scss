@@ -137,6 +137,11 @@ a {
     .home-welcome-buttons {
         display: flex;
         flex-direction: column;
+        button,
+        .button {
+            min-height: var(--input-height);
+            height: initial;
+        }
         > * {
             margin-top: 8px;
         }
@@ -431,12 +436,12 @@ a {
             color: var(--color-text-light);
             display: flex;
             align-items: center;
+            justify-content: flex-start;
+            flex-wrap: wrap;
             > * {
                 margin-right: 8px;
             }
-            @include mixins.mobile() {
-                justify-content: flex-start;
-                flex-wrap: wrap;
+            @include mixins.tablet() {
                 > * {
                     margin-top: 5px;
                 }
