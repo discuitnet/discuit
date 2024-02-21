@@ -1,6 +1,6 @@
 module github.com/discuitnet/discuit
 
-go 1.20
+go 1.21
 
 require (
 	github.com/SherClockHolmes/webpush-go v1.2.0
