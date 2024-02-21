@@ -28,4 +28,7 @@ module.exports = {
     'jsx-a11y/no-autofocus': 'off',
     'prettier/prettier': ['error', {}, { usePrettierrc: true }], // Use our .prettierrc file as source
   },
+  globals: {
+    CONFIG: 'readonly',
+  },
 };
