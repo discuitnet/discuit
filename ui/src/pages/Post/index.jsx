@@ -119,7 +119,9 @@ const Post = () => {
 
   const [deleteAs, setDeleteAs] = useState('normal');
   const [deleteModalOpen, _setDeleteModalOpen] = useState(false);
+  const [canDeletePostContent, setCanDeletePostContent] = useState(false);
   const setDeleteModalOpen = (open, deleteAs = 'normal') => {
+    setCanDeletePostContent(Boolean(deleteAs === 'admins' || deleteAs == 'normal'));
     if (open) {
       setDeleteAs(deleteAs);
     } else {
@@ -295,6 +297,7 @@ const Post = () => {
             open={deleteModalOpen}
             onClose={() => setDeleteModalOpen(false)}
             onDelete={handleDelete}
+            canDeleteContent={canDeletePostContent}
           />
           <PostContentDeleteModal
             postType={post.type}
@@ -441,14 +444,6 @@ const Post = () => {
                           onClick={() => setDeleteModalOpen(true, 'mods')}
                         >
                           Delete
-                        </button>
-                      )}
-                      {post.deleted && !post.deletedContent && (
-                        <button
-                          className="button-clear dropdown-item"
-                          onClick={() => setDeleteContentModalOpen(true, 'mods')}
-                        >
-                          Delete {post.type}
                         </button>
                       )}
                       {postOwner && (

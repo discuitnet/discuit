@@ -114,9 +114,9 @@ type Post struct {
 
 	Image *images.Image `json:"image"`
 
-	link      *postLink     `json:"-"`              // what's saved to the DB
-	Link      *PostLink     `json:"link,omitempty"` // what's sent to the client
-	LinkImage *images.Image `json:"-"`
+	link *postLink `json:"-"` // what's saved to the DB
+
+	Link *PostLink `json:"link,omitempty"` // what's sent to the client
 
 	Locked   bool       `json:"locked"`
 	LockedBy uid.NullID `json:"lockedBy"`
@@ -344,7 +344,6 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 			link := dbLink.PostLink()
 			if linkImage.ID != nil {
 				link.Image = linkImage
-				post.LinkImage = linkImage
 			}
 			post.link = dbLink
 			post.Link = link
@@ -743,6 +742,10 @@ func (p *Post) truncateTitleAndBody() {
 	p.Body.String = utils.TruncateUnicodeString(p.Body.String, maxPostBodyLength)
 }
 
+func (p *Post) HasLinkImage() bool {
+	return p.Link != nil && p.Link.Image != nil && p.Link.Image.ID != nil
+}
+
 // Save updates the post's updatable fields.
 func (p *Post) Save(ctx context.Context, user uid.ID) error {
 	if !p.AuthorID.EqualsTo(user) {
@@ -786,6 +789,10 @@ func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteConte
 		}
 	}
 
+	if deleteContent && !(g == UserGroupNormal || g == UserGroupAdmins) {
+		return httperr.NewForbidden("mod-cannot-delete-content", "Moderators cannot delete the content of a post. They can only delete a post from their community.")
+	}
+
 	switch g {
 	case UserGroupNormal:
 		if !p.AuthorID.EqualsTo(user) {
@@ -821,18 +828,24 @@ func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteConte
 		}
 
 		if deleteContent {
-			q := `
+			var setBody string
+			if p.Body.Valid {
+				setBody = `body = "", `
+			}
+			q := fmt.Sprintf(`
 			UPDATE posts SET 
-				body = "", 
+				%s
 				link_image = NULL,
 				deleted_content = TRUE, 
 				deleted_content_at = ?, 
 				deleted_content_by = ?, 
 				deleted_content_as = ? 
-			WHERE id = ?`
+			WHERE id = ?`, setBody)
+
 			if _, err := tx.ExecContext(ctx, q, now, user, g, p.ID); err != nil {
 				return err
 			}
+
 			if p.Type == PostTypeImage {
 				if _, err := tx.ExecContext(ctx, "DELETE FROM post_images WHERE post_id = ?", p.ID); err != nil {
 					return err
@@ -840,15 +853,15 @@ func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteConte
 				if err := images.DeleteImageTx(ctx, tx, p.db, *p.Image.ID); err != nil {
 					return err
 				}
-			} else if p.Type == PostTypeLink && p.LinkImage != nil {
-				if err := images.DeleteImageTx(ctx, tx, p.db, *p.LinkImage.ID); err != nil {
+			} else if p.Type == PostTypeLink && p.HasLinkImage() {
+				if err := images.DeleteImageTx(ctx, tx, p.db, *p.Link.Image.ID); err != nil {
 					return err
 				}
 			}
 		}
 
 		for _, table := range postsTables {
-			if _, err := tx.ExecContext(ctx, "DELETE FROM "+table+" WHERE post_id = ?", p.ID); err != nil {
+			if _, err := tx.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s WHERE post_id = ?", table), p.ID); err != nil {
 				return err
 			}
 		}
