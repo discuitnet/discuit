@@ -408,7 +408,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		{name: "user-agent", val: r.Header.Get("User-Agent")},
 	}
 	s.httpLogger.Println(constructLogLine(logFields, ""))
-	if s.config.IsDevelopment {
+	if s.config.IsDevelopment && os.Getenv("NO_HTTP_LOG_LINE") != "true" {
 		logFields[len(logFields)-1].off = true
 		var color string
 		if took > time.Millisecond*10 {
