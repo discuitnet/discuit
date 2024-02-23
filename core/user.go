@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/discuitnet/discuit/internal/httperr"
@@ -495,32 +497,6 @@ func MatchLoginCredentials(ctx context.Context, db *sql.DB, username, password s
 	return user, nil
 }
 
-// MakeAdmin makes the user an admin of the site. If isAdmin is false admin user
-// is removed as an admin.
-func MakeAdmin(ctx context.Context, db *sql.DB, user string, isAdmin bool) (*User, error) {
-	u, err := GetUserByUsername(ctx, db, user, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if isAdmin {
-		if u.Admin {
-			return nil, httperr.NewBadRequest("already-admin", "User is already an admin.")
-		}
-	} else {
-		if !u.Admin {
-			return nil, httperr.NewBadRequest("already-not-admin", "User is already not an admin.")
-		}
-	}
-
-	if _, err = db.ExecContext(ctx, "UPDATE users SET is_admin = ? WHERE id = ?", isAdmin, u.ID); err != nil {
-		return nil, err
-	}
-
-	u.Admin = isAdmin
-	return u, nil
-}
-
 // incrementUserPoints adds amount to user's points.
 func incrementUserPoints(ctx context.Context, db *sql.DB, user uid.ID, amount int) error {
 	_, err := db.ExecContext(ctx, "UPDATE users SET points = points + ? WHERE id = ?", amount, user)
@@ -883,4 +859,102 @@ func fetchBadges(db *sql.DB, users ...*User) error {
 	}
 
 	return nil
+}
+
+type adminsCacheStore struct {
+	mu          sync.RWMutex // guards following
+	admins      []uid.ID
+	usernames   []string // of the admins
+	lastFetched time.Time
+}
+
+func (ac *adminsCacheStore) isAdmin(db *sql.DB, user uid.ID) (bool, error) {
+	ac.mu.RLock()
+	shouldRefetch := false
+	if time.Since(ac.lastFetched) > time.Minute*5 {
+		shouldRefetch = true
+	}
+	ac.mu.RUnlock()
+
+	if shouldRefetch {
+		if err := ac.refresh(db); err != nil {
+			return false, err
+		}
+	}
+
+	ac.mu.RLock()
+	defer ac.mu.RUnlock()
+	return slices.Index(ac.admins, user) != -1, nil
+}
+
+func (ac *adminsCacheStore) refresh(db *sql.DB) error {
+	rows, err := db.Query("select id, username from users where users.is_admin = true")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var admins []uid.ID
+	var usernames []string
+	for rows.Next() {
+		var id uid.ID
+		var username string
+		if err = rows.Scan(&id, &username); err != nil {
+			return err
+		}
+		admins = append(admins, id)
+		usernames = append(usernames, username)
+	}
+	if err = rows.Err(); err != nil {
+		return err
+	}
+
+	ac.mu.Lock()
+	defer ac.mu.Unlock()
+
+	ac.admins = admins
+	ac.usernames = usernames
+	ac.lastFetched = time.Now()
+	return nil
+}
+
+var adminsCache = &adminsCacheStore{}
+
+// IsAdmin reports whether user is an admin. User can be nil, in which case this
+// function returns false.
+func IsAdmin(db *sql.DB, user *uid.ID) (bool, error) {
+	if user == nil {
+		return false, nil
+	}
+	return adminsCache.isAdmin(db, *user)
+}
+
+// MakeAdmin makes the user an admin of the site. If isAdmin is false admin user
+// is removed as an admin.
+func MakeAdmin(ctx context.Context, db *sql.DB, user string, isAdmin bool) (*User, error) {
+	u, err := GetUserByUsername(ctx, db, user, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if isAdmin {
+		if u.Admin {
+			return nil, httperr.NewBadRequest("already-admin", "User is already an admin.")
+		}
+	} else {
+		if !u.Admin {
+			return nil, httperr.NewBadRequest("already-not-admin", "User is already not an admin.")
+		}
+	}
+
+	if _, err = db.ExecContext(ctx, "UPDATE users SET is_admin = ? WHERE id = ?", isAdmin, u.ID); err != nil {
+		return nil, err
+	}
+
+	if err := adminsCache.refresh(db); err != nil {
+		fmt.Printf("Error refreshing admins list cache: %v", err)
+	}
+
+	u.Admin = isAdmin
+	return u, nil
 }

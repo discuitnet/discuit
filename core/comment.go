@@ -44,9 +44,17 @@ type Comment struct {
 	Points           int           `json:"-"`
 	CreatedAt        time.Time     `json:"createdAt"`
 	EditedAt         msql.NullTime `json:"editedAt"`
-	DeletedAt        msql.NullTime `json:"deletedAt"`
-	DeletedBy        uid.NullID    `json:"-"`
-	DeletedAs        UserGroup     `json:"deletedAs,omitempty"`
+
+	// If the comment is deleted and the content of the comment (body, author,
+	// etc) exists in the DB, and if ContentStripped is true, then those values
+	// are stripped to default values in this struct.
+	//
+	// The JSON value is found only if the comment is deleted.
+	ContentStripped *bool `json:"contentStripped,omitempty"`
+
+	DeletedAt msql.NullTime `json:"deletedAt"`
+	DeletedBy uid.NullID    `json:"-"`
+	DeletedAs UserGroup     `json:"deletedAs,omitempty"`
 
 	Author *User `json:"author,omitempty"`
 
@@ -163,6 +171,12 @@ func scanComments(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.I
 			return nil, err
 		}
 
+		if c.Deleted() {
+			// Not yet stripped, so set to false. Might be stripped shortly,
+			// however.
+			c.setStrippedContent(false)
+		}
+
 		if ancestors != nil {
 			if err := json.Unmarshal(ancestors, &c.Ancestors); err != nil {
 				return nil, err
@@ -197,8 +211,39 @@ func scanComments(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.I
 		return nil, fmt.Errorf("failed to populate comments authors: %w", err)
 	}
 
-	for _, c := range comments {
-		c.stripDeletedInfo()
+	// If a comment is deleted and the viewer doesn't have the privilege to see
+	// it, strip the comment's values that relate to its author in any way.
+	if viewer != nil {
+		isAdmin, err := IsAdmin(db, viewer)
+		if err != nil {
+			return nil, err
+		}
+		if !isAdmin {
+			viewerModOf := make(map[uid.ID]bool) // keys are community ids
+			for _, c := range comments {
+				if c.Deleted() && c.DeletedAs == UserGroupMods {
+					viewerMod, ok := viewerModOf[c.CommunityID]
+					if !ok {
+						var err error
+						viewerMod, err = UserMod(ctx, db, c.CommunityID, *viewer)
+						if err != nil {
+							return nil, err
+						}
+						log.Printf("Viewer mod of %v: %v\n", c.CommunityID, viewerMod)
+						viewerModOf[c.CommunityID] = viewerMod
+					}
+					if !viewerMod {
+						c.StripContent()
+					}
+				} else {
+					c.StripContent()
+				}
+			}
+		}
+	} else {
+		for _, c := range comments {
+			c.StripContent()
+		}
 	}
 
 	return comments, nil
@@ -397,11 +442,23 @@ func (c *Comment) Delete(ctx context.Context, user uid.ID, g UserGroup) error {
 
 	now := time.Now()
 	err := msql.Transact(ctx, c.db, func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(ctx, `UPDATE comments SET body = "", deleted_at = ?, deleted_by = ?, deleted_as = ? WHERE id = ?`, now, user, g, c.ID); err != nil {
+		var newBody string
+		if g == UserGroupNormal {
+			newBody = ""
+		} else {
+			newBody = c.Body
+		}
+		if _, err := tx.ExecContext(ctx, `UPDATE comments SET body = ?, deleted_at = ?, deleted_by = ?, deleted_as = ? WHERE id = ?`, newBody, now, user, g, c.ID); err != nil {
 			return err
 		}
-		if _, err := tx.ExecContext(ctx, "DELETE FROM posts_comments WHERE target_id = ? AND user_id = ?", c.ID, c.AuthorID); err != nil {
-			return err
+		if g == UserGroupNormal {
+			if _, err := tx.ExecContext(ctx, "DELETE FROM posts_comments WHERE target_id = ? AND user_id = ?", c.ID, c.AuthorID); err != nil {
+				return err
+			}
+		} else {
+			if _, err := tx.ExecContext(ctx, "UPDATE posts_comments SET deleted = true WHERE target_id = ? AND user_id = ?", c.ID, c.AuthorID); err != nil {
+				return err
+			}
 		}
 		if _, err := tx.ExecContext(ctx, "UPDATE users SET no_comments = no_comments - 1 WHERE id = ?", c.AuthorID); err != nil {
 			return err
@@ -415,15 +472,25 @@ func (c *Comment) Delete(ctx context.Context, user uid.ID, g UserGroup) error {
 	c.DeletedAt = msql.NewNullTime(now)
 	c.DeletedBy = uid.NullID{Valid: true, ID: user}
 	c.DeletedAs = g
-	c.stripDeletedInfo()
+	c.StripContent()
 	RemoveAllReportsOfComment(ctx, c.db, c.ID)
 	return err
 }
 
-func (c *Comment) stripDeletedInfo() {
+func (c *Comment) setStrippedContent(v bool) {
+	if c.ContentStripped == nil {
+		c.ContentStripped = new(bool)
+	}
+	*c.ContentStripped = v
+}
+
+// StripContent stripes all content of c that is either user generated or
+// relates to a user.
+func (c *Comment) StripContent() {
 	if !c.Deleted() {
 		return
 	}
+	c.setStrippedContent(true)
 	c.AuthorID.Clear()
 	c.AuthorUsername = "Hidden"
 	c.PostedAs = UserGroupNaN

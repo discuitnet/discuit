@@ -60,6 +60,13 @@ const Comment = ({
 
   const deleted = comment.deletedAt !== null;
 
+  // If purged if true, then the deleted comment's content (body, author, etc)
+  // is not available (in which case the comment was deleted by its author). If
+  // purged is false and deleted is true, then the comment was deleted by either
+  // an admin or a mod of the community *and* the person viewing the comment
+  // right now, the logged in user, has the privilege to view this comment.
+  const purged = deleted && comment.contentStripped;
+
   const [isReplying, setIsReplying] = useState(false);
   const handleOnReply = () => {
     if (!loggedIn) {
@@ -219,7 +226,7 @@ const Comment = ({
   };
 
   const isOP = post.userId === comment.userId;
-  const isUsernameHidden = deleted || post.userDeleted || mutedUserHidden;
+  const isUsernameHidden = purged || post.userDeleted || mutedUserHidden;
   let username = comment.username;
   if (isUsernameHidden) {
     if (post.userDeleted) {
@@ -330,7 +337,7 @@ const Comment = ({
   const userMod = community ? community.userMod : false;
 
   let deletedText = '';
-  if (deleted) deletedText = `Comment deleted by ${userGroupSingular(comment.deletedAs)}`;
+  if (purged) deletedText = `Comment deleted by ${userGroupSingular(comment.deletedAs)}`;
   const disabled = !(canVote && !comment.deletedAt);
   const noRepliesRenderedDirect = children ? children.length : 0;
   const noChildrenReplies = countChildrenReplies(node);
@@ -446,7 +453,7 @@ const Comment = ({
             </div>
           )}
           <TimeAgo className="post-comment-head-item" time={comment.createdAt} short={isMobile} />
-          {!deleted && comment.userGroup !== 'normal' && (
+          {!purged && ['normal', 'null'].find((v) => v === comment.userGroup) === undefined && (
             <div className="post-comment-head-item post-comment-user-group">
               {`${toTitleCase(userGroupSingular(comment.userGroup, isMobile))}`}
             </div>
@@ -459,6 +466,9 @@ const Comment = ({
               suffix=""
               short
             />
+          )}
+          {deleted && !purged && (
+            <div className="post-comment-head-item post-comment-not-purged-sign">Deleted</div>
           )}
           <div
             className="post-comment-head-item post-comment-collapse-minus"
@@ -485,7 +495,7 @@ const Comment = ({
               cursor: mutedUserHidden ? 'pointer' : 'auto',
             }}
           >
-            {deleted ? (
+            {purged ? (
               <div className="post-comment-text-sign">{deletedText}</div>
             ) : (
               <ShowMoreBox showButton maxHeight="500px">

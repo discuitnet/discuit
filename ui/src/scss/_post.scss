@@ -517,6 +517,11 @@
                 color: var(--color-brand);
                 font-weight: 600;
             }
+            .post-comment-not-purged-sign {
+                text-transform: uppercase;
+                color: var(--color-red);
+                font-weight: 600;
+            }
             .showmorebox {
                 &.is-overflowing {
                     .showmorebox-body {
