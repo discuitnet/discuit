@@ -671,9 +671,18 @@ type UserFeedResultSet struct {
 }
 
 func GetUserFeed(ctx context.Context, db *sql.DB, viewer *uid.ID, userID uid.ID, limit int, next *uid.ID) (*UserFeedResultSet, error) {
-	var args []any
 	query := "SELECT target_id, target_type FROM posts_comments WHERE user_id = ? "
-	args = append(args, userID)
+	args := []any{userID}
+
+	// Show posts and comments deleted by someone other than their author to
+	// admins. If the viewer is not an admin, hide them entirely (even if the
+	// comment content is purged).
+	if is, err := IsAdmin(db, viewer); err != nil {
+		return nil, err
+	} else if !is {
+		query += "AND deleted = false "
+	}
+
 	if next != nil {
 		query += "AND target_id <= ? "
 		args = append(args, *next)

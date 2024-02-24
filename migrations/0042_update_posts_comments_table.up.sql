@@ -1,0 +1,1 @@
+alter table posts_comments add column deleted bool not null default false;
