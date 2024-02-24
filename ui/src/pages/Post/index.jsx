@@ -459,17 +459,19 @@ const Post = () => {
                           </div>
                         </div>
                       )}
-                      <div className="dropdown-item is-non-reactive">
-                        <div className="checkbox">
-                          <input
-                            id={'ch-pin-m'}
-                            type="checkbox"
-                            checked={isPinned}
-                            onChange={(e) => handlePinChange(e, false)}
-                          />
-                          <label htmlFor={'ch-pin-m'}>Pinned</label>
+                      {(!post.deleted || (post.deleted && isPinned)) && (
+                        <div className="dropdown-item is-non-reactive">
+                          <div className="checkbox">
+                            <input
+                              id={'ch-pin-m'}
+                              type="checkbox"
+                              checked={isPinned}
+                              onChange={(e) => handlePinChange(e, false)}
+                            />
+                            <label htmlFor={'ch-pin-m'}>Pinned</label>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </Dropdown>
                 )}
@@ -511,17 +513,19 @@ const Post = () => {
                           </div>
                         </div>
                       )}
-                      <div className="dropdown-item is-non-reactive">
-                        <div className="checkbox">
-                          <input
-                            id={'ch-pin-a'}
-                            type="checkbox"
-                            checked={isPinnedSite}
-                            onChange={(e) => handlePinChange(e, true)}
-                          />
-                          <label htmlFor={'ch-pin-a'}>Pinned</label>
+                      {(!post.deleted || (post.deleted && isPinnedSite)) && (
+                        <div className="dropdown-item is-non-reactive">
+                          <div className="checkbox">
+                            <input
+                              id={'ch-pin-a'}
+                              type="checkbox"
+                              checked={isPinnedSite}
+                              onChange={(e) => handlePinChange(e, true)}
+                            />
+                            <label htmlFor={'ch-pin-a'}>Pinned</label>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </Dropdown>
                 )}

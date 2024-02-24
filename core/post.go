@@ -818,6 +818,14 @@ func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteConte
 		return errInvalidUserGroup
 	}
 
+	// Unpin all pins of this post:
+	if err := p.Pin(ctx, user, true, true); err != nil { // unpin site-wide pin
+		return err
+	}
+	if err := p.Pin(ctx, user, false, true); err != nil { // unpin community pin
+		return err
+	}
+
 	now := time.Now()
 	err := msql.Transact(ctx, p.db, func(tx *sql.Tx) (err error) {
 		if !deleteContent || (deleteContent && !p.Deleted) {
@@ -958,6 +966,10 @@ const MaxPinnedPosts = 2
 // Pin pins a post on behalf of user to its community if siteWide is false,
 // otherwise it pins the post site-wide.
 func (p *Post) Pin(ctx context.Context, user uid.ID, siteWide, unpin bool) error {
+	if p.Deleted && !unpin {
+		return httperr.NewForbidden("cannot-pin-deleted-post", "Cannot pin deleted posts.")
+	}
+
 	maxPinnedReached := func(ctx context.Context, tx *sql.Tx, community *uid.ID) (reached bool, err error) {
 		count := 0
 		if community == nil {
