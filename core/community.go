@@ -701,7 +701,7 @@ func (c *Community) GetBannedUsers(ctx context.Context) ([]*User, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
-	return GetUsersIDs(ctx, c.db, ids, nil)
+	return GetUsersByIDs(ctx, c.db, ids, nil)
 }
 
 // IsUserBannedFromCommunity checks if user is banned from community. If user is
@@ -909,7 +909,7 @@ func GetCommunityMods(ctx context.Context, db *sql.DB, community uid.ID) ([]*Use
 		return nil, nil
 	}
 
-	users, err := GetUsersIDs(ctx, db, ids, nil)
+	users, err := GetUsersByIDs(ctx, db, ids, nil)
 	if err != nil {
 		if err == errUserNotFound {
 			return nil, nil

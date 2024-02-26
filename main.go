@@ -42,6 +42,10 @@ func main() {
 	db := openDatabase(conf.DBAddr, conf.DBUser, conf.DBPassword, conf.DBName)
 	defer db.Close()
 
+	if err := core.CreateGhostUser(db); err != nil {
+		log.Fatal("Error creating the ghost user: ", err)
+	}
+
 	// Parse flags.
 	runServer, err := parseFlags(db, conf)
 	if err != nil {

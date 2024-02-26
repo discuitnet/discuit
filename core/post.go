@@ -270,6 +270,7 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 
 	var posts []*Post
 	loggedIn := viewer != nil
+
 	for rows.Next() {
 		post := &Post{db: db}
 		var linkBytes []byte
@@ -321,8 +322,7 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 			dest = append(dest, &post.ViewerVoted, &post.ViewerVotedUp)
 		}
 
-		err := rows.Scan(dest...)
-		if err != nil {
+		if err := rows.Scan(dest...); err != nil {
 			return nil, fmt.Errorf("scanning post rows.Scan: %w", err)
 		}
 
@@ -338,7 +338,7 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 		}
 		if linkBytes != nil {
 			dbLink := &postLink{}
-			if err = json.Unmarshal(linkBytes, dbLink); err != nil {
+			if err := json.Unmarshal(linkBytes, dbLink); err != nil {
 				return nil, fmt.Errorf("unmarshaling linkBytes: %w", err)
 			}
 			link := dbLink.PostLink()
@@ -354,6 +354,7 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 			post.Link = nil
 			post.Image = nil
 		}
+
 		posts = append(posts, post)
 	}
 
@@ -392,21 +393,25 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 		return nil, err
 	}
 
-	if err := populatePostAuthors(ctx, db, posts); err != nil {
+	viewerAdmin, err := IsAdmin(db, viewer)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := populatePostAuthors(ctx, db, posts, viewerAdmin); err != nil {
 		return nil, fmt.Errorf("failed to populate post authors: %w", err)
 	}
 
-	// Strip deleted user info.
-	for _, p := range posts {
-		if p.AuthorDeleted {
-			p.AuthorUsername = "[deleted]"
+	for _, post := range posts {
+		if !viewerAdmin && post.AuthorDeleted {
+			post.StripAuthorInfo()
 		}
 	}
 
 	return posts, nil
 }
 
-func populatePostAuthors(ctx context.Context, db *sql.DB, posts []*Post) error {
+func populatePostAuthors(ctx context.Context, db *sql.DB, posts []*Post, viewerAdmin bool) error {
 	var authorIDs []uid.ID
 	found := make(map[uid.ID]bool)
 	for _, c := range posts {
@@ -416,17 +421,29 @@ func populatePostAuthors(ctx context.Context, db *sql.DB, posts []*Post) error {
 		}
 	}
 
-	authors, err := GetUsersIDs(ctx, db, authorIDs, nil)
+	authors, err := GetUsersByIDs(ctx, db, authorIDs, nil)
 	if err != nil {
 		return err
 	}
 
-	for _, c := range posts {
+	if !viewerAdmin {
 		for _, author := range authors {
-			if c.AuthorID == author.ID {
-				c.Author = author
+			author.UnsetToGhost()
+		}
+	}
+
+	for _, post := range posts {
+		for _, author := range authors {
+			if post.AuthorID == author.ID {
+				post.Author = author
 				break
 			}
+		}
+	}
+
+	if !viewerAdmin {
+		for _, author := range authors {
+			author.SetToGhost()
 		}
 	}
 
@@ -775,6 +792,16 @@ func (p *Post) Save(ctx context.Context, user uid.ID) error {
 		p.EditedAt.Time = now
 	}
 	return err
+}
+
+// StripAuthorInfo should be called if the author account of the post is deleted
+// and the viewer is not an admin.
+func (p *Post) StripAuthorInfo() {
+	p.AuthorID.Clear()
+	p.AuthorUsername = "ghost"
+	if p.Author != nil {
+		p.Author.SetToGhost()
+	}
 }
 
 // Delete deletes p on behalf of user, who's deleting the post in his capacity

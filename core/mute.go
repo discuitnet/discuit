@@ -166,7 +166,7 @@ func GetMutedUsers(ctx context.Context, db *sql.DB, user uid.ID, fillUsers bool)
 	}
 
 	if fillUsers {
-		users, err := GetUsersIDs(ctx, db, ids, nil)
+		users, err := GetUsersByIDs(ctx, db, ids, nil)
 		if err != nil {
 			return nil, err
 		}
