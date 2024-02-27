@@ -385,6 +385,9 @@ const Comment = ({
     const checkboxId = `ch-admins-${comment.id}`;
     return (
       <>
+        <div className="dropdown-item" onClick={() => alert(`ID: ${comment.id}`)}>
+          Comment ID
+        </div>
         <div className="dropdown-item" onClick={() => setConfirmDeleteOpen(true, 'admins')}>
           Delete
         </div>
@@ -504,11 +507,6 @@ const Comment = ({
               </ShowMoreBox>
             )}
             {deleted && <div className="post-comment-text-sign">{deletedText}</div>}
-            {isAdmin && (
-              <div
-                style={{ opacity: 0.5, fontSize: 'var(--fs-xs)', marginTop: '0.5rem' }}
-              >{`ID: ${comment.id}`}</div>
-            )}
           </div>
         )}
         {Diagnostics && (
