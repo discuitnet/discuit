@@ -507,6 +507,9 @@
                 &.is-hidden {
                     color: var(--color-gray);
                 }
+                &.is-red {
+                    color: var(--color-red);
+                }
             }
             .post-comment-head-item {
                 margin-left: 8px;
@@ -515,11 +518,6 @@
             .post-comment-is-op,
             .post-comment-user-group {
                 color: var(--color-brand);
-                font-weight: 600;
-            }
-            .post-comment-not-purged-sign {
-                text-transform: uppercase;
-                color: var(--color-red);
                 font-weight: 600;
             }
             .showmorebox {
@@ -537,6 +535,12 @@
         }
         &.has-propics {
             .post-comment-text {
+                &.is-red {
+                    .showmorebox {
+                        color: var(--color-red);
+                        margin-bottom: 6px;
+                    }
+                }
                 @include mixins.mobile() {
                     margin-top: 18px;
                 }

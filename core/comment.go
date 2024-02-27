@@ -768,11 +768,9 @@ func populateCommentAuthors(ctx context.Context, db *sql.DB, comments []*Comment
 	var authorIDs []uid.ID
 	found := make(map[uid.ID]bool)
 	for _, comment := range comments {
-		if !comment.Deleted {
-			if !found[comment.AuthorID] {
-				authorIDs = append(authorIDs, comment.AuthorID)
-				found[comment.AuthorID] = true
-			}
+		if !found[comment.AuthorID] {
+			authorIDs = append(authorIDs, comment.AuthorID)
+			found[comment.AuthorID] = true
 		}
 	}
 
@@ -786,6 +784,9 @@ func populateCommentAuthors(ctx context.Context, db *sql.DB, comments []*Comment
 	}
 
 	if !viewerAdmin {
+		// If the author account is deleted, some of it's values are set to
+		// ghost values, including the ID of the author. Undo this so that the
+		// authors can be matched with the comments.
 		for _, author := range authors {
 			author.UnsetToGhost()
 		}
@@ -802,9 +803,11 @@ func populateCommentAuthors(ctx context.Context, db *sql.DB, comments []*Comment
 		if !found {
 			panic("author not found")
 		}
+
 	}
 
 	if !viewerAdmin {
+		// Reset deleted authors to ghosts.
 		for _, author := range authors {
 			author.SetToGhost()
 		}

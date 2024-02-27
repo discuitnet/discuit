@@ -4,8 +4,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import AddComment from './AddComment';
-import Link from '../../components/Link';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { kRound, mfetchjson, stringCount, toTitleCase, userGroupSingular } from '../../helper';
 import Dropdown from '../../components/Dropdown';
 import { loginPromptToggled, snackAlert, snackAlertError } from '../../slices/mainSlice';
@@ -17,7 +16,7 @@ import MarkdownBody from '../../components/MarkdownBody';
 import ShowMoreBox from '../../components/ShowMoreBox';
 import { newCommentAdded, replyCommentsAdded } from '../../slices/commentsSlice';
 import { useVoting } from '../../hooks';
-import UserProPic, { DeletedUserProPic, UserLink } from '../../components/UserProPic';
+import UserProPic, { GhostUserProPic, UserLink } from '../../components/UserProPic';
 import { LinkOrDiv } from '../../components/Utils';
 import { userHasSupporterBadge } from '../User';
 
@@ -225,14 +224,14 @@ const Comment = ({
     }
   };
 
-  const isOP = post.userId === comment.userId;
-  const isUsernameHidden = purged || post.userDeleted || mutedUserHidden;
+  const isOP = !post.userDeleted && !comment.userDeleted && post.userId === comment.userId;
+  const isUsernameHidden = purged || mutedUserHidden || (comment.userDeleted && !isAdmin);
   let username = comment.username;
   if (isUsernameHidden) {
-    if (post.userDeleted) {
-      username = 'Deleted';
-    } else if (comment.isAuthorMuted) {
+    if (comment.isAuthorMuted) {
       username = 'Muted';
+    } else if (comment.userDeleted) {
+      username = 'Ghost';
     } else {
       username = 'Hidden';
     }
@@ -246,7 +245,7 @@ const Comment = ({
     if (!showAuthorProPic) {
       return <div className={'post-comment-collapse-minus' + (collapsed ? ' is-plus' : '')}></div>;
     }
-    if (comment.author) {
+    if (!comment.userDeleted && comment.author) {
       const { author } = comment;
       return (
         <div className="post-comment-propic" ref={proPicRef}>
@@ -263,8 +262,28 @@ const Comment = ({
     }
     return (
       <div className="post-comment-propic" ref={proPicRef}>
-        <DeletedUserProPic />
+        <GhostUserProPic />
       </div>
+    );
+  };
+  const renderAuthorUsername = () => {
+    // On mobile, render the profile picture. On desktop, render only the
+    // username.
+    return (
+      <UserLink
+        className={
+          'post-comment-username' +
+          (isUsernameHidden ? ' is-hidden' : '') +
+          (comment.userDeleted && !isUsernameHidden ? ' is-red' : '')
+        }
+        username={username}
+        proPic={comment.author ? comment.author.proPic : null}
+        proPicGhost={isUsernameHidden}
+        showProPic={isMobile && showAuthorProPic}
+        isSupporter={isAuthorSupporter}
+        noAtSign
+        noLink={isUsernameHidden}
+      />
     );
   };
 
@@ -282,15 +301,7 @@ const Comment = ({
         </div>
         <div className="post-comment-body">
           <div className="post-comment-body-head">
-            <UserLink
-              className={'post-comment-username' + (isUsernameHidden ? ' is-hidden' : '')}
-              username={username}
-              proPic={comment.author ? comment.author.proPic : null}
-              showProPic={isMobile && showAuthorProPic}
-              noAtSign
-              noLink
-              isSupporter={isAuthorSupporter}
-            />
+            {renderAuthorUsername()}
             {isOP && (
               <div className="post-comment-head-item post-comment-is-op" title="Original poster">
                 OP
@@ -337,7 +348,7 @@ const Comment = ({
   const userMod = community ? community.userMod : false;
 
   let deletedText = '';
-  if (purged) deletedText = `Comment deleted by ${userGroupSingular(comment.deletedAs)}`;
+  if (deleted) deletedText = `Deleted by ${userGroupSingular(comment.deletedAs, true)}`;
   const disabled = !(canVote && !comment.deletedAt);
   const noRepliesRenderedDirect = children ? children.length : 0;
   const noChildrenReplies = countChildrenReplies(node);
@@ -435,18 +446,7 @@ const Comment = ({
       </div>
       <div className="post-comment-body">
         <div className="post-comment-body-head">
-          {isUsernameHidden ? (
-            <div className="post-comment-username is-hidden">{username}</div>
-          ) : (
-            <UserLink
-              className={'post-comment-username' + (isUsernameHidden ? ' is-hidden' : '')}
-              username={username}
-              proPic={comment.author ? comment.author.proPic : null}
-              showProPic={isMobile && showAuthorProPic}
-              isSupporter={isAuthorSupporter}
-              noAtSign
-            />
-          )}
+          {renderAuthorUsername()}
           {isOP && (
             <div className="post-comment-head-item post-comment-is-op" title="Original poster">
               OP
@@ -467,9 +467,6 @@ const Comment = ({
               short
             />
           )}
-          {deleted && !purged && (
-            <div className="post-comment-head-item post-comment-not-purged-sign">Deleted</div>
-          )}
           <div
             className="post-comment-head-item post-comment-collapse-minus"
             onClick={() => handleCollapse(true)}
@@ -488,22 +485,29 @@ const Comment = ({
         )}
         {!isEditing && (
           <div
-            className={'post-comment-text' + (focused ? ' is-focused' : '')}
+            className={
+              'post-comment-text' +
+              (focused ? ' is-focused' : '') +
+              (deleted && !purged ? ' is-red' : '')
+            }
             onClick={handleCommentTextClick}
             style={{
               opacity: mutedUserHidden ? 0.8 : 1,
               cursor: mutedUserHidden ? 'pointer' : 'auto',
             }}
           >
-            {purged ? (
-              <div className="post-comment-text-sign">{deletedText}</div>
-            ) : (
+            {!purged && (
               <ShowMoreBox showButton maxHeight="500px">
-                <MarkdownBody>{mutedUserHidden ? mutedText : comment.body}</MarkdownBody>
+                <MarkdownBody>
+                  {mutedUserHidden ? mutedText : comment.body ? comment.body : '[Empty comment]'}
+                </MarkdownBody>
               </ShowMoreBox>
             )}
+            {deleted && <div className="post-comment-text-sign">{deletedText}</div>}
             {isAdmin && (
-              <div style={{ opacity: 0.5, fontSize: 'var(--fs-xs)' }}>{`ID: ${comment.id}`}</div>
+              <div
+                style={{ opacity: 0.5, fontSize: 'var(--fs-xs)', marginTop: '0.5rem' }}
+              >{`ID: ${comment.id}`}</div>
             )}
           </div>
         )}

@@ -1,21 +1,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { mfetch, toTitleCase, userGroupSingular } from '../../helper';
+import { toTitleCase, userGroupSingular } from '../../helper';
 import CommunityLink from './CommunityLink';
 import TimeAgo from '../TimeAgo';
-import Link from '../Link';
 import { useIsMobile, useMuteCommunity, useMuteUser } from '../../hooks';
 import Dropdown from '../Dropdown';
 import { ButtonMore } from '../Button';
-import { useDispatch, useSelector } from 'react-redux';
-import {
-  muteCommunity,
-  muteUser,
-  selectIsCommunityMuted,
-  selectIsUserMuted,
-  unmuteCommunity,
-  unmuteUser,
-} from '../../slices/mainSlice';
+import { useSelector } from 'react-redux';
 import { UserLink } from '../UserProPic';
 import { userHasSupporterBadge } from '../../pages/User';
 
@@ -25,7 +16,7 @@ const PostCardHeadingDetails = ({
   showEdited = false,
   showAuthorProPic = false,
 }) => {
-  const userURL = `/@${post.username}`;
+  // const userURL = `/@${post.username}`;
   userGroup = userGroup ?? post.userGroup;
   // Show if post was edited less than 5 mins ago.
   const showEditedSign =
@@ -38,11 +29,11 @@ const PostCardHeadingDetails = ({
   const isMobile = useIsMobile();
   const isPinned = post.isPinned || post.isPinnedSite;
 
-  const dispatch = useDispatch();
-
+  // const dispatch = useDispatch();
+  //
   // const isAuthorMuted = useSelector(selectIsUserMuted(post.userId));
   // const isCommunityMuted = useSelector(selectIsCommunityMuted(post.communityId));
-
+  //
   // const handleMuteCommunity = () => {
   //   const f = isCommunityMuted ? unmuteCommunity : muteCommunity;
   //   dispatch(f(post.communityId, post.communityName));
@@ -69,16 +60,14 @@ const PostCardHeadingDetails = ({
         <CommunityLink name={post.communityName} proPic={post.communityProPic} />
         <div className="post-card-heading-by">
           <span>Posted by </span>
-          {post.userDeleted ? (
-            <span>[deleted]</span>
-          ) : (
-            <UserLink
-              username={post.username}
-              proPic={post.author ? post.author.proPic : null}
-              showProPic={showAuthorProPic}
-              isSupporter={isAuthorSupporter}
-            />
-          )}
+          <UserLink
+            username={post.userDeleted ? 'Ghost' : post.username}
+            proPic={post.author ? post.author.proPic : null}
+            showProPic={showAuthorProPic}
+            isSupporter={isAuthorSupporter}
+            noLink={post.userDeleted}
+            proPicGhost={post.userDeleted}
+          />
           {userGroup !== 'normal' && (
             <span className="post-card-heading-user-group">{` ${toTitleCase(
               userGroupSingular(userGroup)
@@ -120,6 +109,7 @@ PostCardHeadingDetails.propTypes = {
   post: PropTypes.object.isRequired,
   userGroup: PropTypes.string,
   showEdited: PropTypes.bool,
+  showAuthorProPic: PropTypes.bool,
 };
 
 export default PostCardHeadingDetails;

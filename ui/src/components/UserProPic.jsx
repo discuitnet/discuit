@@ -36,6 +36,12 @@ const ProfilePicture = ({ name, proPic, size = 'small', ...rest }) => {
   );
 };
 
+ProfilePicture.propTypes = {
+  name: PropTypes.string.isRequired,
+  proPic: PropTypes.object,
+  size: PropTypes.string,
+};
+
 const DefaultProfilePicture = ({ name, ...rest }) => {
   const letter = name[0].toUpperCase();
   const color = (letter) => {
@@ -79,6 +85,10 @@ const DefaultProfilePicture = ({ name, ...rest }) => {
   );
 };
 
+DefaultProfilePicture.propTypes = {
+  name: PropTypes.string.isRequired,
+};
+
 const UserProPic = ({ className, username, proPic, size = 'small', ...rest }) => {
   return (
     <div className={'user-propic' + (className ? ` ${className}` : '')}>
@@ -100,9 +110,9 @@ UserProPic.propTypes = {
 
 export default UserProPic;
 
-export const DeletedUserProPic = ({ className, ...rest }) => {
+export const GhostUserProPic = ({ className, ...rest }) => {
   return (
-    <div className="user-propic" {...rest}>
+    <div className={'user-propic' + (className ? ` ${className}` : '')} {...rest}>
       <div
         className="profile-picture user-deleted-propic"
         style={{ backgroundColor: 'gray', opacity: '0.3' }}
@@ -118,10 +128,15 @@ export const DeletedUserProPic = ({ className, ...rest }) => {
   );
 };
 
+GhostUserProPic.propTypes = {
+  className: PropTypes.string,
+};
+
 export const UserLink = ({
   className,
   username,
   proPic = null,
+  proPicGhost = false,
   isSupporter = false,
   showProPic = true,
   noLink = false,
@@ -134,8 +149,20 @@ export const UserLink = ({
   const cls = 'user-link' + (className ? ` ${className}` : '') + supporterCls;
   return (
     <El className={cls} {...rest} to={`/@${username}`}>
-      {showProPic && <UserProPic name={username} proPic={proPic} />}
+      {showProPic && !proPicGhost && <UserProPic name={username} proPic={proPic} />}
+      {showProPic && proPicGhost && <GhostUserProPic />}
       <div className={'user-link-name' + supporterCls}>{name}</div>
     </El>
   );
+};
+
+UserLink.propTypes = {
+  className: PropTypes.string,
+  username: PropTypes.string.isRequired,
+  proPic: PropTypes.object,
+  proPicGhost: PropTypes.bool,
+  isSupporter: PropTypes.bool,
+  showProPic: PropTypes.bool,
+  noLink: PropTypes.bool,
+  noAtSign: PropTypes.bool,
 };
