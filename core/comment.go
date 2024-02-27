@@ -31,6 +31,7 @@ type Comment struct {
 	CommunityName    string        `json:"communityName"`
 	AuthorID         uid.ID        `json:"userId,omitempty"`
 	AuthorUsername   string        `json:"username"`
+	AuthorGhostID    string        `json:"userGhostId,omitempty"`
 	PostedAs         UserGroup     `json:"userGroup"`
 	AuthorDeleted    bool          `json:"userDeleted"`
 	ParentID         uid.NullID    `json:"parentId"`
@@ -249,8 +250,11 @@ func scanComments(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.I
 
 	// Strip deleted author information, unless the viewer is an admin.
 	for _, comment := range comments {
-		if comment.AuthorDeleted && !viewerAdmin {
-			comment.StripAuthorInfo()
+		if comment.AuthorDeleted {
+			comment.setGhostAuthorID()
+			if !viewerAdmin {
+				comment.StripAuthorInfo()
+			}
 		}
 	}
 
@@ -491,8 +495,15 @@ func (c *Comment) setStrippedContent(v bool) {
 // StripAuthorInfo should be called if the author account of the comment is
 // deleted and the viewer is not an admin.
 func (c *Comment) StripAuthorInfo() {
+	c.setGhostAuthorID()
 	c.AuthorID.Clear()
 	c.AuthorUsername = "ghost"
+}
+
+func (c *Comment) setGhostAuthorID() {
+	if c.AuthorGhostID == "" {
+		c.AuthorGhostID = CalcGhostUserID(c.AuthorID, c.PostID.String())
+	}
 }
 
 // StripContent stripes all content of c that is either user generated or

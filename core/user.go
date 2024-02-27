@@ -2,7 +2,9 @@ package core
 
 import (
 	"context"
+	"crypto/sha1"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -1090,4 +1092,12 @@ func CreateGhostUser(db *sql.DB) error {
 		return err
 	}
 	return nil
+}
+
+func CalcGhostUserID(user uid.ID, unique string) string {
+	b := make([]byte, len(user)+len(unique))
+	copy(b, user[:])
+	copy(b[len(user):], []byte(unique))
+	sum := sha1.Sum(b)
+	return hex.EncodeToString(sum[:])[:8]
 }

@@ -91,6 +91,7 @@ type Post struct {
 
 	AuthorID       uid.ID `json:"userId"`
 	AuthorUsername string `json:"username"`
+	AuthorGhostID  string `json:"userGhostId,omitempty"`
 
 	// In which capacity (as mod, admin, or normal user) the post was posted in.
 	PostedAs UserGroup `json:"userGroup"`
@@ -403,8 +404,11 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 	}
 
 	for _, post := range posts {
-		if !viewerAdmin && post.AuthorDeleted {
-			post.StripAuthorInfo()
+		if post.AuthorDeleted {
+			post.setGhostAuthorID()
+			if !viewerAdmin {
+				post.StripAuthorInfo()
+			}
 		}
 	}
 
@@ -797,10 +801,17 @@ func (p *Post) Save(ctx context.Context, user uid.ID) error {
 // StripAuthorInfo should be called if the author account of the post is deleted
 // and the viewer is not an admin.
 func (p *Post) StripAuthorInfo() {
+	p.setGhostAuthorID()
 	p.AuthorID.Clear()
 	p.AuthorUsername = "ghost"
 	if p.Author != nil {
 		p.Author.SetToGhost()
+	}
+}
+
+func (p *Post) setGhostAuthorID() {
+	if p.AuthorGhostID == "" {
+		p.AuthorGhostID = CalcGhostUserID(p.AuthorID, p.ID.String())
 	}
 }
 
