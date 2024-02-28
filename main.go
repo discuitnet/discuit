@@ -35,7 +35,7 @@ func main() {
 	// Load config file.
 	conf, err := config.Parse("./config.yaml")
 	if err != nil {
-		log.Fatal("Error parsing config file: ", err)
+		log.Fatal("Error loading config: ", err)
 	}
 
 	// Connect to MariaDB.
