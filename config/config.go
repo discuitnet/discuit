@@ -65,7 +65,7 @@ func Parse(path string) (*Config, error) {
 	c := &Config{
 		// Default values.
 		Addr:               ":8080",
-		DBUser:             "root",
+		DBUser:             "discuit",
 		SessionCookieName:  "SID",
 		RedisAddress:       ":6379",
 		PaginationLimit:    10,
