@@ -108,6 +108,7 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/_user", s.withHandler(s.getLoggedInUser)).Methods("GET")
 
 	r.Handle("/api/users/{username}", s.withHandler(s.getUser)).Methods("GET")
+	r.Handle("/api/users/{username}", s.withHandler(s.deleteUser)).Methods("DELETE")
 	r.Handle("/api/users/{username}/feed", s.withHandler(s.getUsersFeed)).Methods("GET")
 	r.Handle("/api/users/{username}/pro_pic", s.withHandler(s.handleUserProPic)).Methods("POST", "DELETE")
 	r.Handle("/api/users/{username}/badges", s.withHandler(s.addBadge)).Methods("POST")
@@ -170,7 +171,6 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/_report", s.withHandler(s.report)).Methods("POST")
 
 	r.Handle("/api/_settings", s.withHandler(s.updateUserSettings)).Methods("POST")
-	r.Handle("/api/_settings", s.withHandler(s.deleteUser)).Methods("DELETE")
 
 	r.Handle("/api/_admin", s.withHandler(s.adminActions)).Methods("POST")
 

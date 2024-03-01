@@ -1066,6 +1066,7 @@ func MakeAdmin(ctx context.Context, db *sql.DB, user string, isAdmin bool) (*Use
 		}
 	}
 
+	// Note: Duplicate the changes to the User.Delete function when making changes to this SQL query.
 	if _, err = db.ExecContext(ctx, "UPDATE users SET is_admin = ? WHERE id = ?", isAdmin, u.ID); err != nil {
 		return nil, err
 	}
