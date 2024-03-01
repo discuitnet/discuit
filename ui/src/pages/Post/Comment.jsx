@@ -224,7 +224,11 @@ const Comment = ({
     }
   };
 
-  const isOP = !post.userDeleted && !comment.userDeleted && post.userId === comment.userId;
+  const isOP = (() => {
+    const postAuthorId = post.userDeleted ? post.userGhostId : post.userId;
+    const commentAuthorId = comment.userDeleted ? comment.userGhostId : comment.userId;
+    return postAuthorId === commentAuthorId;
+  })();
   const isUsernameHidden = purged || mutedUserHidden || (comment.userDeleted && !isAdmin);
   let username = comment.username;
   if (isUsernameHidden) {
