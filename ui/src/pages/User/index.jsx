@@ -36,10 +36,11 @@ const User = ({ username }) => {
   const history = useHistory();
 
   const viewer = useSelector((state) => state.main.user);
+  const viewerAdmin = viewer ? viewer.isAdmin : false;
   const loggedIn = viewer !== null;
 
   const isUserFeedAvailable = (user, viewer) => {
-    return !user.isBanned || (user.isBanned && viewer !== null && viewer.isAdmin);
+    return !user.isBanned || (user.isBanned && viewer !== null && viewerAdmin);
   };
 
   const user = useSelector(selectUser(username));
@@ -86,7 +87,9 @@ const User = ({ username }) => {
           setFeed(feed);
           setFeedLoading('loaded');
         }
-        if (username !== user.username) history.replace(`/@${user.username}`);
+        if (username !== user.username && username.toLowerCase() === user.username.toLowerCase()) {
+          history.replace(`/@${user.username}`);
+        }
       } catch (error) {
         dispatch(snackAlertError(error));
       }
@@ -183,12 +186,27 @@ const User = ({ username }) => {
     return <PageLoading />;
   }
 
+  if (user.deleted && !viewerAdmin) {
+    return (
+      <div className="page-content page-notfound wrap">
+        <Helmet>
+          <title>{`@${user.username}`}</title>
+        </Helmet>
+        <h1>Account deleted.</h1>
+        <Link to="/">Go home</Link>
+      </div>
+    );
+  }
+
   const hasFeed = isUserFeedAvailable(user, viewer);
   if (!hasFeed) {
     // User is banned and the viewer is no admin
     return (
       <div className="page-content page-notfound wrap">
-        <h1>@{user.username} account suspended.</h1>
+        <Helmet>
+          <title>{`@${user.username}`}</title>
+        </Helmet>
+        <h1>Account suspended.</h1>
         <Link to="/">Go home</Link>
       </div>
     );
@@ -346,7 +364,13 @@ const User = ({ username }) => {
           <div className="user-card-top">
             <div className="user-card-top-left">
               <UserProPic username={username} proPic={user.proPic} size="large" />
-              <h1 className={'user-card-username' + (hasSupporterBadge ? ' is-supporter' : '')}>
+              <h1
+                className={
+                  'user-card-username' +
+                  (hasSupporterBadge ? ' is-supporter' : '') +
+                  (user.deleted ? ' is-red' : '')
+                }
+              >
                 @{username}
                 {user.isAdmin && <span className="user-card-is-admin">Admin</span>}
               </h1>
@@ -366,10 +390,13 @@ const User = ({ username }) => {
           )}
           <div className="user-card-badges is-m">{renderBadgesList()}</div>
           <div className="user-card-joined">Joined on {dateString1(user.createdAt)}.</div>
+          {user.deleted && (
+            <div className="user-card-joined">Account deleted on {dateString1(user.deletedAt)}</div>
+          )}
           {loggedIn && (
             <div className="user-card-buttons">
               <button onClick={toggleMute}>{isMuted ? 'Unmute user' : 'Mute user'}</button>
-              {viewer.isAdmin && (
+              {viewerAdmin && (
                 <>
                   <button className="button-red" onClick={handleBanUser}>
                     {user.isBanned ? `Unban user` : 'Ban user'}
@@ -379,7 +406,7 @@ const User = ({ username }) => {
                   </button>
                 </>
               )}
-              {viewer.isAdmin && user.isBanned && (
+              {viewerAdmin && user.isBanned && (
                 <div style={{ marginTop: '1rem' }}>
                   User banned on: {new Date(user.bannedAt).toLocaleString()}
                 </div>

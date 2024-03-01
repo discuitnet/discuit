@@ -563,6 +563,10 @@ func (u *User) Update(ctx context.Context) error {
 	return err
 }
 
+func (u *User) IsGhost() bool {
+	return u.Username == "ghost"
+}
+
 // SetToGhost sets u.username to "ghost" and u.ID to zero, if the user is
 // deleted.
 func (u *User) SetToGhost() {

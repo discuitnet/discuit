@@ -296,6 +296,9 @@ a {
         .user-link {
             margin-left: 5px;
             margin-right: 5px;
+            &.is-red {
+                color: var(--color-red);
+            }
         }
         .profile-picture {
             width: 25px;

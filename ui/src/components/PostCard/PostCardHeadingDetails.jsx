@@ -23,8 +23,9 @@ const PostCardHeadingDetails = ({
     showEdited &&
     (post.editedAt ? new Date(post.editedAt) - new Date(post.createdAt) > 5 * 60000 : false);
 
-  const user = useSelector((state) => state.main.user);
-  const loggedIn = user !== null;
+  const viewer = useSelector((state) => state.main.user);
+  const viewerAdmin = viewer ? viewer.isAdmin : false;
+  const loggedIn = viewer !== null;
 
   const isMobile = useIsMobile();
   const isPinned = post.isPinned || post.isPinnedSite;
@@ -53,6 +54,7 @@ const PostCardHeadingDetails = ({
   });
 
   const isAuthorSupporter = userHasSupporterBadge(post.author);
+  const isUsernameGhost = post.userDeleted && !viewerAdmin;
 
   return (
     <div className="post-card-heading-details">
@@ -61,11 +63,12 @@ const PostCardHeadingDetails = ({
         <div className="post-card-heading-by">
           <span>Posted by </span>
           <UserLink
-            username={post.userDeleted ? 'Ghost' : post.username}
+            className={post.userDeleted && viewerAdmin ? 'is-red' : ''}
+            username={isUsernameGhost ? 'Ghost' : post.username}
             proPic={post.author ? post.author.proPic : null}
             showProPic={showAuthorProPic}
             isSupporter={isAuthorSupporter}
-            noLink={post.userDeleted}
+            noLink={isUsernameGhost}
             proPicGhost={post.userDeleted}
           />
           {userGroup !== 'normal' && (

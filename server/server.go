@@ -707,7 +707,15 @@ func (s *Server) insertMetaTags(doc *html.Node, r *http.Request) {
 			username := list[0] // with @
 			user, err := core.GetUserByUsername(ctx, s.db, username[1:], nil)
 			if err == nil {
-				appendTitle("@"+user.Username, " on "+s.config.SiteName)
+				var username string
+				if user.IsGhost() {
+					user.UnsetToGhost()
+					username = user.Username
+					user.SetToGhost()
+				} else {
+					username = user.Username
+				}
+				appendTitle("@"+username, " on "+s.config.SiteName)
 				appendDescription(username + "'s profile.")
 			}
 		} else {

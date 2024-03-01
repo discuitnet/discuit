@@ -25,6 +25,14 @@ func (s *Server) getUser(w *responseWriter, r *request) error {
 		return err
 	}
 
+	if user.IsGhost() {
+		// For deleted accounts, expose the username for this API endpoint only.
+		user.UnsetToGhost()
+		username := user.Username
+		user.SetToGhost()
+		user.Username = username
+	}
+
 	if err := user.LoadModdingList(r.ctx); err != nil {
 		return err
 	}
