@@ -60,6 +60,10 @@ func (s *Server) deleteUser(w *responseWriter, r *request) error {
 	// user account.
 	username := r.muxVar("username")
 
+	if err := s.rateLimit(r, "del_account_1_"+r.viewer.String(), time.Second*5, 1); err != nil {
+		return err
+	}
+
 	doer, err := core.GetUser(r.ctx, s.db, *r.viewer, nil)
 	if err != nil {
 		return err
