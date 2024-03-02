@@ -498,6 +498,7 @@ func (c *Comment) StripAuthorInfo() {
 	c.setGhostAuthorID()
 	c.AuthorID.Clear()
 	c.AuthorUsername = "ghost"
+	// c.Author, if it's non-nil, should already be set to the ghost user.
 }
 
 func (c *Comment) setGhostAuthorID() {
@@ -506,15 +507,15 @@ func (c *Comment) setGhostAuthorID() {
 	}
 }
 
-// StripContent stripes all content of c that is either user generated or
-// relates to a user.
+// StripContent strips all content of c that is either user generated or relates
+// to a user.
 func (c *Comment) StripContent() {
 	if !c.Deleted {
 		return
 	}
 	c.setStrippedContent(true)
 	c.AuthorID.Clear()
-	c.AuthorUsername = "Hidden"
+	c.AuthorUsername = "[Hidden]"
 	c.PostedAs = UserGroupNaN
 	c.Body = "[Deleted comment]"
 	c.ViewerVoted.Valid = false

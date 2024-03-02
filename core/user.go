@@ -385,14 +385,15 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 	}
 
 	for _, user := range users {
-		// Hide the users email from everyone except the user and admins.
+		// Hide the users' email from everyone except the user and admins.
 		if viewerAdmin || (viewer != nil && *viewer == user.ID) {
 			if user.Email.Valid {
 				user.EmailPublic = new(string)
 				*user.EmailPublic = user.Email.String
 			}
 		}
-		// Set the user info to the ghost user for everyone except the admins.
+		// Set the user info of deleted users to the ghost user for everyone
+		// except the admins.
 		if user.Deleted && !viewerAdmin {
 			user.SetToGhost()
 		}
@@ -572,6 +573,7 @@ func (u *User) IsGhost() bool {
 func (u *User) SetToGhost() {
 	if u.Deleted {
 		u.Username = "ghost"
+		u.UsernameLowerCase = "ghost"
 		u.ID = uid.ID{}
 		u.CreatedAt = time.Time{}
 		u.DeletedAt = msql.NewNullTime(time.Time{})
@@ -583,6 +585,7 @@ func (u *User) SetToGhost() {
 func (u *User) UnsetToGhost() {
 	if u.Deleted {
 		u.Username = u.preGhostUsername
+		u.UsernameLowerCase = strings.ToLower(u.Username)
 		u.ID = u.preGhostID
 		u.CreatedAt = u.preGhostCreatedAt
 		u.DeletedAt = u.preGhostDeletedAt
@@ -649,6 +652,7 @@ func (u *User) Delete(ctx context.Context) error {
 		now := time.Now()
 		q := `UPDATE users SET 
 				email = ?, 
+				email_confirmed_at = ?,
 				password = ?, 
 				about_me = ?, 
 				is_admin = ?,
@@ -656,6 +660,7 @@ func (u *User) Delete(ctx context.Context) error {
 				deleted_at = ? 
 			  WHERE id = ?`
 		args := []any{
+			nil,
 			nil,
 			utils.GenerateStringID(48),
 			nil,

@@ -29,17 +29,6 @@
         opacity: 0;
         transition: all 0.15s;
     }
-}
-
-a {
-    .profile-picture {
-        &:not(.is-no-hover):hover::after {
-            opacity: var(--profile-picture-hover-opacity);
-        }
-    }
-}
-
-.profile-picture {
     &.is-default {
         width: 80px;
         height: 80px;
@@ -53,6 +42,17 @@ a {
             text {
                 font-size: 40px;
             }
+        }
+    }
+    &.is-ghost {
+        cursor: initial;
+    }
+}
+
+a {
+    .profile-picture {
+        &:not(.is-no-hover):hover::after {
+            opacity: var(--profile-picture-hover-opacity);
         }
     }
 }

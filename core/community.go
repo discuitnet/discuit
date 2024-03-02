@@ -1012,6 +1012,9 @@ func MakeUserModCLI(db *sql.DB, c *Community, user uid.ID, isMod bool) error {
 // It's okay to call this function if user is already a mod of c. It doesn't
 // change anything.
 func makeUserMod(ctx context.Context, db *sql.DB, c *Community, user uid.ID, isMod bool) error {
+	// When changing the SQL queries of this function, make duplicate the
+	// changes in User.Delete function as well.
+
 	// First add user as member of c.
 	if err := c.Join(ctx, user); err != nil {
 		if e, ok := err.(*httperr.Error); ok {

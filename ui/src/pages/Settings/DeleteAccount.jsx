@@ -57,7 +57,7 @@ const DeleteAccount = ({ user }) => {
             <InputPassword
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              label="Password"
+              label="Password:"
               error={passwordError ? 'Invalid password' : undefined}
             />
             <Input

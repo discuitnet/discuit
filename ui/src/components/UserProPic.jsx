@@ -113,10 +113,7 @@ export default UserProPic;
 export const GhostUserProPic = ({ className, ...rest }) => {
   return (
     <div className={'user-propic' + (className ? ` ${className}` : '')} {...rest}>
-      <div
-        className="profile-picture user-deleted-propic"
-        style={{ backgroundColor: 'gray', opacity: '0.3' }}
-      >
+      <div className="profile-picture is-ghost" style={{ backgroundColor: 'gray', opacity: '0.3' }}>
         <svg
           viewBox="-50 -50 100 100"
           version="1.1"

@@ -350,11 +350,6 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 			post.Link = link
 			post.Link.SetImageCopies()
 		}
-		if post.DeletedContent {
-			// linkBytes = nil
-			post.Link = nil
-			post.Image = nil
-		}
 
 		posts = append(posts, post)
 	}
@@ -404,6 +399,13 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 	}
 
 	for _, post := range posts {
+		if post.DeletedContent {
+			post.Link = nil
+			post.Image = nil
+			if post.Body.Valid {
+				post.Body.String = "" // Should be empty in the DB as well.
+			}
+		}
 		if post.AuthorDeleted {
 			post.setGhostAuthorID()
 			if !viewerAdmin {
@@ -804,7 +806,7 @@ func (p *Post) StripAuthorInfo() {
 	p.setGhostAuthorID()
 	p.AuthorID.Clear()
 	p.AuthorUsername = "ghost"
-	if p.Author != nil {
+	if p.Author != nil && !p.Author.IsGhost() {
 		p.Author.SetToGhost()
 	}
 }
