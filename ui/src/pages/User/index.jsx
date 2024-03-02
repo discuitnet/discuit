@@ -393,7 +393,7 @@ const User = ({ username }) => {
           {user.deleted && (
             <div className="user-card-joined">Account deleted on {dateString1(user.deletedAt)}</div>
           )}
-          {loggedIn && (
+          {loggedIn && !user.deleted && (
             <div className="user-card-buttons">
               <button onClick={toggleMute}>{isMuted ? 'Unmute user' : 'Mute user'}</button>
               {viewerAdmin && (

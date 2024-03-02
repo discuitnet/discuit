@@ -526,6 +526,10 @@ func MatchLoginCredentials(ctx context.Context, db *sql.DB, username, password s
 		return nil, err
 	}
 
+	if user.Deleted {
+		return nil, ErrWrongPassword
+	}
+
 	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), trimPassword([]byte(password))); err != nil {
 		return nil, ErrWrongPassword
 	}
@@ -540,6 +544,10 @@ func incrementUserPoints(ctx context.Context, db *sql.DB, user uid.ID, amount in
 
 // Update updates the user's updatable fields.
 func (u *User) Update(ctx context.Context) error {
+	if u.Deleted {
+		return ErrUserDeleted
+	}
+
 	u.About.String = utils.TruncateUnicodeString(u.About.String, maxUserProfileAboutLength)
 	_, err := u.db.ExecContext(ctx, `
 	UPDATE users SET
@@ -596,6 +604,10 @@ func (u *User) UnsetToGhost() {
 // Delete deletes a user. Make sure that the user is logged out on all sessions
 // before calling this function.
 func (u *User) Delete(ctx context.Context) error {
+	if u.Deleted {
+		return ErrUserDeleted
+	}
+
 	return msql.Transact(ctx, u.db, func(tx *sql.Tx) (err error) {
 		// Remove the user's membership of all communities the user is a member of.
 		if _, err := tx.ExecContext(ctx, `
@@ -684,6 +696,10 @@ func (u *User) Delete(ctx context.Context) error {
 //
 // Note: An admin can be banned.
 func (u *User) Ban(ctx context.Context) error {
+	if u.Deleted {
+		return ErrUserDeleted
+	}
+
 	t := time.Now()
 	_, err := u.db.ExecContext(ctx, "UPDATE users SET banned_at = ? WHERE id = ?", t, u.ID)
 	if err == nil {
@@ -694,6 +710,10 @@ func (u *User) Ban(ctx context.Context) error {
 }
 
 func (u *User) Unban(ctx context.Context) error {
+	if u.Deleted {
+		return ErrUserDeleted
+	}
+
 	_, err := u.db.ExecContext(ctx, "UPDATE users SET banned_at = NULL WHERE id = ?", u.ID)
 	return err
 }
@@ -713,6 +733,7 @@ func (u *User) incrementPoints(ctx context.Context, amount int) error {
 }
 
 func (u *User) ChangePassword(ctx context.Context, previousPass, newPass string) error {
+	// MatchLoginCredentials checks for deleted account status.
 	if _, err := MatchLoginCredentials(ctx, u.db, u.Username, previousPass); err != nil {
 		return err
 	}
@@ -778,6 +799,9 @@ func (u *User) GetBannedFromCommunities(ctx context.Context) ([]uid.ID, error) {
 // Saw updates u.LastSeen to current time. It also updates the IP address of the
 // user.
 func (u *User) Saw(ctx context.Context, userIP string) error {
+	if u.Deleted {
+		return ErrUserDeleted
+	}
 	err := UserSeen(ctx, u.db, u.ID, userIP)
 	if err != nil {
 		u.LastSeen = time.Now()
@@ -788,7 +812,7 @@ func (u *User) Saw(ctx context.Context, userIP string) error {
 // UserSeen updates user's LastSeen to current time. It also updates the IP
 // address of the user.
 func UserSeen(ctx context.Context, db *sql.DB, user uid.ID, userIP string) error {
-	_, err := db.ExecContext(ctx, "UPDATE users SET last_seen = ?, last_seen_ip = ? WHERE id = ?", time.Now(), userIP, user)
+	_, err := db.ExecContext(ctx, "UPDATE users SET last_seen = ?, last_seen_ip = ? WHERE id = ? AND deleted_at IS NULL", time.Now(), userIP, user)
 	return err
 }
 
@@ -828,6 +852,10 @@ func (u *User) DeleteProPic(ctx context.Context) error {
 }
 
 func (u *User) UpdateProPic(ctx context.Context, image []byte) error {
+	if u.Deleted {
+		return ErrUserDeleted
+	}
+
 	var newImageID uid.ID
 	err := msql.Transact(ctx, u.db, func(tx *sql.Tx) error {
 		if err := u.DeleteProPicTx(ctx, tx); err != nil {
@@ -880,6 +908,10 @@ func badgeTypeInt(db *sql.DB, badgeType string) (int, error) {
 // AddBadge addes new badge to u. Also, u.Badges is refetched upon a successful
 // add.
 func (u *User) AddBadge(ctx context.Context, badgeType string) error {
+	if u.Deleted {
+		return ErrUserDeleted
+	}
+
 	badgeTypeInt, err := badgeTypeInt(u.db, badgeType)
 	if err != nil {
 		return err
@@ -897,6 +929,10 @@ func (u *User) AddBadge(ctx context.Context, badgeType string) error {
 }
 
 func (u *User) RemoveBadgesByType(badgeType string) error {
+	if u.Deleted {
+		return ErrUserDeleted
+	}
+
 	badgeTypeInt, err := badgeTypeInt(u.db, badgeType)
 	if err != nil {
 		return err
@@ -906,6 +942,10 @@ func (u *User) RemoveBadgesByType(badgeType string) error {
 }
 
 func (u *User) RemoveBadge(id int) error {
+	if u.Deleted {
+		return ErrUserDeleted
+	}
+
 	_, err := u.db.Exec("DELTE FROM user_badges WHERE id = ? and user_id = ?", id, u.ID)
 	return err
 }
@@ -1064,6 +1104,9 @@ func MakeAdmin(ctx context.Context, db *sql.DB, user string, isAdmin bool) (*Use
 	if err != nil {
 		return nil, err
 	}
+	if u.Deleted {
+		return nil, ErrUserDeleted
+	}
 
 	if isAdmin {
 		if u.Admin {
@@ -1110,4 +1153,15 @@ func CalcGhostUserID(user uid.ID, unique string) string {
 	copy(b[len(user):], []byte(unique))
 	sum := sha1.Sum(b)
 	return hex.EncodeToString(sum[:])[:8]
+}
+
+func UserDeleted(db *sql.DB, user uid.ID) (bool, error) {
+	var deletedAt msql.NullTime
+	if err := db.QueryRow("SELECT deleted_at FROM users WHERE id = ?", user).Scan(&deletedAt); err != nil {
+		if err == sql.ErrNoRows {
+			return false, errUserNotFound
+		}
+		return false, err
+	}
+	return deletedAt.Valid, nil
 }

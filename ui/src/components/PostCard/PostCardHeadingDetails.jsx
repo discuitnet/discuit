@@ -96,9 +96,11 @@ const PostCardHeadingDetails = ({
               <button className="button-clear dropdown-item" onClick={handleMuteCommunity}>
                 {muteCommunityText}
               </button>
-              <button className="button-clear dropdown-item" onClick={handleMuteUser}>
-                {muteUserText}
-              </button>
+              {!post.userDeleted && (
+                <button className="button-clear dropdown-item" onClick={handleMuteUser}>
+                  {muteUserText}
+                </button>
+              )}
             </div>
           </Dropdown>
         )}

@@ -10,6 +10,8 @@ var (
 	// ErrWrongPassword is returned by MatchLoginCredentials if username and password
 	// do not match.
 	ErrWrongPassword = &httperr.Error{HTTPStatus: http.StatusUnauthorized, Code: "wrong-password", Message: "Username and password do not match."}
+
+	ErrUserDeleted = httperr.NewForbidden("user-deleted", "Cannot continue because the user is deleted.")
 )
 
 var (
