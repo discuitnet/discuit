@@ -46,15 +46,19 @@ func main() {
 		log.Fatal("Error creating the ghost user: ", err)
 	}
 
-	// Parse flags.
-	runServer, err := parseFlags(db, conf)
+	flags, err := parseFlags()
 	if err != nil {
-		log.Fatal("Error parsing flags: ", err)
+		log.Fatal("Error parsing falgs: ", err)
 	}
 
-	if !runServer {
-		log.Println("No function specified.")
-		return
+	runServer, err := runFlagCommands(db, conf, flags)
+	if err != nil {
+		log.Fatal("Error running flag commands: ", err)
+	}
+
+	hasMoreCommandsToRun := flags.deleteUser != "" // commands that require the server.Server object
+	if !runServer && !hasMoreCommandsToRun {
+		return // Nothing to do
 	}
 
 	// Set images folder.
@@ -72,6 +76,33 @@ func main() {
 		log.Fatalf("Error creating 'supporter' user badge: %v\n", err)
 	}
 
+	site, err := server.New(db, conf)
+	if err != nil {
+		log.Fatal("Error creating server: ", err)
+	}
+	defer site.Close()
+
+	if flags.deleteUser != "" {
+		if ok := cliYesConfirmCommand(); !ok {
+			log.Fatal("Cannot continue without a YES.")
+		}
+		user, err := core.GetUserByUsername(context.Background(), db, flags.deleteUser, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := site.LogoutAllSessionsOfUser(user); err != nil {
+			log.Fatal(err)
+		}
+		if err := user.Delete(context.Background()); err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("%s successfully deleted\n", user.Username)
+	}
+
+	if !runServer {
+		return // Nothing to do.
+	}
+
 	go func() {
 		// This go-routine runs a set of periodic functions every hour.
 		time.Sleep(time.Second * 5) // Just so the first console output isn't from this goroutine.
@@ -87,12 +118,6 @@ func main() {
 			time.Sleep(time.Hour)
 		}
 	}()
-
-	site, err := server.New(db, conf)
-	if err != nil {
-		log.Fatal("Error creating server: ", err)
-	}
-	defer site.Close()
 
 	server := &http.Server{
 		Addr: conf.Addr,
@@ -181,56 +206,94 @@ func migrate(c *config.Config, log bool, steps int) error {
 	return err
 }
 
-// parseFlags returns whether to run the server and any error encountered.
-func parseFlags(db *sql.DB, c *config.Config) (bool, error) {
-	runMigrations := flag.Bool("migrate", false, "Run DB migrations")
-	steps := flag.Int("steps", 0, "Migrations steps to run (0 runs all migrations)")
-	runServer := flag.Bool("serve", false, "Start web server")
-	makeAdmin := flag.String("make-admin", "", "Make user an admin")
-	removeAdmin := flag.String("remove-admin", "", "Remove user as admin")
-	makeMod := flag.String("make-mod", "", "Make user a moderator")        // Uses -community flag
-	removeMod := flag.String("remove-mod", "", "Remove user as moderator") // Uses -community flag
-	community := flag.String("community", "", "Community name")            // Helper flag
-	username := flag.String("user", "", "Username")                        // Helper flag
-	noComments := flag.Int("no-comments", 100, "No of comments")           // Helper flag for -populate-post
-	doHardReset := flag.Bool("hard-reset", false, "Hard reset")
-	runForcePassChange := flag.String("force-pass-change", "", "Change user password") // Uses -user flag
-	password := flag.String("password", "", "Password")                                // Helper flag for -force-pass-change
+type flags struct {
+	runServer     bool
+	runMigrations bool
+	steps         int // migrations steps
 
-	showImagePath := flag.String("image-path", "", "Show where an image is stored on disk.")
+	hardReset bool
 
-	runPopulatePost := flag.String("populate-post", "", "Populate post with random comments") // Populate post with random comments
+	makeAdmin   string // user to make admin
+	removeAdmin string // user to remove as admin
 
-	runFixHotness := flag.Bool("fix-hotness", false, "Fix hotness of all posts")
-	addAllUsersToCommunity := flag.String("add-all-users-to-community", "", "Add all users to community") // Uses -community flag
+	makeMod   string // user to make a mod of community
+	removeMod string // user to remove as mod of community
+	community string
 
-	newBadge := flag.String("new-badge", "", "New user badge")
+	populatePost string // post to populate with generated comments
+	numComments  int    // number of comments to populate in post
+
+	forcePassChange string // user to change the password of
+	password        string
+
+	username string
+
+	printImagePath string // print the path of image stored on disk
+
+	fixHotness             bool
+	addAllUsersToCommunity string
+	newBadge               string
+	deleteUser             string
+}
+
+func parseFlags() (*flags, error) {
+	f := &flags{}
+	flag.BoolVar(&f.runMigrations, "migrate", false, "Run database migrations")
+	flag.IntVar(&f.steps, "steps", 0, "Migrations steps to run (0 runs all migrations, and value can be nagative)")
+	flag.BoolVar(&f.runServer, "serve", false, "Start web server")
+
+	flag.StringVar(&f.makeAdmin, "make-admin", "", "Make user an admin")
+	flag.StringVar(&f.removeAdmin, "remove-admin", "", "Remove user as admin")
+
+	flag.StringVar(&f.makeMod, "make-mod", "", "Make user a moderator")        // Uses -community flag
+	flag.StringVar(&f.removeMod, "remove-mod", "", "Remove user as moderator") // Uses -community flag
+
+	flag.StringVar(&f.community, "community", "", "Community name") // Helper flag
+	flag.StringVar(&f.username, "user", "", "Username")             // Helper flag
+
+	flag.BoolVar(&f.hardReset, "hard-reset", false, "Hard reset")
+	flag.StringVar(&f.forcePassChange, "force-pass-change", "", "Change user password") // Uses -user flag
+	flag.StringVar(&f.password, "password", "", "Password")                             // Helper flag for -force-pass-change
+
+	flag.StringVar(&f.printImagePath, "image-path", "", "Show where an image is stored on disk.")
+
+	flag.StringVar(&f.populatePost, "populate-post", "", "Populate post with random comments") // Populate post with random comments
+	flag.IntVar(&f.numComments, "num-comments", 100, "No of comments")                         // Helper flag for -populate-post
+
+	flag.BoolVar(&f.fixHotness, "fix-hotness", false, "Fix hotness of all posts")
+	flag.StringVar(&f.addAllUsersToCommunity, "add-all-users-to-community", "", "Add all users to community") // Uses -community flag
+
+	flag.StringVar(&f.newBadge, "new-badge", "", "New user badge")
+	flag.StringVar(&f.deleteUser, "delete-user", "", "Delete a user.")
 
 	flag.Parse()
-	serve := *runServer
+	return f, nil
+}
 
+// If returns false, the program should exit immeditately afterwords, even if
+// there was no error.
+func runFlagCommands(db *sql.DB, conf *config.Config, flags *flags) (bool, error) {
 	ctx := context.Background()
 
-	if *runFixHotness {
+	if flags.fixHotness {
 		if err := core.UpdateAllPostsHotness(ctx, db); err != nil {
-			log.Fatal(err)
+			return false, err
 		}
 		return false, nil
 	}
 
-	if *doHardReset {
+	if flags.hardReset {
 		if err := db.Close(); err != nil {
 			return false, err
 		}
-		if err := hardReset(c); err != nil {
-			log.Println("Failed hard reset: ", err)
-			return false, err
+		if err := hardReset(conf); err != nil {
+			return false, fmt.Errorf("failed to hard reset: %w", err)
 		}
 		return false, nil
 	}
 
-	if *runMigrations {
-		if err := migrate(c, true, *steps); err != nil {
+	if flags.runMigrations {
+		if err := migrate(conf, true, flags.steps); err != nil {
 			return false, err
 		}
 		log.Println("Migrations ran successfully.")
@@ -290,100 +353,104 @@ func parseFlags(db *sql.DB, c *config.Config) (bool, error) {
 		return false, nil
 	}
 
-	if *makeAdmin != "" {
-		user, err := core.MakeAdmin(ctx, db, *makeAdmin, true)
+	if flags.makeAdmin != "" {
+		user, err := core.MakeAdmin(ctx, db, flags.makeAdmin, true)
 		if err != nil {
-			log.Println("Failed making user admin: ", err)
-			return false, err
+			return false, fmt.Errorf("failed to make %s an admin: %w", flags.makeAdmin, err)
 		}
-		log.Println("User " + user.Username + " is now an admin")
+		log.Printf("User %s is now an admin\n", user.Username)
 		return false, nil
 	}
 
-	if *removeAdmin != "" {
-		user, err := core.MakeAdmin(ctx, db, *removeAdmin, false)
+	if flags.removeAdmin != "" {
+		user, err := core.MakeAdmin(ctx, db, flags.removeAdmin, false)
 		if err != nil {
-			log.Println("Failed removing admin: ", err)
-			return false, err
+			return false, fmt.Errorf("failed to remove %s as an admin: %w", flags.removeAdmin, err)
 		}
-		log.Println("User " + user.Username + " is no longer an admin")
+		log.Printf("User %s is no longer an admin", user.Username)
 		return false, nil
 	}
 
-	if *makeMod != "" || *removeMod != "" {
-		c, err := core.GetCommunityByName(ctx, db, *community, nil)
+	if flags.makeMod != "" || flags.removeMod != "" {
+		community, err := core.GetCommunityByName(ctx, db, flags.community, nil)
 		if err != nil {
 			return false, err
 		}
-		if *makeMod != "" {
-			user, err := core.GetUserByUsername(ctx, db, *makeMod, nil)
+		if flags.makeMod != "" {
+			user, err := core.GetUserByUsername(ctx, db, flags.makeMod, nil)
 			if err != nil {
 				return false, err
 			}
-			if err = core.MakeUserModCLI(db, c, user.ID, true); err != nil {
+			if err = core.MakeUserModCLI(db, community, user.ID, true); err != nil {
 				return false, err
 			}
-			log.Println(user.Username + " is now a moderator of " + c.Name)
+			log.Printf("%s is now a moderator of %s\n", user.Username, community.Name)
 		}
-		if *removeMod != "" {
-			user, err := core.GetUserByUsername(ctx, db, *removeMod, nil)
+		if flags.removeMod != "" {
+			user, err := core.GetUserByUsername(ctx, db, flags.removeMod, nil)
 			if err != nil {
 				return false, err
 			}
-			if err = core.MakeUserModCLI(db, c, user.ID, false); err != nil {
+			if err = core.MakeUserModCLI(db, community, user.ID, false); err != nil {
 				return false, err
 			}
-			log.Println(user.Username + " is no longer a moderator of " + c.Name)
+			log.Printf("%s is no longer a moderator of %s\n", user.Username, community.Name)
 		}
 		return false, nil
 	}
 
-	if *runPopulatePost != "" {
-		populatePost(db, *runPopulatePost, *username, *noComments, false)
-		return false, nil
+	if flags.populatePost != "" {
+		populatePost(db, flags.populatePost, flags.username, flags.numComments, false) // log.Fatals on failure
+		return true, nil
 	}
 
-	if *runForcePassChange != "" {
-		user, err := core.GetUserByUsername(ctx, db, *runForcePassChange, nil)
+	if flags.forcePassChange != "" {
+		if ok := cliConfirmCommand("Are you sure?"); !ok {
+			return false, errors.New("admin's not sure about the password change")
+		}
+		user, err := core.GetUserByUsername(ctx, db, flags.forcePassChange, nil)
 		if err != nil {
 			return false, err
 		}
-		pass, err := core.HashPassword([]byte(*password))
+		if user.Deleted {
+			return false, fmt.Errorf("cannot change deleted user's password")
+		}
+		pass, err := core.HashPassword([]byte(flags.password))
 		if err != nil {
 			return false, err
 		}
-		if _, err = db.Exec("update users set password = ? where id = ?", pass, user.ID); err != nil {
+		if _, err = db.Exec("UPDATE users SET password = ? WHERE id = ?", pass, user.ID); err != nil {
 			return false, err
 		}
 		log.Println("Password changed successfully")
 		return false, nil
 	}
 
-	if *addAllUsersToCommunity != "" {
-		if err := core.AddAllUsersToCommunity(ctx, db, *addAllUsersToCommunity); err != nil {
-			log.Fatal(err)
+	if flags.addAllUsersToCommunity != "" {
+		if err := core.AddAllUsersToCommunity(ctx, db, flags.addAllUsersToCommunity); err != nil {
+			return false, fmt.Errorf("failed to add all users to %s: %w", flags.addAllUsersToCommunity, err)
 		}
-		log.Println("All users added to community ", *addAllUsersToCommunity)
+		log.Printf("All users added to %s\n", flags.addAllUsersToCommunity)
 		return false, nil
 	}
 
-	if *showImagePath != "" {
-		id, err := uid.FromString(*showImagePath)
+	if flags.printImagePath != "" {
+		id, err := uid.FromString(flags.printImagePath)
 		if err != nil {
-			fmt.Printf("%s is not a valid image id\n", *showImagePath)
-			return false, nil
+			return false, fmt.Errorf("%s is not a valid image id: %w", flags.printImagePath, err)
 		}
 		fmt.Printf("Image path: %s\n", images.ImagePath(id))
 		return false, nil
 	}
 
-	if *newBadge != "" {
-		if err := core.NewBadgeType(db, *newBadge); err != nil {
-			log.Fatal("error creating new badge: ", err)
+	if flags.newBadge != "" {
+		if err := core.NewBadgeType(db, flags.newBadge); err != nil {
+			return false, fmt.Errorf("failed to create a new badge: %w", err)
 		}
+		return false, nil
 	}
 
-	return serve, nil
+	return true, nil
 }
 
 // mysqlDSN returns a DSN that could be used to connect to a MySQL database. You
@@ -462,6 +529,32 @@ func populatePost(db *sql.DB, id, username string, n int, onlyTopLevel bool) {
 	}
 }
 
+// cliConfirmcommand shows a [y/N] confirm prompt and returns true if the user
+// enters y.
+func cliConfirmCommand(message string) bool {
+	r := bufio.NewReader(os.Stdin)
+	fmt.Printf("%s [y/N]: ", message)
+	if s, err := r.ReadString('\n'); err != nil {
+		return false
+	} else if strings.ToLower(strings.TrimSpace(s)) != "y" {
+		return false
+	}
+	return true
+}
+
+// cliYesConfirmCommand shows type YES to continue prompt and returns true if the
+// user types YES in capital letters.
+func cliYesConfirmCommand() bool {
+	r := bufio.NewReader(os.Stdin)
+	fmt.Print("Type YES to continue: ")
+	if s, err := r.ReadString('\n'); err != nil {
+		return false
+	} else if strings.TrimSpace(s) != "YES" {
+		return false
+	}
+	return true
+}
+
 // hardReset deletes and recreates the database and Redis.
 func hardReset(c *config.Config) error {
 	mysql, err := sql.Open("mysql", c.DBUser+":"+c.DBPassword+"@/?parseTime=true")
@@ -469,11 +562,7 @@ func hardReset(c *config.Config) error {
 		return err
 	}
 
-	r := bufio.NewReader(os.Stdin)
-	fmt.Print("Type YES to continue: ")
-	if s, err := r.ReadString('\n'); err != nil {
-		return err
-	} else if strings.TrimSpace(s) != "YES" {
+	if ok := cliYesConfirmCommand(); !ok {
 		return errors.New("cannot continue without YES")
 	}
 

@@ -93,7 +93,7 @@ func (s *Server) deleteUser(w *responseWriter, r *request) error {
 
 	// The user *must* be logged out of all active sessions before the account
 	// is deleted.
-	if err := s.logoutAllSessionsOfUser(toDelete); err != nil {
+	if err := s.LogoutAllSessionsOfUser(toDelete); err != nil {
 		return err
 	}
 

@@ -904,7 +904,7 @@ func (s *Server) logoutUser(u *core.User, ses *sessions.Session, w http.Response
 	return err
 }
 
-func (s *Server) logoutAllSessionsOfUser(u *core.User) error {
+func (s *Server) LogoutAllSessionsOfUser(u *core.User) error {
 	conn := s.redisPool.Get()
 	defer conn.Close()
 
