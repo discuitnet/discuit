@@ -31,6 +31,7 @@ type Comment struct {
 	CommunityName    string        `json:"communityName"`
 	AuthorID         uid.ID        `json:"userId,omitempty"`
 	AuthorUsername   string        `json:"username"`
+	AuthorGhostID    string        `json:"userGhostId,omitempty"`
 	PostedAs         UserGroup     `json:"userGroup"`
 	AuthorDeleted    bool          `json:"userDeleted"`
 	ParentID         uid.NullID    `json:"parentId"`
@@ -44,9 +45,18 @@ type Comment struct {
 	Points           int           `json:"-"`
 	CreatedAt        time.Time     `json:"createdAt"`
 	EditedAt         msql.NullTime `json:"editedAt"`
-	DeletedAt        msql.NullTime `json:"deletedAt"`
-	DeletedBy        uid.NullID    `json:"-"`
-	DeletedAs        UserGroup     `json:"deletedAs,omitempty"`
+
+	// If the comment is deleted and the content of the comment (body, author,
+	// etc) exists in the DB, and if ContentStripped is true, then those values
+	// are stripped to default values in this struct.
+	//
+	// The JSON value is found only if the comment is deleted.
+	ContentStripped *bool `json:"contentStripped,omitempty"`
+
+	Deleted   bool          `json:"deleted"`
+	DeletedAt msql.NullTime `json:"deletedAt"`
+	DeletedBy uid.NullID    `json:"-"`
+	DeletedAs UserGroup     `json:"deletedAs,omitempty"`
 
 	Author *User `json:"author,omitempty"`
 
@@ -125,50 +135,61 @@ func GetComment(ctx context.Context, db *sql.DB, id uid.ID, viewer *uid.ID) (*Co
 
 func scanComments(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) ([]*Comment, error) {
 	defer rows.Close()
+
 	loggedIn := viewer != nil
+	viewerAdmin, err := IsAdmin(db, viewer)
+	if err != nil {
+		return nil, err
+	}
 
 	var comments []*Comment
 	for rows.Next() {
-		c := &Comment{db: db}
+		comment := &Comment{db: db}
 		var ancestors []byte
 		dest := []interface{}{
-			&c.ID,
-			&c.PostID,
-			&c.PostPublicID,
-			&c.CommunityID,
-			&c.CommunityName,
-			&c.AuthorID,
-			&c.AuthorUsername,
-			&c.PostedAs,
-			&c.AuthorDeleted,
-			&c.ParentID,
-			&c.Depth,
-			&c.NumReplies,
-			&c.NumRepliesDirect,
+			&comment.ID,
+			&comment.PostID,
+			&comment.PostPublicID,
+			&comment.CommunityID,
+			&comment.CommunityName,
+			&comment.AuthorID,
+			&comment.AuthorUsername,
+			&comment.PostedAs,
+			&comment.AuthorDeleted,
+			&comment.ParentID,
+			&comment.Depth,
+			&comment.NumReplies,
+			&comment.NumRepliesDirect,
 			&ancestors,
-			&c.Body,
-			&c.Upvotes,
-			&c.Downvotes,
-			&c.Points,
-			&c.CreatedAt,
-			&c.EditedAt,
-			&c.DeletedAt,
-			&c.DeletedAs,
+			&comment.Body,
+			&comment.Upvotes,
+			&comment.Downvotes,
+			&comment.Points,
+			&comment.CreatedAt,
+			&comment.EditedAt,
+			&comment.DeletedAt,
+			&comment.DeletedAs,
 		}
 		if loggedIn {
-			dest = append(dest, &c.ViewerVoted, &c.ViewerVotedUp)
+			dest = append(dest, &comment.ViewerVoted, &comment.ViewerVotedUp)
 		}
-		err := rows.Scan(dest...)
-		if err != nil {
+
+		if err := rows.Scan(dest...); err != nil {
 			return nil, err
 		}
 
+		comment.Deleted = comment.DeletedAt.Valid
+		if comment.Deleted {
+			comment.setStrippedContent(false)
+		}
+
 		if ancestors != nil {
-			if err := json.Unmarshal(ancestors, &c.Ancestors); err != nil {
+			if err := json.Unmarshal(ancestors, &comment.Ancestors); err != nil {
 				return nil, err
 			}
 		}
-		comments = append(comments, c)
+
+		comments = append(comments, comment)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -193,12 +214,48 @@ func scanComments(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.I
 		}
 	}
 
-	if err := populateCommentAuthors(ctx, db, comments); err != nil {
+	if err := populateCommentAuthors(ctx, db, comments, viewerAdmin); err != nil {
 		return nil, fmt.Errorf("failed to populate comments authors: %w", err)
 	}
 
-	for _, c := range comments {
-		c.stripDeletedInfo()
+	// If a comment is deleted and the viewer doesn't have the privilege to see
+	// it, strip the comment's values that relate to its author in any way.
+	if viewer != nil {
+		if !viewerAdmin {
+			viewerModOf := make(map[uid.ID]bool) // keys are community ids
+			for _, comment := range comments {
+				if comment.Deleted && comment.DeletedAs == UserGroupMods {
+					viewerMod, ok := viewerModOf[comment.CommunityID]
+					if !ok {
+						var err error
+						viewerMod, err = UserMod(ctx, db, comment.CommunityID, *viewer)
+						if err != nil {
+							return nil, err
+						}
+						viewerModOf[comment.CommunityID] = viewerMod
+					}
+					if !viewerMod {
+						comment.StripContent()
+					}
+				} else {
+					comment.StripContent()
+				}
+			}
+		}
+	} else {
+		for _, comment := range comments {
+			comment.StripContent()
+		}
+	}
+
+	// Strip deleted author information, unless the viewer is an admin.
+	for _, comment := range comments {
+		if comment.AuthorDeleted {
+			comment.setGhostAuthorID()
+			if !viewerAdmin {
+				comment.StripAuthorInfo()
+			}
+		}
 	}
 
 	return comments, nil
@@ -219,7 +276,7 @@ func addComment(ctx context.Context, db *sql.DB, post *Post, author *User, paren
 		if err != nil {
 			return nil, err
 		}
-		if parent.Deleted() {
+		if parent.Deleted {
 			return nil, httperr.NewBadRequest("comment-reply-to-deleted", "Cannot reply to a deleted comment.")
 		}
 		if parent.Depth == maxCommentDepth {
@@ -338,13 +395,9 @@ func addComment(ctx context.Context, db *sql.DB, post *Post, author *User, paren
 	return GetComment(ctx, db, id, nil)
 }
 
-func (c *Comment) Deleted() bool {
-	return c.DeletedAt.Valid
-}
-
 // Save updates comment's body.
 func (c *Comment) Save(ctx context.Context, user uid.ID) error {
-	if c.Deleted() {
+	if c.Deleted {
 		return errCommentDeleted
 	}
 	if !c.AuthorID.EqualsTo(user) {
@@ -366,7 +419,7 @@ func (c *Comment) Save(ctx context.Context, user uid.ID) error {
 // Delete returns an error if user, who's deleting the comment, has no
 // permissions in his capacity as g to delete this comment.
 func (c *Comment) Delete(ctx context.Context, user uid.ID, g UserGroup) error {
-	if c.Deleted() {
+	if c.Deleted {
 		return errCommentDeleted
 	}
 
@@ -397,11 +450,23 @@ func (c *Comment) Delete(ctx context.Context, user uid.ID, g UserGroup) error {
 
 	now := time.Now()
 	err := msql.Transact(ctx, c.db, func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(ctx, `UPDATE comments SET body = "", deleted_at = ?, deleted_by = ?, deleted_as = ? WHERE id = ?`, now, user, g, c.ID); err != nil {
+		var newBody string
+		if g == UserGroupNormal {
+			newBody = ""
+		} else {
+			newBody = c.Body
+		}
+		if _, err := tx.ExecContext(ctx, `UPDATE comments SET body = ?, deleted_at = ?, deleted_by = ?, deleted_as = ? WHERE id = ?`, newBody, now, user, g, c.ID); err != nil {
 			return err
 		}
-		if _, err := tx.ExecContext(ctx, "DELETE FROM posts_comments WHERE target_id = ? AND user_id = ?", c.ID, c.AuthorID); err != nil {
-			return err
+		if g == UserGroupNormal {
+			if _, err := tx.ExecContext(ctx, "DELETE FROM posts_comments WHERE target_id = ? AND user_id = ?", c.ID, c.AuthorID); err != nil {
+				return err
+			}
+		} else {
+			if _, err := tx.ExecContext(ctx, "UPDATE posts_comments SET deleted = true WHERE target_id = ? AND user_id = ?", c.ID, c.AuthorID); err != nil {
+				return err
+			}
 		}
 		if _, err := tx.ExecContext(ctx, "UPDATE users SET no_comments = no_comments - 1 WHERE id = ?", c.AuthorID); err != nil {
 			return err
@@ -415,17 +480,42 @@ func (c *Comment) Delete(ctx context.Context, user uid.ID, g UserGroup) error {
 	c.DeletedAt = msql.NewNullTime(now)
 	c.DeletedBy = uid.NullID{Valid: true, ID: user}
 	c.DeletedAs = g
-	c.stripDeletedInfo()
+	c.StripContent()
 	RemoveAllReportsOfComment(ctx, c.db, c.ID)
 	return err
 }
 
-func (c *Comment) stripDeletedInfo() {
-	if !c.Deleted() {
+func (c *Comment) setStrippedContent(v bool) {
+	if c.ContentStripped == nil {
+		c.ContentStripped = new(bool)
+	}
+	*c.ContentStripped = v
+}
+
+// StripAuthorInfo should be called if the author account of the comment is
+// deleted and the viewer is not an admin.
+func (c *Comment) StripAuthorInfo() {
+	c.setGhostAuthorID()
+	c.AuthorID.Clear()
+	c.AuthorUsername = "ghost"
+	// c.Author, if it's non-nil, should already be set to the ghost user.
+}
+
+func (c *Comment) setGhostAuthorID() {
+	if c.AuthorGhostID == "" {
+		c.AuthorGhostID = CalcGhostUserID(c.AuthorID, c.PostID.String())
+	}
+}
+
+// StripContent strips all content of c that is either user generated or relates
+// to a user.
+func (c *Comment) StripContent() {
+	if !c.Deleted {
 		return
 	}
+	c.setStrippedContent(true)
 	c.AuthorID.Clear()
-	c.AuthorUsername = "Hidden"
+	c.AuthorUsername = "[Hidden]"
 	c.PostedAs = UserGroupNaN
 	c.Body = "[Deleted comment]"
 	c.ViewerVoted.Valid = false
@@ -435,7 +525,7 @@ func (c *Comment) stripDeletedInfo() {
 
 // Vote votes on comment (if the comment is not deleted or the post locked).
 func (c *Comment) Vote(ctx context.Context, user uid.ID, up bool) error {
-	if c.Deleted() {
+	if c.Deleted {
 		return errCommentDeleted
 	}
 
@@ -499,7 +589,7 @@ func (c *Comment) Vote(ctx context.Context, user uid.ID, up bool) error {
 
 // DeleteVote returns an error is the comment is deleted or the post locked.
 func (c *Comment) DeleteVote(ctx context.Context, user uid.ID) error {
-	if c.Deleted() {
+	if c.Deleted {
 		return errCommentDeleted
 	}
 
@@ -557,7 +647,7 @@ func (c *Comment) DeleteVote(ctx context.Context, user uid.ID) error {
 
 // ChangeVote returns an error is the comment is deleted or the post locked.
 func (c *Comment) ChangeVote(ctx context.Context, user uid.ID, up bool) error {
-	if c.Deleted() {
+	if c.Deleted {
 		return errCommentDeleted
 	}
 
@@ -675,15 +765,13 @@ func (c *Comment) loadPostDeleted(ctx context.Context) error {
 
 // populateCommentAuthors populates the Author field of each comment of comments
 // (except for deleted comments).
-func populateCommentAuthors(ctx context.Context, db *sql.DB, comments []*Comment) error {
+func populateCommentAuthors(ctx context.Context, db *sql.DB, comments []*Comment, viewerAdmin bool) error {
 	var authorIDs []uid.ID
 	found := make(map[uid.ID]bool)
-	for _, c := range comments {
-		if !c.Deleted() {
-			if !found[c.AuthorID] {
-				authorIDs = append(authorIDs, c.AuthorID)
-				found[c.AuthorID] = true
-			}
+	for _, comment := range comments {
+		if !found[comment.AuthorID] {
+			authorIDs = append(authorIDs, comment.AuthorID)
+			found[comment.AuthorID] = true
 		}
 	}
 
@@ -691,21 +779,38 @@ func populateCommentAuthors(ctx context.Context, db *sql.DB, comments []*Comment
 		return nil
 	}
 
-	authors, err := GetUsersIDs(ctx, db, authorIDs, nil)
+	authors, err := GetUsersByIDs(ctx, db, authorIDs, nil)
 	if err != nil {
 		return err
 	}
 
-	for _, c := range comments {
+	if !viewerAdmin {
+		// If the author account is deleted, some of it's values are set to
+		// ghost values, including the ID of the author. Undo this so that the
+		// authors can be matched with the comments.
+		for _, author := range authors {
+			author.UnsetToGhost()
+		}
+	}
+
+	for _, comment := range comments {
 		found := true
 		for _, author := range authors {
-			if c.AuthorID == author.ID {
-				c.Author = author
+			if comment.AuthorID == author.ID {
+				comment.Author = author
 				break
 			}
 		}
 		if !found {
 			panic("author not found")
+		}
+
+	}
+
+	if !viewerAdmin {
+		// Reset deleted authors to ghosts.
+		for _, author := range authors {
+			author.SetToGhost()
 		}
 	}
 

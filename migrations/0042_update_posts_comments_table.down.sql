@@ -1,0 +1,1 @@
+alter table posts_comments drop column deleted;

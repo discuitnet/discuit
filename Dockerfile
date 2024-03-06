@@ -46,10 +46,10 @@ RUN mv config.default.yaml config.yaml
 RUN GOOS=linux GOARCH=amd64 go build -o discuit .
 
 # Build the frontend
-RUN cd ui && npm ci && npm run build:prod
+RUN cd ui && npm ci
 
 # Clean up
-RUN apt-get remove -y curl git gcc nodejs && \
+RUN apt-get remove -y git gcc && \
     apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*

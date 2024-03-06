@@ -25,11 +25,85 @@ func (s *Server) getUser(w *responseWriter, r *request) error {
 		return err
 	}
 
+	if user.IsGhost() {
+		// For deleted accounts, expose the username for this API endpoint only.
+		user.UnsetToGhost()
+		username := user.Username
+		user.SetToGhost()
+		user.Username = username
+	}
+
 	if err := user.LoadModdingList(r.ctx); err != nil {
 		return err
 	}
 
 	return w.writeJSON(user)
+}
+
+// /api/users/{username} [DELETE]
+func (s *Server) deleteUser(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
+	}
+
+	reqBody := struct {
+		// Password is the password of the logged in user.
+		Password string `json:"password"`
+	}{}
+	if err := r.unmarshalJSONBody(&reqBody); err != nil {
+		return err
+	}
+
+	// Username might be the username of the logged in user or the username of
+	// some other user. If it's the logged in user, then it's them deleting
+	// their account. If it's some other user, then it's an admin deleting a
+	// user account.
+	username := r.muxVar("username")
+
+	if err := s.rateLimit(r, "del_account_1_"+r.viewer.String(), time.Second*5, 1); err != nil {
+		return err
+	}
+
+	doer, err := core.GetUser(r.ctx, s.db, *r.viewer, nil)
+	if err != nil {
+		return err
+	}
+
+	if _, err := core.MatchLoginCredentials(r.ctx, s.db, doer.Username, reqBody.Password); err != nil {
+		if err == core.ErrWrongPassword {
+			return httperr.NewForbidden("wrong_password", "Wrong password.")
+		}
+		return err
+	}
+
+	var toDelete *core.User
+	if strings.ToLower(username) == doer.UsernameLowerCase {
+		toDelete = doer
+	} else {
+		if !doer.Admin {
+			// Doer is not an admin but trying to delete an account that isn't
+			// theirs.
+			return httperr.NewForbidden("not_admin", "You are not an admin.")
+		}
+		toDelete, err = core.GetUserByUsername(r.ctx, s.db, username, nil)
+		if err != nil {
+			return err
+		}
+	}
+
+	// The user *must* be logged out of all active sessions before the account
+	// is deleted.
+	if err := s.LogoutAllSessionsOfUser(toDelete); err != nil {
+		return err
+	}
+
+	// Finally, delete the user.
+	if err := toDelete.Delete(r.ctx); err != nil {
+		return err
+	}
+
+	w.writeString(`{"success": true}`)
+	return nil
 }
 
 // /api/_initial [GET]
@@ -409,16 +483,6 @@ func (s *Server) updateUserSettings(w *responseWriter, r *request) error {
 	}
 
 	return w.writeJSON(user)
-}
-
-// /api/_settings [DELETE]
-func (s *Server) deleteUser(w *responseWriter, r *request) error {
-	// Unavailable for now.
-	return &httperr.Error{
-		HTTPStatus: http.StatusServiceUnavailable,
-		Code:       "account_del_503",
-		Message:    "Account delete feature is yet to be implemented",
-	}
 }
 
 // /api/users/{username}/pro_pic [POST, DELETE]

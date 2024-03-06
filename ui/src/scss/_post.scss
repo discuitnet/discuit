@@ -507,6 +507,9 @@
                 &.is-hidden {
                     color: var(--color-gray);
                 }
+                &.is-red {
+                    color: var(--color-red);
+                }
             }
             .post-comment-head-item {
                 margin-left: 8px;
@@ -532,6 +535,12 @@
         }
         &.has-propics {
             .post-comment-text {
+                &.is-red {
+                    .showmorebox {
+                        color: var(--color-red);
+                        margin-bottom: 6px;
+                    }
+                }
                 @include mixins.mobile() {
                     margin-top: 18px;
                 }

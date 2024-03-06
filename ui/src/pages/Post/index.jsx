@@ -119,7 +119,9 @@ const Post = () => {
 
   const [deleteAs, setDeleteAs] = useState('normal');
   const [deleteModalOpen, _setDeleteModalOpen] = useState(false);
+  const [canDeletePostContent, setCanDeletePostContent] = useState(false);
   const setDeleteModalOpen = (open, deleteAs = 'normal') => {
+    setCanDeletePostContent(Boolean(deleteAs === 'admins' || deleteAs == 'normal'));
     if (open) {
       setDeleteAs(deleteAs);
     } else {
@@ -295,6 +297,7 @@ const Post = () => {
             open={deleteModalOpen}
             onClose={() => setDeleteModalOpen(false)}
             onDelete={handleDelete}
+            canDeleteContent={canDeletePostContent}
           />
           <PostContentDeleteModal
             postType={post.type}
@@ -443,14 +446,6 @@ const Post = () => {
                           Delete
                         </button>
                       )}
-                      {post.deleted && !post.deletedContent && (
-                        <button
-                          className="button-clear dropdown-item"
-                          onClick={() => setDeleteContentModalOpen(true, 'mods')}
-                        >
-                          Delete {post.type}
-                        </button>
-                      )}
                       {postOwner && (
                         <div className="dropdown-item is-non-reactive">
                           <div className="checkbox">
@@ -464,17 +459,19 @@ const Post = () => {
                           </div>
                         </div>
                       )}
-                      <div className="dropdown-item is-non-reactive">
-                        <div className="checkbox">
-                          <input
-                            id={'ch-pin-m'}
-                            type="checkbox"
-                            checked={isPinned}
-                            onChange={(e) => handlePinChange(e, false)}
-                          />
-                          <label htmlFor={'ch-pin-m'}>Pinned</label>
+                      {(!post.deleted || (post.deleted && isPinned)) && (
+                        <div className="dropdown-item is-non-reactive">
+                          <div className="checkbox">
+                            <input
+                              id={'ch-pin-m'}
+                              type="checkbox"
+                              checked={isPinned}
+                              onChange={(e) => handlePinChange(e, false)}
+                            />
+                            <label htmlFor={'ch-pin-m'}>Pinned</label>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </Dropdown>
                 )}
@@ -516,17 +513,19 @@ const Post = () => {
                           </div>
                         </div>
                       )}
-                      <div className="dropdown-item is-non-reactive">
-                        <div className="checkbox">
-                          <input
-                            id={'ch-pin-a'}
-                            type="checkbox"
-                            checked={isPinnedSite}
-                            onChange={(e) => handlePinChange(e, true)}
-                          />
-                          <label htmlFor={'ch-pin-a'}>Pinned</label>
+                      {(!post.deleted || (post.deleted && isPinnedSite)) && (
+                        <div className="dropdown-item is-non-reactive">
+                          <div className="checkbox">
+                            <input
+                              id={'ch-pin-a'}
+                              type="checkbox"
+                              checked={isPinnedSite}
+                              onChange={(e) => handlePinChange(e, true)}
+                            />
+                            <label htmlFor={'ch-pin-a'}>Pinned</label>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </Dropdown>
                 )}
