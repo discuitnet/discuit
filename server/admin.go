@@ -36,7 +36,7 @@ func (s *Server) adminActions(w *responseWriter, r *request) error {
 		if err != nil {
 			return err
 		}
-		if err := s.logoutAllSessionsOfUser(user); err != nil {
+		if err := s.LogoutAllSessionsOfUser(user); err != nil {
 			// s.writeErrorCustom(w, r, http.StatusInternalServerError, "Error logging out user: "+err.Error(), "error_loggin_out_user")
 			// return
 			return &httperr.Error{

@@ -39,6 +39,9 @@
                 align-items: center;
                 .user-card-username {
                     margin-left: var(--gap);
+                    &.is-red {
+                        color: var(--color-red);
+                    }
                 }
             }
             .user-card-username {
