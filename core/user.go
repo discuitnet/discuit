@@ -607,6 +607,9 @@ func (u *User) Delete(ctx context.Context) error {
 	if u.Deleted {
 		return ErrUserDeleted
 	}
+	if u.Banned {
+		return errors.New("cannot delete banned account (unban user first and then continue)")
+	}
 
 	return msql.Transact(ctx, u.db, func(tx *sql.Tx) (err error) {
 		// Remove the user's membership of all communities the user is a member of.
