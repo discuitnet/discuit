@@ -186,7 +186,7 @@ func (s *Server) updatePost(w *responseWriter, r *request) error {
 			}
 		case "pin", "unpin":
 			siteWide := strings.ToLower(query.Get("siteWide")) == "true"
-			if err = post.Pin(r.ctx, *r.viewer, siteWide, action == "unpin"); err != nil {
+			if err = post.Pin(r.ctx, *r.viewer, siteWide, action == "unpin", false); err != nil {
 				return err
 			}
 		default:

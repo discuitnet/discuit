@@ -505,9 +505,7 @@ const Comment = ({
           >
             {!purged && (
               <ShowMoreBox showButton maxHeight="500px">
-                <MarkdownBody>
-                  {mutedUserHidden ? mutedText : comment.body ? comment.body : '[Empty comment]'}
-                </MarkdownBody>
+                <MarkdownBody>{mutedUserHidden ? mutedText : comment.body}</MarkdownBody>
               </ShowMoreBox>
             )}
             {deleted && <div className="post-comment-text-sign">{deletedText}</div>}

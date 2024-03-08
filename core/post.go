@@ -859,10 +859,10 @@ func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteConte
 	}
 
 	// Unpin all pins of this post:
-	if err := p.Pin(ctx, user, true, true); err != nil { // unpin site-wide pin
+	if err := p.Pin(ctx, user, true, true, true); err != nil { // unpin site-wide pin
 		return err
 	}
-	if err := p.Pin(ctx, user, false, true); err != nil { // unpin community pin
+	if err := p.Pin(ctx, user, false, true, true); err != nil { // unpin community pin
 		return err
 	}
 
@@ -1004,39 +1004,49 @@ func (p *Post) Unlock(ctx context.Context, user uid.ID) error {
 const MaxPinnedPosts = 2
 
 // Pin pins a post on behalf of user to its community if siteWide is false,
-// otherwise it pins the post site-wide.
-func (p *Post) Pin(ctx context.Context, user uid.ID, siteWide, unpin bool) error {
+// otherwise it pins the post site-wide. If skipPermissions is true, it's not
+// checked if user has the permissioned to perform this action.
+func (p *Post) Pin(ctx context.Context, user uid.ID, siteWide, unpin bool, skipPermissions bool) error {
 	if p.Deleted && !unpin {
 		return httperr.NewForbidden("cannot-pin-deleted-post", "Cannot pin deleted posts.")
 	}
 
-	maxPinnedReached := func(ctx context.Context, tx *sql.Tx, community *uid.ID) (reached bool, err error) {
+	maxPinsReached := func(ctx context.Context, tx *sql.Tx, community *uid.ID) (reached bool, err error) {
 		count := 0
 		if community == nil {
-			err = tx.QueryRow("SELECT COUNT(*) FROM pinned_posts WHERE community_id IS NULL").Scan(&count)
+			err = tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM pinned_posts WHERE community_id IS NULL").Scan(&count)
 		} else {
-			err = tx.QueryRow("SELECT COUNT(*) FROM pinned_posts WHERE community_id = ?", *community).Scan(&count)
+			err = tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM pinned_posts WHERE community_id = ?", *community).Scan(&count)
 		}
 		reached = count >= MaxPinnedPosts
 		return
 	}
 
 	// Check permissions.
-	if siteWide {
-		u, err := GetUser(ctx, p.db, user, nil)
-		if err != nil {
-			return err
-		}
-		if !u.Admin {
-			return errNotAdmin
-		}
-	} else {
-		isMod, err := UserMod(ctx, p.db, p.CommunityID, user)
-		if err != nil {
-			return err
-		}
-		if !isMod {
-			return errNotMod
+	if !skipPermissions {
+		if siteWide { // for site-wise pins
+			admin, err := IsAdmin(p.db, &user)
+			if err != nil {
+				return err
+			}
+			if !admin {
+				return errNotAdmin
+			}
+		} else { // for community-wide pins
+			isMod, err := UserMod(ctx, p.db, p.CommunityID, user)
+			if err != nil {
+				return err
+			}
+			if !isMod {
+				// User is not a mod of the community. See if he's an admin.
+				admin, err := IsAdmin(p.db, &user)
+				if err != nil {
+					return err
+				}
+				if !admin {
+					return errNotMod // user is neither an admin nor a mod
+				}
+			}
 		}
 	}
 
@@ -1063,7 +1073,7 @@ func (p *Post) Pin(ctx context.Context, user uid.ID, siteWide, unpin bool) error
 			}
 			args = []any{p.ID, siteWide, community}
 
-			if reached, err := maxPinnedReached(ctx, tx, community); err != nil {
+			if reached, err := maxPinsReached(ctx, tx, community); err != nil {
 				return err
 			} else if reached {
 				return httperr.NewForbidden("limit-reached", "Max pinned post limit reached.")

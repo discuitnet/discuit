@@ -48,6 +48,16 @@ func (u UserGroup) Valid() bool {
 	return err == nil
 }
 
+// String implements fmt.Stringer interface. It returns the value returned by
+// u.MarshalText (if u.MarshalText returns an error, it returns "[error]").
+func (u UserGroup) String() string {
+	b, err := u.MarshalText()
+	if err != nil {
+		return "[error]"
+	}
+	return string(b)
+}
+
 // MarshalText implements encoding.TextMarshaler interface.
 func (u UserGroup) MarshalText() ([]byte, error) {
 	s := ""
