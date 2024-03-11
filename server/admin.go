@@ -69,7 +69,7 @@ func (s *Server) adminActions(w *responseWriter, r *request) error {
 			return err
 		}
 	default:
-		return httperr.NewBadRequest("unsupported_action", "Unsupported admin action.")
+		return httperr.NewBadRequest("invalid_action", "Unsupported admin action.")
 	}
 
 	return w.writeString(`{"success:":true}`)

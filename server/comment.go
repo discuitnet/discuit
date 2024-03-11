@@ -171,7 +171,7 @@ func (s *Server) updateComment(w *responseWriter, r *request) error {
 				return err
 			}
 		default:
-			return httperr.NewBadRequest("unsupported_action", "Unsupported action.")
+			return httperr.NewBadRequest("invalid_action", "Unsupported action.")
 		}
 	}
 
