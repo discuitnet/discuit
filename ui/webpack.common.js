@@ -2,9 +2,10 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
-const fs = require('fs');
+// const fs = require('fs');
 const YAML = require('yaml');
 const webpack = require('webpack');
+const exec = require('child_process').exec;
 
 function makeid(length) {
   let result = '';
@@ -19,7 +20,17 @@ function makeid(length) {
 }
 
 function readYamlConfigFile() {
-  const file = fs.readFileSync('../config.yaml', 'utf-8');
+  const file = exec('./discuit -inject-config', { cwd: '../' }, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`exec error: ${error}`);
+      return;
+    }
+    if (stderr) {
+      console.error(`stderr: ${stderr}`);
+      return;
+    }
+    return stdout;
+  });
   const preConfig = YAML.parse(file);
   const allowedKeys = [
     'siteName',

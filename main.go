@@ -234,6 +234,8 @@ type flags struct {
 	addAllUsersToCommunity string
 	newBadge               string
 	deleteUser             string
+
+	injectConfig bool // inject env vars to yaml
 }
 
 func parseFlags() (*flags, error) {
@@ -265,6 +267,8 @@ func parseFlags() (*flags, error) {
 
 	flag.StringVar(&f.newBadge, "new-badge", "", "New user badge")
 	flag.StringVar(&f.deleteUser, "delete-user", "", "Delete a user.")
+
+	flag.BoolVar(&f.injectConfig, "inject-config", false, "Inject environment variables to yaml")
 
 	flag.Parse()
 	return f, nil
@@ -447,6 +451,11 @@ func runFlagCommands(db *sql.DB, conf *config.Config, flags *flags) (bool, error
 		if err := core.NewBadgeType(db, flags.newBadge); err != nil {
 			return false, fmt.Errorf("failed to create a new badge: %w", err)
 		}
+		return false, nil
+	}
+
+	if flags.injectConfig {
+		// TODO: Take the info from config, then convert it to a map[string]string that can then be converted to yaml.
 		return false, nil
 	}
 
