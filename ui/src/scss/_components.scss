@@ -1024,3 +1024,46 @@
         }
     }
 }
+
+.modal {
+    .save-modal {
+        width: 300px;
+        --list-item-height: 35px;
+        .modal-card-content {
+            padding: 0;
+        }
+        .save-modal-list {
+            padding: var(--card-padding);
+            margin-bottom: var(--card-padding);
+            display: flex;
+            flex-direction: column;
+            max-height: 30vh;
+            overflow-y: scroll;
+            .list-item {
+                display: flex;
+                justify-content: space-between;
+                cursor: pointer;
+                padding: 6px 0; // 6px 8px;
+                height: var(--list-item-height);
+            }
+        }
+        .save-modal-hint {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 1rem 0;
+        }
+        .modal-card-actions {
+            padding-top: 0;
+            display: grid;
+            > * {
+                margin: 0;
+            }
+        }
+        .save-modal-new-list {
+            display: grid;
+            grid-gap: var(--gap);
+            grid-template-columns: 1fr max-content;
+        }
+    }
+}
