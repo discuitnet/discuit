@@ -223,7 +223,7 @@ func (s *Server) deletePost(w *responseWriter, r *request) error {
 		if dc == "true" {
 			deleteContent = true
 		} else if dc != "false" {
-			return httperr.NewBadRequest("", "deletedContent must be a bool.")
+			return httperr.NewBadRequest("", "deleteContent must be a bool.")
 		}
 	}
 	if err := post.Delete(r.ctx, *r.viewer, as, deleteContent); err != nil {
