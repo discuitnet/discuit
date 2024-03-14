@@ -723,36 +723,51 @@ func GetUserFeed(ctx context.Context, db *sql.DB, viewer *uid.ID, userID uid.ID,
 		return nil, err
 	}
 	if len(ids) == 0 {
-		return &UserFeedResultSet{}, nil
+		return &UserFeedResultSet{Items: []UserFeedItem{}}, nil
 	}
 
 	max := len(ids) - 1
 	if len(ids) < limit+1 {
 		max = len(ids)
 	}
-	set := &UserFeedResultSet{}
+	var (
+		set             = &UserFeedResultSet{Items: make([]UserFeedItem, max)}
+		postIDs         = make([]uid.ID, 0, max)
+		commentIDs      = make([]uid.ID, 0, max)
+		postItemsMap    = make(map[uid.ID]*UserFeedItem, max)
+		commentItemsMap = make(map[uid.ID]*UserFeedItem, max)
+	)
 	for i := 0; i < max; i++ {
-		// TODO: Optimize fetching posts and comments.
-		item := UserFeedItem{}
+		item := &set.Items[i]
 		if types[i] == postsCommentsTypePosts {
 			item.Type = "post"
-			if item.Item, err = GetPost(ctx, db, &ids[i], "", viewer, true); err != nil {
-				return nil, err
-			}
+			postIDs = append(postIDs, ids[i])
+			postItemsMap[ids[i]] = item
 		} else if types[i] == postsCommentsTypeComments {
 			item.Type = "comment"
-			var c *Comment
-			if c, err = GetComment(ctx, db, ids[i], viewer); err != nil {
-				return nil, err
-			}
-			if p, err := GetPost(ctx, db, &c.PostID, "", nil, true); err == nil {
-				c.PostTitle = p.Title
-			} else {
-				return nil, err
-			}
-			item.Item = c
+			commentIDs = append(commentIDs, ids[i])
+			commentItemsMap[ids[i]] = item
 		}
-		set.Items = append(set.Items, item)
+	}
+
+	if len(postIDs) > 0 {
+		posts, err := GetPostsByIDs(ctx, db, viewer, true, postIDs...)
+		if err != nil {
+			return nil, err
+		}
+		for _, post := range posts {
+			postItemsMap[post.ID].Item = post
+		}
+	}
+
+	if len(commentIDs) > 0 {
+		comments, err := GetCommentsByIDs(ctx, db, viewer, commentIDs...)
+		if err != nil {
+			return nil, err
+		}
+		for _, comment := range comments {
+			commentItemsMap[comment.ID].Item = comment
+		}
 	}
 
 	if len(ids) == limit+1 {

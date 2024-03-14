@@ -133,6 +133,15 @@ func GetComment(ctx context.Context, db *sql.DB, id uid.ID, viewer *uid.ID) (*Co
 	return comments[0], err
 }
 
+func GetCommentsByIDs(ctx context.Context, db *sql.DB, viewer *uid.ID, ids ...uid.ID) ([]*Comment, error) {
+	where := fmt.Sprintf("WHERE comments.id IN %s", msql.InClauseQuestionMarks(len(ids)))
+	args := make([]any, len(ids))
+	for i := range ids {
+		args[i] = ids[i]
+	}
+	return getComments(ctx, db, viewer, where, args...)
+}
+
 func scanComments(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) ([]*Comment, error) {
 	defer rows.Close()
 
