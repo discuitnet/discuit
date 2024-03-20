@@ -24,5 +24,5 @@ create table if not exists list_items (
     unique (list_id, target_type, target_id),
     index (list_id, target_id), /* Ordered by target created at time. */
     index (list_id, created_at),
-    foreign key (list_id) references lists (id)
+    foreign key (list_id) references lists (id) ON DELETE CASCADE
 );

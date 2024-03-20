@@ -16,7 +16,7 @@ func (s *Server) getComments(w *responseWriter, r *request) error {
 		return err
 	}
 
-	query := r.urlQuery()
+	query := r.urlQueryParams()
 
 	// Reply comments.
 	parentIDText := query.Get("parentId")
@@ -107,7 +107,7 @@ func (s *Server) addComment(w *responseWriter, r *request) error {
 	}
 
 	var as core.UserGroup = core.UserGroupNormal
-	if _as := r.urlQuery().Get("userGroup"); _as != "" {
+	if _as := r.urlQueryParams().Get("userGroup"); _as != "" {
 		if err = as.UnmarshalText([]byte(_as)); err != nil {
 			return err
 		}
@@ -148,7 +148,7 @@ func (s *Server) updateComment(w *responseWriter, r *request) error {
 		return err
 	}
 
-	query := r.urlQuery()
+	query := r.urlQueryParams()
 	action := query.Get("action")
 	if action == "" {
 		var tcom core.Comment
@@ -197,7 +197,7 @@ func (s *Server) deleteComment(w *responseWriter, r *request) error {
 		return err
 	}
 
-	query := r.urlQuery()
+	query := r.urlQueryParams()
 	deleteAs := core.UserGroupNormal
 	if _deleteAs := query.Get("deleteAs"); _deleteAs != "" {
 		if err = deleteAs.UnmarshalText([]byte(_deleteAs)); err != nil {

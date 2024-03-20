@@ -3,10 +3,12 @@ package core
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
 
+	"github.com/discuitnet/discuit/internal/httperr"
 	msql "github.com/discuitnet/discuit/internal/sql"
 	"github.com/discuitnet/discuit/internal/uid"
 )
@@ -18,6 +20,8 @@ const (
 	ListItemsSortByAddedAsc
 	ListItemsSortByCreatedDesc
 	ListItemsSortByCreatedAsc
+
+	ListOrderingDefault = ListItemsSortByAddedDsc
 )
 
 func (o ListItemsSort) String() string {
@@ -34,6 +38,22 @@ func (o ListItemsSort) String() string {
 	return "" // Unsupported list sort.
 }
 
+// UnmarshalText implements the text.Unmarshaler interface. It returns an
+// httperr.Error (bad request) on error.
+func (o *ListItemsSort) UnmarshalText(data []byte) error {
+	switch string(data) {
+	case "addedDsc":
+		*o = ListItemsSortByAddedDsc
+	case "addedAsc":
+		*o = ListItemsSortByAddedAsc
+	case "createdDsc":
+		*o = ListItemsSortByCreatedDesc
+	case "createdAsc":
+		*o = ListItemsSortByCreatedAsc
+	}
+	return httperr.NewBadRequest("invalid-list-sort", "Invalid list sort.")
+}
+
 type List struct {
 	ID            int           `json:"id"`
 	UserID        uid.ID        `json:"userId"`
@@ -46,8 +66,7 @@ type List struct {
 	LastUpdatedAt time.Time     `json:"lastUpdatedAt"`
 }
 
-// GetUsersLists returns all the lists of user.
-func GetUsersLists(ctx context.Context, db *sql.DB, user uid.ID) ([]*List, error) {
+func getLists(ctx context.Context, db *sql.DB, where string, args ...any) ([]*List, error) {
 	query := msql.BuildSelectQuery("lists", []string{
 		"lists.id",
 		"lists.user_id",
@@ -58,9 +77,9 @@ func GetUsersLists(ctx context.Context, db *sql.DB, user uid.ID) ([]*List, error
 		"lists.ordering",
 		"lists.created_at",
 		"lists.last_updated_at",
-	}, nil, "WHERE user_id = ? ORDER BY last_updated_at DESC")
+	}, nil, where)
 
-	rows, err := db.QueryContext(ctx, query, user)
+	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +112,83 @@ func GetUsersLists(ctx context.Context, db *sql.DB, user uid.ID) ([]*List, error
 	return lists, nil
 }
 
+func GetList(ctx context.Context, db *sql.DB, id int) (*List, error) {
+	lists, err := getLists(ctx, db, "WHERE lists.id = ?", id)
+	if err != nil {
+		return nil, err
+	}
+	return lists[0], nil
+}
+
+// GetUsersLists returns all the lists of user.
+func GetUsersLists(ctx context.Context, db *sql.DB, user uid.ID) ([]*List, error) {
+	return getLists(ctx, db, "WHERE user_id = ? ORDER BY last_updated_at DESC", user)
+}
+
+func CreateList(ctx context.Context, db *sql.DB, user uid.ID, name, displayName string, public bool) error {
+	query, args := msql.BuildInsertQuery("lists", []msql.ColumnValue{
+		{Name: "user_id", Value: user},
+		{Name: "name", Value: name},
+		{Name: "display_name", Value: displayName},
+		{Name: "public", Value: public},
+		{Name: "ordering", Value: ListOrderingDefault},
+	})
+	_, err := db.ExecContext(ctx, query, args...)
+	return err
+}
+
+// Update updates the list's updatable fields.
+func (l *List) Update(ctx context.Context, db *sql.DB) error {
+	_, err := db.ExecContext(ctx, `
+		UPDATE lists SET 
+			name = ?, 
+			display_name = ?, 
+			public = ?, 
+			ordering = ? 
+		WHERE lists.id = ?`,
+		l.Name, l.DisplayName, l.Public, l.Sort, l.ID)
+	return err
+}
+
+// UnmarshalUpdatableFieldsJSON extracts the updatable values of the list from
+// the encoded JSON string.
+func (l *List) UnmarshalUpdatableFieldsJSON(data []byte) error {
+	temp := *l // shallow copy
+	if err := json.Unmarshal(data, &temp); err != nil {
+		return err
+	}
+	l.Name = temp.Name
+	l.DisplayName = temp.DisplayName
+	l.Public = temp.Public
+	l.Sort = temp.Sort
+	return nil
+}
+
+func (l *List) Delete(ctx context.Context, db *sql.DB) error {
+	// The list items will be automaticaly deleted because ON DELETE CASCADE is
+	// set on the foreign key on the list_items table.
+	_, err := db.ExecContext(ctx, "DELETE FROM lists WHERE id = ?", l.ID)
+	return err
+}
+
+func (l *List) AddItem(ctx context.Context, db *sql.DB, targetType int, targetID uid.ID) error {
+	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
+		query, args := msql.BuildInsertQuery("list_items", []msql.ColumnValue{
+			{Name: "list_id", Value: l.ID},
+			{Name: "target_type", Value: targetType},
+			{Name: "target_id", Value: targetID},
+		})
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, "UPDATE lists SET num_items = num_items + 1 WHERE id = ?", l.ID); err != nil {
+			return err
+		}
+		return nil
+	})
+	return err
+}
+
 type ListItem struct {
 	ID         int       `json:"id"`
 	ListID     int       `json:"listId"`
@@ -103,10 +199,31 @@ type ListItem struct {
 	TargetItem any `json:"targetItem"` // Either a Post or a Comment.
 }
 
+func GetListItem(ctx context.Context, db *sql.DB, listID, itemID int) (*ListItem, error) {
+	query := buildSelectListItemsQuery("WHERE id = ? AND list_id = ?")
+	args := []any{itemID, listID}
+
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	items, err := scanListItems(rows, listID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(items) == 0 {
+		return nil, fmt.Errorf("list item not found for listID %d and itemID %d", listID, itemID)
+	}
+
+	return items[0], nil
+}
+
 // The next string should contain either a timestamp or a marshaled uid.ID; if
 // not, the function will return an error. It's safe for next to be nil.
 func GetListItems(ctx context.Context, db *sql.DB, listID, limit int, sort ListItemsSort, next *string, viewer *uid.ID) (*ListItemsResultSet, error) {
-	query := "SELECT id, target_type, target_id, created_at FROM list_items WHERE list_id = ?"
+	query := buildSelectListItemsQuery("WHERE list_id = ?")
 	args := []any{listID}
 
 	// Parse the pagination cursor, if present.
@@ -163,24 +280,9 @@ func GetListItems(ctx context.Context, db *sql.DB, listID, limit int, sort ListI
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	var items []*ListItem
-	for rows.Next() {
-		item := &ListItem{ListID: listID}
-		err := rows.Scan(
-			&item.ID,
-			&item.TargetType,
-			&item.TargetID,
-			&item.CreatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-		items = append(items, item)
-	}
-
-	if err := rows.Err(); err != nil {
+	items, err := scanListItems(rows, listID)
+	if err != nil {
 		return nil, err
 	}
 
@@ -235,6 +337,48 @@ func GetListItems(ctx context.Context, db *sql.DB, listID, limit int, sort ListI
 	}
 
 	return set, nil
+}
+
+func (li *ListItem) Delete(ctx context.Context, db *sql.DB) error {
+	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx, "UPDATE lists SET num_items = num_items - 1 WHERE id = ?", li.ListID); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, "DELETE FROM list_items WHERE id = ?", li.ID); err != nil {
+			return err
+		}
+		return nil
+	})
+	return err
+}
+
+func buildSelectListItemsQuery(where string) string {
+	return "SELECT id, target_type, target_id, created_at FROM list_items " + where
+}
+
+func scanListItems(rows *sql.Rows, listID int) ([]*ListItem, error) {
+	defer rows.Close()
+
+	var items []*ListItem
+	for rows.Next() {
+		item := &ListItem{ListID: listID}
+		err := rows.Scan(
+			&item.ID,
+			&item.TargetType,
+			&item.TargetID,
+			&item.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return items, nil
 }
 
 type ListItemsResultSet struct {
