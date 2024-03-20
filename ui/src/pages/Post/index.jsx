@@ -480,6 +480,12 @@ const Post = () => {
                     <div className="dropdown-list">
                       <button
                         className="button-clear dropdown-item"
+                        onClick={() => alert(`ID: ${post.id}`)}
+                      >
+                        ID
+                      </button>
+                      <button
+                        className="button-clear dropdown-item"
                         onClick={() => handleLock('admins')}
                       >
                         {isLocked ? 'Unlock' : 'Lock'}
