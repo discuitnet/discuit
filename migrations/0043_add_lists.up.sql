@@ -7,7 +7,7 @@ create table if not exists lists (
     num_items int not null default 0,
     ordering tinyint not null default 0,
 	created_at datetime not null default current_timestamp(),
-	last_updated_at datetime not null default current_timestamp()
+	last_updated_at datetime not null default current_timestamp(),
 
     primary key (id),
     unique (user_id, name)

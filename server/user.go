@@ -631,7 +631,7 @@ func (s *Server) handleLists(w *responseWriter, r *request) error {
 		if !r.loggedIn {
 			return errNotLoggedIn
 		}
-		if usernameIsViewer {
+		if !usernameIsViewer {
 			return httperr.NewForbidden("not-your-list", "Not your list.")
 		}
 

@@ -71,7 +71,7 @@ func getLists(ctx context.Context, db *sql.DB, where string, args ...any) ([]*Li
 		"lists.id",
 		"lists.user_id",
 		"lists.name",
-		"lists.dispaly_name",
+		"lists.display_name",
 		"lists.public",
 		"lists.num_items",
 		"lists.ordering",
@@ -85,7 +85,7 @@ func getLists(ctx context.Context, db *sql.DB, where string, args ...any) ([]*Li
 	}
 	defer rows.Close()
 
-	var lists []*List
+	lists := []*List{}
 	for rows.Next() {
 		list := &List{}
 		err = rows.Scan(
@@ -359,7 +359,7 @@ func buildSelectListItemsQuery(where string) string {
 func scanListItems(rows *sql.Rows, listID int) ([]*ListItem, error) {
 	defer rows.Close()
 
-	var items []*ListItem
+	items := []*ListItem{}
 	for rows.Next() {
 		item := &ListItem{ListID: listID}
 		err := rows.Scan(
