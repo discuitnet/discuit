@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -36,6 +37,16 @@ func (o ListItemsSort) String() string {
 		return "createdAsc"
 	}
 	return "" // Unsupported list sort.
+}
+
+// MarshalText implements the text.Marshaler interface. It returns an
+// httperr.Error (bad request) on error.
+func (o ListItemsSort) MarshalText() ([]byte, error) {
+	text := o.String()
+	if text == "" {
+		return nil, httperr.NewBadRequest("invalid-list-sort", "Invalid list sort.")
+	}
+	return []byte(text), nil
 }
 
 // UnmarshalText implements the text.Unmarshaler interface. It returns an
@@ -171,7 +182,8 @@ func (l *List) Delete(ctx context.Context, db *sql.DB) error {
 	return err
 }
 
-func (l *List) AddItem(ctx context.Context, db *sql.DB, targetType int, targetID uid.ID) error {
+func (l *List) AddItem(ctx context.Context, db *sql.DB, targetType ContentType, targetID uid.ID) error {
+	errDup := errors.New("duplicate")
 	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
 		query, args := msql.BuildInsertQuery("list_items", []msql.ColumnValue{
 			{Name: "list_id", Value: l.ID},
@@ -179,6 +191,9 @@ func (l *List) AddItem(ctx context.Context, db *sql.DB, targetType int, targetID
 			{Name: "target_id", Value: targetID},
 		})
 		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+			if msql.IsErrDuplicateErr(err) {
+				return errDup
+			}
 			return err
 		}
 		if _, err := tx.ExecContext(ctx, "UPDATE lists SET num_items = num_items + 1 WHERE id = ?", l.ID); err != nil {
@@ -186,6 +201,9 @@ func (l *List) AddItem(ctx context.Context, db *sql.DB, targetType int, targetID
 		}
 		return nil
 	})
+	if err == errDup {
+		return nil
+	}
 	return err
 }
 

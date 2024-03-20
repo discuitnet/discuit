@@ -51,8 +51,10 @@ func (t *ContentType) UnmarshalText(data []byte) error {
 		*t = ContentTypePost
 	case "comment":
 		*t = ContentTypeComment
+	default:
+		return errors.New("unsupported content type")
 	}
-	return errors.New("unsupported content type")
+	return nil
 }
 
 // Comment is a comment of a post.
@@ -169,6 +171,10 @@ func GetComment(ctx context.Context, db *sql.DB, id uid.ID, viewer *uid.ID) (*Co
 }
 
 func GetCommentsByIDs(ctx context.Context, db *sql.DB, viewer *uid.ID, ids ...uid.ID) ([]*Comment, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
 	where := fmt.Sprintf("WHERE comments.id IN %s", msql.InClauseQuestionMarks(len(ids)))
 	args := make([]any, len(ids))
 	for i := range ids {

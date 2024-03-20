@@ -266,6 +266,10 @@ func GetPost(ctx context.Context, db *sql.DB, postID *uid.ID, publicID string, v
 }
 
 func GetPostsByIDs(ctx context.Context, db *sql.DB, viewer *uid.ID, includeDeleted bool, ids ...uid.ID) ([]*Post, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
 	loggedIn := viewer != nil
 
 	where := fmt.Sprintf("WHERE posts.id IN %s", msql.InClauseQuestionMarks(len(ids)))

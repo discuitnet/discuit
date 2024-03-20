@@ -755,9 +755,12 @@ func (s *Server) handleListItems(w *responseWriter, r *request) error {
 
 	if r.req.Method == "POST" {
 		form := struct {
-			TargetType int    `json:"target_type"`
-			TargetID   uid.ID `json:"target_id"`
+			TargetType core.ContentType `json:"targetType"`
+			TargetID   uid.ID           `json:"targetId"`
 		}{}
+		if err := r.unmarshalJSONBody(&form); err != nil {
+			return err
+		}
 		if err := list.AddItem(r.ctx, s.db, form.TargetType, form.TargetID); err != nil {
 			return err
 		}
