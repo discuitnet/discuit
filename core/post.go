@@ -661,7 +661,7 @@ func createPost(ctx context.Context, db *sql.DB, opts *createPostOpts) (*Post, e
 
 	// For the user profile page.
 	if _, err := tx.ExecContext(ctx, "INSERT INTO posts_comments (target_id, user_id, target_type) VALUES (?, ?, ?)",
-		post.ID, opts.author, postsCommentsTypePosts); err != nil {
+		post.ID, opts.author, ContentTypePost); err != nil {
 		tx.Rollback()
 		return nil, err
 	}

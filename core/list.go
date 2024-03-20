@@ -190,11 +190,11 @@ func (l *List) AddItem(ctx context.Context, db *sql.DB, targetType int, targetID
 }
 
 type ListItem struct {
-	ID         int       `json:"id"`
-	ListID     int       `json:"listId"`
-	TargetType int       `json:"targetType"`
-	TargetID   uid.ID    `json:"targetId"`
-	CreatedAt  time.Time `json:"createdAt"` // When the list item was created, not the target item.
+	ID         int         `json:"id"`
+	ListID     int         `json:"listId"`
+	TargetType ContentType `json:"targetType"`
+	TargetID   uid.ID      `json:"targetId"`
+	CreatedAt  time.Time   `json:"createdAt"` // When the list item was created, not the target item.
 
 	TargetItem any `json:"targetItem"` // Either a Post or a Comment.
 }
@@ -311,10 +311,10 @@ func GetListItems(ctx context.Context, db *sql.DB, listID, limit int, sort ListI
 		commentItemsMap = make(map[uid.ID]*ListItem, len(set.Items))
 	)
 	for _, item := range set.Items {
-		if item.TargetType == postsCommentsTypePosts {
+		if item.TargetType == ContentTypePost {
 			postIDs = append(postIDs, item.TargetID)
 			postItemsMap[item.TargetID] = item
-		} else if item.TargetType == postsCommentsTypeComments {
+		} else if item.TargetType == ContentTypeComment {
 			commentIDs = append(commentIDs, item.TargetID)
 			commentItemsMap[item.TargetID] = item
 		}

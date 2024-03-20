@@ -661,7 +661,7 @@ type UserFeedItem struct {
 	// Item is either a post or a comment.
 	Item any `json:"item"`
 	// Type is Item's type.
-	Type string `json:"type"`
+	Type ContentType `json:"type"`
 }
 
 // UserFeedResultSet holds the user page's feed's items.
@@ -680,9 +680,9 @@ func GetUserFeed(ctx context.Context, db *sql.DB, viewer *uid.ID, userID uid.ID,
 
 	if filter != "" {
 		query += "AND target_type = ? "
-		t := postsCommentsTypePosts
+		t := ContentTypePost
 		if filter == "comments" {
-			t = postsCommentsTypeComments
+			t = ContentTypeComment
 		}
 		args = append(args, t)
 	}
@@ -709,10 +709,10 @@ func GetUserFeed(ctx context.Context, db *sql.DB, viewer *uid.ID, userID uid.ID,
 	}
 
 	var ids []uid.ID
-	var types []int
+	var types []ContentType
 	for rows.Next() {
 		id := uid.ID{}
-		var t int
+		var t ContentType
 		if err = rows.Scan(&id, &t); err != nil {
 			return nil, err
 		}
@@ -739,12 +739,11 @@ func GetUserFeed(ctx context.Context, db *sql.DB, viewer *uid.ID, userID uid.ID,
 	)
 	for i := 0; i < max; i++ {
 		item := &set.Items[i]
-		if types[i] == postsCommentsTypePosts {
-			item.Type = "post"
+		item.Type = types[i]
+		if types[i] == ContentTypePost {
 			postIDs = append(postIDs, ids[i])
 			postItemsMap[ids[i]] = item
-		} else if types[i] == postsCommentsTypeComments {
-			item.Type = "comment"
+		} else if types[i] == ContentTypeComment {
 			commentIDs = append(commentIDs, ids[i])
 			commentItemsMap[ids[i]] = item
 		}

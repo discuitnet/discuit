@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -14,11 +15,45 @@ import (
 	"github.com/discuitnet/discuit/internal/utils"
 )
 
-// When referencing target_type column of posts_comments table.
+// ContentType distinguishes between different types of user generated content
+// (like posts and comments). It's integer values is used when interacting with
+// the DB. With the use of the MarshalText and UnmarshalText functions, this
+// type, when used as a field in a struct, is JSON marshaled and unmarshaled as
+// a string.
+type ContentType int
+
 const (
-	postsCommentsTypePosts    = 0
-	postsCommentsTypeComments = 1
+	ContentTypePost = ContentType(iota)
+	ContentTypeComment
 )
+
+func (t ContentType) String() string {
+	b, err := t.MarshalText()
+	if err != nil {
+		return "[error]"
+	}
+	return string(b)
+}
+
+func (t ContentType) MarshalText() ([]byte, error) {
+	switch t {
+	case ContentTypePost:
+		return []byte("post"), nil
+	case ContentTypeComment:
+		return []byte("comment"), nil
+	}
+	return nil, errors.New("unsupported content type")
+}
+
+func (t *ContentType) UnmarshalText(data []byte) error {
+	switch string(data) {
+	case "post":
+		*t = ContentTypePost
+	case "comment":
+		*t = ContentTypeComment
+	}
+	return errors.New("unsupported content type")
+}
 
 // Comment is a comment of a post.
 type Comment struct {
@@ -363,7 +398,7 @@ func addComment(ctx context.Context, db *sql.DB, post *Post, author *User, paren
 		}
 
 		// For the user profile.
-		if _, err := tx.ExecContext(ctx, "INSERT INTO posts_comments (target_id, user_id, target_type) VALUES (?, ?, ?)", id, author.ID, postsCommentsTypeComments); err != nil {
+		if _, err := tx.ExecContext(ctx, "INSERT INTO posts_comments (target_id, user_id, target_type) VALUES (?, ?, ?)", id, author.ID, ContentTypeComment); err != nil {
 			return err
 		}
 
