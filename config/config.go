@@ -170,3 +170,14 @@ func Parse(path string) (*Config, error) {
 
 	return c, nil
 }
+
+// RecreateYaml creates a new yaml file with default values and returns a Config.
+func RecreateYaml(c Config) (string, error) {
+	yamlData, err := yaml.Marshal(c)
+	if err != nil {
+		return "", err
+	}
+
+	// Return the yaml file content as a string
+	return string(yamlData), nil
+}

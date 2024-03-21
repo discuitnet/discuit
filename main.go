@@ -455,7 +455,14 @@ func runFlagCommands(db *sql.DB, conf *config.Config, flags *flags) (bool, error
 	}
 
 	if flags.injectConfig {
-		// TODO: Take the info from config, then convert it to a map[string]string that can then be converted to yaml.
+		yaml, err := config.RecreateYaml(*conf)
+		if err != nil {
+			return false, fmt.Errorf("failed to recreate yaml: %w", err)
+		}
+
+		//
+		fmt.Println(yaml)
+
 		return false, nil
 	}
 
