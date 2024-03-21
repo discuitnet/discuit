@@ -112,6 +112,7 @@ func (s *Server) initial(w *responseWriter, r *request) error {
 	response := struct {
 		ReportReasons  []core.ReportReason `json:"reportReasons"`
 		User           *core.User          `json:"user"`
+		Lists          []*core.List        `json:"lists"`
 		Communities    []*core.Community   `json:"communities"`
 		NoUsers        int                 `json:"noUsers"`
 		BannedFrom     []uid.ID            `json:"bannedFrom"`
@@ -121,6 +122,7 @@ func (s *Server) initial(w *responseWriter, r *request) error {
 			UserMutes      []*core.Mute `json:"userMutes"`
 		} `json:"mutes"`
 	}{
+		Lists:          []*core.List{},
 		VAPIDPublicKey: s.webPushVAPIDKeys.Public,
 	}
 
@@ -149,6 +151,11 @@ func (s *Server) initial(w *responseWriter, r *request) error {
 			return err
 		} else if userMutes != nil {
 			response.Mutes.UserMutes = userMutes
+		}
+		if lists, err := core.GetUsersLists(r.ctx, s.db, *r.viewer); err != nil {
+			return err
+		} else if lists != nil {
+			response.Lists = lists
 		}
 	}
 
