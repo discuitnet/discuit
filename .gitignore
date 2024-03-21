@@ -2,6 +2,7 @@ node_modules
 .vscode
 /ui/dist/
 /config.yaml
+/ui-config.yaml
 /.env
 /cookies
 /logs

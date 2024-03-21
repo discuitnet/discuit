@@ -2,10 +2,9 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
-// const fs = require('fs');
+const fs = require('fs');
 const YAML = require('yaml');
 const webpack = require('webpack');
-const exec = require('child_process').exec;
 
 function makeid(length) {
   let result = '';
@@ -20,46 +19,35 @@ function makeid(length) {
 }
 
 function readYamlConfigFile() {
-  exec('./discuit -inject-config', { cwd: '../' }, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`exec error: ${error}`);
-      return;
+  const file = fs.readFileSync('../ui-config.yaml', 'utf-8');
+  const preConfig = YAML.parse(file);
+  const allowedKeys = [
+    'siteName',
+    'captchaSiteKey',
+    'emailContact',
+    'facebookURL',
+    'twitterURL',
+    'instagramURL',
+    'discordURL',
+    'githubURL',
+    'substackURL',
+    'disableImagePosts',
+    'disableForumCreation',
+    'forumCreationReqPoints',
+    'defaultFeedSort',
+  ];
+  const config = {};
+  for (let key in preConfig) {
+    if (allowedKeys.includes(key)) {
+      config[key] = preConfig[key];
     }
-    if (stderr) {
-      console.error(`stderr: ${stderr}`);
-      return;
-    }
+  }
+  if (!config.defaultFeedSort) {
+    config.defaultFeedSort = 'hot';
+  }
+  config.cacheStorageVersion = makeid(8); // changes on each build
 
-    // Getting around the issue of not awaiting the exec call
-    const preConfig = YAML.parse(stdout);
-    const allowedKeys = [
-      'siteName',
-      'captchaSiteKey',
-      'emailContact',
-      'facebookURL',
-      'twitterURL',
-      'instagramURL',
-      'discordURL',
-      'githubURL',
-      'substackURL',
-      'disableImagePosts',
-      'disableForumCreation',
-      'forumCreationReqPoints',
-      'defaultFeedSort',
-    ];
-    const config = {};
-    for (let key in preConfig) {
-      if (allowedKeys.includes(key)) {
-        config[key] = preConfig[key];
-      }
-    }
-    if (!config.defaultFeedSort) {
-      config.defaultFeedSort = 'hot';
-    }
-    config.cacheStorageVersion = makeid(8); // changes on each build
-
-    return config;
-  });
+  return config;
 }
 
 module.exports = {
