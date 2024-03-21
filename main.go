@@ -303,6 +303,7 @@ func runFlagCommands(db *sql.DB, conf *config.Config, flags *flags) (bool, error
 			return false, err
 		}
 		log.Println("Migrations ran successfully.")
+		return false, nil
 	}
 
 	// New-migration command:
