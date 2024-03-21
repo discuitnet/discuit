@@ -15,15 +15,15 @@ mysql -e "CREATE DATABASE IF NOT EXISTS discuit;"
 mysql -e "CREATE USER IF NOT EXISTS 'discuit'@'127.0.0.1' IDENTIFIED BY 'discuit';"
 mysql -e "GRANT ALL PRIVILEGES ON discuit.* TO 'discuit'@'127.0.0.1';"
 
+# Run migrations
+echo "Running migrations..."
+/app/discuit -migrate
+
 # Build the UI
 echo "Building the UI..."
 cd /app/ui
 npm run build:prod
 cd ..
-
-# Run migrations
-echo "Running migrations..."
-/app/discuit -migrate
 
 # Start the Discuit server
 echo "Starting Discuit..."

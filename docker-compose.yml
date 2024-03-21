@@ -1,0 +1,23 @@
+version: "3"
+
+services:
+  discuit:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      DISCUIT_ADDR: ":80"
+      DISCUIT_SESSION_COOKIE_NAME: "SID"
+      DISCUIT_REDIS_ADDRESS: "127.0.0.1:6379"
+      DISCUIT_FORUM_CREATION_REQ_POINTS: "10"
+      DISCUIT_MAX_FORUMS_PER_USER: "10"
+    volumes:
+      - discuit-db:/var/lib/mysql
+      - discuit-redis:/var/lib/redis
+      - discuit-images:/app/images
+
+volumes:
+  discuit-db:
+  discuit-redis:
+  discuit-images:
