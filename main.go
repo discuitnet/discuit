@@ -42,13 +42,15 @@ func main() {
 	db := openDatabase(conf.DBAddr, conf.DBUser, conf.DBPassword, conf.DBName)
 	defer db.Close()
 
-	if err := core.CreateGhostUser(db); err != nil {
-		log.Fatal("Error creating the ghost user: ", err)
-	}
-
 	flags, err := parseFlags()
 	if err != nil {
 		log.Fatal("Error parsing falgs: ", err)
+	}
+
+	if !flags.runMigrations {
+		if err := core.CreateGhostUser(db); err != nil {
+			log.Fatal("Error creating the ghost user: ", err)
+		}
 	}
 
 	runServer, err := runFlagCommands(db, conf, flags)
