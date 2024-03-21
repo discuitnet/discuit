@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/discuitnet/discuit/core"
-	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v2"
 )
 
@@ -142,9 +141,6 @@ func Parse(path string) (*Config, error) {
 			return nil, yamlErr
 		}
 	}
-
-	// Attempt to load the environment variables
-	godotenv.Load()
 
 	// Override with environment variables if present using the map
 	for envVar, configField := range envConfigMap {

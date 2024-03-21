@@ -18,6 +18,7 @@ mysql -e "GRANT ALL PRIVILEGES ON discuit.* TO 'discuit'@'127.0.0.1';"
 # Run migrations
 echo "Running migrations..."
 /app/discuit -migrate
+# TODO: Fix migrate command causing the server to start
 
 # Build the UI
 echo "Building the UI..."

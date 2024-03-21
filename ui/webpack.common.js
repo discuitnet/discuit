@@ -20,7 +20,7 @@ function makeid(length) {
 }
 
 function readYamlConfigFile() {
-  const file = exec('./discuit -inject-config', { cwd: '../' }, (error, stdout, stderr) => {
+  exec('./discuit -inject-config', { cwd: '../' }, (error, stdout, stderr) => {
     if (error) {
       console.error(`exec error: ${error}`);
       return;
@@ -29,36 +29,37 @@ function readYamlConfigFile() {
       console.error(`stderr: ${stderr}`);
       return;
     }
-    return stdout;
-  });
-  const preConfig = YAML.parse(file);
-  const allowedKeys = [
-    'siteName',
-    'captchaSiteKey',
-    'emailContact',
-    'facebookURL',
-    'twitterURL',
-    'instagramURL',
-    'discordURL',
-    'githubURL',
-    'substackURL',
-    'disableImagePosts',
-    'disableForumCreation',
-    'forumCreationReqPoints',
-    'defaultFeedSort',
-  ];
-  const config = {};
-  for (let key in preConfig) {
-    if (allowedKeys.includes(key)) {
-      config[key] = preConfig[key];
-    }
-  }
-  if (!config.defaultFeedSort) {
-    config.defaultFeedSort = 'hot';
-  }
-  config.cacheStorageVersion = makeid(8); // changes on each build
 
-  return config;
+    // Getting around the issue of not awaiting the exec call
+    const preConfig = YAML.parse(stdout);
+    const allowedKeys = [
+      'siteName',
+      'captchaSiteKey',
+      'emailContact',
+      'facebookURL',
+      'twitterURL',
+      'instagramURL',
+      'discordURL',
+      'githubURL',
+      'substackURL',
+      'disableImagePosts',
+      'disableForumCreation',
+      'forumCreationReqPoints',
+      'defaultFeedSort',
+    ];
+    const config = {};
+    for (let key in preConfig) {
+      if (allowedKeys.includes(key)) {
+        config[key] = preConfig[key];
+      }
+    }
+    if (!config.defaultFeedSort) {
+      config.defaultFeedSort = 'hot';
+    }
+    config.cacheStorageVersion = makeid(8); // changes on each build
+
+    return config;
+  });
 }
 
 module.exports = {
