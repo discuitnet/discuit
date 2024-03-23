@@ -52,7 +52,7 @@ RUN cd ui && npm ci
 RUN apt-get remove -y git gcc && \
     apt-get autoremove -y && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* /app/.env.example
 
 # Copy the entrypoint script to the container
 COPY docker/entrypoint.sh /entrypoint.sh

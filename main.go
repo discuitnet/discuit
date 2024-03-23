@@ -35,20 +35,22 @@ func main() {
 	// Load config file.
 	conf, err := config.Parse("./config.yaml")
 	if err != nil {
-		log.Fatal("Error parsing config file: ", err)
+		log.Fatal("Error loading config: ", err)
 	}
 
 	// Connect to MariaDB.
 	db := openDatabase(conf.DBAddr, conf.DBUser, conf.DBPassword, conf.DBName)
 	defer db.Close()
 
-	if err := core.CreateGhostUser(db); err != nil {
-		log.Fatal("Error creating the ghost user: ", err)
-	}
-
 	flags, err := parseFlags()
 	if err != nil {
 		log.Fatal("Error parsing falgs: ", err)
+	}
+
+	if !flags.runMigrations {
+		if err := core.CreateGhostUser(db); err != nil {
+			log.Fatal("Error creating the ghost user: ", err)
+		}
 	}
 
 	runServer, err := runFlagCommands(db, conf, flags)
@@ -241,6 +243,8 @@ type flags struct {
 	addAllUsersToCommunity string
 	newBadge               string
 	deleteUser             string
+
+	injectConfig bool // inject env vars to yaml
 }
 
 func parseFlags() (*flags, error) {
@@ -273,6 +277,8 @@ func parseFlags() (*flags, error) {
 	flag.StringVar(&f.newBadge, "new-badge", "", "New user badge")
 	flag.StringVar(&f.deleteUser, "delete-user", "", "Delete a user.")
 
+	flag.BoolVar(&f.injectConfig, "inject-config", false, "Inject environment variables to yaml")
+
 	flag.Parse()
 	return f, nil
 }
@@ -304,6 +310,7 @@ func runFlagCommands(db *sql.DB, conf *config.Config, flags *flags) (bool, error
 			return false, err
 		}
 		log.Println("Migrations ran successfully.")
+		return false, nil
 	}
 
 	// New-migration command:
@@ -454,6 +461,18 @@ func runFlagCommands(db *sql.DB, conf *config.Config, flags *flags) (bool, error
 		if err := core.NewBadgeType(db, flags.newBadge); err != nil {
 			return false, fmt.Errorf("failed to create a new badge: %w", err)
 		}
+		return false, nil
+	}
+
+	if flags.injectConfig {
+		yaml, err := config.RecreateYaml(*conf)
+		if err != nil {
+			return false, fmt.Errorf("failed to recreate yaml: %w", err)
+		}
+
+		//
+		fmt.Println(yaml)
+
 		return false, nil
 	}
 
