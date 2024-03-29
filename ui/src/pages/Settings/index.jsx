@@ -58,6 +58,10 @@ const Settings = () => {
     !user.hideUserProfilePictures
   );
 
+  const setHideDownVotes = (val) => {
+    localStorage.setItem('hideDownVotes', val);
+  };
+
   const [changed, resetChanged] = useIsChanged([
     aboutMe /*, email*/,
     notifsSettings,
@@ -353,6 +357,16 @@ const Settings = () => {
                 type="checkbox"
                 checked={showUserProfilePictures}
                 onChange={(e) => setShowUserProfilePictures(e.target.checked)}
+              />
+            </div>
+            <div className="checkbox is-check-last">
+              <label htmlFor="c6">Hide Down Votes</label>
+              <input
+                className="switch"
+                id="c6"
+                type="checkbox"
+                checked={user.hideDownVotes}
+                onChange={(e) => setHideDownVotes(e.target.checked)}
               />
             </div>
           </div>
