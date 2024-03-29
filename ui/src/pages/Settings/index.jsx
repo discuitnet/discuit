@@ -58,6 +58,7 @@ const Settings = () => {
     !user.hideUserProfilePictures
   );
 
+  const hideDownVotes = localStorage.getItem('hideDownVotes') === 'true';
   const setHideDownVotes = (val) => {
     localStorage.setItem('hideDownVotes', val);
   };
@@ -365,7 +366,7 @@ const Settings = () => {
                 className="switch"
                 id="c6"
                 type="checkbox"
-                checked={user.hideDownVotes}
+                checked={hideDownVotes}
                 onChange={(e) => setHideDownVotes(e.target.checked)}
               />
             </div>
