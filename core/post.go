@@ -227,6 +227,35 @@ func buildSelectPostQuery(loggedIn bool, where string) string {
 	return msql.BuildSelectQuery("posts", selectPostCols, selectPostJoins, where)
 }
 
+func getPostsForSearch(ctx context.Context, db *sql.DB) ([]*Post, error) {
+	rows, err := db.QueryContext(ctx, "SELECT id, type, public_id, user_id, community_id, title, body, created_at FROM posts WHERE deleted_at IS NULL")
+	if err != nil {
+		return nil, err
+	}
+
+	var posts []*Post
+
+	for rows.Next() {
+		post := &Post{db: db}
+		dest := []interface{}{
+			&post.ID,
+			&post.Type,
+			&post.PublicID,
+			&post.CommunityID,
+			&post.Title,
+			&post.Body,
+		}
+
+		if err := rows.Scan(dest...); err != nil {
+			return nil, fmt.Errorf("scanning post rows.Scan: %w", err)
+		}
+
+		posts = append(posts, post)
+	}
+
+	return posts, nil
+}
+
 // GetPosts returns a post using publicID, if publicID is not an empty string,
 // or using postID.
 func GetPost(ctx context.Context, db *sql.DB, postID *uid.ID, publicID string, viewer *uid.ID, getDeleted bool) (*Post, error) {
