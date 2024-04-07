@@ -21,10 +21,18 @@ func (s *Server) search(w *responseWriter, r *request) error {
 		return httperr.NewBadRequest("missing_index", "Missing index.")
 	}
 
+	searchClient := core.NewSearchClient(s.config.MeiliHost, s.config.MeiliKey)
+
 	switch index {
 	case "communities":
-		searchClient := core.NewSearchClient(s.config.MeiliHost, s.config.MeiliKey)
 		results, err := searchClient.SearchCommunities(r.ctx, q)
+		if err != nil {
+			return err
+		}
+
+		return w.writeJSON(results.Hits) // Now, only pass the payload
+	case "posts":
+		results, err := searchClient.SearchPosts(r.ctx, q)
 		if err != nil {
 			return err
 		}
