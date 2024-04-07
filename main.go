@@ -45,14 +45,14 @@ func main() {
 	// Connect to MeiliSearch.
 	searchClient := core.NewSearchClient(conf.MeiliHost, conf.MeiliKey)
 
+	if err := core.CreateGhostUser(db); err != nil {
+		log.Fatal("Error creating the ghost user: ", err)
+	}
+
 	flags, err := parseFlags()
 	if err != nil {
 		log.Fatal("Error parsing falgs: ", err)
 	}
-
-	// if err := core.CreateGhostUser(db); err != nil {
-	// 	log.Fatal("Error creating the ghost user: ", err)
-	// }
 
 	runServer, err := runFlagCommands(db, searchClient, conf, flags)
 	if err != nil {
