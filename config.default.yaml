@@ -20,6 +20,10 @@ dbUser: discuit # Required
 dbPassword: discuit # Required
 dbName: discuit # Required
 
+# MeiliSearch configuration:
+meiliHost: http://127.0.0.1:7700
+meiliKey: <insert-your-key-here>
+
 # ReCAPTCHA or hCaptcha secret and site-key:
 captchaSecret:
 captchaSiteKey:

@@ -42,16 +42,19 @@ func main() {
 	db := openDatabase(conf.DBAddr, conf.DBUser, conf.DBPassword, conf.DBName)
 	defer db.Close()
 
-	if err := core.CreateGhostUser(db); err != nil {
-		log.Fatal("Error creating the ghost user: ", err)
-	}
+	// Connect to MeiliSearch.
+	searchClient := core.NewSearchClient(conf.MeiliHost, conf.MeiliKey)
 
 	flags, err := parseFlags()
 	if err != nil {
 		log.Fatal("Error parsing falgs: ", err)
 	}
 
-	runServer, err := runFlagCommands(db, conf, flags)
+	// if err := core.CreateGhostUser(db); err != nil {
+	// 	log.Fatal("Error creating the ghost user: ", err)
+	// }
+
+	runServer, err := runFlagCommands(db, searchClient, conf, flags)
 	if err != nil {
 		log.Fatal("Error running flag commands: ", err)
 	}
@@ -241,6 +244,10 @@ type flags struct {
 	addAllUsersToCommunity string
 	newBadge               string
 	deleteUser             string
+
+	// MeiliSearch flags
+	meiliIndexCommunities bool
+	meiliResetIndex       string
 }
 
 func parseFlags() (*flags, error) {
@@ -273,13 +280,17 @@ func parseFlags() (*flags, error) {
 	flag.StringVar(&f.newBadge, "new-badge", "", "New user badge")
 	flag.StringVar(&f.deleteUser, "delete-user", "", "Delete a user.")
 
+	// MeiliSearch flags
+	flag.BoolVar(&f.meiliIndexCommunities, "meili-index-communities", false, "Index all communities in MeiliSearch")
+	flag.StringVar(&f.meiliResetIndex, "meili-reset-index", "", "Reset MeiliSearch index")
+
 	flag.Parse()
 	return f, nil
 }
 
 // If returns false, the program should exit immeditately afterwords, even if
 // there was no error.
-func runFlagCommands(db *sql.DB, conf *config.Config, flags *flags) (bool, error) {
+func runFlagCommands(db *sql.DB, searchClient *core.MeiliSearch, conf *config.Config, flags *flags) (bool, error) {
 	ctx := context.Background()
 
 	if flags.fixHotness {
@@ -454,6 +465,22 @@ func runFlagCommands(db *sql.DB, conf *config.Config, flags *flags) (bool, error
 		if err := core.NewBadgeType(db, flags.newBadge); err != nil {
 			return false, fmt.Errorf("failed to create a new badge: %w", err)
 		}
+		return false, nil
+	}
+
+	if flags.meiliIndexCommunities {
+		if err := searchClient.IndexAllCommunitiesInMeiliSearch(ctx, db); err != nil {
+			return false, fmt.Errorf("failed to index all communities in MeiliSearch: %w", err)
+		}
+		log.Printf("All communities indexed in MeiliSearch\n")
+		return false, nil
+	}
+
+	if flags.meiliResetIndex != "" {
+		if err := searchClient.ResetIndex(ctx, flags.meiliResetIndex); err != nil {
+			return false, fmt.Errorf("failed to reset MeiliSearch index: %w", err)
+		}
+		log.Printf("MeiliSearch index %s reset\n", flags.meiliResetIndex)
 		return false, nil
 	}
 

@@ -23,6 +23,10 @@ type Config struct {
 	DBPassword string `yaml:"dbPassword"`
 	DBName     string `yaml:"dbName"`
 
+	// MeiliSearch credentials.
+	MeiliHost string `yaml:"meiliHost"`
+	MeiliKey  string `yaml:"meiliKey"`
+
 	SessionCookieName string `yaml:"sessionCookieName"`
 
 	RedisAddress string `yaml:"redisAddress"`

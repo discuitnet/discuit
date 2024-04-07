@@ -70,6 +70,21 @@ func buildSelectCommunityQuery(where string) string {
 	return msql.BuildSelectQuery("communities", cols, joins, where)
 }
 
+func getCommunitiesForSearch(ctx context.Context, db *sql.DB) ([]*Community, error) {
+	// Only the communities that are not deleted are indexed. and we we only want the id, name, about, and whether it's nsfw.
+	rows, err := db.QueryContext(ctx, buildSelectCommunityQuery("WHERE communities.deleted_at IS NULL"))
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+	comms, err := scanCommunities(ctx, db, rows, nil)
+	if err != nil {
+		return nil, err
+	}
+	return comms, nil
+}
+
 func getCommunities(ctx context.Context, db *sql.DB, viewer *uid.ID, where string, args ...any) ([]*Community, error) {
 	query := buildSelectCommunityQuery(where)
 	rows, err := db.QueryContext(ctx, query, args...)

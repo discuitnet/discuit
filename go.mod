@@ -9,6 +9,7 @@ require (
 	github.com/gomodule/redigo v1.8.4
 	github.com/gorilla/mux v1.8.0
 	github.com/h2non/bimg v1.1.5
+	github.com/meilisearch/meilisearch-go v0.26.2
 	golang.org/x/crypto v0.11.0
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
 	golang.org/x/image v0.0.0-20210216034530-4410531fe030
@@ -18,13 +19,20 @@ require (
 
 require (
 	github.com/Microsoft/go-winio v0.6.0 // indirect
+	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.21+incompatible // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
+	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	github.com/josharian/intern v1.0.0 // indirect
+	github.com/klauspost/compress v1.15.6 // indirect
+	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
+	github.com/valyala/bytebufferpool v1.0.0 // indirect
+	github.com/valyala/fasthttp v1.37.1-0.20220607072126-8a320890c08d // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 )
