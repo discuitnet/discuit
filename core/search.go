@@ -77,6 +77,21 @@ func (c *MeiliSearch) IndexAllCommunitiesInMeiliSearch(ctx context.Context, db *
 	return nil
 }
 
+func (c *MeiliSearch) SearchCommunities(ctx context.Context, query string) (*meilisearch.SearchResponse, error) {
+	// An index is where the documents are stored.
+	index := c.client.Index("communities")
+
+	// Search for documents in the index.
+	searchResponse, err := index.Search(query, &meilisearch.SearchRequest{
+		Limit: 10,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return searchResponse, nil
+}
+
 func (c *MeiliSearch) ResetIndex(ctx context.Context, indexName string) error {
 	index := c.client.Index(indexName)
 	_, err := index.DeleteAllDocuments()

@@ -107,6 +107,8 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/_signup", s.withHandler(s.signup)).Methods("POST")
 	r.Handle("/api/_user", s.withHandler(s.getLoggedInUser)).Methods("GET")
 
+	r.Handle("/api/search", s.withHandler(s.search)).Methods("GET")
+
 	r.Handle("/api/users/{username}", s.withHandler(s.getUser)).Methods("GET")
 	r.Handle("/api/users/{username}", s.withHandler(s.deleteUser)).Methods("DELETE")
 	r.Handle("/api/users/{username}/feed", s.withHandler(s.getUsersFeed)).Methods("GET")
