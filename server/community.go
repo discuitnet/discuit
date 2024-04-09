@@ -52,6 +52,13 @@ func (s *Server) createCommunity(w *responseWriter, r *request) error {
 		return err
 	}
 
+	if s.config.MeiliEnabled {
+		searchClient := core.NewSearchClient(s.config.MeiliHost, s.config.MeiliKey)
+		if err = searchClient.UpdateOrCreateDocument(r.ctx, "communities", comm); err != nil {
+			return err
+		}
+	}
+
 	return w.writeJSON(comm)
 }
 
@@ -200,6 +207,13 @@ func (s *Server) updateCommunity(w *responseWriter, r *request) error {
 
 	if err = comm.Update(r.ctx, *r.viewer); err != nil {
 		return err
+	}
+
+	if s.config.MeiliEnabled {
+		searchClient := core.NewSearchClient(s.config.MeiliHost, s.config.MeiliKey)
+		if err = searchClient.UpdateOrCreateDocument(r.ctx, "communities", comm); err != nil {
+			return err
+		}
 	}
 
 	return w.writeJSON(comm)

@@ -106,3 +106,23 @@ func (c *MeiliSearch) ResetIndex(ctx context.Context, indexName string) error {
 
 	return nil
 }
+
+func (c *MeiliSearch) UpdateOrCreateDocument(ctx context.Context, indexName string, document interface{}) error {
+	index := c.client.Index(indexName)
+	_, err := index.UpdateDocuments([]interface{}{document})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *MeiliSearch) DeleteDocument(ctx context.Context, indexName string, documentID string) error {
+	index := c.client.Index(indexName)
+	_, err := index.DeleteDocument(documentID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
