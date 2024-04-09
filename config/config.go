@@ -24,8 +24,9 @@ type Config struct {
 	DBName     string `yaml:"dbName"`
 
 	// MeiliSearch credentials.
-	MeiliHost string `yaml:"meiliHost"`
-	MeiliKey  string `yaml:"meiliKey"`
+	MeiliEnabled bool   `yaml:"meiliEnabled"`
+	MeiliHost    string `yaml:"meiliHost"`
+	MeiliKey     string `yaml:"meiliKey"`
 
 	SessionCookieName string `yaml:"sessionCookieName"`
 
@@ -76,6 +77,7 @@ func Parse(path string) (*Config, error) {
 		PaginationLimitMax: 50,
 		DefaultFeedSort:    core.FeedSortHot,
 		MaxImageSize:       25 * (1 << 20),
+		MeiliEnabled:       false,
 
 		// Required fields:
 		ForumCreationReqPoints: -1,

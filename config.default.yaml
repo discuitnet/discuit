@@ -21,6 +21,7 @@ dbPassword: discuit # Required
 dbName: discuit # Required
 
 # MeiliSearch configuration:
+meiliEnabled: false
 meiliHost: http://127.0.0.1:7700
 meiliKey: <insert-your-key-here>
 

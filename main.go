@@ -43,7 +43,10 @@ func main() {
 	defer db.Close()
 
 	// Connect to MeiliSearch.
-	searchClient := core.NewSearchClient(conf.MeiliHost, conf.MeiliKey)
+	searchClient := &core.MeiliSearch{}
+	if conf.MeiliEnabled {
+		searchClient = core.NewSearchClient(conf.MeiliHost, conf.MeiliKey)
+	}
 
 	if err := core.CreateGhostUser(db); err != nil {
 		log.Fatal("Error creating the ghost user: ", err)
@@ -469,6 +472,10 @@ func runFlagCommands(db *sql.DB, searchClient *core.MeiliSearch, conf *config.Co
 	}
 
 	if flags.meiliIndexCommunities {
+		if !conf.MeiliEnabled {
+			return false, errors.New("MeiliSearch is not enabled")
+		}
+
 		if err := searchClient.IndexAllCommunitiesInMeiliSearch(ctx, db); err != nil {
 			return false, fmt.Errorf("failed to index all communities in MeiliSearch: %w", err)
 		}
@@ -477,6 +484,10 @@ func runFlagCommands(db *sql.DB, searchClient *core.MeiliSearch, conf *config.Co
 	}
 
 	if flags.meiliResetIndex != "" {
+		if !conf.MeiliEnabled {
+			return false, errors.New("MeiliSearch is not enabled")
+		}
+
 		if err := searchClient.ResetIndex(ctx, flags.meiliResetIndex); err != nil {
 			return false, fmt.Errorf("failed to reset MeiliSearch index: %w", err)
 		}
