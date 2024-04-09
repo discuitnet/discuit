@@ -5,9 +5,11 @@ import (
 	"database/sql"
 	"log"
 
+	"github.com/discuitnet/discuit/config"
 	"github.com/discuitnet/discuit/core"
 	msql "github.com/discuitnet/discuit/internal/sql"
 	"github.com/discuitnet/discuit/internal/uid"
+	"github.com/discuitnet/discuit/internal/utils"
 	"github.com/meilisearch/meilisearch-go"
 )
 
@@ -16,10 +18,11 @@ type MeiliSearch struct {
 }
 
 type MeiliSearchCommunity struct {
-	ID    uid.ID          `json:"id"`
-	Name  string          `json:"name"`
-	NSFW  bool            `json:"nsfw"`
-	About msql.NullString `json:"about"`
+	ID         uid.ID          `json:"id"`
+	Name       string          `json:"name"`
+	ParsedName string          `json:"parsed_name"`
+	NSFW       bool            `json:"nsfw"`
+	About      msql.NullString `json:"about"`
 }
 
 func NewSearchClient(host, key string) *MeiliSearch {
@@ -49,10 +52,11 @@ func (c *MeiliSearch) IndexAllCommunitiesInMeiliSearch(ctx context.Context, db *
 	var communitiesToIndex []MeiliSearchCommunity
 	for _, community := range communities {
 		communitiesToIndex = append(communitiesToIndex, MeiliSearchCommunity{
-			ID:    community.ID,
-			Name:  community.Name,
-			NSFW:  community.NSFW,
-			About: community.About,
+			ID:         community.ID,
+			Name:       community.Name,
+			ParsedName: utils.BreakUpOnCapitals(community.Name),
+			NSFW:       community.NSFW,
+			About:      community.About,
 		})
 	}
 
@@ -89,7 +93,8 @@ func (c *MeiliSearch) SearchCommunities(ctx context.Context, query string) (*mei
 
 	// Search for documents in the index.
 	searchResponse, err := index.Search(query, &meilisearch.SearchRequest{
-		Limit: 10,
+		Limit:                10,
+		AttributesToSearchOn: []string{"name", "parsed_name", "about"},
 	})
 	if err != nil {
 		return nil, err
@@ -126,4 +131,22 @@ func (c *MeiliSearch) DeleteDocument(ctx context.Context, indexName string, docu
 	}
 
 	return nil
+}
+
+func CommunityUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *config.Config, comm *core.Community) {
+	if !config.MeiliEnabled {
+		return
+	}
+
+	client := NewSearchClient(config.MeiliHost, config.MeiliKey)
+	err := client.UpdateOrCreateDocument(ctx, "communities", MeiliSearchCommunity{
+		ID:         comm.ID,
+		Name:       comm.Name,
+		ParsedName: utils.BreakUpOnCapitals(comm.Name),
+		NSFW:       comm.NSFW,
+		About:      comm.About,
+	})
+	if err != nil {
+		log.Printf("Error updating or creating document in MeiliSearch: %v", err)
+	}
 }

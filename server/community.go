@@ -53,12 +53,7 @@ func (s *Server) createCommunity(w *responseWriter, r *request) error {
 		return err
 	}
 
-	if s.config.MeiliEnabled {
-		searchClient := meilisearch.NewSearchClient(s.config.MeiliHost, s.config.MeiliKey)
-		if err = searchClient.UpdateOrCreateDocument(r.ctx, "communities", comm); err != nil {
-			return err
-		}
-	}
+	meilisearch.CommunityUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, comm)
 
 	return w.writeJSON(comm)
 }
@@ -210,12 +205,7 @@ func (s *Server) updateCommunity(w *responseWriter, r *request) error {
 		return err
 	}
 
-	if s.config.MeiliEnabled {
-		searchClient := meilisearch.NewSearchClient(s.config.MeiliHost, s.config.MeiliKey)
-		if err = searchClient.UpdateOrCreateDocument(r.ctx, "communities", comm); err != nil {
-			return err
-		}
-	}
+	meilisearch.CommunityUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, comm)
 
 	return w.writeJSON(comm)
 }

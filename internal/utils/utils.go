@@ -195,3 +195,24 @@ func ExtractStringsFromMap(m map[string]any, trim bool) map[string]string {
 	}
 	return strMap
 }
+
+// BreakUpOnCapitals breaks up a string s into words based on capital letters.
+// For example, "HelloWorld" becomes "Hello World".
+func BreakUpOnCapitals(s string) string {
+	var words []string
+	var word string
+	for _, r := range s {
+		if r >= 'A' && r <= 'Z' {
+			if word != "" {
+				words = append(words, word)
+			}
+			word = string(r)
+		} else {
+			word += string(r)
+		}
+	}
+	if word != "" {
+		words = append(words, word)
+	}
+	return strings.Join(words, " ")
+}
