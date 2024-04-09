@@ -7,6 +7,10 @@ import (
 
 // /api/search [GET]
 func (s *Server) search(w *responseWriter, r *request) error {
+	if !s.config.MeiliEnabled {
+		return httperr.NewBadRequest("meili_disabled", "MeiliSearch is disabled.")
+	}
+
 	query := r.urlQuery()
 
 	// query
