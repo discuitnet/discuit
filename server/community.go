@@ -11,6 +11,7 @@ import (
 
 	"github.com/discuitnet/discuit/core"
 	"github.com/discuitnet/discuit/internal/httperr"
+	"github.com/discuitnet/discuit/internal/meilisearch"
 	msql "github.com/discuitnet/discuit/internal/sql"
 	"github.com/discuitnet/discuit/internal/uid"
 	"github.com/gorilla/mux"
@@ -53,7 +54,7 @@ func (s *Server) createCommunity(w *responseWriter, r *request) error {
 	}
 
 	if s.config.MeiliEnabled {
-		searchClient := core.NewSearchClient(s.config.MeiliHost, s.config.MeiliKey)
+		searchClient := meilisearch.NewSearchClient(s.config.MeiliHost, s.config.MeiliKey)
 		if err = searchClient.UpdateOrCreateDocument(r.ctx, "communities", comm); err != nil {
 			return err
 		}
@@ -210,7 +211,7 @@ func (s *Server) updateCommunity(w *responseWriter, r *request) error {
 	}
 
 	if s.config.MeiliEnabled {
-		searchClient := core.NewSearchClient(s.config.MeiliHost, s.config.MeiliKey)
+		searchClient := meilisearch.NewSearchClient(s.config.MeiliHost, s.config.MeiliKey)
 		if err = searchClient.UpdateOrCreateDocument(r.ctx, "communities", comm); err != nil {
 			return err
 		}

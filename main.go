@@ -20,6 +20,7 @@ import (
 	"github.com/discuitnet/discuit/config"
 	"github.com/discuitnet/discuit/core"
 	"github.com/discuitnet/discuit/internal/images"
+	"github.com/discuitnet/discuit/internal/meilisearch"
 	"github.com/discuitnet/discuit/internal/uid"
 	"github.com/discuitnet/discuit/internal/utils"
 	"github.com/discuitnet/discuit/server"
@@ -43,9 +44,9 @@ func main() {
 	defer db.Close()
 
 	// Connect to MeiliSearch.
-	searchClient := &core.MeiliSearch{}
+	searchClient := &meilisearch.MeiliSearch{}
 	if conf.MeiliEnabled {
-		searchClient = core.NewSearchClient(conf.MeiliHost, conf.MeiliKey)
+		searchClient = meilisearch.NewSearchClient(conf.MeiliHost, conf.MeiliKey)
 	}
 
 	if err := core.CreateGhostUser(db); err != nil {
@@ -293,7 +294,7 @@ func parseFlags() (*flags, error) {
 
 // If returns false, the program should exit immeditately afterwords, even if
 // there was no error.
-func runFlagCommands(db *sql.DB, searchClient *core.MeiliSearch, conf *config.Config, flags *flags) (bool, error) {
+func runFlagCommands(db *sql.DB, searchClient *meilisearch.MeiliSearch, conf *config.Config, flags *flags) (bool, error) {
 	ctx := context.Background()
 
 	if flags.fixHotness {

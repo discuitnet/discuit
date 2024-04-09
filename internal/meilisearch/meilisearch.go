@@ -1,10 +1,11 @@
-package core
+package meilisearch
 
 import (
 	"context"
 	"database/sql"
 	"log"
 
+	"github.com/discuitnet/discuit/core"
 	msql "github.com/discuitnet/discuit/internal/sql"
 	"github.com/discuitnet/discuit/internal/uid"
 	"github.com/meilisearch/meilisearch-go"
@@ -32,7 +33,7 @@ func NewSearchClient(host, key string) *MeiliSearch {
 
 func (c *MeiliSearch) IndexAllCommunitiesInMeiliSearch(ctx context.Context, db *sql.DB) error {
 	// Fetch all communities.
-	communities, err := getCommunitiesForSearch(ctx, db)
+	communities, err := core.GetCommunitiesForSearch(ctx, db)
 	if err != nil {
 		return err
 	}

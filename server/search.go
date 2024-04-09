@@ -1,8 +1,8 @@
 package server
 
 import (
-	"github.com/discuitnet/discuit/core"
 	"github.com/discuitnet/discuit/internal/httperr"
+	"github.com/discuitnet/discuit/internal/meilisearch"
 )
 
 // /api/search [GET]
@@ -25,7 +25,7 @@ func (s *Server) search(w *responseWriter, r *request) error {
 		return httperr.NewBadRequest("missing_index", "Missing index.")
 	}
 
-	searchClient := core.NewSearchClient(s.config.MeiliHost, s.config.MeiliKey)
+	searchClient := meilisearch.NewSearchClient(s.config.MeiliHost, s.config.MeiliKey)
 
 	switch index {
 	case "communities":
