@@ -73,7 +73,6 @@ const AllCommunities = () => {
     } else {
       try {
         const res = await mfetchjson(getApiUrl(searchQuery));
-        console.log(res);
         dispatch(allCommunitiesUpdated(res.hits));
       } catch (error) {
         dispatch(snackAlertError(error));
