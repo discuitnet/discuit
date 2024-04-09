@@ -93,8 +93,7 @@ func (c *MeiliSearch) SearchCommunities(ctx context.Context, query string) (*mei
 
 	// Search for documents in the index.
 	searchResponse, err := index.Search(query, &meilisearch.SearchRequest{
-		Limit:                10,
-		AttributesToSearchOn: []string{"name", "parsed_name", "about"},
+		Limit: 10,
 	})
 	if err != nil {
 		return nil, err
