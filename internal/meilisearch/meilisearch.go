@@ -23,6 +23,7 @@ type MeiliSearchCommunity struct {
 	ParsedName string          `json:"parsed_name"`
 	NSFW       bool            `json:"nsfw"`
 	About      msql.NullString `json:"about"`
+	NumMembers int             `json:"no_members"`
 }
 
 func NewSearchClient(host, key string) *MeiliSearch {
@@ -57,6 +58,7 @@ func (c *MeiliSearch) IndexAllCommunitiesInMeiliSearch(ctx context.Context, db *
 			ParsedName: utils.BreakUpOnCapitals(community.Name),
 			NSFW:       community.NSFW,
 			About:      community.About,
+			NumMembers: community.NumMembers,
 		})
 	}
 
@@ -144,6 +146,7 @@ func CommunityUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *confi
 		ParsedName: utils.BreakUpOnCapitals(comm.Name),
 		NSFW:       comm.NSFW,
 		About:      comm.About,
+		NumMembers: comm.NumMembers,
 	})
 	if err != nil {
 		log.Printf("Error updating or creating document in MeiliSearch: %v", err)
