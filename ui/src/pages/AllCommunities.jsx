@@ -26,6 +26,7 @@ import JoinButton from './Community/JoinButton';
 import { useHistory, useLocation } from 'react-router-dom';
 import Feed from '../components/Feed';
 import { useInView } from 'react-intersection-observer';
+import { onKeyEnter } from '../helper';
 
 const prepareText = (isMobile = false) => {
   const x = isMobile ? 'by filling out the form below' : 'by clicking on the button below';
@@ -40,10 +41,11 @@ let posY = 0;
 const AllCommunities = () => {
   const user = useSelector((state) => state.main.user);
   const loggedIn = user !== null;
+  const [searchQuery, setSearchQuery] = useState('');
 
   const dispatch = useDispatch();
 
-  const { items: comms, loading } = useSelector((state) => {
+  let { items: comms, loading } = useSelector((state) => {
     const names = state.main.allCommunities.items;
     const communities = state.communities.items;
     const items = [];
@@ -53,6 +55,33 @@ const AllCommunities = () => {
       loading: state.main.allCommunities.loading,
     };
   });
+
+  const handleCommunitiesSearch = async () => {
+    const getApiUrl = (query) => `/api/search?q=${encodeURIComponent(query)}&index=communities`;
+
+    if (!CONFIG.meiliEnabled) {
+      return;
+    }
+
+    // Set loading to true
+    loading = true;
+
+    // Query is empty, fetch all communities
+    if (searchQuery === '') {
+      const res = await mfetchjson('/api/communities');
+      dispatch(allCommunitiesUpdated(res));
+    } else {
+      try {
+        const res = await mfetchjson(getApiUrl(searchQuery));
+        console.log(res);
+        dispatch(allCommunitiesUpdated(res.hits));
+      } catch (error) {
+        dispatch(snackAlertError(error));
+      }
+    }
+
+    loading = false;
+  };
 
   useEffect(() => {
     (async () => {
@@ -87,6 +116,17 @@ const AllCommunities = () => {
       <main>
         <div className="page-comms-header card card-padding">
           <h1>All communities</h1>
+          {CONFIG.meiliEnabled && (
+            <input
+              type="text"
+              placeholder="Search communities..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => onKeyEnter(e, handleCommunitiesSearch)}
+              onSubmit={handleCommunitiesSearch}
+              className="search-input"
+            />
+          )}
           <RequestCommunityButton className="button-main is-m" isMobile>
             New
           </RequestCommunityButton>
