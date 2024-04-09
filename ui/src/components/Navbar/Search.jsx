@@ -6,6 +6,7 @@ import Modal from '../Modal';
 
 const Search = ({ autoFocus = false }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
 
   const inputRef = useRef(null);
   useEffect(() => {
@@ -27,12 +28,22 @@ const Search = ({ autoFocus = false }) => {
     const q = encodeURIComponent(`${query} site:${window.location.hostname}`);
     return `https://www.google.com/search?q=${q}`;
   };
+
+  const getApiUrl = (query) => `/api/search?q=${encodeURIComponent(query)}&index=communities`;
+
   // Fallback on Google search until search is implemented.
-  const handleSearch = () => {
-    const win = window.open(getGoogleURL(searchQuery), '_blank');
-    if (!win || win.closed || typeof win.closed === 'undefined') {
-      // poppup was blocked
+  const handleSearch = async () => {
+    try {
+      const response = await fetch(getApiUrl(searchQuery));
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+      setSearchResults(data); // Assuming the API returns an array of results
+      console.log(data); // For demonstration, you might want to display these results in the UI
       setSearchModalOpen(true);
+    } catch (error) {
+      console.error('There was a problem with your fetch operation:', error);
     }
   };
   const linkRef = useCallback((node) => {
@@ -48,20 +59,27 @@ const Search = ({ autoFocus = false }) => {
             <ButtonClose onClick={() => setSearchModalOpen(false)} />
           </div>
           <div className="modal-card-content">
-            <p style={{ marginBottom: 'var(--gap)' }}>
-              {`Search is yet to be implemented, but you can click the button below to search on
-              Google. It'll show only results from this website.`}
-            </p>
-            <a
-              className="button button-main"
-              href={getGoogleURL(searchQuery)}
-              target="_blank"
-              rel="noreferrer"
-              ref={linkRef}
-              onClick={() => setSearchModalOpen(false)}
-            >
-              Search on Google for now
-            </a>
+            <p
+              style={{ marginBottom: 'var(--gap)' }}
+            >{`Found ${searchResults.estimatedTotalHits} results for "${searchQuery}" in ${searchResults.processingTimeMs}ms`}</p>
+
+            {/* Only if hits exists */}
+            {searchResults.hits && searchResults.hits.length > 0 && (
+              <ul style={{ listStyleType: 'none', padding: 0 }}>
+                {searchResults.hits.map((hit) => (
+                  <li key={hit.id} style={{ marginBottom: 'var(--gap)' }}>
+                    <a
+                      href={'/' + hit.name}
+                      ref={linkRef}
+                      onClick={() => setSearchModalOpen(false)}
+                      style={{ color: 'var(--color-text)' }}
+                    >
+                      {hit.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </Modal>
