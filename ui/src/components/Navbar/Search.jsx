@@ -33,6 +33,15 @@ const Search = ({ autoFocus = false }) => {
 
   // Fallback on Google search until search is implemented.
   const handleSearch = async () => {
+    if (!CONFIG.meiliEnabled) {
+      const win = window.open(getGoogleURL(searchQuery), '_blank');
+      if (!win || win.closed || typeof win.closed === 'undefined') {
+        // poppup was blocked
+        setSearchModalOpen(true);
+      }
+      return;
+    }
+
     try {
       const response = await fetch(getApiUrl(searchQuery));
       if (!response.ok) {
@@ -58,29 +67,50 @@ const Search = ({ autoFocus = false }) => {
             <div className="modal-card-title">Search</div>
             <ButtonClose onClick={() => setSearchModalOpen(false)} />
           </div>
-          <div className="modal-card-content">
-            <p
-              style={{ marginBottom: 'var(--gap)' }}
-            >{`Found ${searchResults.estimatedTotalHits} results for "${searchQuery}" in ${searchResults.processingTimeMs}ms`}</p>
 
-            {/* Only if hits exists */}
-            {searchResults.hits && searchResults.hits.length > 0 && (
-              <ul style={{ listStyleType: 'none', padding: 0 }}>
-                {searchResults.hits.map((hit) => (
-                  <li key={hit.id} style={{ marginBottom: 'var(--gap)' }}>
-                    <a
-                      href={'/' + hit.name}
-                      ref={linkRef}
-                      onClick={() => setSearchModalOpen(false)}
-                      style={{ color: 'var(--color-text)' }}
-                    >
-                      {hit.name}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          {!CONFIG.meiliEnabled && (
+            <div className="modal-card-content">
+              <p style={{ marginBottom: 'var(--gap)' }}>
+                {`Searching is not enabled on this site. You can click the button below to search on Google. It'll show only results from this website.`}
+              </p>
+              <a
+                className="button button-main"
+                href={getGoogleURL(searchQuery)}
+                target="_blank"
+                rel="noreferrer"
+                ref={linkRef}
+                onClick={() => setSearchModalOpen(false)}
+              >
+                Search on Google for now
+              </a>
+            </div>
+          )}
+
+          {CONFIG.meiliEnabled && (
+            <div className="modal-card-content">
+              <p
+                style={{ marginBottom: 'var(--gap)' }}
+              >{`Found ${searchResults.estimatedTotalHits} results for "${searchQuery}" in ${searchResults.processingTimeMs}ms`}</p>
+
+              {/* Only if hits exists */}
+              {searchResults.hits && searchResults.hits.length > 0 && (
+                <ul style={{ listStyleType: 'none', padding: 0 }}>
+                  {searchResults.hits.map((hit) => (
+                    <li key={hit.id} style={{ marginBottom: 'var(--gap)' }}>
+                      <a
+                        href={'/' + hit.name}
+                        ref={linkRef}
+                        onClick={() => setSearchModalOpen(false)}
+                        style={{ color: 'var(--color-text)' }}
+                      >
+                        {hit.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
       </Modal>
       <div className="input-search">
