@@ -93,6 +93,8 @@ func (c *MeiliSearch) IndexAllCommunitiesInMeiliSearch(ctx context.Context, db *
 		return err
 	}
 
+	index.UpdateFilterableAttributes(&[]string{"nsfw", "no_members"})
+
 	// Define your ranking rules
 	rankingRules := []string{
 		"typo",
@@ -193,6 +195,8 @@ func (c *MeiliSearch) IndexAllPostsInMeiliSearch(ctx context.Context, db *sql.DB
 	if err != nil {
 		return err
 	}
+
+	index.UpdateFilterableAttributes(&[]string{"type", "user_id", "username"})
 
 	return nil
 }
