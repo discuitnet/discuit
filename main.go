@@ -493,6 +493,21 @@ func runFlagCommands(db *sql.DB, searchClient *meilisearch.MeiliSearch, conf *co
 				return false, fmt.Errorf("failed to index all posts in MeiliSearch: %w", err)
 			}
 			log.Printf("All posts indexed in MeiliSearch\n")
+		case "all":
+			if err := searchClient.IndexAllCommunitiesInMeiliSearch(ctx, db); err != nil {
+				return false, fmt.Errorf("failed to index all communities in MeiliSearch: %w", err)
+			}
+			log.Printf("All communities indexed in MeiliSearch\n")
+
+			if err := searchClient.IndexAllUsersInMeiliSearch(ctx, db); err != nil {
+				return false, fmt.Errorf("failed to index all users in MeiliSearch: %w", err)
+			}
+			log.Printf("All users indexed in MeiliSearch\n")
+
+			if err := searchClient.IndexAllPostsInMeiliSearch(ctx, db); err != nil {
+				return false, fmt.Errorf("failed to index all posts in MeiliSearch: %w", err)
+			}
+			log.Printf("All posts indexed in MeiliSearch\n")
 		default:
 			return false, errors.New("invalid index")
 		}
