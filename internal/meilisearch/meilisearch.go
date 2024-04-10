@@ -26,6 +26,14 @@ type MeiliSearchCommunity struct {
 	NumMembers int             `json:"no_members"`
 }
 
+type MeiliSearchUser struct {
+	ID                uid.ID          `json:"id"`
+	Username          string          `json:"username"`
+	UsernameLowerCase string          `json:"username_lowercase"`
+	ParsedUsername    string          `json:"parsed_username"`
+	About             msql.NullString `json:"about_me"`
+}
+
 func NewSearchClient(host, key string) *MeiliSearch {
 	return &MeiliSearch{
 		client: meilisearch.NewClient(meilisearch.ClientConfig{
@@ -89,9 +97,67 @@ func (c *MeiliSearch) IndexAllCommunitiesInMeiliSearch(ctx context.Context, db *
 	return nil
 }
 
+func (c *MeiliSearch) IndexAllUsersInMeiliSearch(ctx context.Context, db *sql.DB) error {
+	// Fetch all users.
+	users, err := core.GetUsersForSearch(ctx, db)
+	if err != nil {
+		return err
+	}
+
+	if len(users) == 0 {
+		log.Println("No users to index")
+		return nil
+	}
+
+	log.Printf("Indexing %d users", len(users))
+
+	// Convert the users to the format MeiliSearch expects.
+	var usersToIndex []MeiliSearchUser
+	for _, user := range users {
+		// Exclude the ghost user.
+		if user.Username == "ghost" {
+			continue
+		}
+
+		usersToIndex = append(usersToIndex, MeiliSearchUser{
+			ID:                user.ID,
+			Username:          user.Username,
+			UsernameLowerCase: user.UsernameLowerCase,
+			ParsedUsername:    utils.BreakUpOnCapitals(user.Username),
+			About:             user.About,
+		})
+	}
+
+	// An index is where the documents are stored.
+	index := c.client.Index("users")
+
+	// Add documents to the index.
+	_, err = index.AddDocuments(usersToIndex)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *MeiliSearch) SearchCommunities(ctx context.Context, query string) (*meilisearch.SearchResponse, error) {
 	// An index is where the documents are stored.
 	index := c.client.Index("communities")
+
+	// Search for documents in the index.
+	searchResponse, err := index.Search(query, &meilisearch.SearchRequest{
+		Limit: 10,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return searchResponse, nil
+}
+
+func (c *MeiliSearch) SearchUsers(ctx context.Context, query string) (*meilisearch.SearchResponse, error) {
+	// An index is where the documents are stored.
+	index := c.client.Index("users")
 
 	// Search for documents in the index.
 	searchResponse, err := index.Search(query, &meilisearch.SearchRequest{
@@ -150,5 +216,47 @@ func CommunityUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *confi
 	})
 	if err != nil {
 		log.Printf("Error updating or creating document in MeiliSearch: %v", err)
+	}
+}
+
+func UserUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *config.Config, user *core.User) {
+	if !config.MeiliEnabled {
+		return
+	}
+
+	client := NewSearchClient(config.MeiliHost, config.MeiliKey)
+	err := client.UpdateOrCreateDocument(ctx, "users", MeiliSearchUser{
+		ID:                user.ID,
+		Username:          user.Username,
+		UsernameLowerCase: user.UsernameLowerCase,
+		ParsedUsername:    utils.BreakUpOnCapitals(user.Username),
+		About:             user.About,
+	})
+	if err != nil {
+		log.Printf("Error updating or creating document in MeiliSearch: %v", err)
+	}
+}
+
+func CommunityDeleteDocumentIfEnabled(ctx context.Context, config *config.Config, commID string) {
+	if !config.MeiliEnabled {
+		return
+	}
+
+	client := NewSearchClient(config.MeiliHost, config.MeiliKey)
+	err := client.DeleteDocument(ctx, "communities", commID)
+	if err != nil {
+		log.Printf("Error deleting document in MeiliSearch: %v", err)
+	}
+}
+
+func UserDeleteDocumentIfEnabled(ctx context.Context, config *config.Config, userID string) {
+	if !config.MeiliEnabled {
+		return
+	}
+
+	client := NewSearchClient(config.MeiliHost, config.MeiliKey)
+	err := client.DeleteDocument(ctx, "users", userID)
+	if err != nil {
+		log.Printf("Error deleting document in MeiliSearch: %v", err)
 	}
 }

@@ -251,6 +251,7 @@ type flags struct {
 
 	// MeiliSearch flags
 	meiliIndexCommunities bool
+	meiliIndexUsers       bool
 	meiliResetIndex       string
 }
 
@@ -286,6 +287,7 @@ func parseFlags() (*flags, error) {
 
 	// MeiliSearch flags
 	flag.BoolVar(&f.meiliIndexCommunities, "meili-index-communities", false, "Index all communities in MeiliSearch")
+	flag.BoolVar(&f.meiliIndexUsers, "meili-index-users", false, "Index all users in MeiliSearch")
 	flag.StringVar(&f.meiliResetIndex, "meili-reset-index", "", "Reset MeiliSearch index")
 
 	flag.Parse()
@@ -481,6 +483,18 @@ func runFlagCommands(db *sql.DB, searchClient *meilisearch.MeiliSearch, conf *co
 			return false, fmt.Errorf("failed to index all communities in MeiliSearch: %w", err)
 		}
 		log.Printf("All communities indexed in MeiliSearch\n")
+		return false, nil
+	}
+
+	if flags.meiliIndexUsers {
+		if !conf.MeiliEnabled {
+			return false, errors.New("MeiliSearch is not enabled")
+		}
+
+		if err := searchClient.IndexAllUsersInMeiliSearch(ctx, db); err != nil {
+			return false, fmt.Errorf("failed to index all users in MeiliSearch: %w", err)
+		}
+		log.Printf("All users indexed in MeiliSearch\n")
 		return false, nil
 	}
 

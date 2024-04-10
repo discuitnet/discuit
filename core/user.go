@@ -243,6 +243,14 @@ func buildSelectUserQuery(where string) string {
 	return msql.BuildSelectQuery("users", cols, joins, where)
 }
 
+func GetUsersForSearch(ctx context.Context, db *sql.DB) ([]*User, error) {
+	rows, err := db.QueryContext(ctx, buildSelectUserQuery(""))
+	if err != nil {
+		return nil, err
+	}
+	return scanUsers(ctx, db, rows, nil)
+}
+
 func GetUser(ctx context.Context, db *sql.DB, user uid.ID, viewer *uid.ID) (*User, error) {
 	rows, err := db.QueryContext(ctx, buildSelectUserQuery("WHERE users.id = ?"), user)
 	if err != nil {
