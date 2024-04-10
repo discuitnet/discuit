@@ -47,9 +47,13 @@ type MeiliSearchPost struct {
 	AuthorID       uid.ID `json:"user_id"`
 	AuthorUsername string `json:"username"`
 
-	Title     string          `json:"title"`
-	Body      msql.NullString `json:"body"`
-	CreatedAt time.Time       `json:"created_at"`
+	Title string          `json:"title"`
+	Body  msql.NullString `json:"body"`
+
+	CommunityID   uid.ID `json:"community_id"`
+	CommunityName string `json:"community_name"`
+
+	CreatedAt time.Time `json:"created_at"`
 }
 
 func NewSearchClient(host, key string) *MeiliSearch {
@@ -190,8 +194,12 @@ func (c *MeiliSearch) IndexAllPostsInMeiliSearch(ctx context.Context, db *sql.DB
 			AuthorID:       post.AuthorID,
 			AuthorUsername: post.AuthorUsername,
 
-			Title:     post.Title,
-			Body:      post.Body,
+			Title: post.Title,
+			Body:  post.Body,
+
+			CommunityID:   post.CommunityID,
+			CommunityName: post.CommunityName,
+
 			CreatedAt: post.CreatedAt,
 		})
 	}
@@ -205,7 +213,7 @@ func (c *MeiliSearch) IndexAllPostsInMeiliSearch(ctx context.Context, db *sql.DB
 		return err
 	}
 
-	index.UpdateFilterableAttributes(&[]string{"type", "user_id", "username", "created_at"})
+	index.UpdateFilterableAttributes(&[]string{"type", "user_id", "username", "created_at", "community_id", "community_name"})
 
 	return nil
 }
@@ -345,8 +353,12 @@ func PostUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *config.Con
 		AuthorID:       post.AuthorID,
 		AuthorUsername: post.AuthorUsername,
 
-		Title:     post.Title,
-		Body:      post.Body,
+		Title: post.Title,
+		Body:  post.Body,
+
+		CommunityID:   post.CommunityID,
+		CommunityName: post.CommunityName,
+
 		CreatedAt: post.CreatedAt,
 	})
 	if err != nil {
