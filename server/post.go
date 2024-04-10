@@ -8,6 +8,7 @@ import (
 
 	"github.com/discuitnet/discuit/core"
 	"github.com/discuitnet/discuit/internal/httperr"
+	"github.com/discuitnet/discuit/internal/meilisearch"
 	"github.com/discuitnet/discuit/internal/uid"
 )
 
@@ -84,6 +85,7 @@ func (s *Server) addPost(w *responseWriter, r *request) error {
 
 	// +1 your own post.
 	post.Vote(r.ctx, *r.viewer, true)
+	meilisearch.PostUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, post)
 	return w.writeJSON(post)
 }
 
@@ -194,6 +196,7 @@ func (s *Server) updatePost(w *responseWriter, r *request) error {
 		}
 	}
 
+	meilisearch.PostUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, post)
 	return w.writeJSON(post)
 }
 
@@ -230,6 +233,7 @@ func (s *Server) deletePost(w *responseWriter, r *request) error {
 		return err
 	}
 
+	meilisearch.PostDeleteDocumentIfEnabled(r.ctx, s.config, post.ID.String())
 	return w.writeJSON(post)
 }
 

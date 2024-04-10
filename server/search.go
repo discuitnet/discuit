@@ -42,6 +42,13 @@ func (s *Server) search(w *responseWriter, r *request) error {
 		}
 
 		return w.writeJSON(results)
+	case "posts":
+		results, err := searchClient.SearchPosts(r.ctx, q)
+		if err != nil {
+			return err
+		}
+
+		return w.writeJSON(results)
 	default:
 		return httperr.NewBadRequest("invalid_index", "Invalid index.")
 	}

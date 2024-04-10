@@ -26,6 +26,10 @@ services:
       - 7700:7700
     volumes:
       - discuit-meilisearch-data:/data.ms
+    environment:
+      MEILI_NO_ANALYTICS: true
+      # Log level: debug, info, warning, error
+      MEILI_LOG_LEVEL: debug
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin

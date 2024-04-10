@@ -34,6 +34,20 @@ type MeiliSearchUser struct {
 	About             msql.NullString `json:"about_me"`
 }
 
+type MeiliSearchPost struct {
+	ID   uid.ID        `json:"id"`
+	Type core.PostType `json:"type"`
+
+	// ID as it appears in the URL.
+	PublicID string `json:"public_id"`
+
+	AuthorID       uid.ID `json:"user_id"`
+	AuthorUsername string `json:"username"`
+
+	Title string          `json:"title"`
+	Body  msql.NullString `json:"body"`
+}
+
 func NewSearchClient(host, key string) *MeiliSearch {
 	return &MeiliSearch{
 		client: meilisearch.NewClient(meilisearch.ClientConfig{
@@ -74,7 +88,7 @@ func (c *MeiliSearch) IndexAllCommunitiesInMeiliSearch(ctx context.Context, db *
 	index := c.client.Index("communities")
 
 	// Add documents to the index.
-	_, err = index.AddDocuments(communitiesToIndex)
+	_, err = index.AddDocuments(communitiesToIndex, "id")
 	if err != nil {
 		return err
 	}
@@ -132,7 +146,50 @@ func (c *MeiliSearch) IndexAllUsersInMeiliSearch(ctx context.Context, db *sql.DB
 	index := c.client.Index("users")
 
 	// Add documents to the index.
-	_, err = index.AddDocuments(usersToIndex)
+	_, err = index.AddDocuments(usersToIndex, "id")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *MeiliSearch) IndexAllPostsInMeiliSearch(ctx context.Context, db *sql.DB) error {
+	// Fetch all posts.
+	posts, err := core.GetPostsForSearch(ctx, db)
+	if err != nil {
+		return err
+	}
+
+	if len(posts) == 0 {
+		log.Println("No posts to index")
+		return nil
+	}
+
+	log.Printf("Indexing %d posts", len(posts))
+
+	// Convert the posts to the format MeiliSearch expects.
+	var postsToIndex []MeiliSearchPost
+	for _, post := range posts {
+		postsToIndex = append(postsToIndex, MeiliSearchPost{
+			ID:   post.ID,
+			Type: post.Type,
+
+			PublicID: post.PublicID,
+
+			AuthorID:       post.AuthorID,
+			AuthorUsername: post.AuthorUsername,
+
+			Title: post.Title,
+			Body:  post.Body,
+		})
+	}
+
+	// An index is where the documents are stored.
+	index := c.client.Index("posts")
+
+	// Add documents to the index.
+	_, err = index.AddDocuments(postsToIndex, "id")
 	if err != nil {
 		return err
 	}
@@ -163,6 +220,22 @@ func (c *MeiliSearch) SearchUsers(ctx context.Context, query string) (*meilisear
 	searchResponse, err := index.Search(query, &meilisearch.SearchRequest{
 		Limit: 10,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	return searchResponse, nil
+}
+
+func (c *MeiliSearch) SearchPosts(ctx context.Context, query string) (*meilisearch.SearchResponse, error) {
+	// An index is where the documents are stored.
+	index := c.client.Index("posts")
+
+	// Search for documents in the index.
+	searchResponse, err := index.Search(query, &meilisearch.SearchRequest{
+		Limit: 10,
+	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -237,6 +310,29 @@ func UserUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *config.Con
 	}
 }
 
+func PostUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *config.Config, post *core.Post) {
+	if !config.MeiliEnabled {
+		return
+	}
+
+	client := NewSearchClient(config.MeiliHost, config.MeiliKey)
+	err := client.UpdateOrCreateDocument(ctx, "posts", MeiliSearchPost{
+		ID:   post.ID,
+		Type: post.Type,
+
+		PublicID: post.PublicID,
+
+		AuthorID:       post.AuthorID,
+		AuthorUsername: post.AuthorUsername,
+
+		Title: post.Title,
+		Body:  post.Body,
+	})
+	if err != nil {
+		log.Printf("Error updating or creating document in MeiliSearch: %v", err)
+	}
+}
+
 func CommunityDeleteDocumentIfEnabled(ctx context.Context, config *config.Config, commID string) {
 	if !config.MeiliEnabled {
 		return
@@ -256,6 +352,18 @@ func UserDeleteDocumentIfEnabled(ctx context.Context, config *config.Config, use
 
 	client := NewSearchClient(config.MeiliHost, config.MeiliKey)
 	err := client.DeleteDocument(ctx, "users", userID)
+	if err != nil {
+		log.Printf("Error deleting document in MeiliSearch: %v", err)
+	}
+}
+
+func PostDeleteDocumentIfEnabled(ctx context.Context, config *config.Config, postID string) {
+	if !config.MeiliEnabled {
+		return
+	}
+
+	client := NewSearchClient(config.MeiliHost, config.MeiliKey)
+	err := client.DeleteDocument(ctx, "posts", postID)
 	if err != nil {
 		log.Printf("Error deleting document in MeiliSearch: %v", err)
 	}
