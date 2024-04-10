@@ -273,6 +273,11 @@ func (c *MeiliSearch) DeleteDocument(ctx context.Context, indexName string, docu
 	return nil
 }
 
+func (c *MeiliSearch) GarbageCollect(ctx context.Context) error {
+	// TODO: Ensure that we are not holding on to documents that have been deleted in the database.
+	return nil
+}
+
 func CommunityUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *config.Config, comm *core.Community) {
 	if !config.MeiliEnabled {
 		return
