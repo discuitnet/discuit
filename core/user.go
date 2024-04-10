@@ -248,7 +248,15 @@ func GetUsersForSearch(ctx context.Context, db *sql.DB) ([]*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	return scanUsers(ctx, db, rows, nil)
+	users, err := scanUsers(ctx, db, rows, nil)
+	if err != nil {
+		if err == errUserNotFound {
+			return []*User{}, nil
+		}
+		return nil, err
+	}
+
+	return users, nil
 }
 
 func GetUser(ctx context.Context, db *sql.DB, user uid.ID, viewer *uid.ID) (*User, error) {

@@ -80,6 +80,9 @@ func GetCommunitiesForSearch(ctx context.Context, db *sql.DB) ([]*Community, err
 	defer rows.Close()
 	comms, err := scanCommunities(ctx, db, rows, nil)
 	if err != nil {
+		if err == errCommunityNotFound {
+			return []*Community{}, nil
+		}
 		return nil, err
 	}
 	return comms, nil

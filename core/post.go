@@ -228,13 +228,19 @@ func buildSelectPostQuery(loggedIn bool, where string) string {
 }
 
 func GetPostsForSearch(ctx context.Context, db *sql.DB) ([]*Post, error) {
-	query := msql.BuildSelectQuery("posts", selectPostCols, selectPostJoins, "")
+	// Don't include deleted posts.
+	query := msql.BuildSelectQuery("posts", selectPostCols, selectPostJoins, "WHERE posts.deleted_at IS NULL")
 	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("db error on query '%s': %w", query, err)
 	}
+
+	defer rows.Close()
 	posts, err := scanPosts(ctx, db, rows, nil)
 	if err != nil {
+		if err == errPostNotFound {
+			return []*Post{}, nil
+		}
 		return nil, err
 	}
 
