@@ -250,10 +250,8 @@ type flags struct {
 	deleteUser             string
 
 	// MeiliSearch flags
-	meiliIndexCommunities bool
-	meiliIndexUsers       bool
-	meiliIndexPosts       bool
-	meiliResetIndex       string
+	meiliIndex      string
+	meiliResetIndex string
 }
 
 func parseFlags() (*flags, error) {
@@ -287,9 +285,7 @@ func parseFlags() (*flags, error) {
 	flag.StringVar(&f.deleteUser, "delete-user", "", "Delete a user.")
 
 	// MeiliSearch flags
-	flag.BoolVar(&f.meiliIndexCommunities, "meili-index-communities", false, "Index all communities in MeiliSearch")
-	flag.BoolVar(&f.meiliIndexUsers, "meili-index-users", false, "Index all users in MeiliSearch")
-	flag.BoolVar(&f.meiliIndexPosts, "meili-index-posts", false, "Index all posts in MeiliSearch")
+	flag.StringVar(&f.meiliIndex, "meili-index", "false", "Index data in MeiliSearch")
 	flag.StringVar(&f.meiliResetIndex, "meili-reset-index", "", "Reset MeiliSearch index")
 
 	flag.Parse()
@@ -476,40 +472,33 @@ func runFlagCommands(db *sql.DB, searchClient *meilisearch.MeiliSearch, conf *co
 		return false, nil
 	}
 
-	if flags.meiliIndexCommunities {
+	if flags.meiliIndex != "" {
 		if !conf.MeiliEnabled {
 			return false, errors.New("MeiliSearch is not enabled")
 		}
 
-		if err := searchClient.IndexAllCommunitiesInMeiliSearch(ctx, db); err != nil {
-			return false, fmt.Errorf("failed to index all communities in MeiliSearch: %w", err)
+		switch flags.meiliIndex {
+		case "communities":
+			if err := searchClient.IndexAllCommunitiesInMeiliSearch(ctx, db); err != nil {
+				return false, fmt.Errorf("failed to index all communities in MeiliSearch: %w", err)
+			}
+			log.Printf("All communities indexed in MeiliSearch\n")
+		case "users":
+			if err := searchClient.IndexAllUsersInMeiliSearch(ctx, db); err != nil {
+				return false, fmt.Errorf("failed to index all users in MeiliSearch: %w", err)
+			}
+			log.Printf("All users indexed in MeiliSearch\n")
+		case "posts":
+			if err := searchClient.IndexAllPostsInMeiliSearch(ctx, db); err != nil {
+				return false, fmt.Errorf("failed to index all posts in MeiliSearch: %w", err)
+			}
+			log.Printf("All posts indexed in MeiliSearch\n")
+		default:
+			return false, errors.New("invalid index")
 		}
-		log.Printf("All communities indexed in MeiliSearch\n")
+
 		return false, nil
-	}
 
-	if flags.meiliIndexUsers {
-		if !conf.MeiliEnabled {
-			return false, errors.New("MeiliSearch is not enabled")
-		}
-
-		if err := searchClient.IndexAllUsersInMeiliSearch(ctx, db); err != nil {
-			return false, fmt.Errorf("failed to index all users in MeiliSearch: %w", err)
-		}
-		log.Printf("All users indexed in MeiliSearch\n")
-		return false, nil
-	}
-
-	if flags.meiliIndexPosts {
-		if !conf.MeiliEnabled {
-			return false, errors.New("MeiliSearch is not enabled")
-		}
-
-		if err := searchClient.IndexAllPostsInMeiliSearch(ctx, db); err != nil {
-			return false, fmt.Errorf("failed to index all posts in MeiliSearch: %w", err)
-		}
-		log.Printf("All posts indexed in MeiliSearch\n")
-		return false, nil
 	}
 
 	if flags.meiliResetIndex != "" {
