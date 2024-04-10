@@ -285,7 +285,7 @@ func parseFlags() (*flags, error) {
 	flag.StringVar(&f.deleteUser, "delete-user", "", "Delete a user.")
 
 	// MeiliSearch flags
-	flag.StringVar(&f.meiliIndex, "meili-index", "false", "Index data in MeiliSearch")
+	flag.StringVar(&f.meiliIndex, "meili-index", "", "Index data in MeiliSearch")
 	flag.StringVar(&f.meiliResetIndex, "meili-reset-index", "", "Reset MeiliSearch index")
 
 	flag.Parse()
