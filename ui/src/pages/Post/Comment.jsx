@@ -35,6 +35,7 @@ const Comment = ({
   isBanned,
   canVote,
   canComment,
+  imageHeight,
 }) => {
   const dispatch = useDispatch();
 
@@ -208,9 +209,14 @@ const Comment = ({
   const focused = focusId === comment.id;
   useEffect(() => {
     if (focused && div.current) {
-      const pos =
-        document.documentElement.scrollTop + div.current.getBoundingClientRect().top - 100;
-      window.scrollTo(0, pos);
+      if (imageHeight) {
+        const pos = imageHeight + div.current.getBoundingClientRect().top - 500;
+        window.scrollTo(0, pos);
+      } else {
+        const pos =
+          document.documentElement.scrollTop + div.current.getBoundingClientRect().top - 100;
+        window.scrollTo(0, pos);
+      }
     }
   }, [focused, focusId]);
 
@@ -721,6 +727,7 @@ Comment.propTypes = {
   isBanned: PropTypes.bool.isRequired,
   canVote: PropTypes.bool.isRequired,
   canComment: PropTypes.bool.isRequired,
+  imageHeight: PropTypes.number,
 };
 
 export default Comment;
