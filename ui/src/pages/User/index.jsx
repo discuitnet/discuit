@@ -421,12 +421,16 @@ const User = ({ username }) => {
           )}
           {loggedIn && !user.deleted && (
             <div className="user-card-buttons">
-              <button onClick={toggleMute}>{isMuted ? 'Unmute user' : 'Mute user'}</button>
+              {viewer.id !== user.id && (
+                <button onClick={toggleMute}>{isMuted ? 'Unmute user' : 'Mute user'}</button>
+              )}
               {viewerAdmin && (
                 <>
-                  <button className="button-red" onClick={handleBanUser}>
-                    {user.isBanned ? `Unban user` : 'Ban user'}
-                  </button>
+                  {viewer.id !== user.id && (
+                    <button className="button-red" onClick={handleBanUser}>
+                      {user.isBanned ? `Unban user` : 'Ban user'}
+                    </button>
+                  )}
                   <button className="button-green" onClick={handleGiveSupporterBadge}>
                     {hasSupporterBadge ? 'Remove supporter badge' : 'Give supporter badge'}
                   </button>
