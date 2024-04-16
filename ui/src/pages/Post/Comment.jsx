@@ -560,7 +560,6 @@ const Comment = ({
             </svg>
           </button>
           <div className="post-comment-points is-grayed">{kRound(downvotes)}</div>
-          <CommentShareButton url={commentShareURL} prefix="Share via " />
           {!deleted && (
             <button
               className="button-text"
@@ -619,7 +618,7 @@ const Comment = ({
           )}
           {!deleted && !isMobile && (
             <>
-              {/*<CommentShareButton url={commentShareURL} />*/}
+              <CommentShareButton url={commentShareURL} prefix="Share via " />
               {showEditDelete && (
                 <>
                   <button className="button-text" onClick={handleOnEdit}>
