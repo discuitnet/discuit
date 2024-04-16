@@ -250,6 +250,8 @@ func (s *Server) joinCommunity(w *responseWriter, r *request) error {
 		return err
 	}
 
+	meilisearch.CommunityUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, community)
+
 	community.ViewerJoined = msql.NewNullBool(!req.Leave)
 	community.ViewerMod = msql.NewNullBool(false)
 
