@@ -20,6 +20,7 @@ import { useVoting } from '../../hooks';
 import UserProPic, { DeletedUserProPic, UserLink } from '../../components/UserProPic';
 import { LinkOrDiv } from '../../components/Utils';
 import { userHasSupporterBadge } from '../User';
+import CommentShareButton from './CommentShareButton';
 
 const Diagnostics = false; // process.env.NODE_ENV !== 'production';
 const MaxCommentDepth = 15;
@@ -57,6 +58,8 @@ const Comment = ({
       };
     });
   };
+
+  const commentShareURL = `/${community.name}/post/${postId}/${comment.id}`;
 
   const deleted = comment.deletedAt !== null;
 
@@ -557,6 +560,7 @@ const Comment = ({
             </svg>
           </button>
           <div className="post-comment-points is-grayed">{kRound(downvotes)}</div>
+          <CommentShareButton url={commentShareURL} prefix="Share via " />
           {!deleted && (
             <button
               className="button-text"
