@@ -19,6 +19,7 @@ import (
 	msql "github.com/discuitnet/discuit/internal/sql"
 	"github.com/discuitnet/discuit/internal/uid"
 	"github.com/discuitnet/discuit/internal/utils"
+	passwordvalidator "github.com/wagslane/go-password-validator"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -428,6 +429,12 @@ func RegisterUser(ctx context.Context, db *sql.DB, username, email, password str
 	// Check if username is valid.
 	if err := IsUsernameValid(username); err != nil {
 		return nil, httperr.NewBadRequest("invalid-username", fmt.Sprintf("Username %v.", err))
+	}
+
+	const minEntropyBits = 60
+	err := passwordvalidator.Validate(password, minEntropyBits)
+	if err != nil {
+		return nil, httperr.NewBadRequest("bad-password", err.Error())
 	}
 
 	hash, err := HashPassword([]byte(password))

@@ -26,5 +26,6 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
+	github.com/wagslane/go-password-validator v0.3.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 )
