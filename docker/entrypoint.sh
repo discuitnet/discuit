@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-# If we are not using an externally hosted/ran database or redis, start the internal one
-if [[ -v "${DISCUIT_EXTERNAL_DB_REDIS}" ]]; then
+# TODO: Allow flag DISCUIT_EXTERNAL_DB_REDIS to disable the starting of Redis and MariaDB
+
 # Start MariaDB
 echo "Starting MariaDB..."
 service mariadb start
@@ -19,7 +19,6 @@ mysql -e "CREATE DATABASE IF NOT EXISTS discuit;"
 echo "Creating the discuit user..."
 mysql -e "CREATE USER IF NOT EXISTS 'discuit'@'127.0.0.1' IDENTIFIED BY 'discuit';"
 mysql -e "GRANT ALL PRIVILEGES ON discuit.* TO 'discuit'@'127.0.0.1';"
-fi
 
 # Run migrations
 /app/discuit -migrate
