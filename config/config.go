@@ -23,7 +23,8 @@ type Config struct {
 	DBPassword string `yaml:"dbPassword"`
 	DBName     string `yaml:"dbName"`
 
-	SessionCookieName string `yaml:"sessionCookieName"`
+	SessionCookieName   string `yaml:"sessionCookieName"`
+	SessionCookieSecure bool   `yaml:"sessionCookieSecure"`
 
 	RedisAddress string `yaml:"redisAddress"`
 
@@ -64,14 +65,15 @@ type Config struct {
 func Parse(path string) (*Config, error) {
 	c := &Config{
 		// Default values.
-		Addr:               ":8080",
-		DBUser:             "root",
-		SessionCookieName:  "SID",
-		RedisAddress:       ":6379",
-		PaginationLimit:    10,
-		PaginationLimitMax: 50,
-		DefaultFeedSort:    core.FeedSortHot,
-		MaxImageSize:       25 * (1 << 20),
+		Addr:                ":8080",
+		DBUser:              "root",
+		SessionCookieName:   "SID",
+		SessionCookieSecure: true,
+		RedisAddress:        ":6379",
+		PaginationLimit:     10,
+		PaginationLimitMax:  50,
+		DefaultFeedSort:     core.FeedSortHot,
+		MaxImageSize:        25 * (1 << 20),
 
 		// Required fields:
 		ForumCreationReqPoints: -1,

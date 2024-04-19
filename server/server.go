@@ -240,7 +240,7 @@ func (s *Server) Close() error {
 // updateUserLastSeen updates the last seen time and the last seen IP address of
 // the logged in user, if the user is logged in, in Redis and persists it to
 // MariaDB.
-func updateUserLastSeen(ctx context.Context, w http.ResponseWriter, r *http.Request, db *sql.DB, ses *sessions.Session) error {
+func updateUserLastSeen(ctx context.Context, w http.ResponseWriter, r *http.Request, db *sql.DB, ses *sessions.Session, s *Server) error {
 	loggedIn, uid := isLoggedIn(ses)
 	if !loggedIn {
 		return nil
@@ -248,7 +248,7 @@ func updateUserLastSeen(ctx context.Context, w http.ResponseWriter, r *http.Requ
 
 	update := func() error {
 		ses.Values["last_seen"] = time.Now().Unix()
-		if err := ses.Save(w, r); err != nil {
+		if err := ses.Save(w, r, s.config.SessionCookieSecure); err != nil {
 			return err
 		}
 		return core.UserSeen(ctx, db, *uid, httputil.GetIP(r))
@@ -279,7 +279,7 @@ func (s *Server) withHandler(h handler) http.Handler {
 
 		s.setInitialCookies(w, r, ses)
 
-		if err := updateUserLastSeen(r.Context(), w, r, s.db, ses); err != nil { // could be changed by a csrf attack request
+		if err := updateUserLastSeen(r.Context(), w, r, s.db, ses, s); err != nil { // could be changed by a csrf attack request
 			log.Printf("Error updating last seen value: %v\n", err)
 		}
 
@@ -338,7 +338,7 @@ func (s *Server) setCsrfCookie(ses *sessions.Session, w http.ResponseWriter, r *
 
 func (s *Server) setInitialCookies(w http.ResponseWriter, r *http.Request, ses *sessions.Session) {
 	if !ses.CookieSet {
-		ses.Save(w, r)
+		ses.Save(w, r, s.config.SessionCookieSecure)
 	}
 	s.setCsrfCookie(ses, w, r)
 }
@@ -883,7 +883,7 @@ func (s *Server) loginUser(u *core.User, ses *sessions.Session, w http.ResponseW
 	}
 
 	ses.Values["uid"] = u.ID.String()
-	return ses.Save(w, r)
+	return ses.Save(w, r, s.config.SessionCookieSecure)
 }
 
 func (s *Server) logoutUser(u *core.User, ses *sessions.Session, w http.ResponseWriter, r *http.Request) error {
@@ -893,7 +893,7 @@ func (s *Server) logoutUser(u *core.User, ses *sessions.Session, w http.Response
 
 	ses.Clear()
 
-	if err := ses.Save(w, r); err != nil {
+	if err := ses.Save(w, r, s.config.SessionCookieSecure); err != nil {
 		return err
 	}
 

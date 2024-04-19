@@ -20,7 +20,7 @@ type Store interface {
 
 	// Save saves the session to the underlying store and sets http cookie
 	// headers.
-	Save(w http.ResponseWriter, r *http.Request, s *Session) error
+	Save(w http.ResponseWriter, r *http.Request, s *Session, secure bool) error
 }
 
 // Session stores a map of session values.
@@ -42,8 +42,8 @@ func (s *Session) Store() Store {
 }
 
 // Save implements Store.Save method.
-func (s *Session) Save(w http.ResponseWriter, r *http.Request) error {
-	return s.store.Save(w, r, s)
+func (s *Session) Save(w http.ResponseWriter, r *http.Request, secure bool) error {
+	return s.store.Save(w, r, s, secure)
 }
 
 // Clear sets s.Values to a new map. The new map is not persisted to the store
@@ -130,7 +130,7 @@ func (rs *RedisStore) newSession() (*Session, error) {
 
 // Save saves the session values to redis and, if the session is new, it adds a
 // Set-Cookie header to ResponseWriter.
-func (rs *RedisStore) Save(w http.ResponseWriter, r *http.Request, s *Session) error {
+func (rs *RedisStore) Save(w http.ResponseWriter, r *http.Request, s *Session, secure bool) error {
 	data, err := json.Marshal(s.Values)
 	if err != nil {
 		return err
@@ -143,7 +143,7 @@ func (rs *RedisStore) Save(w http.ResponseWriter, r *http.Request, s *Session) e
 		http.SetCookie(w, &http.Cookie{
 			Name:     rs.CookieName,
 			Value:    s.ID,
-			Secure:   true,
+			Secure:   secure,
 			HttpOnly: true,
 			Path:     "/",
 			Expires:  time.Now().UTC().Add(expires),
