@@ -414,7 +414,7 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 }
 
 // RegisterUser creates a new user.
-func RegisterUser(ctx context.Context, db *sql.DB, username, email, password string) (*User, error) {
+func RegisterUser(ctx context.Context, db *sql.DB, username, email, password string, minEntropy float64) (*User, error) {
 	// Check for duplicates.
 	if exists, _, err := usernameExists(ctx, db, username); err != nil {
 		return nil, err
@@ -431,8 +431,7 @@ func RegisterUser(ctx context.Context, db *sql.DB, username, email, password str
 		return nil, httperr.NewBadRequest("invalid-username", fmt.Sprintf("Username %v.", err))
 	}
 
-	const minEntropyBits = 60
-	err := passwordvalidator.Validate(password, minEntropyBits)
+	err := passwordvalidator.Validate(password, minEntropy)
 	if err != nil {
 		return nil, httperr.NewBadRequest("bad-password", err.Error())
 	}
