@@ -1158,7 +1158,7 @@ func CreateGhostUser(db *sql.DB) error {
 	if err := db.QueryRow("SELECT username_lc FROM users WHERE username_lc = ?", "ghost").Scan(&username); err != nil {
 		if err == sql.ErrNoRows {
 			// Ghost user not found; create one.
-			_, createErr := RegisterUser(context.Background(), db, "ghost", "", utils.GenerateStringID(48))
+			_, createErr := RegisterUser(context.Background(), db, "ghost", "", utils.GenerateStringID(48), 0)
 			return createErr
 		}
 		return err

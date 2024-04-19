@@ -79,6 +79,7 @@ func Parse(path string) (*Config, error) {
 		// Required fields:
 		ForumCreationReqPoints: -1,
 		MaxForumsPerUser:       -1,
+		MinEntropy:             60,
 	}
 
 	unmarshal := func() error {
