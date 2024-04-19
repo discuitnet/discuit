@@ -15,6 +15,7 @@ import (
 	"github.com/discuitnet/discuit/internal/httputil"
 	"github.com/discuitnet/discuit/internal/uid"
 	"github.com/gorilla/mux"
+	passwordvalidator "github.com/wagslane/go-password-validator"
 )
 
 // /api/users/{username} [GET]
@@ -475,6 +476,12 @@ func (s *Server) updateUserSettings(w *responseWriter, r *request) error {
 		if newPassword != repeatPassword {
 			return httperr.NewBadRequest("password_not_match", "Passwords do not match.")
 		}
+
+		err = passwordvalidator.Validate(newPassword, s.config.MinEntropy)
+		if err != nil {
+			return httperr.NewBadRequest("bad-password", err.Error())
+		}
+
 		if err = user.ChangePassword(r.ctx, password, newPassword); err != nil {
 			return err
 		}
