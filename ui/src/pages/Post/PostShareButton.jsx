@@ -67,7 +67,7 @@ const PostShareButton = ({ post }) => {
           href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(twitterText)}`}
           rel="noreferrer"
         >
-          To Twitter
+          To Twitter / X
         </a>
         <a
           className="button-clear dropdown-item"
