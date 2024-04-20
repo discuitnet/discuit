@@ -56,6 +56,16 @@ const PostShareButton = ({ post }) => {
     return <Target onClick={handleClick} />;
   }
 
+  const renderImageDownloadButton = () => {
+    const url = post.image.url;
+    const filename = `discuit-${post.communityName}[${post.publicId}].${post.image.format}`;
+    return (
+      <a href={url} className="button-clear dropdown-item" download={filename}>
+        Download image
+      </a>
+    );
+  };
+
   const twitterText = `"${post.title}" ${url}`;
 
   return (
@@ -80,6 +90,7 @@ const PostShareButton = ({ post }) => {
         <button className="button-clear dropdown-item" onClick={handleCopyURL}>
           Copy URL
         </button>
+        {post.type === 'image' && renderImageDownloadButton()}
       </div>
     </Dropdown>
   );
