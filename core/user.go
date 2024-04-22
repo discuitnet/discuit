@@ -124,6 +124,7 @@ type User struct {
 	RememberFeedSort        bool     `json:"rememberFeedSort"`
 	EmbedsOff               bool     `json:"embedsOff"`
 	HideUserProfilePictures bool     `json:"hideUserProfilePictures"`
+	HideDownvotes           bool     `json:"hideDownvotes"`
 
 	// No banned users are supposed to be logged in. Make sure to log them out
 	// before banning.
@@ -235,6 +236,7 @@ func buildSelectUserQuery(where string) string {
 		"users.remember_feed_sort",
 		"users.embeds_off",
 		"users.hide_user_profile_pictures",
+		"users.hide_downvotes",
 	}
 	cols = append(cols, images.ImageColumns("pro_pic")...)
 	joins := []string{
@@ -334,6 +336,7 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 			&u.RememberFeedSort,
 			&u.EmbedsOff,
 			&u.HideUserProfilePictures,
+			&u.HideDownvotes,
 		}
 
 		proPic := &images.Image{}
@@ -568,7 +571,8 @@ func (u *User) Update(ctx context.Context) error {
 		home_feed = ?,
 		remember_feed_sort = ?,
 		embeds_off = ?,
-		hide_user_profile_pictures = ?
+		hide_user_profile_pictures = ?,
+		hide_downvotes = ?
 	WHERE id = ?`,
 		u.EmailPublic,
 		u.About,
@@ -578,6 +582,7 @@ func (u *User) Update(ctx context.Context) error {
 		u.RememberFeedSort,
 		u.EmbedsOff,
 		u.HideUserProfilePictures,
+		u.HideDownvotes,
 		u.ID)
 	return err
 }

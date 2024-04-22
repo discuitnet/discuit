@@ -58,10 +58,7 @@ const Settings = () => {
     !user.hideUserProfilePictures
   );
 
-  const hideDownVotes = localStorage.getItem('hideDownVotes') === 'true';
-  const setHideDownVotes = (val) => {
-    localStorage.setItem('hideDownVotes', val);
-  };
+  const [hideDownvotes, setHideDownvotes] = useState(user.hideDownvotes);
 
   const [changed, resetChanged] = useIsChanged([
     aboutMe /*, email*/,
@@ -71,6 +68,7 @@ const Settings = () => {
     enableEmbeds,
     email,
     showUserProfilePictures,
+    hideDownvotes,
   ]);
 
   const applicationServerKey = useSelector((state) => state.main.vapidPublicKey);
@@ -130,6 +128,7 @@ const Settings = () => {
           embedsOff: !enableEmbeds,
           email,
           hideUserProfilePictures: !showUserProfilePictures,
+          hideDownvotes,
         }),
       });
       dispatch(userLoggedIn(ruser));
@@ -366,8 +365,8 @@ const Settings = () => {
                 className="switch"
                 id="c6"
                 type="checkbox"
-                checked={hideDownVotes}
-                onChange={(e) => setHideDownVotes(e.target.checked)}
+                checked={hideDownvotes}
+                onChange={(e) => setHideDownvotes(e.target.checked)}
               />
             </div>
           </div>

@@ -16,17 +16,17 @@ const PostVotes = ({ className = '', post, sticky = false, disabled = false, mob
     post.downvotes
   );
 
-  const hideDownVotes = localStorage.getItem('hideDownVotes') === 'true';
+  const hideDownvotes = useSelector((state) => state.main.user.hideDownvotes);
 
-  // Adjust points calculation based on hideDownVotes flag
-  const points = hideDownVotes ? upvotes : upvotes - downvotes;
+  // Adjust points calculation based on hideDownvotes flag
+  const points = hideDownvotes ? upvotes : upvotes - downvotes;
 
   const handleVote = (up = true) => {
     if (!loggedIn) {
       dispatch(loginPromptToggled());
       return;
     }
-    if (up === false && hideDownVotes) return; // Ignore downvote clicks if downvotes are hidden
+    if (up === false && hideDownvotes) return; // Ignore downvote clicks if downvotes are hidden
 
     doVote(
       up,
@@ -76,12 +76,12 @@ const PostVotes = ({ className = '', post, sticky = false, disabled = false, mob
         <div
           className="post-votes-no"
           title={`Upvotes: ${post.upvotes.toLocaleString()}${
-            hideDownVotes ? '' : ` • Downvotes: ${post.downvotes.toLocaleString()}`
+            hideDownvotes ? '' : ` • Downvotes: ${post.downvotes.toLocaleString()}`
           }`}
         >
           {kRound(points)}
         </div>
-        {!hideDownVotes && (
+        {!hideDownvotes && (
           <button
             className={'button-icon post-votes-arrow ' + downCls}
             onClick={() => handleVote(false)}
@@ -133,12 +133,12 @@ const PostVotes = ({ className = '', post, sticky = false, disabled = false, mob
         <div
           className="post-votes-no"
           title={`Upvotes: ${post.upvotes.toLocaleString()}${
-            hideDownVotes ? '' : ` • Downvotes: ${post.downvotes.toLocaleString()}`
+            hideDownvotes ? '' : ` • Downvotes: ${post.downvotes.toLocaleString()}`
           }`}
         >
           {kRound(points)}
         </div>
-        {!hideDownVotes && (
+        {!hideDownvotes && (
           <button
             className={'button-clear post-votes-arrow ' + downCls}
             onClick={() => handleVote(false)}
