@@ -4,8 +4,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import AddComment from './AddComment';
-import Link from '../../components/Link';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { kRound, mfetchjson, stringCount, toTitleCase, userGroupSingular } from '../../helper';
 import Dropdown from '../../components/Dropdown';
 import { loginPromptToggled, snackAlert, snackAlertError } from '../../slices/mainSlice';
@@ -17,7 +16,7 @@ import MarkdownBody from '../../components/MarkdownBody';
 import ShowMoreBox from '../../components/ShowMoreBox';
 import { newCommentAdded, replyCommentsAdded } from '../../slices/commentsSlice';
 import { useVoting } from '../../hooks';
-import UserProPic, { DeletedUserProPic, UserLink } from '../../components/UserProPic';
+import UserProPic, { GhostUserProPic, UserLink } from '../../components/UserProPic';
 import { LinkOrDiv } from '../../components/Utils';
 import { userHasSupporterBadge } from '../User';
 import CommentShareButton from './CommentShareButton';
@@ -62,6 +61,13 @@ const Comment = ({
   const commentShareURL = `/${community.name}/post/${postId}/${comment.id}`;
 
   const deleted = comment.deletedAt !== null;
+
+  // If purged if true, then the deleted comment's content (body, author, etc)
+  // is not available (in which case the comment was deleted by its author). If
+  // purged is false and deleted is true, then the comment was deleted by either
+  // an admin or a mod of the community *and* the person viewing the comment
+  // right now, the logged in user, has the privilege to view this comment.
+  const purged = deleted && comment.contentStripped;
 
   const [isReplying, setIsReplying] = useState(false);
   const handleOnReply = () => {
@@ -221,14 +227,18 @@ const Comment = ({
     }
   };
 
-  const isOP = post.userId === comment.userId;
-  const isUsernameHidden = deleted || post.userDeleted || mutedUserHidden;
+  const isOP = (() => {
+    const postAuthorId = post.userDeleted ? post.userGhostId : post.userId;
+    const commentAuthorId = comment.userDeleted ? comment.userGhostId : comment.userId;
+    return postAuthorId === commentAuthorId;
+  })();
+  const isUsernameHidden = purged || mutedUserHidden || (comment.userDeleted && !isAdmin);
   let username = comment.username;
   if (isUsernameHidden) {
-    if (post.userDeleted) {
-      username = 'Deleted';
-    } else if (comment.isAuthorMuted) {
+    if (comment.isAuthorMuted) {
       username = 'Muted';
+    } else if (comment.userDeleted) {
+      username = 'Ghost';
     } else {
       username = 'Hidden';
     }
@@ -242,7 +252,7 @@ const Comment = ({
     if (!showAuthorProPic) {
       return <div className={'post-comment-collapse-minus' + (collapsed ? ' is-plus' : '')}></div>;
     }
-    if (comment.author) {
+    if (!comment.userDeleted && comment.author) {
       const { author } = comment;
       return (
         <div className="post-comment-propic" ref={proPicRef}>
@@ -259,8 +269,28 @@ const Comment = ({
     }
     return (
       <div className="post-comment-propic" ref={proPicRef}>
-        <DeletedUserProPic />
+        <GhostUserProPic />
       </div>
+    );
+  };
+  const renderAuthorUsername = () => {
+    // On mobile, render the profile picture. On desktop, render only the
+    // username.
+    return (
+      <UserLink
+        className={
+          'post-comment-username' +
+          (isUsernameHidden ? ' is-hidden' : '') +
+          (comment.userDeleted && !isUsernameHidden ? ' is-red' : '')
+        }
+        username={username}
+        proPic={comment.author ? comment.author.proPic : null}
+        proPicGhost={isUsernameHidden}
+        showProPic={isMobile && showAuthorProPic}
+        isSupporter={isAuthorSupporter}
+        noAtSign
+        noLink={isUsernameHidden}
+      />
     );
   };
 
@@ -278,15 +308,7 @@ const Comment = ({
         </div>
         <div className="post-comment-body">
           <div className="post-comment-body-head">
-            <UserLink
-              className={'post-comment-username' + (isUsernameHidden ? ' is-hidden' : '')}
-              username={username}
-              proPic={comment.author ? comment.author.proPic : null}
-              showProPic={isMobile && showAuthorProPic}
-              noAtSign
-              noLink
-              isSupporter={isAuthorSupporter}
-            />
+            {renderAuthorUsername()}
             {isOP && (
               <div className="post-comment-head-item post-comment-is-op" title="Original poster">
                 OP
@@ -333,7 +355,7 @@ const Comment = ({
   const userMod = community ? community.userMod : false;
 
   let deletedText = '';
-  if (deleted) deletedText = `Comment deleted by ${userGroupSingular(comment.deletedAs)}`;
+  if (deleted) deletedText = `Deleted by ${userGroupSingular(comment.deletedAs, true)}`;
   const disabled = !(canVote && !comment.deletedAt);
   const noRepliesRenderedDirect = children ? children.length : 0;
   const noChildrenReplies = countChildrenReplies(node);
@@ -342,21 +364,25 @@ const Comment = ({
   const showReport = loggedIn && !deleted && user.id !== comment.userId;
   // const commentShareURL = `/${community.name}/post/${postId}?focus=${comment.id}#${comment.id}`;
 
-  const getModActionsItems = () => {
+  const getModActionsItems = (disabled = false) => {
     const checkboxId = `ch-mods-${comment.id}`;
+    const cls = (str = '') => {
+      return 'dropdown-item' + (disabled ? ' is-disabled' : '') + (str ? ` ${str}` : '');
+    };
     return (
       <>
-        <div className="dropdown-item" onClick={() => setConfirmDeleteOpen(true, 'mods')}>
+        <div className={cls()} onClick={() => !disabled && setConfirmDeleteOpen(true, 'mods')}>
           Delete
         </div>
         {user.id === comment.userId && (
-          <div className="dropdown-item is-non-reactive">
+          <div className={cls('is-non-reactive')}>
             <div className="checkbox">
               <input
                 id={checkboxId}
                 type="checkbox"
                 checked={comment.userGroup === 'mods' ? true : false}
-                onChange={(e) => setUserGroup(e.target.checked ? 'mods' : 'normal')}
+                onChange={(e) => !disabled && setUserGroup(e.target.checked ? 'mods' : 'normal')}
+                disabled={disabled}
               />
               <label htmlFor={checkboxId}>Speaking officially</label>
             </div>
@@ -386,6 +412,9 @@ const Comment = ({
             </div>
           </div>
         )}
+        <div className="dropdown-item" onClick={() => alert(`ID: ${comment.id}`)}>
+          Comment ID
+        </div>
       </>
     );
   };
@@ -431,25 +460,14 @@ const Comment = ({
       </div>
       <div className="post-comment-body">
         <div className="post-comment-body-head">
-          {isUsernameHidden ? (
-            <div className="post-comment-username is-hidden">{username}</div>
-          ) : (
-            <UserLink
-              className={'post-comment-username' + (isUsernameHidden ? ' is-hidden' : '')}
-              username={username}
-              proPic={comment.author ? comment.author.proPic : null}
-              showProPic={isMobile && showAuthorProPic}
-              isSupporter={isAuthorSupporter}
-              noAtSign
-            />
-          )}
+          {renderAuthorUsername()}
           {isOP && (
             <div className="post-comment-head-item post-comment-is-op" title="Original poster">
               OP
             </div>
           )}
           <TimeAgo className="post-comment-head-item" time={comment.createdAt} short={isMobile} />
-          {!deleted && comment.userGroup !== 'normal' && (
+          {!purged && ['normal', 'null'].find((v) => v === comment.userGroup) === undefined && (
             <div className="post-comment-head-item post-comment-user-group">
               {`${toTitleCase(userGroupSingular(comment.userGroup, isMobile))}`}
             </div>
@@ -481,23 +499,23 @@ const Comment = ({
         )}
         {!isEditing && (
           <div
-            className={'post-comment-text' + (focused ? ' is-focused' : '')}
+            className={
+              'post-comment-text' +
+              (focused ? ' is-focused' : '') +
+              (deleted && !purged ? ' is-red' : '')
+            }
             onClick={handleCommentTextClick}
             style={{
               opacity: mutedUserHidden ? 0.8 : 1,
               cursor: mutedUserHidden ? 'pointer' : 'auto',
             }}
           >
-            {deleted ? (
-              <div className="post-comment-text-sign">{deletedText}</div>
-            ) : (
+            {!purged && (
               <ShowMoreBox showButton maxHeight="500px">
                 <MarkdownBody>{mutedUserHidden ? mutedText : comment.body}</MarkdownBody>
               </ShowMoreBox>
             )}
-            {isAdmin && (
-              <div style={{ opacity: 0.5, fontSize: 'var(--fs-xs)' }}>{`ID: ${comment.id}`}</div>
-            )}
+            {deleted && <div className="post-comment-text-sign">{deletedText}</div>}
           </div>
         )}
         {Diagnostics && (
@@ -600,16 +618,16 @@ const Comment = ({
                       Report
                     </div>
                   )}
-                  {userMod && (
-                    <>
-                      <div className="dropdown-item is-topic">Mod actions</div>
-                      {getModActionsItems()}
-                    </>
-                  )}
                   {isAdmin && (
                     <>
                       <div className="dropdown-item is-topic">Admin actions</div>
                       {getAdminActionsItems()}
+                    </>
+                  )}
+                  {(isAdmin || userMod) && (
+                    <>
+                      <div className="dropdown-item is-topic">Mod actions</div>
+                      {getModActionsItems(!userMod)}
                     </>
                   )}
                 </div>
@@ -632,17 +650,6 @@ const Comment = ({
               {showReport && (
                 <ReportModal target={comment} targetType="comment" disabled={isBanned} />
               )}
-              {userMod && (
-                <Dropdown
-                  target={
-                    <button className="button-text" style={{ color: 'var(--color-red)' }}>
-                      Mod actions
-                    </button>
-                  }
-                >
-                  <div className="dropdown-list">{getModActionsItems()}</div>
-                </Dropdown>
-              )}
               {isAdmin && (
                 <Dropdown
                   target={
@@ -652,6 +659,22 @@ const Comment = ({
                   }
                 >
                   <div className="dropdown-list">{getAdminActionsItems()}</div>
+                </Dropdown>
+              )}
+              {isAdmin && !userMod && (
+                <button className="button-text" style={{ color: 'rgb(var(--base-6))' }}>
+                  Mod actions
+                </button>
+              )}
+              {userMod && (
+                <Dropdown
+                  target={
+                    <button className="button-text" style={{ color: 'var(--color-red)' }}>
+                      Mod actions
+                    </button>
+                  }
+                >
+                  <div className="dropdown-list">{getModActionsItems()}</div>
                 </Dropdown>
               )}
             </>

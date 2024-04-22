@@ -166,7 +166,7 @@ func GetMutedUsers(ctx context.Context, db *sql.DB, user uid.ID, fillUsers bool)
 	}
 
 	if fillUsers {
-		users, err := GetUsersIDs(ctx, db, ids, nil)
+		users, err := GetUsersByIDs(ctx, db, ids, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -226,6 +226,12 @@ func UnmuteCommunity(ctx context.Context, db *sql.DB, user, community uid.ID) er
 }
 
 func MuteUser(ctx context.Context, db *sql.DB, user, mutedUser uid.ID) error {
+	if is, err := UserDeleted(db, mutedUser); err != nil {
+		return err
+	} else if is {
+		return ErrUserDeleted
+	}
+
 	_, err := db.ExecContext(ctx, "INSERT INTO muted_users (user_id, muted_user_id) VALUES (?, ?)", user, mutedUser)
 	if err != nil && msql.IsErrDuplicateErr(err) {
 		return nil

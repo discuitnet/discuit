@@ -670,10 +670,32 @@ type UserFeedResultSet struct {
 	Next  *uid.ID        `json:"next"`
 }
 
-func GetUserFeed(ctx context.Context, db *sql.DB, viewer *uid.ID, userID uid.ID, limit int, next *uid.ID) (*UserFeedResultSet, error) {
-	var args []any
+func GetUserFeed(ctx context.Context, db *sql.DB, viewer *uid.ID, userID uid.ID, filter string, limit int, next *uid.ID) (*UserFeedResultSet, error) {
+	if !(filter == "posts" || filter == "comments" || filter == "") {
+		return nil, httperr.NewBadRequest("invalid-filter", "filter must be one of 'posts' or 'comments' or it must be empty")
+	}
+
 	query := "SELECT target_id, target_type FROM posts_comments WHERE user_id = ? "
-	args = append(args, userID)
+	args := []any{userID}
+
+	if filter != "" {
+		query += "AND target_type = ? "
+		t := postsCommentsTypePosts
+		if filter == "comments" {
+			t = postsCommentsTypeComments
+		}
+		args = append(args, t)
+	}
+
+	// Show posts and comments deleted by someone other than their author to
+	// admins. If the viewer is not an admin, hide them entirely (even if the
+	// comment content is purged).
+	if is, err := IsAdmin(db, viewer); err != nil {
+		return nil, err
+	} else if !is {
+		query += "AND deleted = false "
+	}
+
 	if next != nil {
 		query += "AND target_id <= ? "
 		args = append(args, *next)

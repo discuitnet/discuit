@@ -39,6 +39,9 @@
                 align-items: center;
                 .user-card-username {
                     margin-left: var(--gap);
+                    &.is-red {
+                        color: var(--color-red);
+                    }
                 }
             }
             .user-card-username {
@@ -93,6 +96,9 @@
                 margin-left: 0;
             }
         }
+    }
+    .select-bar {
+        margin-left: var(--post-card-votes-margin);
     }
     .page-user-summary {
         .user-summary-item {

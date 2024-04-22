@@ -3,10 +3,10 @@ import PropTypes from 'prop-types';
 import { ButtonClose } from '../../components/Button';
 import Modal from '../../components/Modal';
 
-const PostDeleteModal = ({ open, onClose, onDelete, postType }) => {
+const PostDeleteModal = ({ open, onClose, onDelete, postType, canDeleteContent = false }) => {
   const [deleteContent, setDeleteContent] = useState(false);
 
-  const showCheckbox = postType === 'image' || postType === 'link';
+  const showCheckbox = canDeleteContent && (postType === 'image' || postType === 'link');
   let label = 'Delete ';
   if (postType === 'image') label += 'image too.';
   else if (postType === 'link') label += 'link too.';
@@ -48,6 +48,7 @@ PostDeleteModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   postType: PropTypes.string.isRequired,
+  canDeleteContent: PropTypes.bool,
 };
 
 export const PostContentDeleteModal = ({ open, onClose, onDelete, postType }) => {

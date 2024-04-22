@@ -108,6 +108,7 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/_user", s.withHandler(s.getLoggedInUser)).Methods("GET")
 
 	r.Handle("/api/users/{username}", s.withHandler(s.getUser)).Methods("GET")
+	r.Handle("/api/users/{username}", s.withHandler(s.deleteUser)).Methods("DELETE")
 	r.Handle("/api/users/{username}/feed", s.withHandler(s.getUsersFeed)).Methods("GET")
 	r.Handle("/api/users/{username}/pro_pic", s.withHandler(s.handleUserProPic)).Methods("POST", "DELETE")
 	r.Handle("/api/users/{username}/badges", s.withHandler(s.addBadge)).Methods("POST")
@@ -170,7 +171,6 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/_report", s.withHandler(s.report)).Methods("POST")
 
 	r.Handle("/api/_settings", s.withHandler(s.updateUserSettings)).Methods("POST")
-	r.Handle("/api/_settings", s.withHandler(s.deleteUser)).Methods("DELETE")
 
 	r.Handle("/api/_admin", s.withHandler(s.adminActions)).Methods("POST")
 
@@ -408,7 +408,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		{name: "user-agent", val: r.Header.Get("User-Agent")},
 	}
 	s.httpLogger.Println(constructLogLine(logFields, ""))
-	if s.config.IsDevelopment {
+	if s.config.IsDevelopment && os.Getenv("NO_HTTP_LOG_LINE") != "true" {
 		logFields[len(logFields)-1].off = true
 		var color string
 		if took > time.Millisecond*10 {
@@ -707,7 +707,15 @@ func (s *Server) insertMetaTags(doc *html.Node, r *http.Request) {
 			username := list[0] // with @
 			user, err := core.GetUserByUsername(ctx, s.db, username[1:], nil)
 			if err == nil {
-				appendTitle("@"+user.Username, " on "+s.config.SiteName)
+				var username string
+				if user.IsGhost() {
+					user.UnsetToGhost()
+					username = user.Username
+					user.SetToGhost()
+				} else {
+					username = user.Username
+				}
+				appendTitle("@"+username, " on "+s.config.SiteName)
 				appendDescription(username + "'s profile.")
 			}
 		} else {
@@ -896,7 +904,7 @@ func (s *Server) logoutUser(u *core.User, ses *sessions.Session, w http.Response
 	return err
 }
 
-func (s *Server) logoutAllSessionsOfUser(u *core.User) error {
+func (s *Server) LogoutAllSessionsOfUser(u *core.User) error {
 	conn := s.redisPool.Get()
 	defer conn.Close()
 

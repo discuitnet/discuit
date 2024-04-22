@@ -216,6 +216,13 @@ func removeExcessNotifications(ctx context.Context, db *sql.DB, user uid.ID) (n 
 
 // CreateNotification adds a new notification to user's notifications stack.
 func CreateNotification(ctx context.Context, db *sql.DB, user uid.ID, Type NotificationType, notif notification) error {
+	if is, err := UserDeleted(db, user); err != nil {
+		return err
+	} else if is {
+		// Exit silently if the user is deleted.
+		return nil
+	}
+
 	data, err := json.Marshal(notif)
 	if err != nil {
 		return err

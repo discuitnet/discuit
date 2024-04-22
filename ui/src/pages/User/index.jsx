@@ -23,30 +23,62 @@ import PageLoading from '../../components/PageLoading';
 import Feed from '../../components/Feed';
 import NotFound from '../NotFound';
 import { Helmet } from 'react-helmet-async';
-import { useHistory } from 'react-router-dom';
-import { Link } from 'react-router-dom/cjs/react-router-dom.min';
+import { Link, useHistory, useLocation } from 'react-router-dom';
 import CommunityLink from '../../components/PostCard/CommunityLink';
 import { useMuteUser } from '../../hooks';
 import UserProPic from '../../components/UserProPic';
-import Badge from './Badge';
 import BadgesList from './BadgesList';
+import SelectBar from '../../components/SelectBar';
+
+function formatFilterText(filter = '') {
+  filter.toLowerCase();
+  if (filter === 'posts' || filter === 'comments') {
+    return filter;
+  }
+  return 'overview';
+}
 
 const User = ({ username }) => {
   const dispatch = useDispatch();
   const history = useHistory();
 
   const viewer = useSelector((state) => state.main.user);
+  const viewerAdmin = viewer ? viewer.isAdmin : false;
   const loggedIn = viewer !== null;
 
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const feedFilter = formatFilterText(queryParams.get('filter') ?? '');
+  const selectBarOptions = [
+    { text: 'Overview', id: 'overview', queryParam: '' },
+    { text: 'Posts', id: 'posts', queryParam: 'posts' },
+    { text: 'Comments', id: 'comments', queryParam: 'comments' },
+  ];
+  for (let i = 0; i < selectBarOptions.length; i++) {
+    const param = selectBarOptions[i].queryParam;
+    let search = '';
+    if (param !== '') {
+      queryParams.set('filter', param);
+      search = queryParams.toString();
+    }
+    selectBarOptions[i].to = `${location.pathname}?${search}`;
+  }
+  const handleSelectBarChange = (id) => {
+    if (feedFilter !== id) {
+      history.replace(selectBarOptions.filter((item) => item.id === id)[0].to);
+    }
+  };
+
   const isUserFeedAvailable = (user, viewer) => {
-    return !user.isBanned || (user.isBanned && viewer !== null && viewer.isAdmin);
+    return !user.isBanned || (user.isBanned && viewer !== null && viewerAdmin);
   };
 
   const user = useSelector(selectUser(username));
   const [userLoading, setUserLoading] = useState(user ? 'loaded' : 'loading');
 
   const url = `/api/users/${username}`;
-  const feedUrl = `${url}/feed`;
+  const feedUrl = `${url}/feed?filter=${feedFilter === 'overview' ? '' : feedFilter}`;
+
   const feed = useSelector(selectFeed(feedUrl));
   const setFeed = (res) => {
     const items = res.items ?? [];
@@ -61,9 +93,11 @@ const User = ({ username }) => {
     });
     dispatch(feedUpdated(feedUrl, newItems, next));
   };
+
   const [feedLoading, setFeedLoading] = useState(feed ? 'loaded' : 'loading');
   useEffect(() => {
     if (feed && user) {
+      setFeedLoading('loaded');
       return;
     }
     setFeedLoading('loading');
@@ -82,23 +116,25 @@ const User = ({ username }) => {
         dispatch(userAdded(user));
         setUserLoading('loaded');
         if (isUserFeedAvailable(user, viewer)) {
-          const feed = await mfetchjson(`${url}/feed`);
+          const feed = await mfetchjson(feedUrl);
           setFeed(feed);
           setFeedLoading('loaded');
         }
-        if (username !== user.username) history.replace(`/@${user.username}`);
+        if (username !== user.username && username.toLowerCase() === user.username.toLowerCase()) {
+          history.replace(`/@${user.username}`);
+        }
       } catch (error) {
         dispatch(snackAlertError(error));
       }
     })();
-  }, [username]);
+  }, [username, url, feedUrl]);
 
   const [feedReloading, setFeedReloading] = useState(false);
   const fetchNextItems = async () => {
     if (feedReloading) return;
     try {
       setFeedReloading(true);
-      const res = await mfetchjson(`${url}/feed?next=${feed.next}`);
+      const res = await mfetchjson(`${feedUrl}&next=${feed.next}`);
       setFeed(res);
     } catch (error) {
       dispatch(snackAlertError(error));
@@ -168,9 +204,6 @@ const User = ({ username }) => {
     setTab('content');
   }, [location.pathname]);
 
-  const [feedFilter, setFeedFilter] = useState('overview');
-  const handleFilterChange = (id) => setFeedFilter(id);
-
   const { isMuted, toggleMute } = useMuteUser(
     user ? { userId: user.id, username: user.username } : {}
   );
@@ -183,19 +216,30 @@ const User = ({ username }) => {
     return <PageLoading />;
   }
 
-  const hasFeed = isUserFeedAvailable(user, viewer);
-  if (!hasFeed) {
-    // User is banned and the viewer is no admin
+  if (user.deleted && !viewerAdmin) {
     return (
       <div className="page-content page-notfound wrap">
-        <h1>@{user.username} account suspended.</h1>
+        <Helmet>
+          <title>{`@${user.username}`}</title>
+        </Helmet>
+        <h1>Account deleted.</h1>
         <Link to="/">Go home</Link>
       </div>
     );
   }
 
-  if (!feed) {
-    return <PageLoading />;
+  const hasFeed = isUserFeedAvailable(user, viewer);
+  if (!hasFeed) {
+    // User is banned and the viewer is no admin
+    return (
+      <div className="page-content page-notfound wrap">
+        <Helmet>
+          <title>{`@${user.username}`}</title>
+        </Helmet>
+        <h1>Account suspended.</h1>
+        <Link to="/">Go home</Link>
+      </div>
+    );
   }
 
   const handleRenderItem = (item) => {
@@ -298,7 +342,7 @@ const User = ({ username }) => {
           <div className="card-list">
             {user.moddingList &&
               user.moddingList.map((community) => (
-                <div className="card-list-item">
+                <div className="card-list-item" key={community.name}>
                   <CommunityLink name={community.name} proPic={community.proPic} />
                 </div>
               ))}
@@ -346,7 +390,13 @@ const User = ({ username }) => {
           <div className="user-card-top">
             <div className="user-card-top-left">
               <UserProPic username={username} proPic={user.proPic} size="large" />
-              <h1 className={'user-card-username' + (hasSupporterBadge ? ' is-supporter' : '')}>
+              <h1
+                className={
+                  'user-card-username' +
+                  (hasSupporterBadge ? ' is-supporter' : '') +
+                  (user.deleted ? ' is-red' : '')
+                }
+              >
                 @{username}
                 {user.isAdmin && <span className="user-card-is-admin">Admin</span>}
               </h1>
@@ -366,10 +416,13 @@ const User = ({ username }) => {
           )}
           <div className="user-card-badges is-m">{renderBadgesList()}</div>
           <div className="user-card-joined">Joined on {dateString1(user.createdAt)}.</div>
-          {loggedIn && (
+          {user.deleted && (
+            <div className="user-card-joined">Account deleted on {dateString1(user.deletedAt)}</div>
+          )}
+          {loggedIn && !user.deleted && (
             <div className="user-card-buttons">
               <button onClick={toggleMute}>{isMuted ? 'Unmute user' : 'Mute user'}</button>
-              {viewer.isAdmin && (
+              {viewerAdmin && (
                 <>
                   <button className="button-red" onClick={handleBanUser}>
                     {user.isBanned ? `Unban user` : 'Ban user'}
@@ -379,7 +432,7 @@ const User = ({ username }) => {
                   </button>
                 </>
               )}
-              {viewer.isAdmin && user.isBanned && (
+              {viewerAdmin && user.isBanned && (
                 <div style={{ marginTop: '1rem' }}>
                   User banned on: {new Date(user.bannedAt).toLocaleString()}
                 </div>
@@ -401,19 +454,13 @@ const User = ({ username }) => {
             </button>
           </div>
         </header>
-        {/*
-        <SelectBar
-          name="Feed"
-          options={[
-            { text: 'Overview', id: 'overview' },
-            { text: 'Posts', id: 'posts' },
-            { text: 'Comments', id: 'comments' },
-          ]}
-          value={feedFilter}
-          onChange={handleFilterChange}
-        />
-        */}
         <div className="page-user-feed">
+          <SelectBar
+            name=""
+            options={selectBarOptions}
+            value={feedFilter}
+            onChange={handleSelectBarChange}
+          />
           {tab === 'content' && (
             <Feed
               loading={feedLoading !== 'loaded'}

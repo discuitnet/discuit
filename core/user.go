@@ -2,12 +2,16 @@ package core
 
 import (
 	"context"
+	"crypto/sha1"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/discuitnet/discuit/internal/httperr"
@@ -42,6 +46,16 @@ const (
 func (u UserGroup) Valid() bool {
 	_, err := u.MarshalText()
 	return err == nil
+}
+
+// String implements fmt.Stringer interface. It returns the value returned by
+// u.MarshalText (if u.MarshalText returns an error, it returns "[error]").
+func (u UserGroup) String() string {
+	b, err := u.MarshalText()
+	if err != nil {
+		return "[error]"
+	}
+	return string(b)
 }
 
 // MarshalText implements encoding.TextMarshaler interface.
@@ -100,6 +114,7 @@ type User struct {
 	NumComments      int             `json:"noComments"`
 	LastSeen         time.Time       `json:"-"` // accurate to within 5 minutes
 	CreatedAt        time.Time       `json:"createdAt"`
+	Deleted          bool            `json:"deleted"`
 	DeletedAt        msql.NullTime   `json:"deletedAt,omitempty"`
 
 	// User preferences.
@@ -121,6 +136,14 @@ type User struct {
 
 	// The list of communities the user moderates.
 	ModdingList []*Community `json:"moddingList"`
+
+	// The following values are used only by SetToGhost and UnsetToGhost
+	// methods.
+	preGhostUsername  string
+	preGhostID        uid.ID
+	preGhostCreatedAt time.Time
+	preGhostDeletedAt msql.NullTime
+	preGhostBadges    Badges
 }
 
 // IsUsernameValid returns nil if name only consists
@@ -221,7 +244,7 @@ func buildSelectUserQuery(where string) string {
 }
 
 func GetUser(ctx context.Context, db *sql.DB, user uid.ID, viewer *uid.ID) (*User, error) {
-	rows, err := db.QueryContext(ctx, buildSelectUserQuery("WHERE users.id = ? AND users.deleted_at IS NULL"), user)
+	rows, err := db.QueryContext(ctx, buildSelectUserQuery("WHERE users.id = ?"), user)
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +256,7 @@ func GetUser(ctx context.Context, db *sql.DB, user uid.ID, viewer *uid.ID) (*Use
 	return users[0], err
 }
 
-func GetUsersIDs(ctx context.Context, db *sql.DB, IDs []uid.ID, viewer *uid.ID) ([]*User, error) {
+func GetUsersByIDs(ctx context.Context, db *sql.DB, IDs []uid.ID, viewer *uid.ID) ([]*User, error) {
 	if len(IDs) == 0 {
 		return nil, nil
 	}
@@ -242,7 +265,7 @@ func GetUsersIDs(ctx context.Context, db *sql.DB, IDs []uid.ID, viewer *uid.ID) 
 		args[i] = IDs[i]
 	}
 
-	query := buildSelectUserQuery(fmt.Sprintf("WHERE users.id IN %s AND users.deleted_at IS NULL", msql.InClauseQuestionMarks(len(IDs))))
+	query := buildSelectUserQuery(fmt.Sprintf("WHERE users.id IN %s", msql.InClauseQuestionMarks(len(IDs))))
 	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, err
@@ -255,7 +278,7 @@ func GetUsersIDs(ctx context.Context, db *sql.DB, IDs []uid.ID, viewer *uid.ID) 
 }
 
 func GetUserByUsername(ctx context.Context, db *sql.DB, username string, viewer *uid.ID) (*User, error) {
-	rows, err := db.QueryContext(ctx, buildSelectUserQuery("WHERE users.username_lc = ? AND users.deleted_at IS NULL"), strings.ToLower(username))
+	rows, err := db.QueryContext(ctx, buildSelectUserQuery("WHERE users.username_lc = ?"), strings.ToLower(username))
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +290,7 @@ func GetUserByUsername(ctx context.Context, db *sql.DB, username string, viewer 
 }
 
 func GetUserByEmail(ctx context.Context, db *sql.DB, email string, viewer *uid.ID) (*User, error) {
-	rows, err := db.QueryContext(ctx, buildSelectUserQuery("WHERE users.email = ? AND users.deleted_at IS NULL"), email)
+	rows, err := db.QueryContext(ctx, buildSelectUserQuery("WHERE users.email = ?"), email)
 	if err != nil {
 		return nil, err
 	}
@@ -319,20 +342,24 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 		if err := rows.Scan(dests...); err != nil {
 			return nil, err
 		}
+
+		u.Deleted = u.DeletedAt.Valid
+		u.preGhostUsername = u.Username
+		u.preGhostID = u.ID
+		u.preGhostCreatedAt = u.CreatedAt
+		u.preGhostDeletedAt = u.DeletedAt
+		u.preGhostBadges = u.Badges
+
 		if u.BannedAt.Valid {
 			u.Banned = true
 		}
+
 		if proPic.ID != nil {
 			proPic.PostScan()
 			setCommunityProPicCopies(proPic)
 			u.ProPic = proPic
 		}
-		if viewer != nil && *viewer == u.ID {
-			if u.Email.Valid {
-				u.EmailPublic = new(string)
-				*u.EmailPublic = u.Email.String
-			}
-		}
+
 		users = append(users, u)
 	}
 
@@ -360,6 +387,26 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 
 	if err := fetchBadges(db, users...); err != nil {
 		return nil, fmt.Errorf("fetching badges: %w", err)
+	}
+
+	viewerAdmin, err := IsAdmin(db, viewer)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, user := range users {
+		// Hide the users' email from everyone except the user and admins.
+		if viewerAdmin || (viewer != nil && *viewer == user.ID) {
+			if user.Email.Valid {
+				user.EmailPublic = new(string)
+				*user.EmailPublic = user.Email.String
+			}
+		}
+		// Set the user info of deleted users to the ghost user for everyone
+		// except the admins.
+		if user.Deleted && !viewerAdmin {
+			user.SetToGhost()
+		}
 	}
 
 	return users, nil
@@ -489,36 +536,14 @@ func MatchLoginCredentials(ctx context.Context, db *sql.DB, username, password s
 		return nil, err
 	}
 
+	if user.Deleted {
+		return nil, ErrWrongPassword
+	}
+
 	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), trimPassword([]byte(password))); err != nil {
 		return nil, ErrWrongPassword
 	}
 	return user, nil
-}
-
-// MakeAdmin makes the user an admin of the site. If isAdmin is false admin user
-// is removed as an admin.
-func MakeAdmin(ctx context.Context, db *sql.DB, user string, isAdmin bool) (*User, error) {
-	u, err := GetUserByUsername(ctx, db, user, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if isAdmin {
-		if u.Admin {
-			return nil, httperr.NewBadRequest("already-admin", "User is already an admin.")
-		}
-	} else {
-		if !u.Admin {
-			return nil, httperr.NewBadRequest("already-not-admin", "User is already not an admin.")
-		}
-	}
-
-	if _, err = db.ExecContext(ctx, "UPDATE users SET is_admin = ? WHERE id = ?", isAdmin, u.ID); err != nil {
-		return nil, err
-	}
-
-	u.Admin = isAdmin
-	return u, nil
 }
 
 // incrementUserPoints adds amount to user's points.
@@ -529,6 +554,10 @@ func incrementUserPoints(ctx context.Context, db *sql.DB, user uid.ID, amount in
 
 // Update updates the user's updatable fields.
 func (u *User) Update(ctx context.Context) error {
+	if u.Deleted {
+		return ErrUserDeleted
+	}
+
 	u.About.String = utils.TruncateUnicodeString(u.About.String, maxUserProfileAboutLength)
 	_, err := u.db.ExecContext(ctx, `
 	UPDATE users SET
@@ -553,22 +582,122 @@ func (u *User) Update(ctx context.Context) error {
 	return err
 }
 
+func (u *User) IsGhost() bool {
+	return u.Username == "ghost"
+}
+
+// SetToGhost sets u.username to "ghost" and u.ID to zero, if the user is
+// deleted.
+func (u *User) SetToGhost() {
+	if u.Deleted {
+		u.Username = "ghost"
+		u.UsernameLowerCase = "ghost"
+		u.ID = uid.ID{}
+		u.CreatedAt = time.Time{}
+		u.DeletedAt = msql.NewNullTime(time.Time{})
+		u.Badges = make(Badges, 0)
+	}
+}
+
+// UnsetToGhost is the inverse of u.SetToGhost.
+func (u *User) UnsetToGhost() {
+	if u.Deleted {
+		u.Username = u.preGhostUsername
+		u.UsernameLowerCase = strings.ToLower(u.Username)
+		u.ID = u.preGhostID
+		u.CreatedAt = u.preGhostCreatedAt
+		u.DeletedAt = u.preGhostDeletedAt
+		u.Badges = u.preGhostBadges
+	}
+}
+
+// Delete deletes a user. Make sure that the user is logged out on all sessions
+// before calling this function.
 func (u *User) Delete(ctx context.Context) error {
+	if u.Deleted {
+		return ErrUserDeleted
+	}
+	if u.Banned {
+		return errors.New("cannot delete banned account (unban user first and then continue)")
+	}
+
 	return msql.Transact(ctx, u.db, func(tx *sql.Tx) (err error) {
-		now := time.Now()
-		if _, err := tx.ExecContext(ctx, "UPDATE users SET deleted_at = ? WHERE id = ?", now, u.ID); err != nil {
+		// Remove the user's membership of all communities the user is a member of.
+		if _, err := tx.ExecContext(ctx, `
+			UPDATE communities 
+			SET no_members = no_members - 1 
+			WHERE id IN (SELECT community_id FROM community_members WHERE user_id = ?)`, u.ID); err != nil {
 			return err
 		}
 		if _, err := tx.ExecContext(ctx, "DELETE FROM community_members WHERE user_id = ?", u.ID); err != nil {
 			return err
 		}
-		// TODO: Might have too many comments.
-		if _, err := tx.ExecContext(ctx, "UPDATE comments SET user_deleted = TRUE, username = ? WHERE user_id = ?", "[deleted]", u.ID); err != nil {
+
+		// Remove the user from all mod positions the user holds.
+		if _, err := tx.ExecContext(ctx, "DELETE FROM community_mods WHERE user_id = ?", u.ID); err != nil {
 			return err
 		}
+
+		// Unban the user from all communities.
+		if _, err := tx.ExecContext(ctx, "DELETE FROM community_banned WHERE user_id = ?", u.ID); err != nil {
+			return err
+		}
+
+		// Set the author deleted column of the comments.
+		if _, err := tx.ExecContext(ctx, "UPDATE comments SET user_deleted = TRUE WHERE user_id = ?", u.ID); err != nil {
+			return err
+		}
+
+		// Delete the user's notifications.
 		if _, err := tx.ExecContext(ctx, "DELETE FROM notifications WHERE user_id = ?", u.ID); err != nil {
 			return err
 		}
+
+		// Delete both the user's muted users and muted by's.
+		if _, err := tx.ExecContext(ctx, "DELETE FROM muted_users WHERE user_id = ? OR muted_user_id = ?", u.ID, u.ID); err != nil {
+			return err
+		}
+
+		// Delete the user's muted communities.
+		if _, err := tx.ExecContext(ctx, "DELETE FROM muted_communities WHERE user_id = ?", u.ID); err != nil {
+			return err
+		}
+
+		// Delete the user's web push subscriptions.
+		if _, err := tx.ExecContext(ctx, "DELETE FROM web_push_subscriptions WHERE user_id = ?", u.ID); err != nil {
+			return err
+		}
+
+		// Delete the user's profile picture
+		if err := u.DeleteProPicTx(ctx, tx); err != nil {
+			return err
+		}
+
+		// Finally, set the deleted state of the user.
+		now := time.Now()
+		q := `UPDATE users SET 
+				email = ?, 
+				email_confirmed_at = ?,
+				password = ?, 
+				about_me = ?, 
+				is_admin = ?,
+				notifications_new_count = ?,
+				deleted_at = ? 
+			  WHERE id = ?`
+		args := []any{
+			nil,
+			nil,
+			utils.GenerateStringID(48),
+			nil,
+			false,
+			0,
+			now,
+			u.ID,
+		}
+		if _, err := tx.ExecContext(ctx, q, args...); err != nil {
+			return err
+		}
+
 		u.DeletedAt = msql.NewNullTime(now)
 		u.NumNewNotifications = 0
 		return nil
@@ -580,6 +709,10 @@ func (u *User) Delete(ctx context.Context) error {
 //
 // Note: An admin can be banned.
 func (u *User) Ban(ctx context.Context) error {
+	if u.Deleted {
+		return ErrUserDeleted
+	}
+
 	t := time.Now()
 	_, err := u.db.ExecContext(ctx, "UPDATE users SET banned_at = ? WHERE id = ?", t, u.ID)
 	if err == nil {
@@ -590,6 +723,10 @@ func (u *User) Ban(ctx context.Context) error {
 }
 
 func (u *User) Unban(ctx context.Context) error {
+	if u.Deleted {
+		return ErrUserDeleted
+	}
+
 	_, err := u.db.ExecContext(ctx, "UPDATE users SET banned_at = NULL WHERE id = ?", u.ID)
 	return err
 }
@@ -609,6 +746,7 @@ func (u *User) incrementPoints(ctx context.Context, amount int) error {
 }
 
 func (u *User) ChangePassword(ctx context.Context, previousPass, newPass string) error {
+	// MatchLoginCredentials checks for deleted account status.
 	if _, err := MatchLoginCredentials(ctx, u.db, u.Username, previousPass); err != nil {
 		return err
 	}
@@ -674,6 +812,9 @@ func (u *User) GetBannedFromCommunities(ctx context.Context) ([]uid.ID, error) {
 // Saw updates u.LastSeen to current time. It also updates the IP address of the
 // user.
 func (u *User) Saw(ctx context.Context, userIP string) error {
+	if u.Deleted {
+		return ErrUserDeleted
+	}
 	err := UserSeen(ctx, u.db, u.ID, userIP)
 	if err != nil {
 		u.LastSeen = time.Now()
@@ -684,7 +825,7 @@ func (u *User) Saw(ctx context.Context, userIP string) error {
 // UserSeen updates user's LastSeen to current time. It also updates the IP
 // address of the user.
 func UserSeen(ctx context.Context, db *sql.DB, user uid.ID, userIP string) error {
-	_, err := db.ExecContext(ctx, "UPDATE users SET last_seen = ?, last_seen_ip = ? WHERE id = ?", time.Now(), userIP, user)
+	_, err := db.ExecContext(ctx, "UPDATE users SET last_seen = ?, last_seen_ip = ? WHERE id = ? AND deleted_at IS NULL", time.Now(), userIP, user)
 	return err
 }
 
@@ -724,6 +865,10 @@ func (u *User) DeleteProPic(ctx context.Context) error {
 }
 
 func (u *User) UpdateProPic(ctx context.Context, image []byte) error {
+	if u.Deleted {
+		return ErrUserDeleted
+	}
+
 	var newImageID uid.ID
 	err := msql.Transact(ctx, u.db, func(tx *sql.Tx) error {
 		if err := u.DeleteProPicTx(ctx, tx); err != nil {
@@ -776,6 +921,10 @@ func badgeTypeInt(db *sql.DB, badgeType string) (int, error) {
 // AddBadge addes new badge to u. Also, u.Badges is refetched upon a successful
 // add.
 func (u *User) AddBadge(ctx context.Context, badgeType string) error {
+	if u.Deleted {
+		return ErrUserDeleted
+	}
+
 	badgeTypeInt, err := badgeTypeInt(u.db, badgeType)
 	if err != nil {
 		return err
@@ -793,6 +942,10 @@ func (u *User) AddBadge(ctx context.Context, badgeType string) error {
 }
 
 func (u *User) RemoveBadgesByType(badgeType string) error {
+	if u.Deleted {
+		return ErrUserDeleted
+	}
+
 	badgeTypeInt, err := badgeTypeInt(u.db, badgeType)
 	if err != nil {
 		return err
@@ -802,6 +955,10 @@ func (u *User) RemoveBadgesByType(badgeType string) error {
 }
 
 func (u *User) RemoveBadge(id int) error {
+	if u.Deleted {
+		return ErrUserDeleted
+	}
+
 	_, err := u.db.Exec("DELTE FROM user_badges WHERE id = ? and user_id = ?", id, u.ID)
 	return err
 }
@@ -883,4 +1040,141 @@ func fetchBadges(db *sql.DB, users ...*User) error {
 	}
 
 	return nil
+}
+
+type adminsCacheStore struct {
+	mu          sync.RWMutex // guards following
+	admins      []uid.ID
+	usernames   []string // of the admins
+	lastFetched time.Time
+}
+
+func (ac *adminsCacheStore) isAdmin(db *sql.DB, user uid.ID) (bool, error) {
+	ac.mu.RLock()
+	shouldRefetch := false
+	if time.Since(ac.lastFetched) > time.Minute*5 {
+		shouldRefetch = true
+	}
+	ac.mu.RUnlock()
+
+	if shouldRefetch {
+		if err := ac.refresh(db); err != nil {
+			return false, err
+		}
+	}
+
+	ac.mu.RLock()
+	defer ac.mu.RUnlock()
+	return slices.Index(ac.admins, user) != -1, nil
+}
+
+func (ac *adminsCacheStore) refresh(db *sql.DB) error {
+	rows, err := db.Query("select id, username from users where users.is_admin = true")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var admins []uid.ID
+	var usernames []string
+	for rows.Next() {
+		var id uid.ID
+		var username string
+		if err = rows.Scan(&id, &username); err != nil {
+			return err
+		}
+		admins = append(admins, id)
+		usernames = append(usernames, username)
+	}
+	if err = rows.Err(); err != nil {
+		return err
+	}
+
+	ac.mu.Lock()
+	defer ac.mu.Unlock()
+
+	ac.admins = admins
+	ac.usernames = usernames
+	ac.lastFetched = time.Now()
+	return nil
+}
+
+var adminsCache = &adminsCacheStore{}
+
+// IsAdmin reports whether user is an admin. User can be nil, in which case this
+// function returns false.
+func IsAdmin(db *sql.DB, user *uid.ID) (bool, error) {
+	if user == nil {
+		return false, nil
+	}
+	return adminsCache.isAdmin(db, *user)
+}
+
+// MakeAdmin makes the user an admin of the site. If isAdmin is false admin user
+// is removed as an admin.
+func MakeAdmin(ctx context.Context, db *sql.DB, user string, isAdmin bool) (*User, error) {
+	u, err := GetUserByUsername(ctx, db, user, nil)
+	if err != nil {
+		return nil, err
+	}
+	if u.Deleted {
+		return nil, ErrUserDeleted
+	}
+
+	if isAdmin {
+		if u.Admin {
+			return nil, httperr.NewBadRequest("already-admin", "User is already an admin.")
+		}
+	} else {
+		if !u.Admin {
+			return nil, httperr.NewBadRequest("already-not-admin", "User is already not an admin.")
+		}
+	}
+
+	// Note: Duplicate the changes to the User.Delete function when making changes to this SQL query.
+	if _, err = db.ExecContext(ctx, "UPDATE users SET is_admin = ? WHERE id = ?", isAdmin, u.ID); err != nil {
+		return nil, err
+	}
+
+	if err := adminsCache.refresh(db); err != nil {
+		fmt.Printf("Error refreshing admins list cache: %v", err)
+	}
+
+	u.Admin = isAdmin
+	return u, nil
+}
+
+// CreateGhostUser creates the ghost user, if the ghost user isn't already
+// created. The ghost user is the user with the username ghost that takes, so to
+// speak, the place of all deleted users.
+func CreateGhostUser(db *sql.DB) error {
+	var username string
+	if err := db.QueryRow("SELECT username_lc FROM users WHERE username_lc = ?", "ghost").Scan(&username); err != nil {
+		if err == sql.ErrNoRows {
+			// Ghost user not found; create one.
+			_, createErr := RegisterUser(context.Background(), db, "ghost", "", utils.GenerateStringID(48))
+			return createErr
+		}
+		return err
+	}
+	return nil
+}
+
+func CalcGhostUserID(user uid.ID, unique string) string {
+	b := make([]byte, len(user)+len(unique))
+	copy(b, user[:])
+	copy(b[len(user):], []byte(unique))
+	sum := sha1.Sum(b)
+	return hex.EncodeToString(sum[:])[:8]
+}
+
+func UserDeleted(db *sql.DB, user uid.ID) (bool, error) {
+	var deletedAt msql.NullTime
+	if err := db.QueryRow("SELECT deleted_at FROM users WHERE id = ?", user).Scan(&deletedAt); err != nil {
+		if err == sql.ErrNoRows {
+			return false, errUserNotFound
+		}
+		return false, err
+	}
+	return deletedAt.Valid, nil
 }

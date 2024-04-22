@@ -91,6 +91,7 @@ type Post struct {
 
 	AuthorID       uid.ID `json:"userId"`
 	AuthorUsername string `json:"username"`
+	AuthorGhostID  string `json:"userGhostId,omitempty"`
 
 	// In which capacity (as mod, admin, or normal user) the post was posted in.
 	PostedAs UserGroup `json:"userGroup"`
@@ -114,9 +115,9 @@ type Post struct {
 
 	Image *images.Image `json:"image"`
 
-	link      *postLink     `json:"-"`              // what's saved to the DB
-	Link      *PostLink     `json:"link,omitempty"` // what's sent to the client
-	LinkImage *images.Image `json:"-"`
+	link *postLink `json:"-"` // what's saved to the DB
+
+	Link *PostLink `json:"link,omitempty"` // what's sent to the client
 
 	Locked   bool       `json:"locked"`
 	LockedBy uid.NullID `json:"lockedBy"`
@@ -270,6 +271,7 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 
 	var posts []*Post
 	loggedIn := viewer != nil
+
 	for rows.Next() {
 		post := &Post{db: db}
 		var linkBytes []byte
@@ -321,8 +323,7 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 			dest = append(dest, &post.ViewerVoted, &post.ViewerVotedUp)
 		}
 
-		err := rows.Scan(dest...)
-		if err != nil {
+		if err := rows.Scan(dest...); err != nil {
 			return nil, fmt.Errorf("scanning post rows.Scan: %w", err)
 		}
 
@@ -338,23 +339,18 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 		}
 		if linkBytes != nil {
 			dbLink := &postLink{}
-			if err = json.Unmarshal(linkBytes, dbLink); err != nil {
+			if err := json.Unmarshal(linkBytes, dbLink); err != nil {
 				return nil, fmt.Errorf("unmarshaling linkBytes: %w", err)
 			}
 			link := dbLink.PostLink()
 			if linkImage.ID != nil {
 				link.Image = linkImage
-				post.LinkImage = linkImage
 			}
 			post.link = dbLink
 			post.Link = link
 			post.Link.SetImageCopies()
 		}
-		if post.DeletedContent {
-			// linkBytes = nil
-			post.Link = nil
-			post.Image = nil
-		}
+
 		posts = append(posts, post)
 	}
 
@@ -393,21 +389,35 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 		return nil, err
 	}
 
-	if err := populatePostAuthors(ctx, db, posts); err != nil {
+	viewerAdmin, err := IsAdmin(db, viewer)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := populatePostAuthors(ctx, db, posts, viewerAdmin); err != nil {
 		return nil, fmt.Errorf("failed to populate post authors: %w", err)
 	}
 
-	// Strip deleted user info.
-	for _, p := range posts {
-		if p.AuthorDeleted {
-			p.AuthorUsername = "[deleted]"
+	for _, post := range posts {
+		if post.DeletedContent {
+			post.Link = nil
+			post.Image = nil
+			if post.Body.Valid {
+				post.Body.String = "" // Should be empty in the DB as well.
+			}
+		}
+		if post.AuthorDeleted {
+			post.setGhostAuthorID()
+			if !viewerAdmin {
+				post.StripAuthorInfo()
+			}
 		}
 	}
 
 	return posts, nil
 }
 
-func populatePostAuthors(ctx context.Context, db *sql.DB, posts []*Post) error {
+func populatePostAuthors(ctx context.Context, db *sql.DB, posts []*Post, viewerAdmin bool) error {
 	var authorIDs []uid.ID
 	found := make(map[uid.ID]bool)
 	for _, c := range posts {
@@ -417,17 +427,29 @@ func populatePostAuthors(ctx context.Context, db *sql.DB, posts []*Post) error {
 		}
 	}
 
-	authors, err := GetUsersIDs(ctx, db, authorIDs, nil)
+	authors, err := GetUsersByIDs(ctx, db, authorIDs, nil)
 	if err != nil {
 		return err
 	}
 
-	for _, c := range posts {
+	if !viewerAdmin {
 		for _, author := range authors {
-			if c.AuthorID == author.ID {
-				c.Author = author
+			author.UnsetToGhost()
+		}
+	}
+
+	for _, post := range posts {
+		for _, author := range authors {
+			if post.AuthorID == author.ID {
+				post.Author = author
 				break
 			}
+		}
+	}
+
+	if !viewerAdmin {
+		for _, author := range authors {
+			author.SetToGhost()
 		}
 	}
 
@@ -743,6 +765,10 @@ func (p *Post) truncateTitleAndBody() {
 	p.Body.String = utils.TruncateUnicodeString(p.Body.String, maxPostBodyLength)
 }
 
+func (p *Post) HasLinkImage() bool {
+	return p.Link != nil && p.Link.Image != nil && p.Link.Image.ID != nil
+}
+
 // Save updates the post's updatable fields.
 func (p *Post) Save(ctx context.Context, user uid.ID) error {
 	if !p.AuthorID.EqualsTo(user) {
@@ -774,6 +800,23 @@ func (p *Post) Save(ctx context.Context, user uid.ID) error {
 	return err
 }
 
+// StripAuthorInfo should be called if the author account of the post is deleted
+// and the viewer is not an admin.
+func (p *Post) StripAuthorInfo() {
+	p.setGhostAuthorID()
+	p.AuthorID.Clear()
+	p.AuthorUsername = "ghost"
+	if p.Author != nil && !p.Author.IsGhost() {
+		p.Author.SetToGhost()
+	}
+}
+
+func (p *Post) setGhostAuthorID() {
+	if p.AuthorGhostID == "" {
+		p.AuthorGhostID = CalcGhostUserID(p.AuthorID, p.ID.String())
+	}
+}
+
 // Delete deletes p on behalf of user, who's deleting the post in his capacity
 // as g. In case the post is deleted by an admin or a mod, a notification is
 // sent to the original poster.
@@ -784,6 +827,10 @@ func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteConte
 			Code:       "already-deleted",
 			Message:    "Post is already deleted.",
 		}
+	}
+
+	if deleteContent && !(g == UserGroupNormal || g == UserGroupAdmins) {
+		return httperr.NewForbidden("mod-cannot-delete-content", "Moderators cannot delete the content of a post. They can only delete a post from their community.")
 	}
 
 	switch g {
@@ -811,6 +858,14 @@ func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteConte
 		return errInvalidUserGroup
 	}
 
+	// Unpin all pins of this post:
+	if err := p.Pin(ctx, user, true, true, true); err != nil { // unpin site-wide pin
+		return err
+	}
+	if err := p.Pin(ctx, user, false, true, true); err != nil { // unpin community pin
+		return err
+	}
+
 	now := time.Now()
 	err := msql.Transact(ctx, p.db, func(tx *sql.Tx) (err error) {
 		if !deleteContent || (deleteContent && !p.Deleted) {
@@ -821,18 +876,24 @@ func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteConte
 		}
 
 		if deleteContent {
-			q := `
+			var setBody string
+			if p.Body.Valid {
+				setBody = `body = "", `
+			}
+			q := fmt.Sprintf(`
 			UPDATE posts SET 
-				body = "", 
+				%s
 				link_image = NULL,
 				deleted_content = TRUE, 
 				deleted_content_at = ?, 
 				deleted_content_by = ?, 
 				deleted_content_as = ? 
-			WHERE id = ?`
+			WHERE id = ?`, setBody)
+
 			if _, err := tx.ExecContext(ctx, q, now, user, g, p.ID); err != nil {
 				return err
 			}
+
 			if p.Type == PostTypeImage {
 				if _, err := tx.ExecContext(ctx, "DELETE FROM post_images WHERE post_id = ?", p.ID); err != nil {
 					return err
@@ -840,15 +901,15 @@ func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteConte
 				if err := images.DeleteImageTx(ctx, tx, p.db, *p.Image.ID); err != nil {
 					return err
 				}
-			} else if p.Type == PostTypeLink && p.LinkImage != nil {
-				if err := images.DeleteImageTx(ctx, tx, p.db, *p.LinkImage.ID); err != nil {
+			} else if p.Type == PostTypeLink && p.HasLinkImage() {
+				if err := images.DeleteImageTx(ctx, tx, p.db, *p.Link.Image.ID); err != nil {
 					return err
 				}
 			}
 		}
 
 		for _, table := range postsTables {
-			if _, err := tx.ExecContext(ctx, "DELETE FROM "+table+" WHERE post_id = ?", p.ID); err != nil {
+			if _, err := tx.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s WHERE post_id = ?", table), p.ID); err != nil {
 				return err
 			}
 		}
@@ -943,35 +1004,49 @@ func (p *Post) Unlock(ctx context.Context, user uid.ID) error {
 const MaxPinnedPosts = 2
 
 // Pin pins a post on behalf of user to its community if siteWide is false,
-// otherwise it pins the post site-wide.
-func (p *Post) Pin(ctx context.Context, user uid.ID, siteWide, unpin bool) error {
-	maxPinnedReached := func(ctx context.Context, tx *sql.Tx, community *uid.ID) (reached bool, err error) {
+// otherwise it pins the post site-wide. If skipPermissions is true, it's not
+// checked if user has the permissioned to perform this action.
+func (p *Post) Pin(ctx context.Context, user uid.ID, siteWide, unpin bool, skipPermissions bool) error {
+	if p.Deleted && !unpin {
+		return httperr.NewForbidden("cannot-pin-deleted-post", "Cannot pin deleted posts.")
+	}
+
+	maxPinsReached := func(ctx context.Context, tx *sql.Tx, community *uid.ID) (reached bool, err error) {
 		count := 0
 		if community == nil {
-			err = tx.QueryRow("SELECT COUNT(*) FROM pinned_posts WHERE community_id IS NULL").Scan(&count)
+			err = tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM pinned_posts WHERE community_id IS NULL").Scan(&count)
 		} else {
-			err = tx.QueryRow("SELECT COUNT(*) FROM pinned_posts WHERE community_id = ?", *community).Scan(&count)
+			err = tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM pinned_posts WHERE community_id = ?", *community).Scan(&count)
 		}
 		reached = count >= MaxPinnedPosts
 		return
 	}
 
 	// Check permissions.
-	if siteWide {
-		u, err := GetUser(ctx, p.db, user, nil)
-		if err != nil {
-			return err
-		}
-		if !u.Admin {
-			return errNotAdmin
-		}
-	} else {
-		isMod, err := UserMod(ctx, p.db, p.CommunityID, user)
-		if err != nil {
-			return err
-		}
-		if !isMod {
-			return errNotMod
+	if !skipPermissions {
+		if siteWide { // for site-wise pins
+			admin, err := IsAdmin(p.db, &user)
+			if err != nil {
+				return err
+			}
+			if !admin {
+				return errNotAdmin
+			}
+		} else { // for community-wide pins
+			isMod, err := UserMod(ctx, p.db, p.CommunityID, user)
+			if err != nil {
+				return err
+			}
+			if !isMod {
+				// User is not a mod of the community. See if he's an admin.
+				admin, err := IsAdmin(p.db, &user)
+				if err != nil {
+					return err
+				}
+				if !admin {
+					return errNotMod // user is neither an admin nor a mod
+				}
+			}
 		}
 	}
 
@@ -998,7 +1073,7 @@ func (p *Post) Pin(ctx context.Context, user uid.ID, siteWide, unpin bool) error
 			}
 			args = []any{p.ID, siteWide, community}
 
-			if reached, err := maxPinnedReached(ctx, tx, community); err != nil {
+			if reached, err := maxPinsReached(ctx, tx, community); err != nil {
 				return err
 			} else if reached {
 				return httperr.NewForbidden("limit-reached", "Max pinned post limit reached.")

@@ -507,6 +507,9 @@
                 &.is-hidden {
                     color: var(--color-gray);
                 }
+                &.is-red {
+                    color: var(--color-red);
+                }
             }
             .post-comment-head-item {
                 margin-left: 8px;
@@ -532,6 +535,12 @@
         }
         &.has-propics {
             .post-comment-text {
+                &.is-red {
+                    .showmorebox {
+                        color: var(--color-red);
+                        margin-bottom: 6px;
+                    }
+                }
                 @include mixins.mobile() {
                     margin-top: 18px;
                 }
@@ -612,6 +621,10 @@
             .post-comment-button-more {
                 height: auto;
                 padding: var(--button-padding);
+            }
+            .dropdown-item.is-topic.is-disabled {
+                color: var(--color-text);
+                opacity: 0.4;
             }
         }
         .post-comment-more {
@@ -707,7 +720,7 @@
     }
     ul,
     ol {
-        margin-left: calc(1 * var(--gap));
+        margin-left: calc(1.5 * var(--gap));
         li {
             margin-bottom: 8px;
             &:last-child {

@@ -300,7 +300,7 @@ const Settings = () => {
           />
         </div>
         <ChangePassword />
-        {/*<DeleteAccount />*/}
+        <DeleteAccount user={user} />
         <div className="input-with-label settings-prefs">
           <div className="input-label-box">
             <div className="label">Preferences</div>
