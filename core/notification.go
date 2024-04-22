@@ -184,6 +184,7 @@ func scanNotifications(db *sql.DB, rows *sql.Rows) ([]*Notification, error) {
 			if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
 				return nil, err
 			}
+			notif.Notif = nc
 		default:
 			return nil, fmt.Errorf("unknown notification type: %s", string(notif.Type))
 		}
