@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 	"net/http"
 	"time"
 
@@ -132,6 +133,21 @@ func NewReport(ctx context.Context, db *sql.DB, community uid.ID, post uid.NullI
 	if err != nil {
 		return nil, err
 	}
+
+	// Send notifications.
+	go func() {
+		mods, err := GetCommunityMods(ctx, db, community)
+		if err != nil {
+			log.Printf("Get community mods failed: %v\n", err)
+		} else {
+			for _, mod := range mods {
+				if err := CreateNewReportNotification(context.Background(), db, mod.ID, int(id)); err != nil {
+					log.Printf("Create new report notification failed: %v\n", err)
+				}
+			}
+		}
+	}()
+
 	return GetReport(ctx, db, int(id))
 }
 
