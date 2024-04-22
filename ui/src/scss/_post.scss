@@ -720,7 +720,7 @@
     }
     ul,
     ol {
-        margin-left: calc(1 * var(--gap));
+        margin-left: calc(1.5 * var(--gap));
         li {
             margin-bottom: 8px;
             &:last-child {
