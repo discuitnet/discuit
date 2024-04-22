@@ -622,6 +622,10 @@
                 height: auto;
                 padding: var(--button-padding);
             }
+            .dropdown-item.is-topic.is-disabled {
+                color: var(--color-text);
+                opacity: 0.4;
+            }
         }
         .post-comment-more {
             margin: 5px 0 0 6px;

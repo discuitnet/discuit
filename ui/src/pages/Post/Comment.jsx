@@ -361,21 +361,25 @@ const Comment = ({
   const showReport = loggedIn && !deleted && user.id !== comment.userId;
   // const commentShareURL = `/${community.name}/post/${postId}?focus=${comment.id}#${comment.id}`;
 
-  const getModActionsItems = () => {
+  const getModActionsItems = (disabled = false) => {
     const checkboxId = `ch-mods-${comment.id}`;
+    const cls = (str = '') => {
+      return 'dropdown-item' + (disabled ? ' is-disabled' : '') + (str ? ` ${str}` : '');
+    };
     return (
       <>
-        <div className="dropdown-item" onClick={() => setConfirmDeleteOpen(true, 'mods')}>
+        <div className={cls()} onClick={() => !disabled && setConfirmDeleteOpen(true, 'mods')}>
           Delete
         </div>
         {user.id === comment.userId && (
-          <div className="dropdown-item is-non-reactive">
+          <div className={cls('is-non-reactive')}>
             <div className="checkbox">
               <input
                 id={checkboxId}
                 type="checkbox"
                 checked={comment.userGroup === 'mods' ? true : false}
-                onChange={(e) => setUserGroup(e.target.checked ? 'mods' : 'normal')}
+                onChange={(e) => !disabled && setUserGroup(e.target.checked ? 'mods' : 'normal')}
+                disabled={disabled}
               />
               <label htmlFor={checkboxId}>Speaking officially</label>
             </div>
@@ -389,9 +393,6 @@ const Comment = ({
     const checkboxId = `ch-admins-${comment.id}`;
     return (
       <>
-        <div className="dropdown-item" onClick={() => alert(`ID: ${comment.id}`)}>
-          Comment ID
-        </div>
         <div className="dropdown-item" onClick={() => setConfirmDeleteOpen(true, 'admins')}>
           Delete
         </div>
@@ -408,6 +409,9 @@ const Comment = ({
             </div>
           </div>
         )}
+        <div className="dropdown-item" onClick={() => alert(`ID: ${comment.id}`)}>
+          Comment ID
+        </div>
       </>
     );
   };
@@ -611,16 +615,16 @@ const Comment = ({
                       Report
                     </div>
                   )}
-                  {userMod && (
-                    <>
-                      <div className="dropdown-item is-topic">Mod actions</div>
-                      {getModActionsItems()}
-                    </>
-                  )}
                   {isAdmin && (
                     <>
                       <div className="dropdown-item is-topic">Admin actions</div>
                       {getAdminActionsItems()}
+                    </>
+                  )}
+                  {(isAdmin || userMod) && (
+                    <>
+                      <div className="dropdown-item is-topic">Mod actions</div>
+                      {getModActionsItems(!userMod)}
                     </>
                   )}
                 </div>
@@ -643,17 +647,6 @@ const Comment = ({
               {showReport && (
                 <ReportModal target={comment} targetType="comment" disabled={isBanned} />
               )}
-              {userMod && (
-                <Dropdown
-                  target={
-                    <button className="button-text" style={{ color: 'var(--color-red)' }}>
-                      Mod actions
-                    </button>
-                  }
-                >
-                  <div className="dropdown-list">{getModActionsItems()}</div>
-                </Dropdown>
-              )}
               {isAdmin && (
                 <Dropdown
                   target={
@@ -663,6 +656,22 @@ const Comment = ({
                   }
                 >
                   <div className="dropdown-list">{getAdminActionsItems()}</div>
+                </Dropdown>
+              )}
+              {isAdmin && !userMod && (
+                <button className="button-text" style={{ color: 'rgb(var(--base-6))' }}>
+                  Mod actions
+                </button>
+              )}
+              {userMod && (
+                <Dropdown
+                  target={
+                    <button className="button-text" style={{ color: 'var(--color-red)' }}>
+                      Mod actions
+                    </button>
+                  }
+                >
+                  <div className="dropdown-list">{getModActionsItems()}</div>
                 </Dropdown>
               )}
             </>
