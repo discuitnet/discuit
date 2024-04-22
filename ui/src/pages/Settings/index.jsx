@@ -360,7 +360,7 @@ const Settings = () => {
               />
             </div>
             <div className="checkbox is-check-last">
-              <label htmlFor="c6">Hide Down Votes</label>
+              <label htmlFor="c6">Hide Downvotes</label>
               <input
                 className="switch"
                 id="c6"
