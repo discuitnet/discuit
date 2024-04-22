@@ -592,6 +592,10 @@ func (n NotificationNewReport) marshalJSONForAPI(ctx context.Context, db *sql.DB
 	if err != nil {
 		return nil, err
 	}
+	if err = report.FetchTarget(ctx); err != nil {
+		return nil, err
+	}
+
 	out.Report = report
 	return json.Marshal(out)
 }

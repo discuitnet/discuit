@@ -114,6 +114,44 @@ const NotificationItem = ({ notification, ...rest }) => {
           </>
         );
       }
+      case 'new_report': {
+        let type = notif.report.type;
+        if (type === 'post') {
+          if (notif.noReports === 1) {
+            return (
+              <>
+                <b>{notif.noReports}</b> user has reported a post in{' '}
+                <b>{notif.report.target.communityName}</b>.
+              </>
+            );
+          } else {
+            return (
+              <>
+                <b>{notif.noReports}</b> users have reported a post in{' '}
+                <b>{notif.report.target.communityName}</b>.
+              </>
+            );
+          }
+        } else if (type === 'comment') {
+          if (notif.noReports === 1) {
+            return (
+              <>
+                <b>{notif.noReports}</b> user has reported a comment in{' '}
+                <b>{notif.report.target.communityName}</b>.
+              </>
+            );
+          } else {
+            return (
+              <>
+                <b>{notif.noReports}</b> users have reported a comment in{' '}
+                <b>{notif.report.target.communityName}</b>.
+              </>
+            );
+          }
+        } else {
+          return null;
+        }
+      }
       default: {
         return null; // unknown notification type
       }
@@ -187,6 +225,10 @@ const NotificationItem = ({ notification, ...rest }) => {
         url: src,
         backgroundColor: 'transparent',
       };
+      break;
+    case 'new_report':
+      to = `/${notif.report.target.communityName}/modtools/reports`;
+      // TODO: Image like 🔨 or similar to AW's thing
       break;
   }
 
