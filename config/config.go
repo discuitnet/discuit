@@ -59,8 +59,9 @@ type Config struct {
 	// The location where images are saved on disk.
 	ImagesFolderPath string `yaml:"imagesFolderPath"`
 
-	// Password Validator
-	MinEntropy float64 `yaml:"minEntropy"`
+	// Password requirements.
+	RequireMinEntropy bool    `yaml:"requireMinEntropy"`
+	MinEntropy        float64 `yaml:"minEntropy"`
 }
 
 // Parse parses the yaml file at path and returns a Config.
@@ -75,11 +76,12 @@ func Parse(path string) (*Config, error) {
 		PaginationLimitMax: 50,
 		DefaultFeedSort:    core.FeedSortHot,
 		MaxImageSize:       25 * (1 << 20),
+		RequireMinEntropy:  false,
+		MinEntropy:         60,
 
 		// Required fields:
 		ForumCreationReqPoints: -1,
 		MaxForumsPerUser:       -1,
-		MinEntropy:             60,
 	}
 
 	unmarshal := func() error {

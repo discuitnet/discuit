@@ -414,7 +414,7 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 }
 
 // RegisterUser creates a new user.
-func RegisterUser(ctx context.Context, db *sql.DB, username, email, password string, minEntropy float64) (*User, error) {
+func RegisterUser(ctx context.Context, db *sql.DB, username, email, password string, requireMinEntropy bool, minEntropy float64) (*User, error) {
 	// Check for duplicates.
 	if exists, _, err := usernameExists(ctx, db, username); err != nil {
 		return nil, err
@@ -431,9 +431,11 @@ func RegisterUser(ctx context.Context, db *sql.DB, username, email, password str
 		return nil, httperr.NewBadRequest("invalid-username", fmt.Sprintf("Username %v.", err))
 	}
 
-	err := passwordvalidator.Validate(password, minEntropy)
-	if err != nil {
-		return nil, httperr.NewBadRequest("bad-password", err.Error())
+	if requireMinEntropy {
+		err := passwordvalidator.Validate(password, minEntropy)
+		if err != nil {
+			return nil, httperr.NewBadRequest("bad-password", err.Error())
+		}
 	}
 
 	hash, err := HashPassword([]byte(password))
@@ -1158,7 +1160,7 @@ func CreateGhostUser(db *sql.DB) error {
 	if err := db.QueryRow("SELECT username_lc FROM users WHERE username_lc = ?", "ghost").Scan(&username); err != nil {
 		if err == sql.ErrNoRows {
 			// Ghost user not found; create one.
-			_, createErr := RegisterUser(context.Background(), db, "ghost", "", utils.GenerateStringID(48), 0)
+			_, createErr := RegisterUser(context.Background(), db, "ghost", "", utils.GenerateStringID(48), false, 0)
 			return createErr
 		}
 		return err

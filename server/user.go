@@ -259,7 +259,7 @@ func (s *Server) signup(w *responseWriter, r *request) error {
 		return err
 	}
 
-	user, err := core.RegisterUser(r.ctx, s.db, username, email, password, s.config.MinEntropy)
+	user, err := core.RegisterUser(r.ctx, s.db, username, email, password, s.config.RequireMinEntropy, s.config.MinEntropy)
 	if err != nil {
 		return err
 	}
