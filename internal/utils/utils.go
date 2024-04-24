@@ -4,6 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"io"
 	"math/rand"
 	"strings"
@@ -215,4 +216,35 @@ func BreakUpOnCapitals(s string) string {
 		words = append(words, word)
 	}
 	return strings.Join(words, " ")
+}
+
+// CalculateBatchSize calculates the size of a batch of objects in bytes.
+func CalculateBatchSize(objects []map[string]interface{}) (int, error) {
+	var size int
+	for _, obj := range objects {
+		data, err := json.Marshal(obj)
+		if err != nil {
+			return 0, err
+		}
+		size += len(data)
+	}
+	return size, nil
+}
+
+// ConvertToMapSlice converts a slice of objects to a slice of maps.
+func ConvertToMapSlice(objects []interface{}) ([]map[string]interface{}, error) {
+	var documents []map[string]interface{}
+	for _, obj := range objects {
+		data, err := json.Marshal(obj)
+		if err != nil {
+			return nil, err
+		}
+		var doc map[string]interface{}
+		err = json.Unmarshal(data, &doc)
+		if err != nil {
+			return nil, err
+		}
+		documents = append(documents, doc)
+	}
+	return documents, nil
 }

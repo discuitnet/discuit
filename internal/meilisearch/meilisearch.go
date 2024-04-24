@@ -3,6 +3,7 @@ package meilisearch
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"log"
 	"time"
 
@@ -65,6 +66,69 @@ func NewSearchClient(host, key string) *MeiliSearch {
 	}
 }
 
+func (c *MeiliSearch) index(indexName string, documents []map[string]interface{}) error {
+	index := c.client.Index(indexName)
+	var objects []map[string]interface{}
+	batchSize := 50 * 1024 * 1024 // 50MiB
+
+	totalSize, err := utils.CalculateBatchSize(documents)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Preparing to index %d documents to %s", len(documents), indexName)
+
+	if float64(totalSize)/1024/1024 < 1 {
+		log.Printf("Total size of documents to index: %.2f KiB", float64(totalSize)/1024)
+	} else {
+		log.Printf("Total size of documents to index: %.2f MiB", float64(totalSize)/1024/1024)
+	}
+
+	// Calculate bases on the average size of the objects
+	// This is to avoid the 97MiB limit of MeiliSearch
+	averageObjSize := totalSize / len(documents)
+	expectedNumOfObjectsPerBatch := batchSize / averageObjSize
+	log.Printf("Average object size: %.2f KiB", float64(averageObjSize)/1024)
+	log.Printf("Expected number of objects per batch: %d", expectedNumOfObjectsPerBatch)
+
+	objects = make([]map[string]interface{}, 0, expectedNumOfObjectsPerBatch)
+	currentBatchSize := 0
+
+	for _, doc := range documents {
+		var obj map[string]interface{}
+		encodedObj, err := json.Marshal(doc)
+		if err != nil {
+			return err
+		}
+		if err := json.Unmarshal(encodedObj, &obj); err != nil {
+			return err
+		}
+		objSize := len(encodedObj)
+
+		if currentBatchSize+objSize > batchSize {
+			// Batch is full, send it
+			if err := sendBatch(index, objects); err != nil {
+				return err
+			}
+			objects = make([]map[string]interface{}, 0, expectedNumOfObjectsPerBatch)
+			currentBatchSize = 0
+		}
+
+		// Add object to batch
+		objects = append(objects, obj)
+		currentBatchSize += objSize
+	}
+
+	// Send any remaining objects
+	if len(objects) > 0 {
+		if err := sendBatch(index, objects); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (c *MeiliSearch) IndexAllCommunitiesInMeiliSearch(ctx context.Context, db *sql.DB) error {
 	// Fetch all communities.
 	communities, err := core.GetCommunitiesForSearch(ctx, db)
@@ -76,8 +140,6 @@ func (c *MeiliSearch) IndexAllCommunitiesInMeiliSearch(ctx context.Context, db *
 		log.Println("No communities to index")
 		return nil
 	}
-
-	log.Printf("Indexing %d communities", len(communities))
 
 	// Convert the communities to the format MeiliSearch expects.
 	var communitiesToIndex []MeiliSearchCommunity
@@ -93,18 +155,20 @@ func (c *MeiliSearch) IndexAllCommunitiesInMeiliSearch(ctx context.Context, db *
 		})
 	}
 
-	// An index is where the documents are stored.
-	index := c.client.Index("communities")
+	// Convert to interface slice.
+	var interfaceSlice []interface{} = make([]interface{}, len(communitiesToIndex))
+	for i, v := range communitiesToIndex {
+		interfaceSlice[i] = v
+	}
 
-	// Add documents to the index.
-	_, err = index.AddDocuments(communitiesToIndex, "id")
+	// Convert to map slice.
+	documents, err := utils.ConvertToMapSlice(interfaceSlice)
 	if err != nil {
 		return err
 	}
 
+	index := c.client.Index("communities")
 	index.UpdateFilterableAttributes(&[]string{"nsfw", "no_members", "created_at"})
-
-	// Define your ranking rules
 	rankingRules := []string{
 		"typo",
 		"words",
@@ -112,12 +176,13 @@ func (c *MeiliSearch) IndexAllCommunitiesInMeiliSearch(ctx context.Context, db *
 		"attribute",
 		"exactness",
 	}
-
-	// Update ranking rules
 	_, err = index.UpdateRankingRules(&rankingRules)
 	if err != nil {
 		return err
 	}
+
+	// An index is where the documents are stored.
+	c.index("communities", documents)
 
 	return nil
 }
@@ -133,8 +198,6 @@ func (c *MeiliSearch) IndexAllUsersInMeiliSearch(ctx context.Context, db *sql.DB
 		log.Println("No users to index")
 		return nil
 	}
-
-	log.Printf("Indexing %d users", len(users))
 
 	// Convert the users to the format MeiliSearch expects.
 	var usersToIndex []MeiliSearchUser
@@ -154,16 +217,24 @@ func (c *MeiliSearch) IndexAllUsersInMeiliSearch(ctx context.Context, db *sql.DB
 		})
 	}
 
-	// An index is where the documents are stored.
-	index := c.client.Index("users")
+	// Convert to interface slice.
+	var interfaceSlice []interface{} = make([]interface{}, len(usersToIndex))
+	for i, v := range usersToIndex {
+		interfaceSlice[i] = v
+	}
 
-	// Add documents to the index.
-	_, err = index.AddDocuments(usersToIndex, "id")
+	// Convert to map slice.
+	documents, err := utils.ConvertToMapSlice(interfaceSlice)
 	if err != nil {
 		return err
 	}
 
+	// Update filterable attributes.
+	index := c.client.Index("users")
 	index.UpdateFilterableAttributes(&[]string{"created_at"})
+
+	// An index is where the documents are stored.
+	c.index("users", documents)
 
 	return nil
 }
@@ -179,8 +250,6 @@ func (c *MeiliSearch) IndexAllPostsInMeiliSearch(ctx context.Context, db *sql.DB
 		log.Println("No posts to index")
 		return nil
 	}
-
-	log.Printf("Indexing %d posts", len(posts))
 
 	// Convert the posts to the format MeiliSearch expects.
 	var postsToIndex []MeiliSearchPost
@@ -204,16 +273,26 @@ func (c *MeiliSearch) IndexAllPostsInMeiliSearch(ctx context.Context, db *sql.DB
 		})
 	}
 
-	// An index is where the documents are stored.
-	index := c.client.Index("posts")
+	// TODO: After testing, see if possible to also chunk out the database queries into batches.
 
-	// Add documents to the index.
-	_, err = index.AddDocuments(postsToIndex, "id")
+	// Convert to interface slice.
+	var interfaceSlice []interface{} = make([]interface{}, len(postsToIndex))
+	for i, v := range postsToIndex {
+		interfaceSlice[i] = v
+	}
+
+	// Convert to map slice.
+	documents, err := utils.ConvertToMapSlice(interfaceSlice)
 	if err != nil {
 		return err
 	}
 
+	// Update filterable attributes.
+	index := c.client.Index("posts")
 	index.UpdateFilterableAttributes(&[]string{"type", "user_id", "username", "created_at", "community_id", "community_name"})
+
+	// An index is where the documents are stored.
+	c.index("posts", documents)
 
 	return nil
 }
@@ -400,4 +479,15 @@ func PostDeleteDocumentIfEnabled(ctx context.Context, config *config.Config, pos
 	if err != nil {
 		log.Printf("Error deleting document in MeiliSearch: %v", err)
 	}
+}
+
+func sendBatch(indexObj *meilisearch.Index, objects []map[string]interface{}) error {
+	data, err := json.Marshal(objects)
+	if err != nil {
+		return err
+	}
+	if _, err := indexObj.UpdateDocuments(data); err != nil {
+		return err
+	}
+	return nil
 }
