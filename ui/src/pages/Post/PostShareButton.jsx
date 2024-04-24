@@ -57,6 +57,13 @@ const PostShareButton = ({ post }) => {
   }
 
   const renderImageDownloadButton = () => {
+    if (!post.image) {
+      return (
+        <div className="button-clear dropdown-item" style={{ opacity: 'var(--disabled-opacity)' }}>
+          Download image
+        </div>
+      );
+    }
     const url = post.image.url;
     const filename = `discuit-${post.communityName}[${post.publicId}].${post.image.format}`;
     return (
