@@ -69,7 +69,7 @@ func (s *Server) getUsersFeed(w *responseWriter, r *request) error {
 			return core.ErrInvalidFeedCursor
 		}
 	}
-	set, err := core.GetUserFeed(r.ctx, s.db, r.viewer, user.ID, limit, next)
+	set, err := core.GetUserFeed(r.ctx, s.db, r.viewer, user.ID, query.Get("filter"), limit, next)
 	if err != nil {
 		return err
 	}

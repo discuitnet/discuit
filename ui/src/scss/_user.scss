@@ -97,6 +97,9 @@
             }
         }
     }
+    .select-bar {
+        margin-left: var(--post-card-votes-margin);
+    }
     .page-user-summary {
         .user-summary-item {
             display: flex;

@@ -24,7 +24,7 @@ const Footer = () => {
           <div className="footer-title">Social</div>
           {CONFIG.twitterURL && (
             <a href={CONFIG.twitterURL} className="footer-item" target="_blank" re="noopener">
-              Twitter
+              Twitter / X
             </a>
           )}
           {CONFIG.substackURL && (

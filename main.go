@@ -121,6 +121,8 @@ func main() {
 		}
 	}()
 
+	var https bool = conf.CertFile != ""
+
 	server := &http.Server{
 		Addr: conf.Addr,
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -129,6 +131,11 @@ func main() {
 			if strings.HasPrefix(host, "www.") {
 				url := *r.URL
 				url.Host = host[4:]
+				if https {
+					url.Scheme = "https"
+				} else {
+					url.Scheme = "http"
+				}
 				http.Redirect(w, r, url.String(), http.StatusMovedPermanently)
 				return
 			}
@@ -138,7 +145,7 @@ func main() {
 
 	log.Println("Starting server on " + conf.Addr)
 
-	if conf.CertFile != "" {
+	if https {
 		// Running HTTPS server.
 		//
 		// A server to redirect traffic from HTTP to HTTPS. Started only if the
