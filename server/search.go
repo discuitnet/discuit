@@ -29,21 +29,21 @@ func (s *Server) search(w *responseWriter, r *request) error {
 
 	switch index {
 	case "communities":
-		results, err := searchClient.SearchCommunities(r.ctx, q)
+		results, err := searchClient.Search("communities", q)
 		if err != nil {
 			return err
 		}
 
 		return w.writeJSON(results)
 	case "users":
-		results, err := searchClient.SearchUsers(r.ctx, q)
+		results, err := searchClient.Search("users", q)
 		if err != nil {
 			return err
 		}
 
 		return w.writeJSON(results)
 	case "posts":
-		results, err := searchClient.SearchPosts(r.ctx, q)
+		results, err := searchClient.Search("posts", q)
 		if err != nil {
 			return err
 		}

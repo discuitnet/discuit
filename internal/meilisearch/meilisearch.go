@@ -297,49 +297,13 @@ func (c *MeiliSearch) IndexAllPostsInMeiliSearch(ctx context.Context, db *sql.DB
 	return nil
 }
 
-func (c *MeiliSearch) SearchCommunities(ctx context.Context, query string) (*meilisearch.SearchResponse, error) {
-	// An index is where the documents are stored.
-	index := c.client.Index("communities")
-
-	// Search for documents in the index.
-	searchResponse, err := index.Search(query, &meilisearch.SearchRequest{
+func (c *MeiliSearch) Search(index string, query string) (*meilisearch.SearchResponse, error) {
+	searchResponse, err := c.client.Index(index).Search(query, &meilisearch.SearchRequest{
 		Limit: 10,
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	return searchResponse, nil
-}
-
-func (c *MeiliSearch) SearchUsers(ctx context.Context, query string) (*meilisearch.SearchResponse, error) {
-	// An index is where the documents are stored.
-	index := c.client.Index("users")
-
-	// Search for documents in the index.
-	searchResponse, err := index.Search(query, &meilisearch.SearchRequest{
-		Limit: 10,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return searchResponse, nil
-}
-
-func (c *MeiliSearch) SearchPosts(ctx context.Context, query string) (*meilisearch.SearchResponse, error) {
-	// An index is where the documents are stored.
-	index := c.client.Index("posts")
-
-	// Search for documents in the index.
-	searchResponse, err := index.Search(query, &meilisearch.SearchRequest{
-		Limit: 10,
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
 	return searchResponse, nil
 }
 
