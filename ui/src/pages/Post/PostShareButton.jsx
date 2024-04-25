@@ -41,22 +41,26 @@ const PostShareButton = ({ post }) => {
     dispatch(snackAlert(text, 'pl_copied'));
   };
 
-  // mobile share menu
-  if (window.innerWidth < 1171 && Boolean(navigator.share)) {
-    const handleClick = async () => {
-      try {
-        await navigator.share({
-          title: post.title,
-          url,
-        });
-      } catch (err) {
-        console.log(err);
-      }
-    };
-    return <Target onClick={handleClick} />;
-  }
+  const hasMoreShareableOptions = window.innerWidth < 1171 && Boolean(navigator.share);
+  const handleMoreButtonClick = async () => {
+    try {
+      await navigator.share({
+        title: post.title,
+        url,
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
   const renderImageDownloadButton = () => {
+    if (!post.image) {
+      return (
+        <div className="button-clear dropdown-item" style={{ opacity: 'var(--disabled-opacity)' }}>
+          Download image
+        </div>
+      );
+    }
     const url = post.image.url;
     const filename = `discuit-${post.communityName}[${post.publicId}].${post.image.format}`;
     return (
@@ -91,6 +95,11 @@ const PostShareButton = ({ post }) => {
           Copy URL
         </button>
         {post.type === 'image' && renderImageDownloadButton()}
+        {hasMoreShareableOptions && (
+          <button className="button-clear dropdown-item" onClick={handleMoreButtonClick}>
+            More
+          </button>
+        )}
       </div>
     </Dropdown>
   );

@@ -63,6 +63,12 @@ func main() {
 		return // Nothing to do
 	}
 
+	if !flags.runMigrations && runServer {
+		if err := createGhostUser(db); err != nil {
+			os.Exit(-1)
+		}
+	}
+
 	// Set images folder.
 	p := "images"
 	if conf.ImagesFolderPath != "" {
@@ -622,5 +628,64 @@ func hardReset(c *config.Config) error {
 
 	log.Println("Redis flushed")
 	log.Println("Reset complete")
+	return nil
+}
+
+var (
+	errMigrationsTableNotFound = errors.New("migrations table not found")
+)
+
+// migrationsVersion returns the last migration number (the value in the
+// schema_migrations table). If the migrations table is not found, then
+// errMigrationsTableNotFound is returned. If the migrations table is found but
+// empty, then sql.ErrNoRows is returned.
+func migrationsVersion(db *sql.DB) (int, error) {
+	if exists, err := mariadbTableExists(db, "schema_migrations"); err != nil {
+		return -1, err
+	} else if !exists {
+		return -1, errMigrationsTableNotFound
+	}
+	version := -1
+	if err := db.QueryRow("SELECT version FROM schema_migrations").Scan(&version); err != nil {
+		return -1, err
+	}
+	return version, nil
+}
+
+func mariadbTableExists(db *sql.DB, name string) (bool, error) {
+	var gotname string
+	if err := db.QueryRow(fmt.Sprintf("SHOW TABLES LIKE '%v'", name)).Scan(&gotname); err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, err
+	}
+	if gotname == name {
+		return true, nil
+	}
+	return false, fmt.Errorf("gotname (%v) is not the same as name (%v)", gotname, name)
+}
+
+// createGhostUser creates the ghost user only if migrations have been run. If
+// migrations have not yet been run, the function exists silently without
+// returning an error
+func createGhostUser(db *sql.DB) error {
+	if _, err := migrationsVersion(db); err != nil {
+		if err == errMigrationsTableNotFound || err == sql.ErrNoRows {
+			log.Println("Skipping creating ghost user, as migrations are not yet run.")
+			return nil
+		}
+		log.Printf("Error creating the ghost user: %v\n", err)
+		return err
+	}
+
+	created, err := core.CreateGhostUser(db)
+	if err != nil {
+		log.Printf("Error creating the ghost user: %v\n", err)
+		return err
+	}
+	if created {
+		log.Println("Ghost user succesfully created.")
+	}
 	return nil
 }
