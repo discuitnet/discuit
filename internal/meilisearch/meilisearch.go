@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"log"
-	"time"
 
 	"github.com/discuitnet/discuit/config"
 	"github.com/discuitnet/discuit/core"
@@ -14,6 +13,23 @@ import (
 	"github.com/discuitnet/discuit/internal/utils"
 	"github.com/meilisearch/meilisearch-go"
 )
+
+var ValidIndexes = []string{"communities", "users", "posts"}
+
+var CommunityFilterableAttributes = []string{"nsfw", "no_members", "created_at"}
+var UsersFilterableAttributes = []string{"created_at"}
+var PostsFilterableAttributes = []string{"type", "user_id", "username", "created_at", "community_id", "community_name"}
+
+var CommunitySortableAttributes = []string{"created_at"}
+
+var RankingRules = []string{
+	"words",
+	"typo",
+	"proximity",
+	"attribute",
+	"sort",
+	"exactness",
+}
 
 type MeiliSearch struct {
 	client *meilisearch.Client
@@ -26,7 +42,7 @@ type MeiliSearchCommunity struct {
 	NSFW       bool            `json:"nsfw"`
 	About      msql.NullString `json:"about"`
 	NumMembers int             `json:"no_members"`
-	CreatedAt  time.Time       `json:"created_at"`
+	CreatedAt  int64           `json:"created_at"`
 }
 
 type MeiliSearchUser struct {
@@ -35,7 +51,7 @@ type MeiliSearchUser struct {
 	UsernameLowerCase string          `json:"username_lowercase"`
 	ParsedUsername    string          `json:"parsed_username"`
 	About             msql.NullString `json:"about_me"`
-	CreatedAt         time.Time       `json:"created_at"`
+	CreatedAt         int64           `json:"created_at"`
 }
 
 type MeiliSearchPost struct {
@@ -54,7 +70,7 @@ type MeiliSearchPost struct {
 	CommunityID   uid.ID `json:"community_id"`
 	CommunityName string `json:"community_name"`
 
-	CreatedAt time.Time `json:"created_at"`
+	CreatedAt int64 `json:"created_at"`
 }
 
 func NewSearchClient(host, key string) *MeiliSearch {
@@ -151,7 +167,7 @@ func (c *MeiliSearch) IndexAllCommunitiesInMeiliSearch(ctx context.Context, db *
 			NSFW:       community.NSFW,
 			About:      community.About,
 			NumMembers: community.NumMembers,
-			CreatedAt:  community.CreatedAt,
+			CreatedAt:  community.CreatedAt.Unix(),
 		})
 	}
 
@@ -168,18 +184,9 @@ func (c *MeiliSearch) IndexAllCommunitiesInMeiliSearch(ctx context.Context, db *
 	}
 
 	index := c.client.Index("communities")
-	index.UpdateFilterableAttributes(&[]string{"nsfw", "no_members", "created_at"})
-	rankingRules := []string{
-		"typo",
-		"words",
-		"proximity",
-		"attribute",
-		"exactness",
-	}
-	_, err = index.UpdateRankingRules(&rankingRules)
-	if err != nil {
-		return err
-	}
+	index.UpdateFilterableAttributes(&CommunityFilterableAttributes)
+	index.UpdateSortableAttributes(&CommunitySortableAttributes)
+	index.UpdateRankingRules(&RankingRules)
 
 	// An index is where the documents are stored.
 	c.index("communities", documents)
@@ -213,7 +220,7 @@ func (c *MeiliSearch) IndexAllUsersInMeiliSearch(ctx context.Context, db *sql.DB
 			UsernameLowerCase: user.UsernameLowerCase,
 			ParsedUsername:    utils.BreakUpOnCapitals(user.Username),
 			About:             user.About,
-			CreatedAt:         user.CreatedAt,
+			CreatedAt:         user.CreatedAt.Unix(),
 		})
 	}
 
@@ -231,7 +238,8 @@ func (c *MeiliSearch) IndexAllUsersInMeiliSearch(ctx context.Context, db *sql.DB
 
 	// Update filterable attributes.
 	index := c.client.Index("users")
-	index.UpdateFilterableAttributes(&[]string{"created_at"})
+	index.UpdateFilterableAttributes(&PostsFilterableAttributes)
+	index.UpdateRankingRules(&RankingRules)
 
 	// An index is where the documents are stored.
 	c.index("users", documents)
@@ -269,7 +277,7 @@ func (c *MeiliSearch) IndexAllPostsInMeiliSearch(ctx context.Context, db *sql.DB
 			CommunityID:   post.CommunityID,
 			CommunityName: post.CommunityName,
 
-			CreatedAt: post.CreatedAt,
+			CreatedAt: post.CreatedAt.Unix(),
 		})
 	}
 
@@ -289,7 +297,8 @@ func (c *MeiliSearch) IndexAllPostsInMeiliSearch(ctx context.Context, db *sql.DB
 
 	// Update filterable attributes.
 	index := c.client.Index("posts")
-	index.UpdateFilterableAttributes(&[]string{"type", "user_id", "username", "created_at", "community_id", "community_name"})
+	index.UpdateFilterableAttributes(&CommunityFilterableAttributes)
+	index.UpdateRankingRules(&RankingRules)
 
 	// An index is where the documents are stored.
 	c.index("posts", documents)
@@ -297,9 +306,10 @@ func (c *MeiliSearch) IndexAllPostsInMeiliSearch(ctx context.Context, db *sql.DB
 	return nil
 }
 
-func (c *MeiliSearch) Search(index string, query string) (*meilisearch.SearchResponse, error) {
+func (c *MeiliSearch) Search(index string, query string, sort []string) (*meilisearch.SearchResponse, error) {
 	searchResponse, err := c.client.Index(index).Search(query, &meilisearch.SearchRequest{
 		Limit: 10,
+		Sort:  sort,
 	})
 	if err != nil {
 		return nil, err
@@ -355,7 +365,7 @@ func CommunityUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *confi
 		NSFW:       comm.NSFW,
 		About:      comm.About,
 		NumMembers: comm.NumMembers,
-		CreatedAt:  comm.CreatedAt,
+		CreatedAt:  comm.CreatedAt.Unix(),
 	})
 	if err != nil {
 		log.Printf("Error updating or creating document in MeiliSearch: %v", err)
@@ -374,7 +384,7 @@ func UserUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *config.Con
 		UsernameLowerCase: user.UsernameLowerCase,
 		ParsedUsername:    utils.BreakUpOnCapitals(user.Username),
 		About:             user.About,
-		CreatedAt:         user.CreatedAt,
+		CreatedAt:         user.CreatedAt.Unix(),
 	})
 	if err != nil {
 		log.Printf("Error updating or creating document in MeiliSearch: %v", err)
@@ -402,7 +412,7 @@ func PostUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *config.Con
 		CommunityID:   post.CommunityID,
 		CommunityName: post.CommunityName,
 
-		CreatedAt: post.CreatedAt,
+		CreatedAt: post.CreatedAt.Unix(),
 	})
 	if err != nil {
 		log.Printf("Error updating or creating document in MeiliSearch: %v", err)

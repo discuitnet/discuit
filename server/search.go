@@ -1,6 +1,8 @@
 package server
 
 import (
+	"slices"
+
 	"github.com/discuitnet/discuit/internal/httperr"
 	"github.com/discuitnet/discuit/internal/meilisearch"
 )
@@ -12,12 +14,16 @@ func (s *Server) search(w *responseWriter, r *request) error {
 	}
 
 	query := r.urlQuery()
+	r.req.ParseForm()
 
 	// query
 	q := query.Get("q")
 	if q == "" {
 		return httperr.NewBadRequest("missing_query", "Missing query.")
 	}
+
+	// sort
+	sort := r.req.Form["sort"]
 
 	// index
 	index := query.Get("index")
@@ -27,29 +33,14 @@ func (s *Server) search(w *responseWriter, r *request) error {
 
 	searchClient := meilisearch.NewSearchClient(s.config.MeiliHost, s.config.MeiliKey)
 
-	switch index {
-	case "communities":
-		results, err := searchClient.Search("communities", q)
-		if err != nil {
-			return err
-		}
-
-		return w.writeJSON(results)
-	case "users":
-		results, err := searchClient.Search("users", q)
-		if err != nil {
-			return err
-		}
-
-		return w.writeJSON(results)
-	case "posts":
-		results, err := searchClient.Search("posts", q)
-		if err != nil {
-			return err
-		}
-
-		return w.writeJSON(results)
-	default:
+	if !slices.Contains(meilisearch.ValidIndexes, index) {
 		return httperr.NewBadRequest("invalid_index", "Invalid index.")
 	}
+
+	results, err := searchClient.Search(index, q, sort)
+	if err != nil {
+		return httperr.NewBadRequest("bad_request", err.Error())
+	}
+
+	return w.writeJSON(results)
 }
