@@ -20,7 +20,9 @@ var CommunityFilterableAttributes = []string{"nsfw", "no_members", "created_at"}
 var UsersFilterableAttributes = []string{"created_at"}
 var PostsFilterableAttributes = []string{"type", "user_id", "username", "created_at", "community_id", "community_name"}
 
-var CommunitySortableAttributes = []string{"created_at"}
+var CommunitySortableAttributes = []string{"no_members", "created_at"}
+var UsersSortableAttributes = []string{"created_at"}
+var PostsSortableAttributes = []string{"created_at"}
 
 var RankingRules = []string{
 	"words",
@@ -238,7 +240,8 @@ func (c *MeiliSearch) IndexAllUsersInMeiliSearch(ctx context.Context, db *sql.DB
 
 	// Update filterable attributes.
 	index := c.client.Index("users")
-	index.UpdateFilterableAttributes(&PostsFilterableAttributes)
+	index.UpdateFilterableAttributes(&UsersFilterableAttributes)
+	index.UpdateSortableAttributes(&UsersSortableAttributes)
 	index.UpdateRankingRules(&RankingRules)
 
 	// An index is where the documents are stored.
@@ -297,7 +300,8 @@ func (c *MeiliSearch) IndexAllPostsInMeiliSearch(ctx context.Context, db *sql.DB
 
 	// Update filterable attributes.
 	index := c.client.Index("posts")
-	index.UpdateFilterableAttributes(&CommunityFilterableAttributes)
+	index.UpdateFilterableAttributes(&PostsFilterableAttributes)
+	index.UpdateSortableAttributes(&PostsSortableAttributes)
 	index.UpdateRankingRules(&RankingRules)
 
 	// An index is where the documents are stored.
