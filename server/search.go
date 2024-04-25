@@ -18,9 +18,6 @@ func (s *Server) search(w *responseWriter, r *request) error {
 
 	// query
 	q := query.Get("q")
-	if q == "" {
-		return httperr.NewBadRequest("missing_query", "Missing query.")
-	}
 
 	// sort
 	sort := r.req.Form["sort"]
