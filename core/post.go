@@ -227,15 +227,15 @@ func buildSelectPostQuery(loggedIn bool, where string) string {
 	return msql.BuildSelectQuery("posts", selectPostCols, selectPostJoins, where)
 }
 
-func GetPostsForSearch(ctx context.Context, db *sql.DB) ([]*Post, error) {
-	// Don't include deleted posts.
-	query := msql.BuildSelectQuery("posts", selectPostCols, selectPostJoins, "WHERE posts.deleted_at IS NULL")
-	rows, err := db.QueryContext(ctx, query)
+func GetPostsForSearch(ctx context.Context, db *sql.DB, offset, limit int) ([]*Post, error) {
+	// Adjust the query to support pagination
+	query := msql.BuildSelectQuery("posts", selectPostCols, selectPostJoins, "WHERE posts.deleted_at IS NULL LIMIT ? OFFSET ?")
+	rows, err := db.QueryContext(ctx, query, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("db error on query '%s': %w", query, err)
 	}
-
 	defer rows.Close()
+
 	posts, err := scanPosts(ctx, db, rows, nil)
 	if err != nil {
 		if err == errPostNotFound {

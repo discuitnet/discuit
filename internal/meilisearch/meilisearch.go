@@ -148,164 +148,185 @@ func (c *MeiliSearch) index(indexName string, documents []map[string]interface{}
 }
 
 func (c *MeiliSearch) IndexAllCommunitiesInMeiliSearch(ctx context.Context, db *sql.DB) error {
-	// Fetch all communities.
-	communities, err := core.GetCommunitiesForSearch(ctx, db)
-	if err != nil {
-		return err
+	batchSize := 5000 // Define the batch size
+	offset := 0       // Start with an offset of 0
+
+	for {
+		communities, err := core.GetCommunitiesForSearch(ctx, db, offset, batchSize)
+		if err != nil {
+			return err
+		}
+
+		if len(communities) == 0 {
+			log.Println("No communities to index")
+			break
+		}
+
+		// Convert the communities to the format MeiliSearch expects.
+		var communitiesToIndex []MeiliSearchCommunity
+		for _, community := range communities {
+			communitiesToIndex = append(communitiesToIndex, MeiliSearchCommunity{
+				ID:         community.ID,
+				Name:       community.Name,
+				ParsedName: utils.BreakUpOnCapitals(community.Name),
+				NSFW:       community.NSFW,
+				About:      community.About,
+				NumMembers: community.NumMembers,
+				CreatedAt:  community.CreatedAt.Unix(),
+			})
+		}
+
+		// Convert to interface slice.
+		var interfaceSlice []interface{} = make([]interface{}, len(communitiesToIndex))
+		for i, v := range communitiesToIndex {
+			interfaceSlice[i] = v
+		}
+
+		// Convert to map slice.
+		documents, err := utils.ConvertToMapSlice(interfaceSlice)
+		if err != nil {
+			return err
+		}
+
+		index := c.client.Index("communities")
+		index.UpdateFilterableAttributes(&CommunityFilterableAttributes)
+		index.UpdateSortableAttributes(&CommunitySortableAttributes)
+		index.UpdateRankingRules(&RankingRules)
+
+		// An index is where the documents are stored.
+		c.index("communities", documents)
+
+		// Prepare for the next batch
+		offset += len(communities)
 	}
-
-	if len(communities) == 0 {
-		log.Println("No communities to index")
-		return nil
-	}
-
-	// Convert the communities to the format MeiliSearch expects.
-	var communitiesToIndex []MeiliSearchCommunity
-	for _, community := range communities {
-		communitiesToIndex = append(communitiesToIndex, MeiliSearchCommunity{
-			ID:         community.ID,
-			Name:       community.Name,
-			ParsedName: utils.BreakUpOnCapitals(community.Name),
-			NSFW:       community.NSFW,
-			About:      community.About,
-			NumMembers: community.NumMembers,
-			CreatedAt:  community.CreatedAt.Unix(),
-		})
-	}
-
-	// Convert to interface slice.
-	var interfaceSlice []interface{} = make([]interface{}, len(communitiesToIndex))
-	for i, v := range communitiesToIndex {
-		interfaceSlice[i] = v
-	}
-
-	// Convert to map slice.
-	documents, err := utils.ConvertToMapSlice(interfaceSlice)
-	if err != nil {
-		return err
-	}
-
-	index := c.client.Index("communities")
-	index.UpdateFilterableAttributes(&CommunityFilterableAttributes)
-	index.UpdateSortableAttributes(&CommunitySortableAttributes)
-	index.UpdateRankingRules(&RankingRules)
-
-	// An index is where the documents are stored.
-	c.index("communities", documents)
 
 	return nil
 }
 
 func (c *MeiliSearch) IndexAllUsersInMeiliSearch(ctx context.Context, db *sql.DB) error {
-	// Fetch all users.
-	users, err := core.GetUsersForSearch(ctx, db)
-	if err != nil {
-		return err
-	}
+	batchSize := 5000 // Define the batch size
+	offset := 0       // Start with an offset of 0
 
-	if len(users) == 0 {
-		log.Println("No users to index")
-		return nil
-	}
-
-	// Convert the users to the format MeiliSearch expects.
-	var usersToIndex []MeiliSearchUser
-	for _, user := range users {
-		// Exclude the ghost user.
-		if user.Username == "ghost" {
-			continue
+	for {
+		users, err := core.GetUsersForSearch(ctx, db, offset, batchSize)
+		if err != nil {
+			return err
 		}
 
-		usersToIndex = append(usersToIndex, MeiliSearchUser{
-			ID:                user.ID,
-			Username:          user.Username,
-			UsernameLowerCase: user.UsernameLowerCase,
-			ParsedUsername:    utils.BreakUpOnCapitals(user.Username),
-			About:             user.About,
-			CreatedAt:         user.CreatedAt.Unix(),
-		})
+		if len(users) == 0 {
+			log.Println("No users to index")
+			break
+		}
+
+		// Convert the users to the format MeiliSearch expects.
+		var usersToIndex []MeiliSearchUser
+		for _, user := range users {
+			// Exclude the ghost user.
+			if user.Username == "ghost" {
+				continue
+			}
+
+			usersToIndex = append(usersToIndex, MeiliSearchUser{
+				ID:                user.ID,
+				Username:          user.Username,
+				UsernameLowerCase: user.UsernameLowerCase,
+				ParsedUsername:    utils.BreakUpOnCapitals(user.Username),
+				About:             user.About,
+				CreatedAt:         user.CreatedAt.Unix(),
+			})
+		}
+
+		// Convert to interface slice.
+		var interfaceSlice []interface{} = make([]interface{}, len(usersToIndex))
+		for i, v := range usersToIndex {
+			interfaceSlice[i] = v
+		}
+
+		// Convert to map slice.
+		documents, err := utils.ConvertToMapSlice(interfaceSlice)
+		if err != nil {
+			return err
+		}
+
+		// Update filterable attributes.
+		index := c.client.Index("users")
+		index.UpdateFilterableAttributes(&UsersFilterableAttributes)
+		index.UpdateSortableAttributes(&UsersSortableAttributes)
+		index.UpdateRankingRules(&RankingRules)
+
+		// An index is where the documents are stored.
+		c.index("users", documents)
+
+		// Prepare for the next batch
+		offset += len(users)
 	}
-
-	// Convert to interface slice.
-	var interfaceSlice []interface{} = make([]interface{}, len(usersToIndex))
-	for i, v := range usersToIndex {
-		interfaceSlice[i] = v
-	}
-
-	// Convert to map slice.
-	documents, err := utils.ConvertToMapSlice(interfaceSlice)
-	if err != nil {
-		return err
-	}
-
-	// Update filterable attributes.
-	index := c.client.Index("users")
-	index.UpdateFilterableAttributes(&UsersFilterableAttributes)
-	index.UpdateSortableAttributes(&UsersSortableAttributes)
-	index.UpdateRankingRules(&RankingRules)
-
-	// An index is where the documents are stored.
-	c.index("users", documents)
 
 	return nil
 }
 
 func (c *MeiliSearch) IndexAllPostsInMeiliSearch(ctx context.Context, db *sql.DB) error {
-	// Fetch all posts.
-	posts, err := core.GetPostsForSearch(ctx, db)
-	if err != nil {
-		return err
+	batchSize := 5000 // Define the batch size
+	offset := 0       // Start with an offset of 0
+
+	for {
+		posts, err := core.GetPostsForSearch(ctx, db, offset, batchSize)
+		if err != nil {
+			return err
+		}
+
+		if len(posts) == 0 {
+			log.Println("No posts to index")
+			break
+		}
+
+		// Convert the posts to the format MeiliSearch expects.
+		var postsToIndex []MeiliSearchPost
+		for _, post := range posts {
+			postsToIndex = append(postsToIndex, MeiliSearchPost{
+				ID:   post.ID,
+				Type: post.Type,
+
+				PublicID: post.PublicID,
+
+				AuthorID:       post.AuthorID,
+				AuthorUsername: post.AuthorUsername,
+
+				Title: post.Title,
+				Body:  post.Body,
+
+				CommunityID:   post.CommunityID,
+				CommunityName: post.CommunityName,
+
+				CreatedAt: post.CreatedAt.Unix(),
+			})
+		}
+
+		// TODO: After testing, see if possible to also chunk out the database queries into batches.
+
+		// Convert to interface slice.
+		var interfaceSlice []interface{} = make([]interface{}, len(postsToIndex))
+		for i, v := range postsToIndex {
+			interfaceSlice[i] = v
+		}
+
+		// Convert to map slice.
+		documents, err := utils.ConvertToMapSlice(interfaceSlice)
+		if err != nil {
+			return err
+		}
+
+		// Update filterable attributes.
+		index := c.client.Index("posts")
+		index.UpdateFilterableAttributes(&PostsFilterableAttributes)
+		index.UpdateSortableAttributes(&PostsSortableAttributes)
+		index.UpdateRankingRules(&RankingRules)
+
+		// An index is where the documents are stored.
+		c.index("posts", documents)
+
+		// Prepare for the next batch
+		offset += len(posts)
 	}
-
-	if len(posts) == 0 {
-		log.Println("No posts to index")
-		return nil
-	}
-
-	// Convert the posts to the format MeiliSearch expects.
-	var postsToIndex []MeiliSearchPost
-	for _, post := range posts {
-		postsToIndex = append(postsToIndex, MeiliSearchPost{
-			ID:   post.ID,
-			Type: post.Type,
-
-			PublicID: post.PublicID,
-
-			AuthorID:       post.AuthorID,
-			AuthorUsername: post.AuthorUsername,
-
-			Title: post.Title,
-			Body:  post.Body,
-
-			CommunityID:   post.CommunityID,
-			CommunityName: post.CommunityName,
-
-			CreatedAt: post.CreatedAt.Unix(),
-		})
-	}
-
-	// TODO: After testing, see if possible to also chunk out the database queries into batches.
-
-	// Convert to interface slice.
-	var interfaceSlice []interface{} = make([]interface{}, len(postsToIndex))
-	for i, v := range postsToIndex {
-		interfaceSlice[i] = v
-	}
-
-	// Convert to map slice.
-	documents, err := utils.ConvertToMapSlice(interfaceSlice)
-	if err != nil {
-		return err
-	}
-
-	// Update filterable attributes.
-	index := c.client.Index("posts")
-	index.UpdateFilterableAttributes(&PostsFilterableAttributes)
-	index.UpdateSortableAttributes(&PostsSortableAttributes)
-	index.UpdateRankingRules(&RankingRules)
-
-	// An index is where the documents are stored.
-	c.index("posts", documents)
 
 	return nil
 }

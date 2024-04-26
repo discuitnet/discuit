@@ -243,8 +243,8 @@ func buildSelectUserQuery(where string) string {
 	return msql.BuildSelectQuery("users", cols, joins, where)
 }
 
-func GetUsersForSearch(ctx context.Context, db *sql.DB) ([]*User, error) {
-	rows, err := db.QueryContext(ctx, buildSelectUserQuery(""))
+func GetUsersForSearch(ctx context.Context, db *sql.DB, offset, limit int) ([]*User, error) {
+	rows, err := db.QueryContext(ctx, buildSelectUserQuery("WHERE users.deleted_at IS NULL LIMIT ? OFFSET ?"), limit, offset)
 	if err != nil {
 		return nil, err
 	}
