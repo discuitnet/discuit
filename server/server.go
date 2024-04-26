@@ -967,7 +967,7 @@ func (s *Server) rateLimit(r *request, bucketID string, interval time.Duration, 
 }
 
 func (s *Server) rateLimitUpdateContent(r *request, userID uid.ID) error {
-	if err := s.rateLimit(r, "update_stuff_1_"+userID.String(), time.Second*2, 1); err != nil {
+	if err := s.rateLimit(r, "update_stuff_1_"+userID.String(), time.Second*1, 1); err != nil {
 		return err
 	}
 	return s.rateLimit(r, "update_stuff_2_"+userID.String(), time.Hour*24, 2000)

@@ -20,7 +20,7 @@ export const CommentShareDropdownItems = ({ prefix = '', url }) => {
   return (
     <>
       <div className="dropdown-item">{to}Facebook</div>
-      <div className="dropdown-item">{to}Twitter</div>
+      <div className="dropdown-item">{to}Twitter / X</div>
       <div className="dropdown-item" onClick={handleCopyURL}>
         Copy URL
       </div>
