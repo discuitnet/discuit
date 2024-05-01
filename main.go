@@ -9,22 +9,19 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"net/http"
 	"os"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/discuitnet/discuit/config"
 	"github.com/discuitnet/discuit/core"
 	"github.com/discuitnet/discuit/internal/images"
 	"github.com/discuitnet/discuit/internal/uid"
 	"github.com/discuitnet/discuit/internal/utils"
-	"github.com/discuitnet/discuit/server"
 	"github.com/go-sql-driver/mysql"
 	"github.com/gomodule/redigo/redis"
+	"github.com/urfave/cli/v2"
 
 	gomigrate "github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/mysql"
@@ -32,149 +29,366 @@ import (
 )
 
 func main() {
-	// Load config file.
-	conf, err := config.Parse("./config.yaml")
-	if err != nil {
-		log.Fatal("Error parsing config file: ", err)
-	}
-
-	// Connect to MariaDB.
-	db := openDatabase(conf.DBAddr, conf.DBUser, conf.DBPassword, conf.DBName)
-	defer db.Close()
-
-	flags, err := parseFlags()
-	if err != nil {
-		log.Fatal("Error parsing falgs: ", err)
-	}
-
-	runServer, err := runFlagCommands(db, conf, flags)
-	if err != nil {
-		log.Fatal("Error running flag commands: ", err)
-	}
-
-	hasMoreCommandsToRun := flags.deleteUser != "" // commands that require the server.Server object
-	if !runServer && !hasMoreCommandsToRun {
-		return // Nothing to do
-	}
-
-	if !flags.runMigrations && runServer {
-		if err := createGhostUser(db); err != nil {
-			os.Exit(-1)
-		}
-	}
-
-	// Set images folder.
-	p := "images"
-	if conf.ImagesFolderPath != "" {
-		p = conf.ImagesFolderPath
-	}
-	if p, err = filepath.Abs(p); err != nil {
-		log.Fatalf("Error attempting to set the images folder location (%s): %v", p, err)
-	}
-	images.SetImagesRootFolder(p)
-
-	// Create default badges.
-	if err = core.NewBadgeType(db, "supporter"); err != nil {
-		log.Fatalf("Error creating 'supporter' user badge: %v\n", err)
-	}
-
-	site, err := server.New(db, conf)
-	if err != nil {
-		log.Fatal("Error creating server: ", err)
-	}
-	defer site.Close()
-
-	if flags.deleteUser != "" {
-		if ok := cliYesConfirmCommand(); !ok {
-			log.Fatal("Cannot continue without a YES.")
-		}
-		user, err := core.GetUserByUsername(context.Background(), db, flags.deleteUser, nil)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if err := site.LogoutAllSessionsOfUser(user); err != nil {
-			log.Fatal(err)
-		}
-		if err := user.Delete(context.Background()); err != nil {
-			log.Fatal(err)
-		}
-		log.Printf("%s successfully deleted\n", user.Username)
-	}
-
-	if !runServer {
-		return // Nothing to do.
-	}
-
-	go func() {
-		// This go-routine runs a set of periodic functions every hour.
-		time.Sleep(time.Second * 5) // Just so the first console output isn't from this goroutine.
-		for {
-			if err := core.PurgePostsFromTempTables(context.TODO(), db); err != nil {
-				log.Printf("Temp posts purging failed: %v\n", err)
+	app := &cli.App{
+		Name:                 "discuit",
+		Description:          "A free and open-source community discussion platform.",
+		EnableBashCompletion: true,
+		Suggest:              true,
+		Before: func(c *cli.Context) error {
+			// Load config file.
+			conf, err := config.Parse("./config.yaml")
+			if err != nil {
+				log.Fatal("Error parsing config file: ", err)
 			}
-			if n, err := core.RemoveTempImages(context.TODO(), db); err != nil {
-				log.Printf("Failed to remove temp images: %v\n", err)
-			} else {
-				log.Printf("Removed %d temp images\n", n)
-			}
-			time.Sleep(time.Hour)
-		}
-	}()
 
-	var https bool = conf.CertFile != ""
+			// Connect to MariaDB.
+			db := openDatabase(conf.DBAddr, conf.DBUser, conf.DBPassword, conf.DBName)
+			defer db.Close()
 
-	server := &http.Server{
-		Addr: conf.Addr,
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// If the domain name contains www. redirect to one without.
-			host := r.Host
-			if strings.HasPrefix(host, "www.") {
-				url := *r.URL
-				url.Host = host[4:]
-				if https {
-					url.Scheme = "https"
-				} else {
-					url.Scheme = "http"
-				}
-				http.Redirect(w, r, url.String(), http.StatusMovedPermanently)
-				return
-			}
-			site.ServeHTTP(w, r)
-		}),
+			// Store Config and DB in context.
+			c.Context = context.WithValue(c.Context, "config", conf)
+			c.Context = context.WithValue(c.Context, "db", db)
+
+			return nil
+		},
+		Commands: []*cli.Command{
+			{
+				Name: "migrate",
+				Subcommands: []*cli.Command{
+					{
+						Name: "new",
+						Action: func(ctx *cli.Context) error {
+							folder, err := os.Open("./migrations/")
+							if err != nil {
+								return err
+							}
+							files, err := folder.Readdirnames(0)
+							if err != nil {
+								return err
+							}
+							sort.Strings(files)
+
+							last := files[len(files)-1]
+							n := strings.Index(last, "_")
+							if n < 0 {
+								return errors.New("no underscore found in last filename")
+							}
+							lastVersion, err := strconv.Atoi(last[0:n])
+							if err != nil {
+								return err
+							}
+
+							scanner := bufio.NewScanner(os.Stdin)
+							fmt.Print("New migration name: ")
+							scanner.Scan()
+							name := strings.TrimSpace(scanner.Text())
+							if name == "" {
+								return errors.New("migration name cannot be empty")
+							}
+							newVersion := strconv.Itoa(lastVersion + 1)
+							for i := len(newVersion); i < 4; i++ {
+								newVersion = "0" + newVersion
+							}
+							name = newVersion + "_" + strings.ToLower(strings.ReplaceAll(name, " ", "_"))
+							newFiles := []string{name + ".down.sql", name + ".up.sql"}
+							for _, name := range newFiles {
+								file, err := os.Create("./migrations/" + name)
+								if err != nil {
+									return err
+								}
+								if err := file.Close(); err != nil {
+									return err
+								}
+							}
+							fmt.Print("Created migration!")
+							return nil
+						},
+					},
+					{
+						Name:  "run",
+						Usage: "Run database migrations",
+						Flags: []cli.Flag{
+							&cli.Int64Flag{
+								Name:  "steps",
+								Usage: "Migrations steps to run (0 runs all migrations, and value can be negative)",
+							},
+						},
+						Action: migrate,
+					},
+				},
+			},
+			{
+				Name:  "serve",
+				Usage: "Start web server",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name: "image-path",
+					},
+				},
+			},
+			{
+				Name: "admin",
+				Subcommands: []*cli.Command{
+					{
+						Name:  "make",
+						Usage: "Make user an admin",
+						Action: func(ctx *cli.Context) error {
+							// TODO: Won't fucking work, fix future me
+							// 2024/05/01 18:08:45 failed to make insidousFiddler an admin: sql: database is closed
+							db := ctx.Context.Value("db").(*sql.DB)
+							user, err := core.MakeAdmin(ctx.Context, db, ctx.Args().Get(0), true)
+							if err != nil {
+								return fmt.Errorf("failed to make %s an admin: %w", ctx.Args().Get(0), err)
+							}
+							log.Printf("User %s is now an admin\n", user.Username)
+							return nil
+						},
+					},
+					{
+						Name:  "remove",
+						Usage: "Remove user as admin",
+						Action: func(ctx *cli.Context) error {
+							// TODO: Won't fucking work, fix future me
+							// 2024/05/01 18:09:19 failed to remove insidousFiddler as an admin: sql: database is closed
+							db := ctx.Context.Value("db").(*sql.DB)
+							user, err := core.MakeAdmin(ctx.Context, db, ctx.Args().Get(0), false)
+							if err != nil {
+								return fmt.Errorf("failed to remove %s as an admin: %w", ctx.Args().Get(0), err)
+							}
+							log.Printf("User %s is no longer an admin", user.Username)
+							return nil
+						},
+					},
+				},
+			},
+			{
+				Name: "mod",
+				Subcommands: []*cli.Command{
+					{
+						Name:  "make",
+						Usage: "Make user a moderator",
+						Flags: []cli.Flag{
+							&cli.StringFlag{
+								Name: "community",
+							},
+						},
+					},
+					{
+						Name:  "remove",
+						Usage: "Remove user as moderator",
+						Flags: []cli.Flag{
+							&cli.StringFlag{
+								Name: "community",
+							},
+						},
+					},
+				},
+			},
+			{
+				Name:  "hard-reset",
+				Usage: "Hard reset",
+				Action: func(ctx *cli.Context) error {
+					conf := ctx.Context.Value("config").(*config.Config)
+					db := ctx.Context.Value("db").(*sql.DB)
+
+					if err := db.Close(); err != nil {
+						return err
+					}
+					if err := hardReset(conf); err != nil {
+						return err
+					}
+					return nil
+				},
+			},
+			{
+				Name:  "force-pass-change",
+				Usage: "Change user password",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name: "user",
+					},
+					&cli.StringFlag{
+						Name: "password",
+					},
+				},
+			},
+			{
+				Name:  "populate-post",
+				Usage: "Populate post with random comments",
+				Flags: []cli.Flag{
+					&cli.Int64Flag{
+						Name: "num-comments",
+					},
+				},
+			},
+			{
+				Name:  "fix-hotness",
+				Usage: "Fix hotness of all posts",
+				Action: func(ctx *cli.Context) error {
+					db := ctx.Context.Value("db").(*sql.DB)
+					if err := core.UpdateAllPostsHotness(ctx.Context, db); err != nil {
+						return err
+					}
+					return nil
+				},
+			},
+			{
+				Name:  "add-all-users-to-community",
+				Usage: "Add all users to community",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name: "community",
+					},
+				},
+			},
+			{
+				Name:  "new-badge",
+				Usage: "New user badge",
+			},
+			{
+				Name:  "delete-user",
+				Usage: "Delete a user.",
+			},
+		},
 	}
 
-	log.Println("Starting server on " + conf.Addr)
-
-	if https {
-		// Running HTTPS server.
-		//
-		// A server to redirect traffic from HTTP to HTTPS. Started only if the
-		// main server is on port 443.
-		if conf.Addr[strings.Index(conf.Addr, ":"):] == ":443" {
-			redirectServer := &http.Server{
-				Addr: ":80",
-				Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					url := *r.URL
-					url.Scheme = "https"
-					url.Host = r.Host
-					http.Redirect(w, r, url.String(), http.StatusMovedPermanently)
-				}),
-			}
-			go func() {
-				if err = redirectServer.ListenAndServe(); err != nil {
-					log.Fatal("Error starting redirect server: ", err)
-				}
-			}()
-		}
-		if err := server.ListenAndServeTLS(conf.CertFile, conf.KeyFile); err != nil {
-			log.Fatal("Error starting server (TLS): ", err)
-		}
-	} else {
-		// Running HTTP server.
-		if err := server.ListenAndServe(); err != nil {
-			log.Fatal("Error starting server: ", err)
-		}
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal(err)
 	}
+
+	// flags, err := parseFlags()
+	// if err != nil {
+	// 	log.Fatal("Error parsing falgs: ", err)
+	// }
+
+	// runServer, err := runFlagCommands(db, conf, flags)
+	// if err != nil {
+	// 	log.Fatal("Error running flag commands: ", err)
+	// }
+
+	// hasMoreCommandsToRun := flags.deleteUser != "" // commands that require the server.Server object
+	// if !runServer && !hasMoreCommandsToRun {
+	// 	return // Nothing to do
+	// }
+
+	// if !flags.runMigrations && runServer {
+	// 	if err := createGhostUser(db); err != nil {
+	// 		os.Exit(-1)
+	// 	}
+	// }
+
+	// // Set images folder.
+	// p := "images"
+	// if conf.ImagesFolderPath != "" {
+	// 	p = conf.ImagesFolderPath
+	// }
+	// if p, err = filepath.Abs(p); err != nil {
+	// 	log.Fatalf("Error attempting to set the images folder location (%s): %v", p, err)
+	// }
+	// images.SetImagesRootFolder(p)
+
+	// // Create default badges.
+	// if err = core.NewBadgeType(db, "supporter"); err != nil {
+	// 	log.Fatalf("Error creating 'supporter' user badge: %v\n", err)
+	// }
+
+	// site, err := server.New(db, conf)
+	// if err != nil {
+	// 	log.Fatal("Error creating server: ", err)
+	// }
+	// defer site.Close()
+
+	// if flags.deleteUser != "" {
+	// 	if ok := cliYesConfirmCommand(); !ok {
+	// 		log.Fatal("Cannot continue without a YES.")
+	// 	}
+	// 	user, err := core.GetUserByUsername(context.Background(), db, flags.deleteUser, nil)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	if err := site.LogoutAllSessionsOfUser(user); err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	if err := user.Delete(context.Background()); err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	log.Printf("%s successfully deleted\n", user.Username)
+	// }
+
+	// if !runServer {
+	// 	return // Nothing to do.
+	// }
+
+	// go func() {
+	// 	// This go-routine runs a set of periodic functions every hour.
+	// 	time.Sleep(time.Second * 5) // Just so the first console output isn't from this goroutine.
+	// 	for {
+	// 		if err := core.PurgePostsFromTempTables(context.TODO(), db); err != nil {
+	// 			log.Printf("Temp posts purging failed: %v\n", err)
+	// 		}
+	// 		if n, err := core.RemoveTempImages(context.TODO(), db); err != nil {
+	// 			log.Printf("Failed to remove temp images: %v\n", err)
+	// 		} else {
+	// 			log.Printf("Removed %d temp images\n", n)
+	// 		}
+	// 		time.Sleep(time.Hour)
+	// 	}
+	// }()
+
+	// var https bool = conf.CertFile != ""
+
+	// server := &http.Server{
+	// 	Addr: conf.Addr,
+	// 	Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// 		// If the domain name contains www. redirect to one without.
+	// 		host := r.Host
+	// 		if strings.HasPrefix(host, "www.") {
+	// 			url := *r.URL
+	// 			url.Host = host[4:]
+	// 			if https {
+	// 				url.Scheme = "https"
+	// 			} else {
+	// 				url.Scheme = "http"
+	// 			}
+	// 			http.Redirect(w, r, url.String(), http.StatusMovedPermanently)
+	// 			return
+	// 		}
+	// 		site.ServeHTTP(w, r)
+	// 	}),
+	// }
+
+	// log.Println("Starting server on " + conf.Addr)
+
+	// if https {
+	// 	// Running HTTPS server.
+	// 	//
+	// 	// A server to redirect traffic from HTTP to HTTPS. Started only if the
+	// 	// main server is on port 443.
+	// 	if conf.Addr[strings.Index(conf.Addr, ":"):] == ":443" {
+	// 		redirectServer := &http.Server{
+	// 			Addr: ":80",
+	// 			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// 				url := *r.URL
+	// 				url.Scheme = "https"
+	// 				url.Host = r.Host
+	// 				http.Redirect(w, r, url.String(), http.StatusMovedPermanently)
+	// 			}),
+	// 		}
+	// 		go func() {
+	// 			if err = redirectServer.ListenAndServe(); err != nil {
+	// 				log.Fatal("Error starting redirect server: ", err)
+	// 			}
+	// 		}()
+	// 	}
+	// 	if err := server.ListenAndServeTLS(conf.CertFile, conf.KeyFile); err != nil {
+	// 		log.Fatal("Error starting server (TLS): ", err)
+	// 	}
+	// } else {
+	// 	// Running HTTP server.
+	// 	if err := server.ListenAndServe(); err != nil {
+	// 		log.Fatal("Error starting server: ", err)
+	// 	}
+	// }
 }
 
 // migrationLogger implements the migrate.Logger interface.
@@ -192,7 +406,12 @@ func (ml *migrationsLogger) Verbose() bool {
 
 // If steps is 0, all migrations are run. Otherwise, steps migrations are run up
 // or down depending on steps > 0 or not.
-func migrate(c *config.Config, log bool, steps int) error {
+func migrate(ctx *cli.Context) error {
+	// c *config.Config, log bool, steps int
+	c := ctx.Context.Value("config").(*config.Config)
+	log := true
+	steps := ctx.Int("steps")
+
 	fmt.Println("Running migrations")
 	m, err := gomigrate.New("file://migrations/", "mysql://"+mysqlDSN(c.DBAddr, c.DBUser, c.DBPassword, c.DBName))
 	if err != nil {
@@ -302,9 +521,9 @@ func runFlagCommands(db *sql.DB, conf *config.Config, flags *flags) (bool, error
 	}
 
 	if flags.runMigrations {
-		if err := migrate(conf, true, flags.steps); err != nil {
-			return false, err
-		}
+		// if err := migrate(conf, true, flags.steps); err != nil {
+		// 	return false, err
+		// }
 		log.Println("Migrations ran successfully.")
 	}
 
@@ -589,9 +808,9 @@ func hardReset(c *config.Config) error {
 		return err
 	}
 
-	if err = migrate(c, true, 0); err != nil {
-		return err
-	}
+	// if err = migrate(c, true, 0); err != nil {
+	// 	return err
+	// }
 
 	conn, err := redis.Dial("tcp", c.RedisAddress)
 	if err != nil {
