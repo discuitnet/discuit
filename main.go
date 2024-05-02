@@ -34,6 +34,7 @@ import (
 func main() {
 	app := &cli.App{
 		Name:                 "discuit",
+		Usage:                "A free and open-source community discussion platform.",
 		Description:          "A free and open-source community discussion platform.",
 		EnableBashCompletion: true,
 		Suggest:              true,
