@@ -6,6 +6,7 @@ import (
 	"log"
 
 	discuitCLI "github.com/discuitnet/discuit/cli"
+	"github.com/discuitnet/discuit/cli/migrate"
 	"github.com/discuitnet/discuit/config"
 	"github.com/gomodule/redigo/redis"
 	"github.com/urfave/cli/v2"
@@ -53,9 +54,9 @@ func hardReset(c *config.Config) error {
 		return err
 	}
 
-	// if err = migrate(c, true, 0); err != nil {
-	// 	return err
-	// }
+	if err = migrate.Migrate(c, true, 0); err != nil {
+		return err
+	}
 
 	conn, err := redis.Dial("tcp", c.RedisAddress)
 	if err != nil {

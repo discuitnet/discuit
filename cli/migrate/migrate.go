@@ -82,7 +82,7 @@ var Command = &cli.Command{
 					Usage: "Migrations steps to run (0 runs all migrations, and value can be negative)",
 				},
 			},
-			Action: migrate,
+			Action: MigrateCLIWrapper,
 		},
 	},
 }
@@ -100,14 +100,16 @@ func (ml *migrationsLogger) Verbose() bool {
 	return ml.verbose
 }
 
-// If steps is 0, all migrations are run. Otherwise, steps migrations are run up
-// or down depending on steps > 0 or not.
-func migrate(ctx *cli.Context) error {
-	// c *config.Config, log bool, steps int
+func MigrateCLIWrapper(ctx *cli.Context) error {
 	c := ctx.Context.Value("config").(*config.Config)
 	log := true
 	steps := ctx.Int("steps")
+	return Migrate(c, log, steps)
+}
 
+// If steps is 0, all migrations are run. Otherwise, steps migrations are run up
+// or down depending on steps > 0 or not.
+func Migrate(c *config.Config, log bool, steps int) error {
 	fmt.Println("Running migrations")
 	m, err := gomigrate.New("file://migrations/", "mysql://"+MysqlDSN(c.DBAddr, c.DBUser, c.DBPassword, c.DBName))
 	if err != nil {

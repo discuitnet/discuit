@@ -62,7 +62,6 @@ func serve(ctx *cli.Context) error {
 	if err != nil {
 		log.Fatalf("Error attempting to set the images folder location (%s): %v", p, err)
 	}
-	log.Printf("Images folder: %s\n", p)
 	images.SetImagesRootFolder(p)
 
 	// Create default badges.
