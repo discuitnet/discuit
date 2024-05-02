@@ -63,4 +63,4 @@ EXPOSE 80
 
 # Set the entrypoint script as the default command
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["/app/discuit", "-serve"]
+CMD ["/app/discuit", "serve"]
