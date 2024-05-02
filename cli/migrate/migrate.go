@@ -22,7 +22,8 @@ var (
 )
 
 var Command = &cli.Command{
-	Name: "migrate",
+	Name:  "migrate",
+	Usage: "Run database migrations",
 	Subcommands: []*cli.Command{
 		{
 			Name: "new",
