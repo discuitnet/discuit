@@ -200,8 +200,8 @@ body.is-static-page {
                 display: flex;
                 flex-direction: column;
                 --border-radius: 5px;
-                border: 1px solid #00000078;
-                background-color: #0000000f;
+                border: 1px solid rgba(var(--base-fg), 0.4705882353);
+                background-color: rgba(var(--base-fg), 0.0588235294);
                 &:first-child {
                     border-top-left-radius: var(--border-radius);
                     border-top-right-radius: var(--border-radius);
@@ -240,6 +240,17 @@ body.is-static-page {
                     }
                 }
             }
+        }
+    }
+}
+
+html.theme-dark {
+    .page-about {
+        .about-landing {
+            background: #0f0e20;
+        }
+        .squiggly-line {
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTA4IiBoZWlnaHQ9IjE0IiB2aWV3Qm94PSIwIDAgMTA4IDE0IiBmaWxsPSIjMGYwZTIwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMC40NTYwNTUgMS41TDkuMjkzOCAxMC41TDE1LjY3NjYgNkwyNS40OTYzIDEwLjVMMjguNDQyMiA0LjVMMzQuMzM0MSA5TDQyLjY4MDggMTNMNDYuNjA4NyA3TDUyLjk5MTUgMTJMNTUuOTM3NSAxMC41TDYxLjgyOTMgNkw2Ni43MzkxIDkuNUw2OS42ODUxIDEzTDc1LjU3NjkgOEw4MC45Nzc3IDZMODMuOTIzNiAxMEw5MC43OTc0IDEzTDk2LjE5ODMgOEwxMDIuNTgxIDkuNUwxMDcgMSIgc3Ryb2tlPSIjYjNiM2IzIj48L3BhdGg+Cjwvc3ZnPg==');
         }
     }
 }
