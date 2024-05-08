@@ -7,6 +7,7 @@ import (
 	discuitCLI "github.com/discuitnet/discuit/cli"
 	"github.com/discuitnet/discuit/cli/addalluserstocommunity"
 	"github.com/discuitnet/discuit/cli/admin"
+	"github.com/discuitnet/discuit/cli/deleteuser"
 	"github.com/discuitnet/discuit/cli/fixhotness"
 	"github.com/discuitnet/discuit/cli/forcepasschange"
 	"github.com/discuitnet/discuit/cli/hardreset"
@@ -40,6 +41,7 @@ func main() {
 			fixhotness.Command,
 			addalluserstocommunity.Command,
 			newbadge.Command,
+			deleteuser.Command,
 		},
 		DefaultCommand: "serve",
 		After:          discuitCLI.After,

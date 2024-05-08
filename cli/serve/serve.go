@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	discuitCLI "github.com/discuitnet/discuit/cli"
 	"github.com/discuitnet/discuit/cli/migrate"
 	"github.com/discuitnet/discuit/config"
 	"github.com/discuitnet/discuit/core"
@@ -35,10 +34,6 @@ var Command = &cli.Command{
 				fmt.Printf("Image path: %s\n", images.ImagePath(id))
 				return nil
 			},
-		},
-		&cli.StringFlag{
-			Name:  "delete-user",
-			Usage: "Delete a user",
 		},
 	},
 	Action: serve,
@@ -74,23 +69,6 @@ func serve(ctx *cli.Context) error {
 		log.Fatal("Error creating server: ", err)
 	}
 	defer site.Close()
-
-	if ctx.String("delete-user") != "" {
-		if ok := discuitCLI.YesConfirmCommand(); !ok {
-			log.Fatal("Cannot continue without a YES.")
-		}
-		user, err := core.GetUserByUsername(context.Background(), db, ctx.String("delete-user"), nil)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if err := site.LogoutAllSessionsOfUser(user); err != nil {
-			log.Fatal(err)
-		}
-		if err := user.Delete(context.Background()); err != nil {
-			log.Fatal(err)
-		}
-		log.Printf("%s successfully deleted\n", user.Username)
-	}
 
 	go func() {
 		// This go-routine runs a set of periodic functions every hour.
