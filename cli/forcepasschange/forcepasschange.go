@@ -28,7 +28,7 @@ var Command = &cli.Command{
 	},
 	Action: func(ctx *cli.Context) error {
 		db := ctx.Context.Value("db").(*sql.DB)
-		username := ctx.Args().First()
+		username := ctx.String("user")
 		password := ctx.String("password")
 
 		if ok := discuitCLI.ConfirmCommand("Are you sure?"); !ok {

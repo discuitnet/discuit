@@ -21,11 +21,16 @@ var Command = &cli.Command{
 					Usage:    "Community name",
 					Required: true,
 				},
+				&cli.StringFlag{
+					Name:     "user",
+					Usage:    "Username",
+					Required: true,
+				},
 			},
 			Action: func(ctx *cli.Context) error {
 				db := ctx.Context.Value("db").(*sql.DB)
 				communityName := ctx.String("community")
-				username := ctx.Args().First()
+				username := ctx.String("user")
 				community, err := core.GetCommunityByName(ctx.Context, db, communityName, nil)
 				if err != nil {
 					return err
@@ -50,11 +55,16 @@ var Command = &cli.Command{
 					Usage:    "Community name",
 					Required: true,
 				},
+				&cli.StringFlag{
+					Name:     "user",
+					Usage:    "Username",
+					Required: true,
+				},
 			},
 			Action: func(ctx *cli.Context) error {
 				db := ctx.Context.Value("db").(*sql.DB)
 				communityName := ctx.String("community")
-				username := ctx.Args().First()
+				username := ctx.String("user")
 				community, err := core.GetCommunityByName(ctx.Context, db, communityName, nil)
 				if err != nil {
 					return err
