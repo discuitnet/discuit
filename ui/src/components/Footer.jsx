@@ -29,7 +29,7 @@ const Footer = () => {
           )}
           {CONFIG.substackURL && (
             <a href={CONFIG.substackURL} className="footer-item" target="_blank" re="noopener">
-              Newsletter
+              Blog
             </a>
           )}
           {CONFIG.facebookURL && (
