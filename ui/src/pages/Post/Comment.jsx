@@ -19,7 +19,7 @@ import { useVoting } from '../../hooks';
 import UserProPic, { GhostUserProPic, UserLink } from '../../components/UserProPic';
 import { LinkOrDiv } from '../../components/Utils';
 import { userHasSupporterBadge } from '../User';
-import CommentShareButton from './CommentShareButton';
+import CommentShareButton, { CommentShareDropdownItems } from './CommentShareButton';
 
 const Diagnostics = false; // process.env.NODE_ENV !== 'production';
 const MaxCommentDepth = 15;
@@ -588,7 +588,7 @@ const Comment = ({
               Reply
             </button>
           )}
-          {!deleted && isMobile && (userMod || isAdmin || showEditDelete || showReport) && (
+          {!deleted && isMobile && (
             <>
               {showReport && (
                 <ReportModal
@@ -602,7 +602,7 @@ const Comment = ({
               )}
               <Dropdown target={<button className="button-text">More</button>}>
                 <div className="dropdown-list">
-                  {/*<CommentShareDropdownItems url={commentShareURL} prefix="Share to " />*/}
+                  <CommentShareDropdownItems url={commentShareURL} />
                   {showEditDelete && (
                     <>
                       <div className="dropdown-item" onClick={handleOnEdit}>
