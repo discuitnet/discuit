@@ -19,6 +19,7 @@ import { useVoting } from '../../hooks';
 import UserProPic, { GhostUserProPic, UserLink } from '../../components/UserProPic';
 import { LinkOrDiv } from '../../components/Utils';
 import { userHasSupporterBadge } from '../User';
+import CommentShareButton, { CommentShareDropdownItems } from './CommentShareButton';
 
 const Diagnostics = false; // process.env.NODE_ENV !== 'production';
 const MaxCommentDepth = 15;
@@ -56,6 +57,8 @@ const Comment = ({
       };
     });
   };
+
+  const commentShareURL = `/${community.name}/post/${postId}/${comment.id}`;
 
   const deleted = comment.deletedAt !== null;
 
@@ -585,7 +588,7 @@ const Comment = ({
               Reply
             </button>
           )}
-          {!deleted && isMobile && (userMod || isAdmin || showEditDelete || showReport) && (
+          {!deleted && isMobile && (
             <>
               {showReport && (
                 <ReportModal
@@ -599,7 +602,7 @@ const Comment = ({
               )}
               <Dropdown target={<button className="button-text">More</button>}>
                 <div className="dropdown-list">
-                  {/*<CommentShareDropdownItems url={commentShareURL} prefix="Share to " />*/}
+                  <CommentShareDropdownItems url={commentShareURL} />
                   {showEditDelete && (
                     <>
                       <div className="dropdown-item" onClick={handleOnEdit}>
@@ -633,7 +636,7 @@ const Comment = ({
           )}
           {!deleted && !isMobile && (
             <>
-              {/*<CommentShareButton url={commentShareURL} />*/}
+              <CommentShareButton url={commentShareURL} prefix="Share via " />
               {showEditDelete && (
                 <>
                   <button className="button-text" onClick={handleOnEdit}>
