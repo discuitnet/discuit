@@ -31,7 +31,7 @@ function BadgesList({ user }) {
   return (
     <div className="user-badges">
       <Modal open={modalOpen} onClose={handleModalClose}>
-        <div className="modal-card is-compact-mobile modal-badges">
+        <div className="modal-card is-compact-mobile is-center modal-badges">
           <div className="modal-badges-head">
             <ButtonClose className="modal-badges-close" onClick={handleModalClose} />
             <Badge badge={selectedBadge} />

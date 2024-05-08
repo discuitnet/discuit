@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
 import { ButtonClose } from './Button';
+import Input from './Input';
 
 const items = {
   Favorites: true,
@@ -13,68 +14,109 @@ const SaveToListModal = () => {
   const [open, setOpen] = useState(true);
   const handleClose = () => setOpen(false);
 
-  const renderList = () => {
-    const elements = [];
-    for (const [key, value] of Object.entries(items)) {
-      elements.push(renderListItem(key, value));
-    }
-    return <>{elements}</>;
-  };
+  const [page, setPage] = useState('list'); // One of: list, new.
 
-  const renderListItem = (name, checked) => {
-    const htmlFor = `ch-${name}`;
+  const renderListPage = () => {
+    const renderList = () => {
+      const renderItem = (name, checked) => {
+        const htmlFor = `ch-${name}`;
+        return (
+          <div className="list-item" key={name}>
+            <label htmlFor={htmlFor}>{name}</label>
+            <input
+              className="checkbox"
+              id={htmlFor}
+              type="checkbox"
+              checked={checked}
+              onChange={null}
+            />
+          </div>
+        );
+      };
+      const elements = [];
+      for (const [key, value] of Object.entries(items)) {
+        elements.push(renderItem(key, value));
+      }
+      return <>{elements}</>;
+    };
     return (
-      <div className="list-item" key={name}>
-        <label htmlFor={htmlFor}>{name}</label>
-        <input
-          className="checkbox"
-          id={htmlFor}
-          type="checkbox"
-          checked={checked}
-          onChange={null}
-        />
-      </div>
+      <>
+        <div className="modal-card-content">
+          <div className="save-modal-list is-custom-scrollbar is-v2">{renderList()}</div>
+        </div>
+        <div className="modal-card-actions">
+          <button onClick={() => setPage('new')}>Create new list</button>
+        </div>
+      </>
     );
   };
 
+  const [canCreateList, setCanCreateList] = useState(true);
   const [newListName, setNewListName] = useState('');
-  const [creatingList, setCreatingList] = useState(false);
-  const createNewList = () => {
-    setCreatingList(false);
-  };
-  const renderCreateListButton = () => {
-    if (creatingList) {
-      return (
-        <div className="save-modal-new-list">
-          <input
-            type="text"
-            placeholder="Name"
-            value={newListName}
-            onChange={(e) => setNewListName(e.target.value)}
-          />
-          <button className="button-main" onClick={createNewList}>
-            Create
-          </button>
-        </div>
-      );
+  const [newListPublicStatus, setNewListPublicStatus] = useState(false);
+  const handleCreateNewList = async () => {
+    try {
+      setCanCreateList(false);
+    } catch (error) {
+    } finally {
+      setCanCreateList(true);
+      setNewListName('');
+      setNewListPublicStatus(false);
+      setPage('list');
     }
-    return <button onClick={() => setCreatingList(true)}>Create new list</button>;
   };
 
-  const showHint = false;
+  const renderNewPage = () => {
+    return (
+      <>
+        <div className="modal-card-content">
+          <div className="save-modal-newlist">
+            <Input
+              label="List name"
+              value={newListName}
+              onChange={(e) => setNewListName(e.target.value)}
+              autoFocus
+            />
+            <div className="checkbox is-check-last">
+              <label htmlFor="pub">Public</label>
+              <input
+                className="switch"
+                type="checkbox"
+                id="pub"
+                checked={newListPublicStatus}
+                onChange={(e) => setNewListPublicStatus(e.target.checked)}
+              />
+            </div>
+          </div>
+        </div>
+        <div className="modal-card-actions">
+          <button className="button-main" onClick={handleCreateNewList} disabled={!canCreateList}>
+            Create
+          </button>
+          <button onClick={() => setPage('list')}>Cancel</button>
+        </div>
+      </>
+    );
+  };
 
   return (
     <Modal open={open} onClose={handleClose}>
-      <div className="modal-card save-modal">
+      <div
+        className={
+          'modal-card save-modal is-compact-mobile' +
+          (page === 'new' ? ' is-page-new' : '') +
+          (page === 'list' ? ' is-page-list' : '')
+        }
+      >
         <div className="modal-card-head">
-          <div className="modal-card-title">Save to</div>
+          <div className="modal-card-title">
+            {page === 'list' && 'Save to'}
+            {page === 'new' && 'Create list'}
+          </div>
           <ButtonClose onClick={handleClose} />
         </div>
-        <div className="modal-card-content">
-          <div className="save-modal-list is-custom-scrollbar is-v2">{renderList()}</div>
-          {showHint && <div className="save-modal-hint">Enter to save to Favourites.</div>}
-        </div>
-        <div className="modal-card-actions">{renderCreateListButton()}</div>
+        {page === 'list' && renderListPage()}
+        {page === 'new' && renderNewPage()}
       </div>
     </Modal>
   );

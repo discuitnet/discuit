@@ -431,8 +431,8 @@
                         }
                     }
                     .modal-card-content {
-                        align-items: center;
-                        text-align: center;
+                        // align-items: center;
+                        // text-align: center;
                         padding-top: 0.5rem;
                         padding-left: 2rem;
                         padding-right: 2rem;
@@ -446,11 +446,11 @@
                             width: 100%;
                             margin: 0;
                             background: var(--color-bg);
-                            color: var(--color-gray);
+                            // color: var(--color-gray);
                             border-right: var(--seperator);
                             height: 45px;
                             border-radius: 0;
-                            opacity: 0.8;
+                            // opacity: 0.8;
                             &.button-main {
                                 color: var(--color-brand);
                                 opacity: 1;
@@ -462,6 +462,12 @@
                             &:last-child {
                                 border-bottom-left-radius: var(--border-radius);
                             }
+                        }
+                    }
+                    &.is-center {
+                        .modal-card-content {
+                            align-items: center;
+                            text-align: center;
                         }
                     }
                 }
@@ -1027,7 +1033,8 @@
 
 .modal {
     .save-modal {
-        width: 300px;
+        width: 270px;
+        min-width: initial;
         --list-item-height: 35px;
         .modal-card-content {
             padding: 0;
@@ -1047,23 +1054,30 @@
                 height: var(--list-item-height);
             }
         }
-        .save-modal-hint {
+        .save-modal-newlist {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 1rem 0;
-        }
-        .modal-card-actions {
-            padding-top: 0;
-            display: grid;
+            flex-direction: column;
+            padding: var(--card-padding);
+            padding-bottom: 0;
             > * {
-                margin: 0;
+                margin-bottom: var(--gap);
             }
         }
-        .save-modal-new-list {
-            display: grid;
-            grid-gap: var(--gap);
-            grid-template-columns: 1fr max-content;
+        @include mixins.mobile {
+            .save-modal-list {
+                padding: 0;
+            }
+            .save-modal-newlist {
+                padding: 0;
+            }
+        }
+        &.is-page-list {
+            .modal-card-actions {
+                display: grid;
+                > * {
+                    margin: 0;
+                }
+            }
         }
     }
 }

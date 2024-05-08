@@ -12,6 +12,7 @@ import { ButtonClose } from '../../components/Button';
 import { isDeviceIos, isDeviceStandalone } from '../../helper';
 import { showAppInstallButton } from '../../slices/mainSlice';
 import Modal from '../../components/Modal';
+import SaveToListModal from '../../components/SaveToListModal';
 
 const Home = () => {
   const user = useSelector((state) => state.main.user);
@@ -53,6 +54,7 @@ const Home = () => {
 
   return (
     <div className="page-content page-home wrap page-grid">
+      <SaveToListModal />
       <Sidebar />
       <main className="posts">
         {showInstallPrompt && (
