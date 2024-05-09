@@ -33,9 +33,7 @@ const About = () => {
           {`Discuit is not a federated social platform, and we do not plan to support
             federation in the future either. This is because we do not believe that
             federated platforms, for a few specific reasons, have a chance of becoming
-            mainstream social platforms one day. See the article `}
-          <a href="#">Why federation is not the answer,</a>
-          {` where this is covered in depth.`}
+            mainstream social platforms one day.`}
         </>
       ),
     },
@@ -142,12 +140,12 @@ const About = () => {
               still remains, to make as much money as possible, without any regard for, indeed to
               the utter detriment of, the well-being of the user.
             </p>
-            <p>
+            {/*<p>
               {`For more information, see the article: `}
               <a href="https://discuit.substack.com" target="_blank" rel="noreferrer">
                 {`Why we're building an alternative to Reddit.`}
               </a>
-            </p>
+            </p>*/}
           </div>
           <div className="about-section about-highlights">
             <div className="about-highlight">
