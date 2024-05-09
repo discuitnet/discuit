@@ -40,6 +40,12 @@ var (
 		Message:    "User is not logged in.",
 	}
 
+	errForbidden = &httperr.Error{
+		HTTPStatus: http.StatusForbidden,
+		Code:       "forbidden",
+		Message:    "Forbidden.",
+	}
+
 	errNotAdminNorMod = httperr.NewForbidden("not_admin_nor_mod", "User neither an admin nor a mod.")
 )
 
@@ -113,6 +119,13 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/users/{username}/pro_pic", s.withHandler(s.handleUserProPic)).Methods("POST", "DELETE")
 	r.Handle("/api/users/{username}/badges", s.withHandler(s.addBadge)).Methods("POST")
 	r.Handle("/api/users/{username}/badges/{badgeId}", s.withHandler(s.deleteBadge)).Methods("DELETE")
+
+	r.Handle("/api/bookmarks", s.withHandler(s.getBookmarkLists)).Methods("GET")
+	r.Handle("/api/bookmarks", s.withHandler(s.createBookmarkList)).Methods("POST")
+	r.Handle("/api/bookmarks/{listID}", s.withHandler(s.getBookmarksFromList)).Methods("GET")
+	r.Handle("/api/bookmarks/{listID}", s.withHandler(s.addBookmark)).Methods("POST")
+	r.Handle("/api/bookmarks/{listID}/{itemID}", s.withHandler(s.getBookmark)).Methods("GET")
+	r.Handle("/api/bookmarks/{listID}/{itemID}", s.withHandler(s.deleteBookmark)).Methods("DELETE")
 
 	r.Handle("/api/mutes", s.withHandler(s.handleMutes)).Methods("GET", "POST", "DELETE")
 	r.Handle("/api/mutes/users/{mutedUserID}", s.withHandler(s.deleteUserMute)).Methods("DELETE")
