@@ -124,6 +124,7 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/bookmarks", s.withHandler(s.createBookmarkList)).Methods("POST")
 	r.Handle("/api/bookmarks/{listID}", s.withHandler(s.getBookmarksFromList)).Methods("GET")
 	r.Handle("/api/bookmarks/{listID}", s.withHandler(s.addBookmark)).Methods("POST")
+	r.Handle("/api/bookmarks/{listID}", s.withHandler(s.deleteBookmarkList)).Methods("DELETE")
 	r.Handle("/api/bookmarks/{listID}/{itemID}", s.withHandler(s.getBookmark)).Methods("GET")
 	r.Handle("/api/bookmarks/{listID}/{itemID}", s.withHandler(s.deleteBookmark)).Methods("DELETE")
 
