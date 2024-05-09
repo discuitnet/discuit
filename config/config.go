@@ -12,7 +12,8 @@ import (
 type Config struct {
 	IsDevelopment bool `yaml:"isDevelopment"`
 
-	Addr string `yaml:"addr"`
+	Addr     string `yaml:"addr"`
+	DevProxy string `yaml:"devProxy"`
 
 	SiteName        string `yaml:"siteName"`
 	SiteDescription string `yaml:"siteDescription"` // Used for meta tags.
