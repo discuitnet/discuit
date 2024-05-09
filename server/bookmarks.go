@@ -132,8 +132,8 @@ func (s *Server) addBookmark(w *responseWriter, r *request) error {
 	}
 
 	req := struct {
-		ItemType string `json:"item_type"`
-		ItemID   uid.ID `json:"item_id"`
+		ItemType string `json:"itemType"`
+		ItemID   uid.ID `json:"itemId"`
 	}{}
 
 	if err := r.unmarshalJSONBody(&req); err != nil {
