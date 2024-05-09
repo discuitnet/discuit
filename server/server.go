@@ -46,6 +46,12 @@ var (
 		Message:    "Forbidden.",
 	}
 
+	errNotFound = &httperr.Error{
+		HTTPStatus: http.StatusNotFound,
+		Code:       "not_found",
+		Message:    "Not found.",
+	}
+
 	errNotAdminNorMod = httperr.NewForbidden("not_admin_nor_mod", "User neither an admin nor a mod.")
 )
 

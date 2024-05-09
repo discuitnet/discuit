@@ -21,6 +21,10 @@ func (s *Server) getBookmarkLists(w *responseWriter, r *request) error {
 		return err
 	}
 
+	if len(bookmarkLists) == 0 {
+		return w.writeJSON([]struct{}{})
+	}
+
 	return w.writeJSON(bookmarkLists)
 }
 
@@ -67,7 +71,7 @@ func (s *Server) getBookmarksFromList(w *responseWriter, r *request) error {
 	}
 
 	if bookmarkList.UserID != *r.viewer {
-		return errForbidden
+		return errNotFound
 	}
 
 	bookmarks, err := core.GetBookmarksFromList(r.ctx, s.db, listID)
@@ -99,7 +103,7 @@ func (s *Server) deleteBookmarkList(w *responseWriter, r *request) error {
 	}
 
 	if bookmarkList.UserID != *r.viewer {
-		return errForbidden
+		return errNotFound
 	}
 
 	err = core.DeleteBookmarkList(r.ctx, s.db, listID)
@@ -128,7 +132,7 @@ func (s *Server) addBookmark(w *responseWriter, r *request) error {
 	}
 
 	if bookmarkList.UserID != *r.viewer {
-		return errForbidden
+		return errNotFound
 	}
 
 	req := struct {
@@ -175,7 +179,7 @@ func (s *Server) getBookmark(w *responseWriter, r *request) error {
 	}
 
 	if bookmarkList.UserID != *r.viewer {
-		return errForbidden
+		return errNotFound
 	}
 
 	bookmark, err := core.GetBookmark(r.ctx, s.db, itemID, listID)
@@ -208,7 +212,7 @@ func (s *Server) deleteBookmark(w *responseWriter, r *request) error {
 	}
 
 	if bookmarkList.UserID != *r.viewer {
-		return errForbidden
+		return errNotFound
 	}
 
 	err = core.DeleteBookmark(r.ctx, s.db, itemID, listID)
