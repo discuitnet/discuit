@@ -55,15 +55,18 @@ const Footer = () => {
         </div>
         <div className="footer-col">
           <div className="footer-title">Policies</div>
-          <Link to="/terms" className="footer-item">
+          <Link className="footer-item" to="/terms">
             Terms
           </Link>
-          <Link to="/privacy-policy" className="footer-item">
+          <Link className="footer-item" to="/privacy-policy">
             Privacy
           </Link>
-          <Link to="guidelines" className="footer-item">
+          <Link className="footer-item" to="guidelines">
             Guidelines
           </Link>
+          <a className="footer-item" href="https://docs.discuit.net/" target="_blank" re="noopener">
+            Documentation
+          </a>
         </div>
       </div>
     </footer>

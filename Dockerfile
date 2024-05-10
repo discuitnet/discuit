@@ -59,4 +59,4 @@ WORKDIR /app
 # Setup the environment and ports
 EXPOSE 80
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["/app/discuit", "-serve"]
+CMD ["/app/discuit", "serve"]
