@@ -23,7 +23,7 @@ import PageLoading from '../../components/PageLoading';
 import Feed from '../../components/Feed';
 import NotFound from '../NotFound';
 import { Helmet } from 'react-helmet-async';
-import { Link, useHistory, useLocation } from 'react-router-dom';
+import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
 import CommunityLink from '../../components/PostCard/CommunityLink';
 import { useMuteUser } from '../../hooks';
 import UserProPic from '../../components/UserProPic';
@@ -38,7 +38,9 @@ function formatFilterText(filter = '') {
   return 'overview';
 }
 
-const User = ({ username }) => {
+const User = () => {
+  const { username } = useParams();
+
   const dispatch = useDispatch();
   const history = useHistory();
 

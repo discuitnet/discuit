@@ -307,10 +307,13 @@ const AppSwitch = () => {
         <Route exact path="/markdown_guide">
           <MarkdownGuide />
         </Route>
-        <Route exact path="/:name">
-          <SlashRoute />
+        <Route exact path="/@:username">
+          <User />
         </Route>
-        <ProtectedRoute path="/:communityName/modtools">
+        <Route exact path="/:name">
+          <Community />
+        </Route>
+        <ProtectedRoute path="/:name/modtools">
           <Modtools />
         </ProtectedRoute>
         <Route exact path={['/:name/post/:id', '/:name/post/:id/:commentId']}>
@@ -322,16 +325,6 @@ const AppSwitch = () => {
       </Switch>
     </>
   );
-};
-
-const SlashRoute = () => {
-  const { name } = useParams();
-
-  if (name[0] === '@') {
-    return <User username={name.substr(1)} />;
-  }
-
-  return <Community name={name} />;
 };
 
 /*
