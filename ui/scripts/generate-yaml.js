@@ -7,7 +7,7 @@ const rootPath = path.join(__dirname, '../../');
 
 // Run the command to get the config
 (async () => {
-  await exec('./discuit -inject-config', { cwd: '../' }, async (error, stdout, stderr) => {
+  await exec('./discuit inject-config', { cwd: '../' }, async (error, stdout, stderr) => {
     if (error) {
       console.error(`exec error: ${error}`);
       return;

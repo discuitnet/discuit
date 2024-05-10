@@ -21,7 +21,7 @@ mysql -e "CREATE USER IF NOT EXISTS 'discuit'@'127.0.0.1' IDENTIFIED BY 'discuit
 mysql -e "GRANT ALL PRIVILEGES ON discuit.* TO 'discuit'@'127.0.0.1';"
 
 # Run migrations
-/app/discuit -migrate
+/app/discuit migrate
 
 # Build the UI
 echo "Building the UI..."
