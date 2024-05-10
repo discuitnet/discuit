@@ -120,6 +120,7 @@ Note: Do not install the discuit binary using go install or move it somewhere el
 
 In the root directory are these directories:
 
+- `cli`: Contains the command-line interface.
 - `core`: Contains all the core functionality of the backend.
 - `internal`: Contains Go packages internal to the project.
 - `migrations`: Contains the SQL migration files.
