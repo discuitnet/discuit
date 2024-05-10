@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
-import { Redirect, Route, Switch, useParams, useHistory, useLocation } from 'react-router-dom';
+import { Redirect, Route, Switch, useHistory, useLocation } from 'react-router-dom';
 import Chat from './components/Chat';
 import LoginPrompt from './components/LoginPrompt';
 import Navbar from './components/Navbar';
@@ -53,6 +53,7 @@ import AllCommunities from './pages/AllCommunities';
 import Offline from './pages/Offline';
 import AppUpdate from './AppUpdate';
 import PushNotifications from './PushNotifications';
+import { List, Lists } from './pages/Lists';
 
 // Value taken from _mixins.scss file.
 const tabletBreakpoint = 1170;
@@ -309,6 +310,12 @@ const AppSwitch = () => {
         </Route>
         <Route exact path="/@:username">
           <User />
+        </Route>
+        <Route exact path="/@:username/lists">
+          <Lists />
+        </Route>
+        <Route exact path="/@:username/lists/:listName">
+          <List />
         </Route>
         <Route exact path="/:name">
           <Community />
