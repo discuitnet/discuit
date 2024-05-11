@@ -1,0 +1,96 @@
+@use 'mixins';
+
+.page-lists {
+    @include mixins.mobile {
+        padding-left: var(--gap);
+        padding-right: var(--gap);
+    }
+    > main {
+        grid-column: 2 / 4;
+        display: flex;
+        flex-direction: column;
+        @include mixins.mobile {
+            grid-column: 1 / 2;
+        }
+    }
+    .lists-head {
+        margin-bottom: 2rem;
+        h1 {
+            font-size: var(--fs-2xl);
+            font-weight: 600;
+            a {
+                color: var(--color-link);
+                font-weight: inherit;
+                &:visited {
+                    color: var(--color-link);
+                }
+            }
+        }
+    }
+    .lists-main {
+        display: flex;
+        flex-direction: column;
+        .lists-main-head {
+            display: flex;
+            justify-content: space-between;
+            .left {
+                display: flex;
+                > * {
+                    margin-right: var(--gap);
+                    &:last-child {
+                        margin-right: 0;
+                    }
+                }
+            }
+        }
+        .lists-main-main {
+            margin-top: var(--gap);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-gap: var(--gap);
+            @include mixins.mobile {
+                grid-template-columns: 1fr;
+            }
+        }
+    }
+    .list-thumb {
+        width: 300px;
+        display: flex;
+        flex-direction: column;
+        padding: calc(var(--gap) / 2);
+        border-radius: var(--border-radius);
+        cursor: pointer;
+        color: inherit; // Because of the a tag.
+        text-decoration: inherit; // Because of the a tag.
+        &:hover {
+            background: rgba(var(--base-fg), 0.05);
+        }
+        .list-thumb-top {
+            .list-thumb-image {
+                height: 200px;
+                border-radius: var(--border-radius);
+                img {
+                    border-radius: var(--border-radius);
+                }
+            }
+        }
+        .list-thumb-bottom {
+            margin-top: 5px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            .list-thumb-name {
+                span.is-name {
+                    font-weight: 600;
+                }
+                span.is-age {
+                    margin-left: 5px;
+                    opacity: 0.75;
+                    font-size: var(--fs-xs);
+                }
+            }
+            .list-thumb-count {
+                justify-self: end;
+            }
+        }
+    }
+}
