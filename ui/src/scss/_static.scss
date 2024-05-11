@@ -1,9 +1,5 @@
 @use 'mixins';
 
-body.is-static-page {
-    background: var(--color-bg);
-}
-
 .page-static {
     // max-width: 960px;
     font-size: var(--fs-xl);

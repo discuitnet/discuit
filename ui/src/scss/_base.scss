@@ -233,6 +233,10 @@ body {
         --fs-l: 1.7rem;
         --fs-xl: 1.8rem;
     }
+
+    &.is-not-gray {
+        background: var(--color-bg);
+    }
 }
 
 @mixin custom-scrollbar {

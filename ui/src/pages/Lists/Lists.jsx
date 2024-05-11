@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { useParams } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar';
@@ -7,6 +7,13 @@ import Dropdown from '../../components/Dropdown';
 
 const Lists = () => {
   const { username } = useParams();
+
+  useEffect(() => {
+    document.body.classList.add('is-not-gray');
+    return () => {
+      document.body.classList.remove('is-not-gray');
+    };
+  }, []);
 
   return (
     <div className="page-content wrap page-grid page-lists">

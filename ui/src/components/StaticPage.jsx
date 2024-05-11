@@ -5,9 +5,9 @@ import Footer from './Footer';
 
 const StaticPage = ({ className, children, title, ...props }) => {
   useEffect(() => {
-    document.body.classList.add('is-static-page');
+    document.body.classList.add('is-not-gray');
     return () => {
-      document.body.classList.remove('is-static-page');
+      document.body.classList.remove('is-not-gray');
     };
   }, []);
   return (
