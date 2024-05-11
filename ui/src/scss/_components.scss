@@ -522,6 +522,12 @@
     z-index: 10;
     > .dropdown-target {
     }
+    .dropdown-target {
+        button,
+        .button {
+            font-weight: inherit;
+        }
+    }
     > .dropdown-menu {
         display: none;
         position: absolute;

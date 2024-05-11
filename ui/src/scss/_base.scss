@@ -675,6 +675,13 @@ button,
             height: var(--button-icon-size);
             margin-left: 8px;
         }
+        &.is-text-first {
+            flex-direction: row-reverse;
+            span {
+                margin-left: 0;
+                margin-right: 8px;
+            }
+        }
     }
     &:disabled,
     &.is-disabled {
