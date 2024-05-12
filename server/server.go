@@ -187,14 +187,14 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 		DB:            db,
 	})
 
-	if conf.DevProxy != "" {
+	if conf.StaticProxy != "" {
 		s.staticRouter.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ses, err := s.sessions.Get(r)
 			if err == nil {
 				s.setInitialCookies(w, r, ses)
 			}
 
-			httputil.ProxyRequest(w, r, conf.DevProxy+r.URL.Path)
+			httputil.ProxyRequest(w, r, conf.StaticProxy+r.URL.Path)
 		})
 	} else {
 		s.staticRouter.PathPrefix("/").HandlerFunc(s.serveSPA)
