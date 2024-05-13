@@ -187,7 +187,18 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 		DB:            db,
 	})
 
-	s.staticRouter.PathPrefix("/").HandlerFunc(s.serveSPA)
+	if conf.UIProxy != "" {
+		s.staticRouter.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ses, err := s.sessions.Get(r)
+			if err == nil {
+				s.setInitialCookies(w, r, ses)
+			}
+
+			httputil.ProxyRequest(w, r, conf.UIProxy+r.URL.Path)
+		})
+	} else {
+		s.staticRouter.PathPrefix("/").HandlerFunc(s.serveSPA)
+	}
 	return s, nil
 }
 
