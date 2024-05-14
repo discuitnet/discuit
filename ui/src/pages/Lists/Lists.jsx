@@ -63,7 +63,7 @@ export default Lists;
 const ListThumbnail = ({ list }) => {
   // TODO: Display list private status.
   return (
-    <Link className="list-thumb" to="#">
+    <Link className="list-thumb" to="/@user/lists/favorites">
       <div className="list-thumb-top">
         <div className="list-thumb-image">
           <img

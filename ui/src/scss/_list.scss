@@ -94,3 +94,76 @@
         }
     }
 }
+
+.page-list {
+    padding-top: 0;
+    .page-middle {
+        .list-head {
+            margin-left: var(--post-card-votes-margin);
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+            display: flex;
+            flex-direction: column;
+            .list-head-main {
+                display: flex;
+                flex-direction: column;
+                > * {
+                    margin-bottom: var(--gap);
+                }
+                .list-head-name {
+                    margin-bottom: 0;
+                }
+            }
+            .list-head-name {
+                font-size: var(--fs-2xl);
+            }
+            .list-head-user {
+                font-size: var(--fs-s);
+            }
+            .list-head-actions {
+                display: flex;
+                > * {
+                    margin-right: var(--gap);
+                    &:last-child {
+                        margin-right: 0;
+                    }
+                }
+            }
+        }
+    }
+    .list-summary {
+        .card-list-item {
+            display: flex;
+            align-items: center;
+            svg {
+                width: var(--icon-size);
+                height: var(--icon-size);
+            }
+            div {
+                margin-left: var(--gap);
+            }
+        }
+    }
+    .lists-feed {
+        margin-top: var(--gap);
+    }
+    .sidebar-right {
+        > * {
+            margin-bottom: var(--gap);
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+    }
+}
+
+.edit-list-modal {
+    .modal-card-content {
+        > * {
+            margin-bottom: var(--gap);
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+    }
+}
