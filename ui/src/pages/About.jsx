@@ -164,8 +164,8 @@ const About = () => {
             <div className="about-highlight">
               <span className="is-bold">Giving agency to users.</span>
               Choice over what appears on your feed. Multiple feeds. A plethora of ways to filter
-              content. In short, you have complete control over what you see on Discuit. (Please not
-              that Discuit is a work in progress and that many of these features are yet to be
+              content. In short, you have complete control over what you see on Discuit. (Please
+              note that Discuit is a work in progress and that many of these features are yet to be
               built.)
             </div>
             <div className="about-highlight">
