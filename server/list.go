@@ -82,11 +82,11 @@ func (s *Server) handleLists(w *responseWriter, r *request) error {
 // /api/lists/{listId} [GET, PUT, DELETE]
 func (s *Server) handleList(w *responseWriter, r *request) error {
 	var (
-		listID int
+		listID uid.ID
 		err    error
 	)
 
-	if listID, err = strconv.Atoi(strings.ToLower(r.muxVar("listId"))); err != nil {
+	if listID, err = uid.FromString(r.muxVar("listId")); err != nil {
 		return httperr.NewBadRequest("invalid-list-id", "Invalid list id.")
 	}
 
@@ -132,11 +132,11 @@ func (s *Server) handleList(w *responseWriter, r *request) error {
 // /api/lists/{listId}/items [GET, POST]
 func (s *Server) handleListItems(w *responseWriter, r *request) error {
 	var (
-		listID int
+		listID uid.ID
 		err    error
 	)
 
-	if listID, err = strconv.Atoi(strings.ToLower(r.muxVar("listId"))); err != nil {
+	if listID, err = uid.FromString(r.muxVar("listId")); err != nil {
 		return httperr.NewBadRequest("invalid-list-id", "Invalid list id.")
 	}
 
@@ -203,13 +203,12 @@ func (s *Server) deleteListItem(w *responseWriter, r *request) error {
 	}
 
 	var (
-		listID int
+		listID uid.ID
 		itemID int
 		err    error
 	)
 
-	listID, err = strconv.Atoi(r.muxVar("listId"))
-	if err != nil {
+	if listID, err = uid.FromString(r.muxVar("listId")); err != nil {
 		return httperr.NewBadRequest("invalid-list-id", "Invalid list id.")
 	}
 

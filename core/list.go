@@ -66,7 +66,7 @@ func (o *ListItemsSort) UnmarshalText(data []byte) error {
 }
 
 type List struct {
-	ID            int           `json:"id"`
+	ID            uid.ID        `json:"id"`
 	UserID        uid.ID        `json:"userId"`
 	Name          string        `json:"name"`
 	DisplayName   string        `json:"displayName"`
@@ -123,7 +123,7 @@ func getLists(ctx context.Context, db *sql.DB, where string, args ...any) ([]*Li
 	return lists, nil
 }
 
-func GetList(ctx context.Context, db *sql.DB, id int) (*List, error) {
+func GetList(ctx context.Context, db *sql.DB, id uid.ID) (*List, error) {
 	lists, err := getLists(ctx, db, "WHERE lists.id = ?", id)
 	if err != nil {
 		return nil, err
@@ -209,7 +209,7 @@ func (l *List) AddItem(ctx context.Context, db *sql.DB, targetType ContentType, 
 
 type ListItem struct {
 	ID         int         `json:"id"`
-	ListID     int         `json:"listId"`
+	ListID     uid.ID      `json:"listId"`
 	TargetType ContentType `json:"targetType"`
 	TargetID   uid.ID      `json:"targetId"`
 	CreatedAt  time.Time   `json:"createdAt"` // When the list item was created, not the target item.
@@ -217,7 +217,7 @@ type ListItem struct {
 	TargetItem any `json:"targetItem"` // Either a Post or a Comment.
 }
 
-func GetListItem(ctx context.Context, db *sql.DB, listID, itemID int) (*ListItem, error) {
+func GetListItem(ctx context.Context, db *sql.DB, listID uid.ID, itemID int) (*ListItem, error) {
 	query := buildSelectListItemsQuery("WHERE id = ? AND list_id = ?")
 	args := []any{itemID, listID}
 
@@ -240,7 +240,7 @@ func GetListItem(ctx context.Context, db *sql.DB, listID, itemID int) (*ListItem
 
 // The next string should contain either a timestamp or a marshaled uid.ID; if
 // not, the function will return an error. It's safe for next to be nil.
-func GetListItems(ctx context.Context, db *sql.DB, listID, limit int, sort ListItemsSort, next *string, viewer *uid.ID) (*ListItemsResultSet, error) {
+func GetListItems(ctx context.Context, db *sql.DB, listID uid.ID, limit int, sort ListItemsSort, next *string, viewer *uid.ID) (*ListItemsResultSet, error) {
 	query := buildSelectListItemsQuery("WHERE list_id = ?")
 	args := []any{listID}
 
@@ -374,7 +374,7 @@ func buildSelectListItemsQuery(where string) string {
 	return "SELECT id, target_type, target_id, created_at FROM list_items " + where
 }
 
-func scanListItems(rows *sql.Rows, listID int) ([]*ListItem, error) {
+func scanListItems(rows *sql.Rows, listID uid.ID) ([]*ListItem, error) {
 	defer rows.Close()
 
 	items := []*ListItem{}
