@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"slices"
 	"strconv"
 	"time"
@@ -179,6 +180,13 @@ func CreateList(ctx context.Context, db *sql.DB, user uid.ID, name, displayName 
 		{Name: "ordering", Value: ListOrderingDefault},
 	})
 	_, err := db.ExecContext(ctx, query, args...)
+	if err != nil && msql.IsErrDuplicateErr(err) {
+		return &httperr.Error{
+			HTTPStatus: http.StatusConflict,
+			Code:       "duplicate-list",
+			Message:    "A list with that name already exists.",
+		}
+	}
 	return err
 }
 
