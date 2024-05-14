@@ -10,8 +10,9 @@ const About = () => {
         <>
           {'We don’t. Discuit is funded entirely through donations from our users via our '}
           <a href="https://www.patreon.com/discuit" target="_blank" rel="noreferrer">
-            Patreon.
+            Patreon
           </a>
+          .
         </>
       ),
     },
@@ -71,8 +72,8 @@ const About = () => {
           {` community. If you have feedback or would like to report a bug, you can create a post in the `}
           <Link to="/DiscuitSuggestions">DiscuitSuggestions</Link>
           {` community (if you have a GitHub account, however, the best place to report a bug would be on `}
-          <a href={`${CONFIG.githubURL}/issues`}>GitHub.</a>
-          {`)`}
+          <a href={`${CONFIG.githubURL}/issues`}>GitHub</a>
+          {`)`}.
         </>
       ),
     },
