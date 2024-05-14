@@ -402,6 +402,7 @@ const Post = () => {
             <div className={'post-card-bottom' + (!hasImage ? ' has-no-img' : '')}>
               <div className="left">
                 <PostShareButton post={post} />
+                {loggedIn && <button className="button-text">Save to</button>}
                 {postOwner && (
                   <button
                     className="button-text"

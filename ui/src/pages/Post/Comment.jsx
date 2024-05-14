@@ -611,6 +611,7 @@ const Comment = ({
                       Report
                     </div>
                   )}
+                  <div className="dropdown-item">Save to list</div>
                   {userMod && (
                     <>
                       <div className="dropdown-item is-topic">Mod actions</div>
@@ -643,6 +644,7 @@ const Comment = ({
               {showReport && (
                 <ReportModal target={comment} targetType="comment" disabled={isBanned} />
               )}
+              <button className="button-text">Save</button>
               {userMod && (
                 <Dropdown
                   target={

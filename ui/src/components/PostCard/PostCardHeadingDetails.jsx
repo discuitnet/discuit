@@ -101,6 +101,7 @@ const PostCardHeadingDetails = ({
                   {muteUserText}
                 </button>
               )}
+              <button className="button-clear dropdown-item">Save to list</button>
             </div>
           </Dropdown>
         )}
