@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { Helmet } from 'react-helmet-async';
 import Footer from './Footer';
 
-const StaticPage = ({ className, children, title, ...props }) => {
+const StaticPage = ({ className, children, title, noWrap = false, ...props }) => {
   useEffect(() => {
     document.body.classList.add('is-not-gray');
     return () => {
@@ -15,7 +15,7 @@ const StaticPage = ({ className, children, title, ...props }) => {
       <Helmet>
         <title>{title}</title>
       </Helmet>
-      <div className="wrap">{children}</div>
+      {noWrap ? <>{children}</> : <div className="wrap">{children}</div>}
       <Footer />
     </div>
   );
@@ -25,6 +25,7 @@ StaticPage.propTypes = {
   className: PropTypes.string,
   children: PropTypes.oneOfType([PropTypes.node, PropTypes.arrayOf(PropTypes.node)]).isRequired,
   title: PropTypes.string,
+  noWrap: PropTypes.bool,
   description: PropTypes.string,
 };
 

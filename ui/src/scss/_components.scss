@@ -507,10 +507,14 @@
                 &.is-topic {
                     cursor: auto;
                     text-transform: uppercase;
-                    opacity: 0.5;
+                    opacity: 0.6;
                 }
                 .checkbox {
                     justify-content: center;
+                }
+                &:disabled,
+                &.is-disabled {
+                    opacity: var(--disabled-opacity);
                 }
             }
         }

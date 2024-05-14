@@ -21,10 +21,10 @@ function BadgesList({ user }) {
     switch (selectedBadge.type) {
       case 'supporter':
         modalTitle = 'Supporter';
-        modalDesc = 'This user is a Patreon supporter.';
+        modalDesc = 'This user is a Patreon supporter, helping to keep Discuit always free of ads.';
         break;
       default:
-        throw new Error(`unkown badge type '${badge.type}'`);
+        throw new Error(`unkown badge type '${selectedBadge.type}'`);
     }
   }
 
