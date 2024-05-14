@@ -45,7 +45,7 @@ const About = () => {
             have an official Progressive Web App (PWA) that can be installed on both iOS
             and Android devices (with support for device notifications). We also have two
             actively maintained third party apps developed by two of our users: `}
-          <Link to="/DiscoApp">Disco</Link> for iOs, and <Link to="/Diskette">Diskette</Link> for
+          <Link to="/DiscoApp">Disco</Link> for iOS, and <Link to="/Diskette">Diskette</Link> for
           Android.
         </>
       ),
@@ -70,8 +70,8 @@ const About = () => {
           <Link to="/DiscuitMeta">DiscuitMeta</Link>
           {` community. If you have feedback or would like to report a bug, you can create a post in the `}
           <Link to="/DiscuitSuggestions">DiscuitSuggestions</Link>
-          {` community (if you have a Github account, however, the best place to report a bug would be on `}
-          <a href={`${CONFIG.githubURL}/issues`}>Github.</a>
+          {` community (if you have a GitHub account, however, the best place to report a bug would be on `}
+          <a href={`${CONFIG.githubURL}/issues`}>GitHub.</a>
           {`)`}
         </>
       ),
