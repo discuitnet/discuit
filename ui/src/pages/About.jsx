@@ -43,7 +43,7 @@ const About = () => {
         <>
           {`At the moment, Discuit does not have an official iOS or Android app. But we do
             have an official Progressive Web App (PWA) that can be installed on both iOS
-            and Android devices (it supports device notifications). We also have two
+            and Android devices (with support for device notifications). We also have two
             actively maintained third party apps developed by two of our users: `}
           <Link to="/DiscoApp">Disco</Link> for iOs, and <Link to="/Diskette">Diskette</Link> for
           Android.
@@ -70,7 +70,7 @@ const About = () => {
           <Link to="/DiscuitMeta">DiscuitMeta</Link>
           {` community. If you have feedback or would like to report a bug, you can create a post in the `}
           <Link to="/DiscuitSuggestions">DiscuitSuggestions</Link>
-          {` community (if you have a Github account, however, the best place to report a bug would be `}
+          {` community (if you have a Github account, however, the best place to report a bug would be on `}
           <a href={`${CONFIG.githubURL}/issues`}>Github.</a>
           {`)`}
         </>
@@ -151,7 +151,8 @@ const About = () => {
             <div className="about-highlight">
               <span className="is-bold">No ads. No tracking.</span>
               There are no ads, no forms of affiliate marketing, and no tracking anywhere on
-              Discuit. Your attention, nor your data, is not monetized in any way, shape or form.
+              Discuit. And neither your attention, nor your data, is monetized in any way, shape or
+              form.
             </div>
             <div className="about-highlight">
               <span className="is-bold">Enshitification-proof.</span>
@@ -164,7 +165,7 @@ const About = () => {
               <span className="is-bold">Giving agency to users.</span>
               Choice over what appears on your feed. Multiple feeds. A plethora of ways to filter
               content. In short, you have complete control over what you see on Discuit. (Please not
-              that Discuit is a work in progres and that many of these features are yet to be
+              that Discuit is a work in progress and that many of these features are yet to be
               built.)
             </div>
             <div className="about-highlight">
