@@ -170,9 +170,36 @@ func GetList(ctx context.Context, db *sql.DB, id uid.ID) (*List, error) {
 	return lists[0], nil
 }
 
-// GetUsersLists returns all the lists of user.
-func GetUsersLists(ctx context.Context, db *sql.DB, user uid.ID) ([]*List, error) {
-	return getLists(ctx, db, "WHERE user_id = ? ORDER BY last_updated_at DESC", user)
+// GetUsersLists returns all the lists of user. The argument sort has to be
+// either empty or one of be one of: lexical, last_updated. And filter has to be
+// either empty or one of: all, public, private.
+func GetUsersLists(ctx context.Context, db *sql.DB, user uid.ID, sort, filter string) ([]*List, error) {
+	if sort == "" {
+		sort = "lexical"
+	}
+	if filter == "" {
+		filter = "all"
+	}
+	if !(sort == "lexical" || sort == "last_updated") {
+		return nil, httperr.NewBadRequest("invalid-lists-sort", "Invalid lists sort.")
+	}
+	if !(filter == "all" || filter == "public" || filter == "private") {
+		return nil, httperr.NewBadRequest("invalid-lists-filter", "Invalid lists filter.")
+	}
+
+	where := "WHERE user_id = ? "
+	if filter == "public" {
+		where += "public = true "
+	} else if filter == "private" {
+		where += "public = false "
+	}
+	if sort == "lexical" {
+		where += "ORDER BY name ASC"
+	} else if sort == "last_updated" {
+		where += "ORDER BY last_updated_at DESC"
+	}
+
+	return getLists(ctx, db, where, user)
 }
 
 func CreateList(ctx context.Context, db *sql.DB, user uid.ID, name, displayName string, public bool) error {

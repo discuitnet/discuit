@@ -152,7 +152,7 @@ func (s *Server) initial(w *responseWriter, r *request) error {
 		} else if userMutes != nil {
 			response.Mutes.UserMutes = userMutes
 		}
-		if lists, err := core.GetUsersLists(r.ctx, s.db, *r.viewer); err != nil {
+		if lists, err := core.GetUsersLists(r.ctx, s.db, *r.viewer, "", ""); err != nil {
 			return err
 		} else if lists != nil {
 			response.Lists = lists

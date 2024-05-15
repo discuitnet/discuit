@@ -62,7 +62,7 @@ func (s *Server) handleLists(w *responseWriter, r *request) error {
 		}
 	}
 
-	lists, err := core.GetUsersLists(r.ctx, s.db, user.ID)
+	lists, err := core.GetUsersLists(r.ctx, s.db, user.ID, r.urlQueryParamsValue("sort"), r.urlQueryParamsValue("filter"))
 	if err != nil {
 		return err
 	}
