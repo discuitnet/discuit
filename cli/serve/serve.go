@@ -110,7 +110,7 @@ func serve(ctx *cli.Context) error {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
 			w.Header().Set("Access-Control-Expose-Headers", "Csrf-Token")
-			w.Header().Set("Access-Control-Allow-Headers", "x-csrf-token, Content-Type")
+			w.Header().Set("Access-Control-Allow-Headers", "x-csrf-token, Content-Type, credentials")
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
 
 			// Handle preflight requests.
