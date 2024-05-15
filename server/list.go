@@ -13,19 +13,20 @@ import (
 // /api/users/{username}/lists [GET, POST]
 func (s *Server) handleLists(w *responseWriter, r *request) error {
 	var (
-		username         = strings.ToLower(r.muxVar("username"))
-		viewer           *core.User
-		err              error
-		usernameIsViewer = false
+		username     = strings.ToLower(r.muxVar("username"))
+		user         *core.User
+		userIsViewer = false
+		err          error
 	)
 
+	user, err = core.GetUserByUsername(r.ctx, s.db, username, r.viewer)
+	if err != nil {
+		return err
+	}
+
 	if r.loggedIn {
-		viewer, err = core.GetUser(r.ctx, s.db, *r.viewer, r.viewer)
-		if err != nil {
-			return err
-		}
-		if viewer.UsernameLowerCase == username {
-			usernameIsViewer = true
+		if user.ID == *r.viewer {
+			userIsViewer = true
 		}
 	}
 
@@ -36,7 +37,7 @@ func (s *Server) handleLists(w *responseWriter, r *request) error {
 		if !r.loggedIn {
 			return errNotLoggedIn
 		}
-		if !usernameIsViewer {
+		if !userIsViewer {
 			return httperr.NewForbidden("not-your-list", "Not your list.")
 		}
 
@@ -61,11 +62,11 @@ func (s *Server) handleLists(w *responseWriter, r *request) error {
 		}
 	}
 
-	lists, err := core.GetUsersLists(r.ctx, s.db, *r.viewer)
+	lists, err := core.GetUsersLists(r.ctx, s.db, user.ID)
 	if err != nil {
 		return err
 	}
-	if !usernameIsViewer {
+	if !userIsViewer {
 		// Viewer is requesting the lists of someone else. Only show them the
 		// public lists.
 		public := make([]*core.List, 0, len(lists))
