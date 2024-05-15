@@ -104,6 +104,21 @@ func serve(ctx *cli.Context) error {
 				http.Redirect(w, r, url.String(), http.StatusMovedPermanently)
 				return
 			}
+
+			// Set CORS headers.
+			origin := r.Header.Get("Origin")
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
+			w.Header().Set("Access-Control-Expose-Headers", "Csrf-Token")
+			w.Header().Set("Access-Control-Allow-Headers", "x-csrf-token, Content-Type")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+			// Handle preflight requests.
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+
 			site.ServeHTTP(w, r)
 		}),
 	}
