@@ -175,12 +175,12 @@ func GetList(ctx context.Context, db *sql.DB, id uid.ID) (*List, error) {
 // either empty or one of: all, public, private.
 func GetUsersLists(ctx context.Context, db *sql.DB, user uid.ID, sort, filter string) ([]*List, error) {
 	if sort == "" {
-		sort = "lexical"
+		sort = "name"
 	}
 	if filter == "" {
 		filter = "all"
 	}
-	if !(sort == "lexical" || sort == "last_updated") {
+	if !(sort == "name" || sort == "lastAdded") {
 		return nil, httperr.NewBadRequest("invalid-lists-sort", "Invalid lists sort.")
 	}
 	if !(filter == "all" || filter == "public" || filter == "private") {
@@ -189,13 +189,13 @@ func GetUsersLists(ctx context.Context, db *sql.DB, user uid.ID, sort, filter st
 
 	where := "WHERE user_id = ? "
 	if filter == "public" {
-		where += "public = true "
+		where += "AND public = true "
 	} else if filter == "private" {
-		where += "public = false "
+		where += "AND public = false "
 	}
-	if sort == "lexical" {
+	if sort == "name" {
 		where += "ORDER BY name ASC"
-	} else if sort == "last_updated" {
+	} else if sort == "lastAdded" {
 		where += "ORDER BY last_updated_at DESC"
 	}
 

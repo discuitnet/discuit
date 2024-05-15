@@ -2,16 +2,19 @@ import { useInsertionEffect, useReducer, useRef } from 'react';
 import { useEffect, useState } from 'react';
 import { useHistory } from 'react-router';
 import { useLocation } from 'react-router';
-import { usernameLegalLetters } from '../helper';
+import { APIError, mfetch, mfetchjson, usernameLegalLetters } from '../helper';
 import {
   muteCommunity,
   muteUser,
   selectIsCommunityMuted,
   selectIsUserMuted,
+  snackAlertError,
   unmuteCommunity,
   unmuteUser,
 } from '../slices/mainSlice';
 import { useDispatch, useSelector } from 'react-redux';
+import { selectUser, userAdded } from '../slices/usersSlice';
+import { selectUsersLists, usersListsAdded } from '../slices/listsSlice';
 
 export function useDelayedEffect(callback, deps, delay = 1000) {
   const [timer, setTimer] = useState(null);
@@ -342,5 +345,87 @@ export function useMuteCommunity({ communityId, communityName }) {
     isMuted,
     toggleMute,
     displayText: (isMuted ? 'Unmute' : 'Mute') + ` /${communityName}`,
+  };
+}
+
+/**
+ * Fetches a user by calling the API. If the user is found in the Redux store,
+ * however, no networks calls are made and the user object is fetched from the
+ * store.
+ *
+ */
+export function useFetchUser(username, showSnackAlertOnError = true) {
+  const dispatch = useDispatch();
+  const user = useSelector(selectUser(username));
+  const [loading, setLoading] = useState(!user);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (user) {
+      return;
+    }
+    const f = async () => {
+      try {
+        setLoading(true);
+        const res = await mfetch(`/api/users/${username}`);
+        if (!res.ok) {
+          if (res.status === 404) {
+            setLoading(false);
+            return;
+          }
+          throw new APIError(res.status, await res.json());
+        }
+        dispatch(userAdded(await res.json()));
+      } catch (error) {
+        setError(error);
+        if (showSnackAlertOnError) {
+          dispatch(snackAlertError(error));
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    f();
+  }, [username]);
+
+  return {
+    user,
+    loading,
+    error,
+  };
+}
+
+export function useFetchUsersLists(username, showSnackAlertOnError = true) {
+  const dispatch = useDispatch();
+  const { lists, order, filter } = useSelector(selectUsersLists(username));
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (lists) {
+      return;
+    }
+    const f = async () => {
+      try {
+        setError(null);
+        const lists = await mfetchjson(
+          `/api/users/${username}/lists?sort=${order}&filter=${filter}`
+        );
+        dispatch(usersListsAdded(username, lists, order, filter));
+      } catch (error) {
+        setError(error);
+        if (showSnackAlertOnError) {
+          dispatch(snackAlertError(error));
+        }
+      }
+    };
+    f();
+  }, [username, order, filter]);
+
+  return {
+    lists,
+    order,
+    filter,
+    loading: !(lists && !error),
+    error,
   };
 }
