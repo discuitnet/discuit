@@ -70,6 +70,7 @@ func (o *ListItemsSort) UnmarshalText(data []byte) error {
 type List struct {
 	ID            uid.ID        `json:"id"`
 	UserID        uid.ID        `json:"userId"`
+	Username      string        `json:"username"`
 	Name          string        `json:"name"`
 	DisplayName   string        `json:"displayName"`
 	Public        bool          `json:"public"`
@@ -85,6 +86,7 @@ func getLists(ctx context.Context, db *sql.DB, where string, args ...any) ([]*Li
 	query := msql.BuildSelectQuery("lists", []string{
 		"lists.id",
 		"lists.user_id",
+		"users.username",
 		"lists.name",
 		"lists.display_name",
 		"lists.public",
@@ -92,7 +94,9 @@ func getLists(ctx context.Context, db *sql.DB, where string, args ...any) ([]*Li
 		"lists.ordering",
 		"lists.created_at",
 		"lists.last_updated_at",
-	}, nil, where)
+	}, []string{
+		"INNER JOIN users on lists.user_id = users.id",
+	}, where)
 
 	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -106,6 +110,7 @@ func getLists(ctx context.Context, db *sql.DB, where string, args ...any) ([]*Li
 		err = rows.Scan(
 			&list.ID,
 			&list.UserID,
+			&list.Username,
 			&list.Name,
 			&list.DisplayName,
 			&list.Public,
