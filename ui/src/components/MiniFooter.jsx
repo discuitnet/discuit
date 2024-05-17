@@ -8,6 +8,9 @@ const MiniFooter = () => {
       <Link to="/terms">Terms</Link>
       <Link to="/privacy-policy">Privacy</Link>
       <Link to="/guidelines">Guidelines</Link>
+      <a href="https://docs.discuit.net/" target="_blank" re="noopener">
+        Docs
+      </a>
       <a href={`mailto:${CONFIG.emailContact}`}>Contact</a>
       <span>© 2024 {CONFIG.siteName}.</span>
     </footer>

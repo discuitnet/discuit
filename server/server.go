@@ -187,7 +187,18 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 		DB:            db,
 	})
 
-	s.staticRouter.PathPrefix("/").HandlerFunc(s.serveSPA)
+	if conf.UIProxy != "" {
+		s.staticRouter.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ses, err := s.sessions.Get(r)
+			if err == nil {
+				s.setInitialCookies(w, r, ses)
+			}
+
+			httputil.ProxyRequest(w, r, conf.UIProxy+r.URL.Path)
+		})
+	} else {
+		s.staticRouter.PathPrefix("/").HandlerFunc(s.serveSPA)
+	}
 	return s, nil
 }
 
@@ -965,7 +976,7 @@ func (s *Server) rateLimit(r *request, bucketID string, interval time.Duration, 
 }
 
 func (s *Server) rateLimitUpdateContent(r *request, userID uid.ID) error {
-	if err := s.rateLimit(r, "update_stuff_1_"+userID.String(), time.Second*2, 1); err != nil {
+	if err := s.rateLimit(r, "update_stuff_1_"+userID.String(), time.Second*1, 1); err != nil {
 		return err
 	}
 	return s.rateLimit(r, "update_stuff_2_"+userID.String(), time.Hour*24, 2000)
