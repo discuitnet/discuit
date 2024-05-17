@@ -120,15 +120,15 @@ const NotificationItem = ({ notification, ...rest }) => {
           if (notif.noReports === 1) {
             return (
               <>
-                <b>{notif.noReports}</b> user has reported a post in{' '}
-                <b>{notif.report.target.communityName}</b>.
+                <b>{notif.noReports}</b> user has reported the post{' '}
+                <b>{notif.report.target.title}</b> in <b>{notif.report.target.communityName}</b>.
               </>
             );
           } else {
             return (
               <>
-                <b>{notif.noReports}</b> users have reported a post in{' '}
-                <b>{notif.report.target.communityName}</b>.
+                <b>{notif.noReports}</b> users have reported the post{' '}
+                <b>{notif.report.target.title}</b> in <b>{notif.report.target.communityName}</b>.
               </>
             );
           }
@@ -227,8 +227,14 @@ const NotificationItem = ({ notification, ...rest }) => {
       };
       break;
     case 'new_report':
-      to = `/${notif.report.target.communityName}/modtools/reports`;
-      // TODO: Image like 🔨 or similar to AW's thing
+      switch (notif.report.type) {
+        case 'post':
+          to = `/${notif.report.target.communityName}/post/${notif.report.target.publicId}`;
+          break;
+        case 'comment':
+          to = `/${notif.report.target.communityName}/post/${notif.report.target.postPublicId}/${notif.report.target.id}`;
+          break;
+      }
       break;
   }
 
