@@ -574,6 +574,8 @@ func CreateCommentReplyNotification(ctx context.Context, db *sql.DB, user uid.ID
 
 type NotificationNewReport struct {
 	ReportID       int       `json:"reportId"`
+	ContentID      uid.ID    `json:"contentId"`
+	ContentType    string    `json:"contentType"`
 	NumReports     int       `json:"noReports"`
 	FirstCreatedAt time.Time `json:"firstCreatedAt"`
 }
@@ -600,7 +602,7 @@ func (n NotificationNewReport) marshalJSONForAPI(ctx context.Context, db *sql.DB
 	return json.Marshal(out)
 }
 
-func CreateNewReportNotification(ctx context.Context, db *sql.DB, user uid.ID, report int) error {
+func CreateNewReportNotification(ctx context.Context, db *sql.DB, user uid.ID, report int, contentID uid.ID, contentType string) error {
 	if _, err := GetUser(ctx, db, user, nil); err != nil {
 		return err
 	}
@@ -611,12 +613,11 @@ func CreateNewReportNotification(ctx context.Context, db *sql.DB, user uid.ID, r
 		return err
 	}
 	for _, notif := range notifs {
-		// Inside your function
 		if notif != nil {
 			log.Printf("Debug: notif is not nil, notif.Type: %v, notif.Notif: %v", notif.Type, notif.Notif)
 			if notif.Type == NotificationTypeNewReport {
 				if rc, ok := notif.Notif.(*NotificationNewReport); ok {
-					if rc.ReportID == report && !notif.Seen {
+					if rc.ContentID == contentID && rc.ContentType == contentType && !notif.Seen {
 						rc.NumReports++
 						return notif.Update(ctx)
 					}
@@ -631,6 +632,8 @@ func CreateNewReportNotification(ctx context.Context, db *sql.DB, user uid.ID, r
 
 	n := NotificationNewReport{
 		ReportID:       report,
+		ContentID:      contentID,
+		ContentType:    contentType,
 		NumReports:     1,
 		FirstCreatedAt: time.Now(),
 	}

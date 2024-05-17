@@ -134,6 +134,17 @@ func NewReport(ctx context.Context, db *sql.DB, community uid.ID, post uid.NullI
 		return nil, err
 	}
 
+	// Determine content type and content ID for the notification.
+	var contentID uid.ID
+	var contentType string
+	if t == ReportTypeComment {
+		contentID = target
+		contentType = "comment"
+	} else if t == ReportTypePost {
+		contentID = target
+		contentType = "post"
+	}
+
 	// Send notifications.
 	go func() {
 		mods, err := GetCommunityMods(ctx, db, community)
@@ -141,7 +152,7 @@ func NewReport(ctx context.Context, db *sql.DB, community uid.ID, post uid.NullI
 			log.Printf("Get community mods failed: %v\n", err)
 		} else {
 			for _, mod := range mods {
-				if err := CreateNewReportNotification(context.Background(), db, mod.ID, int(id)); err != nil {
+				if err := CreateNewReportNotification(context.Background(), db, mod.ID, int(id), contentID, contentType); err != nil {
 					log.Printf("Create new report notification failed: %v\n", err)
 				}
 			}
