@@ -9,6 +9,6 @@ go build
 # Build the React app
 cd ui
 npm ci
-npm run watch
+npm run build:prod
 cd ..
 
