@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"slices"
 	"strconv"
@@ -281,6 +282,12 @@ func (l *List) AddItem(ctx context.Context, db *sql.DB, targetType ContentType, 
 	return err
 }
 
+func (l *List) DeleteItem(ctx context.Context, db *sql.DB, targetType ContentType, targetID uid.ID) error {
+	log.Println("id: ", targetID, "\ttype: ", targetType)
+	_, err := db.Exec("DELETE FROM list_items WHERE list_id = ? AND target_id = ? AND target_type = ?", l.ID, targetID, targetType)
+	return err
+}
+
 type ListItem struct {
 	ID         int         `json:"id"`
 	ListID     uid.ID      `json:"listId"`
@@ -476,4 +483,37 @@ func scanListItems(rows *sql.Rows, listID uid.ID) ([]*ListItem, error) {
 type ListItemsResultSet struct {
 	Items []*ListItem `json:"items"`
 	Next  *string     `json:"next"` // either a timestamp or a uid.ID.
+}
+
+// ListsItemIsSavedTo returns the ids of the lists the post or comment target is
+// saved in.
+func ListsItemIsSavedTo(ctx context.Context, db *sql.DB, user uid.ID, targetID uid.ID, targetType ContentType) ([]uid.ID, error) {
+	rows, err := db.QueryContext(ctx, `
+		select 
+			lists.id 
+		from list_items 
+		inner join lists on lists.id = list_items.list_id 
+		where 
+			list_items.target_id = ? 
+			and list_items.target_type = ?`,
+		targetID, targetType)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ids := []uid.ID{} // So, it's JSON marshaled as an array.
+	for rows.Next() {
+		var id uid.ID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return ids, nil
 }

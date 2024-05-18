@@ -130,7 +130,7 @@ func (s *Server) handleList(w *responseWriter, r *request) error {
 	return w.writeJSON(list)
 }
 
-// /api/lists/{listId}/items [GET, POST]
+// /api/lists/{listId}/items [GET, POST, DELETE]
 func (s *Server) handleListItems(w *responseWriter, r *request) error {
 	var (
 		listID uid.ID
@@ -159,7 +159,7 @@ func (s *Server) handleListItems(w *responseWriter, r *request) error {
 		}
 	}
 
-	if r.req.Method == "POST" {
+	if r.req.Method == "POST" || r.req.Method == "DELETE" {
 		form := struct {
 			TargetType core.ContentType `json:"targetType"`
 			TargetID   uid.ID           `json:"targetId"`
@@ -167,8 +167,14 @@ func (s *Server) handleListItems(w *responseWriter, r *request) error {
 		if err := r.unmarshalJSONBody(&form); err != nil {
 			return err
 		}
-		if err := list.AddItem(r.ctx, s.db, form.TargetType, form.TargetID); err != nil {
-			return err
+		if r.req.Method == "POST" {
+			if err := list.AddItem(r.ctx, s.db, form.TargetType, form.TargetID); err != nil {
+				return err
+			}
+		} else if r.req.Method == "DELETE" {
+			if err := list.DeleteItem(r.ctx, s.db, form.TargetType, form.TargetID); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -237,4 +243,28 @@ func (s *Server) deleteListItem(w *responseWriter, r *request) error {
 	}
 
 	return w.writeJSON(item)
+}
+
+// /api/lists/_saved_to [GET]
+func (s *Server) getSaveToLists(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
+	}
+
+	targetID, err := uid.FromString(r.urlQueryParamsValue("id"))
+	if err != nil {
+		return httperr.NewBadRequest("invalid-target-id", "Invalid target id.")
+	}
+
+	var targetType core.ContentType
+	if err := targetType.UnmarshalText([]byte(r.urlQueryParamsValue("type"))); err != nil {
+		return httperr.NewBadRequest("invalid-content-type", "Invalid content type.")
+	}
+
+	ids, err := core.ListsItemIsSavedTo(r.ctx, s.db, *r.viewer, targetID, targetType)
+	if err != nil {
+		return err
+	}
+
+	return w.writeJSON(ids)
 }

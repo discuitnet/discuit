@@ -1062,6 +1062,10 @@
                 cursor: pointer;
                 padding: 6px 0; // 6px 8px;
                 height: var(--list-item-height);
+                label {
+                    flex-grow: 1;
+                    cursor: pointer;
+                }
             }
         }
         .save-modal-newlist {

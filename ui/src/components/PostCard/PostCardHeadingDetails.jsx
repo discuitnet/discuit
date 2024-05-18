@@ -6,9 +6,10 @@ import TimeAgo from '../TimeAgo';
 import { useIsMobile, useMuteCommunity, useMuteUser } from '../../hooks';
 import Dropdown from '../Dropdown';
 import { ButtonMore } from '../Button';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { UserLink } from '../UserProPic';
 import { userHasSupporterBadge } from '../../pages/User';
+import { saveToListModalOpened } from '../../slices/mainSlice';
 
 const PostCardHeadingDetails = ({
   post,
@@ -30,7 +31,7 @@ const PostCardHeadingDetails = ({
   const isMobile = useIsMobile();
   const isPinned = post.isPinned || post.isPinnedSite;
 
-  // const dispatch = useDispatch();
+  const dispatch = useDispatch();
   //
   // const isAuthorMuted = useSelector(selectIsUserMuted(post.userId));
   // const isCommunityMuted = useSelector(selectIsCommunityMuted(post.communityId));
@@ -101,7 +102,12 @@ const PostCardHeadingDetails = ({
                   {muteUserText}
                 </button>
               )}
-              <button className="button-clear dropdown-item">Save to list</button>
+              <button
+                className="button-clear dropdown-item"
+                onClick={() => dispatch(saveToListModalOpened(post.id, 'post'))}
+              >
+                Save to list
+              </button>
             </div>
           </Dropdown>
         )}

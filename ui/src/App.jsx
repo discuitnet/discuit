@@ -24,6 +24,7 @@ import {
   bannedFromUpdated,
   createCommunityModalOpened,
   initialValuesAdded,
+  listsAdded,
   loginModalOpened,
   mutesAdded,
   noUsersUpdated,
@@ -54,6 +55,7 @@ import Offline from './pages/Offline';
 import AppUpdate from './AppUpdate';
 import PushNotifications from './PushNotifications';
 import { List, Lists } from './pages/Lists';
+import SaveToListModal from './components/SaveToListModal';
 
 // Value taken from _mixins.scss file.
 const tabletBreakpoint = 1170;
@@ -118,6 +120,7 @@ const App = () => {
         dispatch(bannedFromUpdated(initial.bannedFrom || []));
         dispatch(initialValuesAdded(initial)); // miscellaneous data
         dispatch(mutesAdded(initial.mutes));
+        dispatch(listsAdded(initial.lists));
       } catch (err) {
         console.error(err);
         dispatch(snackAlert('Something went wrong.'));
@@ -238,6 +241,7 @@ const App = () => {
       <AppSwitch />
       <Snacks />
       {process.env.NODE_ENV !== 'production' && chatOpen && <Chat />}
+      <SaveToListModal />
       <LoginPrompt />
       <Signup open={signupModalOpen} onClose={() => dispatch(signupModalOpened(false))} />
       <Modal
