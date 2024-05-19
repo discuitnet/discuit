@@ -1056,6 +1056,8 @@
             flex-direction: column;
             max-height: 30vh;
             overflow-y: scroll;
+            padding-bottom: 0;
+            margin-bottom: 0;
             .list-item {
                 display: flex;
                 justify-content: space-between;
@@ -1071,6 +1073,7 @@
         @include mixins.mobile {
             .save-modal-list {
                 padding: 0;
+                padding-bottom: var(--gap);
             }
             .save-modal-newlist {
                 padding: 0;
@@ -1100,6 +1103,10 @@
             &:last-child {
                 margin-bottom: 0;
             }
+        }
+        @include mixins.mobile {
+            padding: 0;
+            padding-bottom: var(--gap);
         }
     }
 }

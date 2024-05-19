@@ -104,6 +104,9 @@
             border-top-right-radius: 0;
             display: flex;
             flex-direction: column;
+            @include mixins.tablet {
+                margin-left: 0;
+            }
             .list-head-main {
                 display: flex;
                 flex-direction: column;

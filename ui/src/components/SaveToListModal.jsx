@@ -4,7 +4,12 @@ import Modal from './Modal';
 import { ButtonClose } from './Button';
 import Input from './Input';
 import { useDispatch, useSelector } from 'react-redux';
-import { listsAdded, saveToListModalClosed, snackAlertError } from '../slices/mainSlice';
+import {
+  listsAdded,
+  saveToListModalClosed,
+  snackAlert,
+  snackAlertError,
+} from '../slices/mainSlice';
 import { mfetchjson } from '../helper';
 import { EditListForm } from '../pages/Lists/List';
 
@@ -97,6 +102,10 @@ const TheModal = ({ open, onClose, toSaveItemId, toSaveItemType }) => {
           targetType: toSaveItemType,
         }),
       });
+      const alertText = checked ? `Saved to ${list.name}` : `Removed from ${list.name}`;
+      dispatch(
+        snackAlert(alertText, `${checked ? 'add' : 'remove'}_listitem_${list.name}_${toSaveItemId}`)
+      );
     } catch (error) {
       setListItemState(list.id, {
         checked: !checked,

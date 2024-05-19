@@ -8,7 +8,7 @@ import Link from '../../components/Link';
 import Modal from '../../components/Modal';
 import { ButtonClose, ButtonMore } from '../../components/Button';
 import Input, { InputWithCount } from '../../components/Input';
-import { APIError, dateString1, mfetch, mfetchjson, stringCount } from '../../helper';
+import { APIError, dateString1, mfetch, mfetchjson, stringCount, timeAgo } from '../../helper';
 import { useDispatch, useSelector } from 'react-redux';
 import { listsAdded, snackAlertError } from '../../slices/mainSlice';
 import {
@@ -139,6 +139,9 @@ const List = () => {
   };
 
   const handleRemoveAllItems = async () => {
+    if (!confirm('Are you sure you want to remove all items from the list?')) {
+      return;
+    }
     try {
       await mfetchjson(feedEndpoint, { method: 'DELETE' });
       dispatch(feedReloaded(feedEndpoint));
@@ -149,6 +152,9 @@ const List = () => {
 
   const history = useHistory();
   const handleDeleteList = async () => {
+    if (!confirm('Are you sure you want to delete the list?')) {
+      return;
+    }
     try {
       await mfetchjson(listEndpoint, { method: 'DELETE' });
       const res = await mfetchjson('/api/_initial');
@@ -232,7 +238,7 @@ const List = () => {
             </div>
             <div className="card-list-item">
               {SVGs.comment}
-              <div>{`Last updated on ${dateString1(list.lastUpdatedAt)}`}</div>
+              <div>{`Last updated ${timeAgo(list.lastUpdatedAt)}`}</div>
             </div>
           </div>
         </div>
