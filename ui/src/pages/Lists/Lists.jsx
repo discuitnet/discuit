@@ -55,7 +55,6 @@ const Lists = () => {
     lastAdded: 'Last added',
   };
   const renderOrderDropdown = () => {
-    console.log(`order is: `, order);
     const items = [];
     for (const [key, value] of Object.entries(orderOptions)) {
       items.push(
@@ -133,8 +132,9 @@ export default Lists;
 
 const ListThumbnail = ({ list }) => {
   // TODO: Display list private status.
+  const { username, name, displayName } = list;
   return (
-    <Link className="list-thumb" to={`/@${list.username}/lists/${list.name}`}>
+    <Link className="list-thumb" to={`/@${username}/lists/${name}`}>
       <div className="list-thumb-top">
         <div className="list-thumb-image">
           <img
@@ -145,7 +145,7 @@ const ListThumbnail = ({ list }) => {
       </div>
       <div className="list-thumb-bottom">
         <div className="list-thumb-name">
-          <span className="is-name">{list.name}</span>
+          <span className="is-name">{displayName}</span>
           <span className="is-age">{timeAgo(list.lastUpdatedAt, '', false, true)}</span>
         </div>
         <div className="list-thumb-count">{stringCount(list.numItems, false, 'item')}</div>

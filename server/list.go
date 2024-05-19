@@ -113,7 +113,7 @@ func (s *Server) handeList(w *responseWriter, r *request, list *core.List) error
 	}
 
 	if r.req.Method != "GET" {
-		if err := s.rateLimit(r, "list_edit_1_"+r.viewer.String(), time.Second*1, 1); err != nil {
+		if err := s.rateLimit(r, "list_e_1_"+r.viewer.String(), time.Second*1, 1); err != nil {
 			return err
 		}
 	}

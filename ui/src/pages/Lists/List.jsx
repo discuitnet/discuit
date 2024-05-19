@@ -187,7 +187,7 @@ const List = () => {
               <h1>{list.displayName}</h1>
               {!list.public && <div>Private</div>}
             </div>
-            <Link to="/@previnder" className="list-head-user">
+            <Link to={`/@${list.username}`} className="list-head-user">
               @{list.username}
             </Link>
             <div className="list-head-desc">{list.description}</div>

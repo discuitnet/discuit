@@ -77,7 +77,8 @@
         .list-thumb-bottom {
             margin-top: 5px;
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr max-content;
+            grid-gap: var(--gap);
             .list-thumb-name {
                 span.is-name {
                     font-weight: 600;
@@ -124,6 +125,7 @@
                 font-size: var(--fs-2xl);
             }
             .list-head-user {
+                align-self: flex-start;
                 font-size: var(--fs-s);
             }
             .list-head-actions {

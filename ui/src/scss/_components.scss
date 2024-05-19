@@ -635,6 +635,9 @@
         // transition: all var(--t-time-button);
         color: inherit;
         text-decoration: inherit;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
         &:hover,
         &.is-active {
             background: rgba(var(--base-fg), 0.1);
@@ -651,6 +654,9 @@
             }
             img {
                 border-radius: 50%;
+            }
+            span {
+                width: 100%;
             }
         }
         &.is-m {
@@ -1067,6 +1073,10 @@
                 label {
                     flex-grow: 1;
                     cursor: pointer;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    margin-right: 8px;
                 }
             }
         }
