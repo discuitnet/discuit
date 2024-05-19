@@ -6,7 +6,7 @@ import MiniFooter from '../../components/MiniFooter';
 import { Helmet } from 'react-helmet-async';
 import Link from '../../components/Link';
 import Modal from '../../components/Modal';
-import { ButtonClose } from '../../components/Button';
+import { ButtonClose, ButtonMore } from '../../components/Button';
 import Input, { InputWithCount } from '../../components/Input';
 import { APIError, dateString1, mfetch, mfetchjson, stringCount } from '../../helper';
 import { useDispatch, useSelector } from 'react-redux';
@@ -15,6 +15,7 @@ import {
   FeedItem,
   feedInViewItemsUpdated,
   feedItemHeightChanged,
+  feedReloaded,
   feedUpdated,
   selectFeed,
   selectFeedInViewItems,
@@ -29,6 +30,7 @@ import { listAdded, selectList } from '../../slices/listsSlice';
 import { useInputUsername } from '../../hooks';
 import { usernameMaxLength } from '../../config';
 import { useHistory } from 'react-router-dom';
+import Dropdown from '../../components/Dropdown';
 
 const List = () => {
   const dispatch = useDispatch();
@@ -136,6 +138,27 @@ const List = () => {
     dispatch(feedInViewItemsUpdated(feedEndpoint, items));
   };
 
+  const handleRemoveAllItems = async () => {
+    try {
+      await mfetchjson(feedEndpoint, { method: 'DELETE' });
+      dispatch(feedReloaded(feedEndpoint));
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    }
+  };
+
+  const history = useHistory();
+  const handleDeleteList = async () => {
+    try {
+      await mfetchjson(listEndpoint, { method: 'DELETE' });
+      const res = await mfetchjson('/api/_initial');
+      dispatch(listsAdded(res.lists));
+      history.replace(`/@${list.username}/lists/${name}`);
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    }
+  };
+
   if (feedLoading || feedLoadingError || listLoading !== 'loaded' || !list) {
     console.log('loading: ', listLoading);
     if (listLoading === 'notfound') {
@@ -165,6 +188,16 @@ const List = () => {
           </div>
           <div className="list-head-actions">
             <button onClick={() => setEditModalOpen(true)}>Edit list</button>
+            <Dropdown target={<ButtonMore style={{ background: 'var(--color-button)' }} />}>
+              <div className="dropdown-list">
+                <div className="button-clear dropdown-item" onClick={handleRemoveAllItems}>
+                  Remove all items
+                </div>
+                <div className="button-clear dropdown-item" onClick={handleDeleteList}>
+                  Delete list
+                </div>
+              </div>
+            </Dropdown>
           </div>
         </header>
         <div className="lists-feed">

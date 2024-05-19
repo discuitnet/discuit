@@ -3,7 +3,7 @@ create table if not exists lists (
 	user_id binary (12) not null,
     name varchar (128) not null, /* A unique identifier for each list (per user). */
     display_name varchar (128) not null,
-    public bool not null default true,
+    public bool not null default false,
     description text,
     num_items int not null default 0,
     ordering tinyint not null default 0,

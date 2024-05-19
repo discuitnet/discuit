@@ -326,6 +326,11 @@ func (l *List) DeleteItem(ctx context.Context, db *sql.DB, targetType ContentTyp
 	return err
 }
 
+func (l *List) DeleteAllItems(ctx context.Context, db *sql.DB) error {
+	_, err := db.ExecContext(ctx, "DELETE FROM list_items WHERE list_id = ?", l.ID)
+	return err
+}
+
 type ListItem struct {
 	ID         int         `json:"id"`
 	ListID     uid.ID      `json:"listId"`

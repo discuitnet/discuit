@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"io"
 	"strconv"
 	"strings"
@@ -179,17 +180,31 @@ func (s *Server) handleListItems(w *responseWriter, r *request, list *core.List)
 		form := struct {
 			TargetType core.ContentType `json:"targetType"`
 			TargetID   uid.ID           `json:"targetId"`
-		}{}
-		if err := r.unmarshalJSONBody(&form); err != nil {
+		}{
+			TargetType: -1, // sentinel value
+		}
+		bytes, err := io.ReadAll(r.req.Body)
+		if err != nil {
 			return err
+		}
+		if len(bytes) > 0 {
+			if err := json.Unmarshal(bytes, &form); err != nil {
+				return httperr.NewBadRequest("", "Bad JSON body.")
+			}
 		}
 		if r.req.Method == "POST" {
 			if err := list.AddItem(r.ctx, s.db, form.TargetType, form.TargetID); err != nil {
 				return err
 			}
 		} else if r.req.Method == "DELETE" {
-			if err := list.DeleteItem(r.ctx, s.db, form.TargetType, form.TargetID); err != nil {
-				return err
+			if form.TargetID.Zero() && form.TargetType == -1 {
+				if err := list.DeleteAllItems(r.ctx, s.db); err != nil {
+					return err
+				}
+			} else {
+				if err := list.DeleteItem(r.ctx, s.db, form.TargetType, form.TargetID); err != nil {
+					return err
+				}
 			}
 		}
 	}

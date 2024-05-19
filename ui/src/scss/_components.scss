@@ -1097,6 +1097,9 @@
         padding-bottom: 0;
         > * {
             margin-bottom: var(--gap);
+            &:last-child {
+                margin-bottom: 0;
+            }
         }
     }
 }

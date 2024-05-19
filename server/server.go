@@ -116,9 +116,9 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 
 	r.Handle("/api/users/{username}/lists", s.withHandler(s.handleLists)).Methods("GET", "POST")
 	r.Handle("/api/lists/_saved_to", s.withHandler(s.getSaveToLists)).Methods("GET")
-	r.Handle("/api/users/{username}/lists/{listname}", s.withHandler(s.withListByName(s.handeList))).Methods("GET", "POST")
+	r.Handle("/api/users/{username}/lists/{listname}", s.withHandler(s.withListByName(s.handeList))).Methods("GET", "PUT", "DELETE")
 	r.Handle("/api/lists/{listId}", s.withHandler(s.withListByID(s.handeList))).Methods("GET", "PUT", "DELETE")
-	r.Handle("/api/users/{username}/lists/{listname}/items", s.withHandler(s.withListByName(s.handleListItems))).Methods("GET", "POST")
+	r.Handle("/api/users/{username}/lists/{listname}/items", s.withHandler(s.withListByName(s.handleListItems))).Methods("GET", "POST", "DELETE")
 	r.Handle("/api/lists/{listId}/items", s.withHandler(s.withListByID(s.handleListItems))).Methods("GET", "POST", "DELETE")
 	r.Handle("/api/lists/{listId}/items/{itemId}", s.withHandler(s.deleteListItem)).Methods("DELETE")
 

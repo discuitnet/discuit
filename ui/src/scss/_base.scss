@@ -660,7 +660,7 @@ button,
     &.button-icon {
         &:hover,
         &.is-active {
-            background: var(--color-button);
+            background: var(--color-button-hover);
         }
     }
     &.button-icon-simple {
