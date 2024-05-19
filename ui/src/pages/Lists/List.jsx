@@ -29,14 +29,14 @@ import { listAdded, selectList } from '../../slices/listsSlice';
 
 const List = () => {
   const dispatch = useDispatch();
-  const { username, listName } = useParams();
+  const { username, listName: listname } = useParams();
 
   const [editModalOpen, setEditModalOpen] = useState(false);
 
-  const list = useSelector(selectList(username, listName));
+  const list = useSelector(selectList(username, listname));
   const [listLoading, setListLoading] = useState(list ? 'loaded' : 'loading');
 
-  const listEndpoint = `/api/users/${username}/lists/${listName}`;
+  const listEndpoint = `/api/users/${username}/lists/${listname}`;
   useEffect(() => {
     if (listLoading !== 'loading') {
       return;
@@ -60,8 +60,10 @@ const List = () => {
     f();
   }, [listLoading]);
   useEffect(() => {
-    setListLoading('loading');
-  }, [username, listName]);
+    if (!list || list.name !== listname || list.username !== username) {
+      setListLoading('loading');
+    }
+  }, [list, username, listname]);
 
   const feedEndpoint = `${listEndpoint}/items`;
   const feed = useSelector(selectFeed(feedEndpoint));
@@ -135,7 +137,7 @@ const List = () => {
     <div className="page-content wrap page-grid page-list">
       <EditListModal open={editModalOpen} onClose={() => setEditModalOpen(false)} />
       <Helmet>
-        <title>{`${listName} of @${username}`}</title>
+        <title>{`${listname} of @${username}`}</title>
       </Helmet>
       <Sidebar />
       <main className="page-middle">
