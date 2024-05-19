@@ -627,9 +627,11 @@ const Comment = ({
                       Report
                     </div>
                   )}
-                  <div className="dropdown-item" onClick={handleSave}>
-                    Save to list
-                  </div>
+                  {loggedIn && (
+                    <div className="dropdown-item" onClick={handleSave}>
+                      Save to list
+                    </div>
+                  )}
                   {isAdmin && (
                     <>
                       <div className="dropdown-item is-topic">Admin actions</div>
@@ -662,9 +664,11 @@ const Comment = ({
               {showReport && (
                 <ReportModal target={comment} targetType="comment" disabled={isBanned} />
               )}
-              <button className="button-text" onClick={handleSave}>
-                Save
-              </button>
+              {loggedIn && (
+                <button className="button-text" onClick={handleSave}>
+                  Save
+                </button>
+              )}
               {isAdmin && (
                 <Dropdown
                   target={
