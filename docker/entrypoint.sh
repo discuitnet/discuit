@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-# TODO: Allow flag DISCUIT_EXTERNAL_DB_REDIS to disable the starting of Redis and MariaDB
-
 # Start MariaDB
 echo "Starting MariaDB..."
 service mariadb start
