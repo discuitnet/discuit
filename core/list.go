@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"slices"
 	"strconv"
@@ -279,7 +278,7 @@ func (l *List) AddItem(ctx context.Context, db *sql.DB, targetType ContentType, 
 			}
 			return err
 		}
-		if _, err := tx.ExecContext(ctx, "UPDATE lists SET num_items = num_items + 1 WHERE id = ?", l.ID); err != nil {
+		if _, err := tx.ExecContext(ctx, "UPDATE lists SET num_items = num_items + 1, last_updated_at = now() WHERE id = ?", l.ID); err != nil {
 			return err
 		}
 		return nil
@@ -291,8 +290,16 @@ func (l *List) AddItem(ctx context.Context, db *sql.DB, targetType ContentType, 
 }
 
 func (l *List) DeleteItem(ctx context.Context, db *sql.DB, targetType ContentType, targetID uid.ID) error {
-	log.Println("id: ", targetID, "\ttype: ", targetType)
-	_, err := db.Exec("DELETE FROM list_items WHERE list_id = ? AND target_id = ? AND target_type = ?", l.ID, targetID, targetType)
+	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, "DELETE FROM list_items WHERE list_id = ? AND target_id = ? AND target_type = ?", l.ID, targetID, targetType)
+		if err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, "UPDATE lists SET num_items = num_items - 1 WHERE id = ?", l.ID); err != nil {
+			return err
+		}
+		return nil
+	})
 	return err
 }
 
