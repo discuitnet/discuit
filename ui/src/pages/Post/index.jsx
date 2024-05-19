@@ -12,7 +12,7 @@ import {
   userGroupSingular,
 } from '../../helper';
 import { useIsMobile } from '../../hooks';
-import { snackAlert, snackAlertError } from '../../slices/mainSlice';
+import { saveToListModalOpened, snackAlert, snackAlertError } from '../../slices/mainSlice';
 import AddComment from './AddComment';
 import ReportModal from '../../components/ReportModal';
 import Sidebar from '../../components/Sidebar';
@@ -402,7 +402,14 @@ const Post = () => {
             <div className={'post-card-bottom' + (!hasImage ? ' has-no-img' : '')}>
               <div className="left">
                 <PostShareButton post={post} />
-                {loggedIn && <button className="button-text">Save to</button>}
+                {loggedIn && (
+                  <button
+                    className="button-text"
+                    onClick={() => dispatch(saveToListModalOpened(post.id, 'post'))}
+                  >
+                    Save
+                  </button>
+                )}
                 {postOwner && (
                   <button
                     className="button-text"
