@@ -82,7 +82,8 @@ func Parse(path string) (*Config, error) {
 	var envConfigMap = map[string]interface{}{
 		"DISCUIT_IS_DEVELOPMENT": &c.IsDevelopment,
 
-		"DISCUIT_ADDR": &c.Addr,
+		"DISCUIT_ADDR":     &c.Addr,
+		"DISCUIT_UI_PROXY": &c.UIProxy,
 
 		"DISCUIT_SITE_NAME":        &c.SiteName,
 		"DISCUIT_SITE_DESCRIPTION": &c.SiteDescription,
