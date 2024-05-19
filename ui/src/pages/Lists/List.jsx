@@ -9,7 +9,6 @@ import Modal from '../../components/Modal';
 import { ButtonClose } from '../../components/Button';
 import Input from '../../components/Input';
 import { mfetch, mfetchjson, stringCount } from '../../helper';
-import PostsFeed from '../../views/PostsFeed';
 import { useDispatch, useSelector } from 'react-redux';
 import { snackAlertError } from '../../slices/mainSlice';
 import {
@@ -60,6 +59,9 @@ const List = () => {
     };
     f();
   }, [listLoading]);
+  useEffect(() => {
+    setListLoading('loading');
+  }, [username, listName]);
 
   const feedEndpoint = `${listEndpoint}/items`;
   const feed = useSelector(selectFeed(feedEndpoint));
@@ -122,7 +124,7 @@ const List = () => {
     dispatch(feedInViewItemsUpdated(feedEndpoint, items));
   };
 
-  if (feedLoading || listLoading !== 'loaded') {
+  if (feedLoading || feedLoadingError || listLoading !== 'loaded' || !list) {
     if (listLoading === 'notfound') {
       return <NotFound />;
     }
