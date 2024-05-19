@@ -36,4 +36,4 @@ create table if not exists list_items (
  * create-new-user function in Go as well.
  *
  */
-insert into lists (user_id, name, display_name) select users.id, "favorites", "Favorites" from users;
+insert into lists (user_id, name, display_name) select users.id, "bookmarks", "Bookmarks" from users;

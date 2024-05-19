@@ -461,7 +461,7 @@ func RegisterUser(ctx context.Context, db *sql.DB, username, email, password str
 		// Continue on failure.
 	}
 
-	if err := CreateList(ctx, db, id, "favorites", "Favorites", msql.NullString{}, false); err != nil {
+	if err := CreateList(ctx, db, id, "bookmarks", "Bookmarks", msql.NullString{}, false); err != nil {
 		log.Println("Failed to create the default community of user: ", username)
 		// Continue on failure.
 	}
