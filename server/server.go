@@ -116,8 +116,10 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 
 	r.Handle("/api/users/{username}/lists", s.withHandler(s.handleLists)).Methods("GET", "POST")
 	r.Handle("/api/lists/_saved_to", s.withHandler(s.getSaveToLists)).Methods("GET")
-	r.Handle("/api/lists/{listId}", s.withHandler(s.handleList)).Methods("GET", "PUT", "DELETE")
-	r.Handle("/api/lists/{listId}/items", s.withHandler(s.handleListItems)).Methods("GET", "POST", "DELETE")
+	r.Handle("/api/users/{username}/lists/{listname}", s.withHandler(s.handleListByName)).Methods("GET", "POST")
+	r.Handle("/api/lists/{listId}", s.withHandler(s.handleListByID)).Methods("GET", "PUT", "DELETE")
+	r.Handle("/api/users/{username}/lists/{listname}/items", s.withHandler(s.handleListByNameItems)).Methods("GET", "POST")
+	r.Handle("/api/lists/{listId}/items", s.withHandler(s.handleListByIDItems)).Methods("GET", "POST", "DELETE")
 	r.Handle("/api/lists/{listId}/items/{itemId}", s.withHandler(s.deleteListItem)).Methods("DELETE")
 
 	r.Handle("/api/mutes", s.withHandler(s.handleMutes)).Methods("GET", "POST", "DELETE")

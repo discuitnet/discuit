@@ -80,39 +80,8 @@ func (s *Server) handleLists(w *responseWriter, r *request) error {
 	return w.writeJSON(lists)
 }
 
-// /api/lists/{listId} [GET, PUT, DELETE]
-func (s *Server) handleList(w *responseWriter, r *request) error {
-	var (
-		list     *core.List
-		err      error
-		byName   bool
-		listName string
-	)
-
-	if byStr := strings.ToLower(r.urlQueryParamsValue("byName")); byStr != "" {
-		if !(byStr == "true" || byStr == "false") {
-			return httperr.NewBadRequest("invalid-by-name", "The query parameter byName has to be either true or false, literally.")
-		}
-		byName = byStr == "true"
-		listName = r.muxVar("listId")
-	}
-
-	if byName {
-		list, err = core.GetListByName(r.ctx, s.db, listName)
-		if err != nil {
-			return err
-		}
-	} else {
-		if listID, err := uid.FromString(r.muxVar("listId")); err != nil {
-			return httperr.NewBadRequest("invalid-list-id", "Invalid list id.")
-		} else {
-			list, err = core.GetList(r.ctx, s.db, listID)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
+// [GET, PUT, DELETE]
+func (s *Server) handeList(w *responseWriter, r *request, list *core.List) error {
 	if r.req.Method != "GET" || !list.Public { // Check permissions.
 		if !r.loggedIn {
 			return errNotLoggedIn
@@ -147,39 +116,36 @@ func (s *Server) handleList(w *responseWriter, r *request) error {
 	return w.writeJSON(list)
 }
 
-// /api/lists/{listId}/items [GET, POST, DELETE]
-func (s *Server) handleListItems(w *responseWriter, r *request) error {
-	var (
-		list     *core.List
-		err      error
-		byName   bool
-		listName string
-	)
-
-	if byStr := strings.ToLower(r.urlQueryParamsValue("byName")); byStr != "" {
-		if !(byStr == "true" || byStr == "false") {
-			return httperr.NewBadRequest("invalid-by-name", "The query parameter byName has to be either true or false, literally.")
-		}
-		byName = byStr == "true"
-		listName = r.muxVar("listId")
+func (s *Server) handleListByName(w *responseWriter, r *request) error {
+	user, err := core.GetUserByUsername(r.ctx, s.db, r.muxVar("username"), nil)
+	if err != nil {
+		return err
 	}
 
-	if byName {
-		list, err = core.GetListByName(r.ctx, s.db, listName)
-		if err != nil {
-			return err
-		}
-	} else {
-		if listID, err := uid.FromString(r.muxVar("listId")); err != nil {
-			return httperr.NewBadRequest("invalid-list-id", "Invalid list id.")
-		} else {
-			list, err = core.GetList(r.ctx, s.db, listID)
-			if err != nil {
-				return err
-			}
-		}
+	list, err := core.GetListByName(r.ctx, s.db, user.ID, r.muxVar("listname"))
+	if err != nil {
+		return err
 	}
 
+	return s.handeList(w, r, list)
+}
+
+func (s *Server) handleListByID(w *responseWriter, r *request) error {
+	listID, err := uid.FromString(r.muxVar("listId"))
+	if err != nil {
+		return httperr.NewBadRequest("invalid-list-id", "Invalid list id.")
+	}
+
+	list, err := core.GetList(r.ctx, s.db, listID)
+	if err != nil {
+		return err
+	}
+
+	return s.handeList(w, r, list)
+}
+
+// [GET, POST, DELETE]
+func (s *Server) handleListItems(w *responseWriter, r *request, list *core.List) error {
 	if r.req.Method != "GET" || !list.Public { // Check permissions.
 		if !r.loggedIn {
 			return errNotLoggedIn
@@ -213,6 +179,7 @@ func (s *Server) handleListItems(w *responseWriter, r *request) error {
 	}
 
 	var (
+		err   error
 		limit int
 		next  *string
 		sort  core.ListItemsSort = core.ListOrderingDefault
@@ -237,41 +204,44 @@ func (s *Server) handleListItems(w *responseWriter, r *request) error {
 	return w.writeJSON(resultSet)
 }
 
+func (s *Server) handleListByIDItems(w *responseWriter, r *request) error {
+	listID, err := uid.FromString(r.muxVar("listId"))
+	if err != nil {
+		return httperr.NewBadRequest("invalid-list-id", "Invalid list id.")
+	}
+	list, err := core.GetList(r.ctx, s.db, listID)
+	if err != nil {
+		return err
+	}
+	return s.handleListItems(w, r, list)
+}
+
+func (s *Server) handleListByNameItems(w *responseWriter, r *request) error {
+	user, err := core.GetUserByUsername(r.ctx, s.db, r.muxVar("username"), nil)
+	if err != nil {
+		return err
+	}
+
+	list, err := core.GetListByName(r.ctx, s.db, user.ID, r.muxVar("listname"))
+	if err != nil {
+		return err
+	}
+	return s.handleListItems(w, r, list)
+}
+
 // /api/lists/{listId}/items/{itemId} [DELETE]
 func (s *Server) deleteListItem(w *responseWriter, r *request) error {
 	if !r.loggedIn {
 		return errNotLoggedIn
 	}
 
-	var (
-		list     *core.List
-		err      error
-		byName   bool
-		listName string
-	)
-
-	if byStr := strings.ToLower(r.urlQueryParamsValue("byName")); byStr != "" {
-		if !(byStr == "true" || byStr == "false") {
-			return httperr.NewBadRequest("invalid-by-name", "The query parameter byName has to be either true or false, literally.")
-		}
-		byName = byStr == "true"
-		listName = r.muxVar("listId")
+	listID, err := uid.FromString(r.muxVar("listId"))
+	if err != nil {
+		return httperr.NewBadRequest("invalid-list-id", "Invalid list id.")
 	}
-
-	if byName {
-		list, err = core.GetListByName(r.ctx, s.db, listName)
-		if err != nil {
-			return err
-		}
-	} else {
-		if listID, err := uid.FromString(r.muxVar("listId")); err != nil {
-			return httperr.NewBadRequest("invalid-list-id", "Invalid list id.")
-		} else {
-			list, err = core.GetList(r.ctx, s.db, listID)
-			if err != nil {
-				return err
-			}
-		}
+	list, err := core.GetList(r.ctx, s.db, listID)
+	if err != nil {
+		return err
 	}
 
 	itemID, err := strconv.Atoi(r.muxVar("itemId"))

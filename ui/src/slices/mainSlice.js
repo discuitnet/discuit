@@ -38,7 +38,12 @@ const initialState = {
     userMutes: [],
     communityMutes: [],
   },
-  lists: [],
+  // listsLoading: true,
+  // lists: [],
+  lists: {
+    loading: true,
+    lists: [],
+  },
   saveToListModal: {
     open: false,
     toSaveItemId: null,
@@ -329,7 +334,10 @@ export default function mainReducer(state = initialState, action) {
     case 'main/listsAdded': {
       return {
         ...state,
-        lists: action.payload,
+        lists: {
+          loading: false,
+          lists: action.payload,
+        },
       };
     }
     case 'main/saveToListModalOpened': {

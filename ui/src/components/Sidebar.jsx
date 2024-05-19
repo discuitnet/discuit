@@ -105,7 +105,7 @@ const Sidebar = ({ isMobile = false }) => {
     };
   }, []);
 
-  const lists = useSelector((state) => state.main.lists);
+  const lists = useSelector((state) => state.main.lists.lists);
 
   return (
     <aside

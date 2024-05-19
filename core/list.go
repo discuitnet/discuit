@@ -171,8 +171,8 @@ func GetList(ctx context.Context, db *sql.DB, id uid.ID) (*List, error) {
 	return lists[0], nil
 }
 
-func GetListByName(ctx context.Context, db *sql.DB, name string) (*List, error) {
-	lists, err := getLists(ctx, db, "WHERE lists.name = ?", name)
+func GetListByName(ctx context.Context, db *sql.DB, user uid.ID, name string) (*List, error) {
+	lists, err := getLists(ctx, db, "WHERE user_id = ? AND lists.name = ?", user, name)
 	if err != nil {
 		return nil, err
 	}

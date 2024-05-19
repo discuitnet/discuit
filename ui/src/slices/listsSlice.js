@@ -16,24 +16,34 @@ const initialState = {
     }
     */
   },
+  nameToId: {
+    /*
+    ["username_listname"]: list_id,
+    */
+  },
   /* The feed of each list is stored in the feedsSlice. */
 };
 
 const typeUsersListsAdded = 'lists/usersListsAdded';
 const typeListsOrderChanged = 'lists/orderChanged';
 const typeListsFilterChanged = 'lists/filterChanged';
+const typeListAdded = `lists/listAdded`;
 
 export default function listsReducer(state = initialState, action) {
   switch (action.type) {
     case typeUsersListsAdded: {
       const { username, lists, order, filter } = action.payload;
-      console.log(action.payload);
       let newItems = {};
+      const newNameToIds = {};
       let newIds = [];
       lists.forEach((list) => {
         if (!state.items[list.id]) {
           newIds.push(list.id);
           newItems[list.id] = list;
+        }
+        const key = nameToIdKey(username, list.name);
+        if (!state.nameToId[key]) {
+          newNameToIds[key] = list.id;
         }
       });
       return {
@@ -50,6 +60,10 @@ export default function listsReducer(state = initialState, action) {
         items: {
           ...state.items,
           ...newItems,
+        },
+        nameToId: {
+          ...state.nameToId,
+          ...newNameToIds,
         },
       };
     }
@@ -81,6 +95,20 @@ export default function listsReducer(state = initialState, action) {
         },
       };
     }
+    case typeListAdded: {
+      const { username, list } = action.payload;
+      return {
+        ...state,
+        items: {
+          ...state.items,
+          [list.id]: list,
+        },
+        nameToId: {
+          ...state.nameToId,
+          [nameToIdKey(username, list.name)]: list.id,
+        },
+      };
+    }
     default:
       return state;
   }
@@ -108,6 +136,10 @@ export const listsFilterChanged = (username, filter) => {
   return { type: typeListsFilterChanged, payload: { username, filter } };
 };
 
+export const listAdded = (username, list) => {
+  return { type: typeListAdded, payload: { username, list } };
+};
+
 /** Selectors:  */
 
 export const selectUsersLists = (username) => (state) => {
@@ -128,4 +160,16 @@ export const selectUsersLists = (username) => (state) => {
     order: listsState.order,
     filter: listsState.filter,
   };
+};
+
+export const selectList = (username, listname) => (state) => {
+  const listId = state.lists.nameToId[nameToIdKey(username, listname)];
+  if (!listId) {
+    return null;
+  }
+  return state.lists.items[listId];
+};
+
+const nameToIdKey = (username, listname) => {
+  return `${username}_${listname}`;
 };

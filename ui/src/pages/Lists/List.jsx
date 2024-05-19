@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useParams } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar';
@@ -8,13 +8,126 @@ import Link from '../../components/Link';
 import Modal from '../../components/Modal';
 import { ButtonClose } from '../../components/Button';
 import Input from '../../components/Input';
-import { stringCount } from '../../helper';
+import { mfetch, mfetchjson, stringCount } from '../../helper';
 import PostsFeed from '../../views/PostsFeed';
+import { useDispatch, useSelector } from 'react-redux';
+import { snackAlertError } from '../../slices/mainSlice';
+import {
+  FeedItem,
+  feedInViewItemsUpdated,
+  feedItemHeightChanged,
+  feedUpdated,
+  selectFeed,
+  selectFeedInViewItems,
+} from '../../slices/feedsSlice';
+import Feed from '../../components/Feed';
+import { MemorizedPostCard } from '../../components/PostCard/PostCard';
+import { selectUser } from '../../slices/usersSlice';
+import { MemorizedComment } from '../User/Comment';
+import PageLoading from '../../components/PageLoading';
+import NotFound from '../NotFound';
+import { listAdded, selectList } from '../../slices/listsSlice';
 
 const List = () => {
+  const dispatch = useDispatch();
   const { username, listName } = useParams();
 
   const [editModalOpen, setEditModalOpen] = useState(false);
+
+  const list = useSelector(selectList(username, listName));
+  const [listLoading, setListLoading] = useState(list ? 'loaded' : 'loading');
+
+  const listEndpoint = `/api/users/${username}/lists/${listName}`;
+  useEffect(() => {
+    if (listLoading !== 'loading') {
+      return;
+    }
+    const f = async () => {
+      try {
+        const res = await mfetch(listEndpoint);
+        if (!res.ok) {
+          if (res.status === 404) {
+            setListLoading('notfound');
+          }
+          throw new Error(await res.text());
+        }
+        dispatch(listAdded(username, await res.json()));
+        setListLoading('loaded');
+      } catch (error) {
+        dispatch(snackAlertError(error));
+        setListLoading('error');
+      }
+    };
+    f();
+  }, [listLoading]);
+
+  const feedEndpoint = `${listEndpoint}/items`;
+  const feed = useSelector(selectFeed(feedEndpoint));
+  const setFeed = (res) => {
+    const feedItems = (res.items ?? []).map(
+      (item) => new FeedItem(item.targetItem, item.targetType, item.id)
+    );
+    dispatch(feedUpdated(feedEndpoint, feedItems, res.next ?? null));
+  };
+
+  const feedLoading = feed ? feed.loading : true;
+  const [feedLoadingError, setFeedLoadingError] = useState(null);
+
+  useEffect(() => {
+    if (!feedLoading) {
+      return;
+    }
+    const f = async () => {
+      try {
+        const res = await mfetchjson(feedEndpoint);
+        setFeed(res);
+      } catch (error) {
+        setFeedLoadingError(error);
+        dispatch(snackAlertError(error));
+      }
+    };
+    f();
+  }, [feedEndpoint, feedLoading]);
+
+  const [feedReloading, setFeedReloading] = useState(false);
+  const fetchNextItems = async () => {
+    if (feedReloading) return;
+    try {
+      setFeedReloading(true);
+      const res = await mfetchjson(`${feedEndpoint}&next=${feed.next}`);
+      setFeed(res);
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    } finally {
+      setFeedReloading(false);
+    }
+  };
+
+  const user = useSelector(selectUser(username));
+  const handleRenderItem = (item) => {
+    if (item.type === 'post') {
+      return <MemorizedPostCard initialPost={item.item} disableEmbeds={user && user.embedsOff} />;
+    }
+    if (item.type === 'comment') {
+      return <MemorizedComment comment={item.item} />;
+    }
+  };
+
+  const handleItemHeightChange = (height, item) => {
+    dispatch(feedItemHeightChanged(item.key, height));
+  };
+
+  const itemsInitiallyInView = useSelector(selectFeedInViewItems(feedEndpoint));
+  const handleSaveVisibleItems = (items) => {
+    dispatch(feedInViewItemsUpdated(feedEndpoint, items));
+  };
+
+  if (feedLoading || listLoading !== 'loaded') {
+    if (listLoading === 'notfound') {
+      return <NotFound />;
+    }
+    return <PageLoading />;
+  }
 
   return (
     <div className="page-content wrap page-grid page-list">
@@ -26,9 +139,9 @@ const List = () => {
       <main className="page-middle">
         <header className="card card-padding list-head">
           <div className="list-head-main">
-            <h1 className="list-head-name">Favorites</h1>
+            <h1 className="list-head-name">{list.displayName}</h1>
             <Link to="/@previnder" className="list-head-user">
-              @previnder
+              @{list.username}
             </Link>
             <div className="list-head-desc">
               Lorem ipsum dolor sit, amet consectetur adipisicing elit. Aperiam, magni?
@@ -39,7 +152,19 @@ const List = () => {
           </div>
         </header>
         <div className="lists-feed">
-          <PostsFeed feedType="all" />
+          {/*<PostsFeed feedType="all" />*/}
+
+          <Feed
+            loading={feedLoading}
+            items={feed ? feed.items : []}
+            hasMore={Boolean(feed ? feed.next : false)}
+            onNext={fetchNextItems}
+            isMoreItemsLoading={feedReloading}
+            onRenderItem={handleRenderItem}
+            onItemHeightChange={handleItemHeightChange}
+            itemsInitiallyInView={itemsInitiallyInView}
+            onSaveVisibleItems={handleSaveVisibleItems}
+          />
         </div>
       </main>
       <aside className="sidebar-right">

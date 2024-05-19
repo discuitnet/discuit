@@ -49,7 +49,7 @@ const TheModal = ({ open, onClose, toSaveItemId, toSaveItemType }) => {
     f();
   }, [toSaveItemId, toSaveItemType]);
 
-  const lists = useSelector((state) => state.main.lists);
+  const lists = useSelector((state) => state.main.lists.lists);
   const [listState, setListState] = useState({});
   const listsLoading = lists && listState && lists.length !== Object.keys(listState).length;
   useEffect(() => {
