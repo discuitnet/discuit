@@ -161,9 +161,7 @@ const List = () => {
             <Link to="/@previnder" className="list-head-user">
               @{list.username}
             </Link>
-            <div className="list-head-desc">
-              Lorem ipsum dolor sit, amet consectetur adipisicing elit. Aperiam, magni?
-            </div>
+            <div className="list-head-desc">{list.description}</div>
           </div>
           <div className="list-head-actions">
             <button onClick={() => setEditModalOpen(true)}>Edit list</button>
@@ -301,7 +299,7 @@ export const EditListForm = ({ list, onCancel, onSuccess }) => {
   };
 
   const [displayName, setDisplayName] = useState(list ? list.displayName : '');
-  const [description, setDescription] = useState('');
+  const [description, setDescription] = useState(list ? list.description : '');
 
   const createNewList = async () => {
     const newLists = await mfetchjson(`/api/users/${user.username}/lists`, {
@@ -309,6 +307,7 @@ export const EditListForm = ({ list, onCancel, onSuccess }) => {
       body: JSON.stringify({
         name,
         displayName,
+        description,
         public: isPublic,
       }),
     });
@@ -322,6 +321,7 @@ export const EditListForm = ({ list, onCancel, onSuccess }) => {
       body: JSON.stringify({
         name,
         displayName,
+        description,
         public: isPublic,
       }),
     });

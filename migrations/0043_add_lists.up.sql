@@ -4,6 +4,7 @@ create table if not exists lists (
     name varchar (128) not null, /* A unique identifier for each list (per user). */
     display_name varchar (128) not null,
     public bool not null default true,
+    description text,
     num_items int not null default 0,
     ordering tinyint not null default 0,
 	created_at datetime not null default current_timestamp(),

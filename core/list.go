@@ -68,16 +68,17 @@ func (o *ListItemsSort) UnmarshalText(data []byte) error {
 }
 
 type List struct {
-	ID            uid.ID        `json:"id"`
-	UserID        uid.ID        `json:"userId"`
-	Username      string        `json:"username"`
-	Name          string        `json:"name"`
-	DisplayName   string        `json:"displayName"`
-	Public        bool          `json:"public"`
-	NumItmes      int           `json:"numItems"`
-	Sort          ListItemsSort `json:"sort"` // current sort
-	CreatedAt     time.Time     `json:"createdAt"`
-	LastUpdatedAt time.Time     `json:"lastUpdatedAt"`
+	ID            uid.ID          `json:"id"`
+	UserID        uid.ID          `json:"userId"`
+	Username      string          `json:"username"`
+	Name          string          `json:"name"`
+	DisplayName   string          `json:"displayName"`
+	Description   msql.NullString `json:"description"`
+	Public        bool            `json:"public"`
+	NumItmes      int             `json:"numItems"`
+	Sort          ListItemsSort   `json:"sort"` // current sort
+	CreatedAt     time.Time       `json:"createdAt"`
+	LastUpdatedAt time.Time       `json:"lastUpdatedAt"`
 
 	User *User `json:"user,omitempty"`
 }
@@ -89,6 +90,7 @@ func getLists(ctx context.Context, db *sql.DB, where string, args ...any) ([]*Li
 		"users.username",
 		"lists.name",
 		"lists.display_name",
+		"lists.description",
 		"lists.public",
 		"lists.num_items",
 		"lists.ordering",
@@ -113,6 +115,7 @@ func getLists(ctx context.Context, db *sql.DB, where string, args ...any) ([]*Li
 			&list.Username,
 			&list.Name,
 			&list.DisplayName,
+			&list.Description,
 			&list.Public,
 			&list.NumItmes,
 			&list.Sort,
@@ -216,12 +219,16 @@ func GetUsersLists(ctx context.Context, db *sql.DB, user uid.ID, sort, filter st
 	return getLists(ctx, db, where, user)
 }
 
-func CreateList(ctx context.Context, db *sql.DB, user uid.ID, name, displayName string, public bool) error {
+func CreateList(ctx context.Context, db *sql.DB, user uid.ID, name, displayName string, description msql.NullString, public bool) error {
+	if description.String == "" {
+		description.Valid = false
+	}
 	query, args := msql.BuildInsertQuery("lists", []msql.ColumnValue{
 		{Name: "id", Value: uid.New()},
 		{Name: "user_id", Value: user},
 		{Name: "name", Value: name},
 		{Name: "display_name", Value: displayName},
+		{Name: "description", Value: description},
 		{Name: "public", Value: public},
 		{Name: "ordering", Value: ListOrderingDefault},
 	})
@@ -242,10 +249,16 @@ func (l *List) Update(ctx context.Context, db *sql.DB) error {
 		UPDATE lists SET 
 			name = ?, 
 			display_name = ?, 
+			description = ?,
 			public = ?, 
 			ordering = ? 
 		WHERE lists.id = ?`,
-		l.Name, l.DisplayName, l.Public, l.Sort, l.ID)
+		l.Name,
+		l.DisplayName,
+		l.Description,
+		l.Public,
+		l.Sort,
+		l.ID)
 	return err
 }
 
@@ -258,6 +271,10 @@ func (l *List) UnmarshalUpdatableFieldsJSON(data []byte) error {
 	}
 	l.Name = temp.Name
 	l.DisplayName = temp.DisplayName
+	l.Description = temp.Description
+	if l.Description.String == "" {
+		l.Description.Valid = false
+	}
 	l.Public = temp.Public
 	l.Sort = temp.Sort
 	return nil

@@ -7,6 +7,7 @@ import (
 
 	"github.com/discuitnet/discuit/core"
 	"github.com/discuitnet/discuit/internal/httperr"
+	msql "github.com/discuitnet/discuit/internal/sql"
 	"github.com/discuitnet/discuit/internal/uid"
 )
 
@@ -42,9 +43,10 @@ func (s *Server) handleLists(w *responseWriter, r *request) error {
 		}
 
 		form := struct {
-			Name        string `json:"name"`
-			DisplayName string `json:"displayName"` // Optional field, defaults to Name.
-			Public      bool   `json:"public"`      // Optional field, defaults to false.
+			Name        string          `json:"name"`
+			DisplayName string          `json:"displayName"` // Optional field, defaults to Name.
+			Description msql.NullString `json:"description"`
+			Public      bool            `json:"public"` // Optional field, defaults to false.
 		}{}
 		if err := r.unmarshalJSONBody(&form); err != nil {
 			return err
@@ -57,7 +59,7 @@ func (s *Server) handleLists(w *responseWriter, r *request) error {
 			form.DisplayName = form.Name
 		}
 
-		if err := core.CreateList(r.ctx, s.db, *r.viewer, form.Name, form.DisplayName, form.Public); err != nil {
+		if err := core.CreateList(r.ctx, s.db, *r.viewer, form.Name, form.DisplayName, form.Description, form.Public); err != nil {
 			return err
 		}
 	}
