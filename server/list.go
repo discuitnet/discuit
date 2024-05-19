@@ -5,6 +5,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/discuitnet/discuit/core"
 	"github.com/discuitnet/discuit/internal/httperr"
@@ -60,6 +61,14 @@ func (s *Server) handleLists(w *responseWriter, r *request) error {
 			form.DisplayName = form.Name
 		}
 
+		if err := s.rateLimit(r, "list_c_1_"+r.viewer.String(), time.Second*2, 1); err != nil {
+			return err
+		}
+
+		if err := s.rateLimit(r, "list_c_2_"+r.viewer.String(), time.Hour*24, 100); err != nil {
+			return err
+		}
+
 		if err := core.CreateList(r.ctx, s.db, *r.viewer, form.Name, form.DisplayName, form.Description, form.Public); err != nil {
 			return err
 		}
@@ -100,6 +109,12 @@ func (s *Server) handeList(w *responseWriter, r *request, list *core.List) error
 		}
 		if viewer.ID != list.UserID {
 			return errListNotFound
+		}
+	}
+
+	if r.req.Method != "GET" {
+		if err := s.rateLimit(r, "list_edit_1_"+r.viewer.String(), time.Second*1, 1); err != nil {
+			return err
 		}
 	}
 
@@ -173,6 +188,15 @@ func (s *Server) handleListItems(w *responseWriter, r *request, list *core.List)
 		}
 		if viewer.ID != list.UserID {
 			return errListNotFound
+		}
+	}
+
+	if r.req.Method == "POST" {
+		if err := s.rateLimit(r, "l_item_c_1_"+r.viewer.String(), time.Second, 2); err != nil {
+			return err
+		}
+		if err := s.rateLimit(r, "l_item_c_2_"+r.viewer.String(), time.Hour, 1000); err != nil {
+			return err
 		}
 	}
 
