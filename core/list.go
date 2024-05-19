@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"slices"
 	"strconv"
 	"time"
 
@@ -79,8 +78,6 @@ type List struct {
 	Sort          ListItemsSort   `json:"sort"` // current sort
 	CreatedAt     time.Time       `json:"createdAt"`
 	LastUpdatedAt time.Time       `json:"lastUpdatedAt"`
-
-	User *User `json:"user,omitempty"`
 }
 
 func getLists(ctx context.Context, db *sql.DB, where string, args ...any) ([]*List, error) {
@@ -132,37 +129,7 @@ func getLists(ctx context.Context, db *sql.DB, where string, args ...any) ([]*Li
 		return nil, err
 	}
 
-	if err := fetchListsUsers(ctx, db, lists); err != nil {
-		return nil, fmt.Errorf("could not fetch the users of the lists: %w", err)
-	}
-
 	return lists, nil
-}
-
-// fetchListsUsers fetches all the lists owners' user objects and inserts them
-// into the lists.
-func fetchListsUsers(ctx context.Context, db *sql.DB, lists []*List) error {
-	userIDs := make([]uid.ID, len(lists))
-	for i := range lists {
-		userIDs[i] = lists[i].UserID
-	}
-
-	users, err := GetUsersByIDs(ctx, db, userIDs, nil)
-	if err != nil {
-		return err
-	}
-
-	for _, list := range lists {
-		index := slices.IndexFunc(users, func(user *User) bool {
-			return list.UserID == user.ID
-		})
-		if index == -1 {
-			return errors.New("index is -1, this can't happen")
-		}
-		list.User = users[index]
-	}
-
-	return nil
 }
 
 func GetList(ctx context.Context, db *sql.DB, id uid.ID) (*List, error) {
