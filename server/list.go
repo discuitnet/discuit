@@ -82,16 +82,21 @@ func (s *Server) handleLists(w *responseWriter, r *request) error {
 
 // [GET, PUT, DELETE]
 func (s *Server) handeList(w *responseWriter, r *request, list *core.List) error {
-	if r.req.Method != "GET" || !list.Public { // Check permissions.
+	if !r.loggedIn && r.req.Method != "GET" {
+		return errNotLoggedIn
+	}
+
+	if !list.Public {
+		errListNotFound := httperr.NewNotFound("list-not-found", "List not found.")
 		if !r.loggedIn {
-			return errNotLoggedIn
+			return errListNotFound
 		}
 		viewer, err := core.GetUser(r.ctx, s.db, *r.viewer, r.viewer)
 		if err != nil {
 			return err
 		}
 		if viewer.ID != list.UserID {
-			return httperr.NewForbidden("not-owner", "It's not your list.")
+			return errListNotFound
 		}
 	}
 
@@ -150,16 +155,21 @@ func (s *Server) withListByID(f func(*responseWriter, *request, *core.List) erro
 
 // [GET, POST, DELETE]
 func (s *Server) handleListItems(w *responseWriter, r *request, list *core.List) error {
-	if r.req.Method != "GET" || !list.Public { // Check permissions.
+	if !r.loggedIn && r.req.Method != "GET" {
+		return errNotLoggedIn
+	}
+
+	if !list.Public {
+		errListNotFound := httperr.NewNotFound("list-not-found", "List not found.")
 		if !r.loggedIn {
-			return errNotLoggedIn
+			return errListNotFound
 		}
 		viewer, err := core.GetUser(r.ctx, s.db, *r.viewer, r.viewer)
 		if err != nil {
 			return err
 		}
 		if viewer.ID != list.UserID {
-			return httperr.NewForbidden("not-owner", "It's not your list.")
+			return errListNotFound
 		}
 	}
 
