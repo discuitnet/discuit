@@ -134,11 +134,11 @@ const TheModal = ({ open, onClose, toSaveItemId, toSaveItemType }) => {
 
     const renderList = () => {
       const renderItem = (list) => {
-        const { name } = list;
+        const { name, displayName } = list;
         const htmlFor = `ch-${name}`;
         return (
           <div className="list-item" key={name}>
-            <label htmlFor={htmlFor}>{name}</label>
+            <label htmlFor={htmlFor}>{displayName}</label>
             <input
               className="checkbox"
               id={htmlFor}
