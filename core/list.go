@@ -167,6 +167,9 @@ func GetList(ctx context.Context, db *sql.DB, id uid.ID) (*List, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(lists) == 0 {
+		return nil, httperr.NewNotFound("list-not-found", "List not found.")
+	}
 	return lists[0], nil
 }
 
@@ -174,6 +177,9 @@ func GetListByName(ctx context.Context, db *sql.DB, user uid.ID, name string) (*
 	lists, err := getLists(ctx, db, "WHERE user_id = ? AND lists.name = ?", user, name)
 	if err != nil {
 		return nil, err
+	}
+	if len(lists) == 0 {
+		return nil, httperr.NewNotFound("list-not-found", "List not found.")
 	}
 	return lists[0], nil
 }

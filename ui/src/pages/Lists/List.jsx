@@ -47,6 +47,7 @@ const List = () => {
         if (!res.ok) {
           if (res.status === 404) {
             setListLoading('notfound');
+            return;
           }
           throw new Error(await res.text());
         }
@@ -83,8 +84,14 @@ const List = () => {
     }
     const f = async () => {
       try {
-        const res = await mfetchjson(feedEndpoint);
-        setFeed(res);
+        const res = await mfetch(feedEndpoint);
+        if (!res.ok) {
+          if (res.status === 404) {
+            setFeedLoadingError(new Error('feed not found'));
+            return;
+          }
+        }
+        setFeed(await res.json());
       } catch (error) {
         setFeedLoadingError(error);
         dispatch(snackAlertError(error));
@@ -127,6 +134,7 @@ const List = () => {
   };
 
   if (feedLoading || feedLoadingError || listLoading !== 'loaded' || !list) {
+    console.log('loading: ', listLoading);
     if (listLoading === 'notfound') {
       return <NotFound />;
     }
