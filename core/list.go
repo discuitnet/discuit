@@ -13,6 +13,7 @@ import (
 	"github.com/discuitnet/discuit/internal/httperr"
 	msql "github.com/discuitnet/discuit/internal/sql"
 	"github.com/discuitnet/discuit/internal/uid"
+	"github.com/discuitnet/discuit/internal/utils"
 )
 
 type ListItemsSort int
@@ -186,10 +187,30 @@ func GetUsersLists(ctx context.Context, db *sql.DB, user uid.ID, sort, filter st
 	return getLists(ctx, db, where, user)
 }
 
+// listnameValid always returns an httperr.Error.
+func listnameValid(name string) error {
+	if err := IsUsernameValid(name); err != nil {
+		return httperr.NewBadRequest("invalid-list-name", fmt.Sprintf("list name %v", err))
+	}
+	return nil
+}
+
+func truncateListDisplayName(s string) string {
+	return utils.TruncateUnicodeString(s, 50)
+}
+
 func CreateList(ctx context.Context, db *sql.DB, user uid.ID, name, displayName string, description msql.NullString, public bool) error {
 	if description.String == "" {
 		description.Valid = false
 	}
+
+	if err := listnameValid(name); err != nil {
+		return err
+	}
+
+	displayName = truncateListDisplayName(displayName)
+
+	description.String = utils.TruncateUnicodeString(description.String, maxUserProfileAboutLength)
 	query, args := msql.BuildInsertQuery("lists", []msql.ColumnValue{
 		{Name: "user_id", Value: user},
 		{Name: "name", Value: name},
@@ -211,6 +232,15 @@ func CreateList(ctx context.Context, db *sql.DB, user uid.ID, name, displayName 
 
 // Update updates the list's updatable fields.
 func (l *List) Update(ctx context.Context, db *sql.DB) error {
+	// Check errors:
+	if err := listnameValid(l.Name); err != nil {
+		return err
+	}
+
+	// Truncate:
+	l.Description.String = utils.TruncateUnicodeString(l.Description.String, maxUserProfileAboutLength)
+	l.DisplayName = truncateListDisplayName(l.DisplayName)
+
 	_, err := db.ExecContext(ctx, `
 		UPDATE lists SET 
 			name = ?, 
