@@ -67,7 +67,7 @@ func (o *ListItemsSort) UnmarshalText(data []byte) error {
 }
 
 type List struct {
-	ID            uid.ID          `json:"id"`
+	ID            int             `json:"id"`
 	UserID        uid.ID          `json:"userId"`
 	Username      string          `json:"username"`
 	Name          string          `json:"name"`
@@ -132,7 +132,7 @@ func getLists(ctx context.Context, db *sql.DB, where string, args ...any) ([]*Li
 	return lists, nil
 }
 
-func GetList(ctx context.Context, db *sql.DB, id uid.ID) (*List, error) {
+func GetList(ctx context.Context, db *sql.DB, id int) (*List, error) {
 	lists, err := getLists(ctx, db, "WHERE lists.id = ?", id)
 	if err != nil {
 		return nil, err
@@ -191,7 +191,6 @@ func CreateList(ctx context.Context, db *sql.DB, user uid.ID, name, displayName 
 		description.Valid = false
 	}
 	query, args := msql.BuildInsertQuery("lists", []msql.ColumnValue{
-		{Name: "id", Value: uid.New()},
 		{Name: "user_id", Value: user},
 		{Name: "name", Value: name},
 		{Name: "display_name", Value: displayName},
@@ -300,7 +299,7 @@ func (l *List) DeleteAllItems(ctx context.Context, db *sql.DB) error {
 
 type ListItem struct {
 	ID         int         `json:"id"`
-	ListID     uid.ID      `json:"listId"`
+	ListID     int         `json:"listId"`
 	TargetType ContentType `json:"targetType"`
 	TargetID   uid.ID      `json:"targetId"`
 	CreatedAt  time.Time   `json:"createdAt"` // When the list item was created, not the target item.
@@ -308,7 +307,7 @@ type ListItem struct {
 	TargetItem any `json:"targetItem"` // Either a Post or a Comment.
 }
 
-func GetListItem(ctx context.Context, db *sql.DB, listID uid.ID, itemID int) (*ListItem, error) {
+func GetListItem(ctx context.Context, db *sql.DB, listID, itemID int) (*ListItem, error) {
 	query := buildSelectListItemsQuery("WHERE id = ? AND list_id = ?")
 	args := []any{itemID, listID}
 
@@ -331,7 +330,7 @@ func GetListItem(ctx context.Context, db *sql.DB, listID uid.ID, itemID int) (*L
 
 // The next string should contain either a timestamp or a marshaled uid.ID; if
 // not, the function will return an error. It's safe for next to be nil.
-func GetListItems(ctx context.Context, db *sql.DB, listID uid.ID, limit int, sort ListItemsSort, next *string, viewer *uid.ID) (*ListItemsResultSet, error) {
+func GetListItems(ctx context.Context, db *sql.DB, listID, limit int, sort ListItemsSort, next *string, viewer *uid.ID) (*ListItemsResultSet, error) {
 	query := buildSelectListItemsQuery("WHERE list_id = ?")
 	args := []any{listID}
 
@@ -465,7 +464,7 @@ func buildSelectListItemsQuery(where string) string {
 	return "SELECT id, target_type, target_id, created_at FROM list_items " + where
 }
 
-func scanListItems(rows *sql.Rows, listID uid.ID) ([]*ListItem, error) {
+func scanListItems(rows *sql.Rows, listID int) ([]*ListItem, error) {
 	defer rows.Close()
 
 	items := []*ListItem{}
@@ -497,7 +496,7 @@ type ListItemsResultSet struct {
 
 // ListsItemIsSavedTo returns the ids of the lists the post or comment target is
 // saved in.
-func ListsItemIsSavedTo(ctx context.Context, db *sql.DB, user uid.ID, targetID uid.ID, targetType ContentType) ([]uid.ID, error) {
+func ListsItemIsSavedTo(ctx context.Context, db *sql.DB, user uid.ID, targetID uid.ID, targetType ContentType) ([]int, error) {
 	rows, err := db.QueryContext(ctx, `
 		select 
 			lists.id 
@@ -512,9 +511,9 @@ func ListsItemIsSavedTo(ctx context.Context, db *sql.DB, user uid.ID, targetID u
 	}
 	defer rows.Close()
 
-	ids := []uid.ID{} // So, it's JSON marshaled as an array.
+	ids := []int{} // So, it's JSON marshaled as an array.
 	for rows.Next() {
-		var id uid.ID
+		var id int
 		if err := rows.Scan(&id); err != nil {
 			return nil, err
 		}

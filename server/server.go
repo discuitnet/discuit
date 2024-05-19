@@ -120,7 +120,7 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/lists/{listId}", s.withHandler(s.withListByID(s.handeList))).Methods("GET", "PUT", "DELETE")
 	r.Handle("/api/users/{username}/lists/{listname}/items", s.withHandler(s.withListByName(s.handleListItems))).Methods("GET", "POST", "DELETE")
 	r.Handle("/api/lists/{listId}/items", s.withHandler(s.withListByID(s.handleListItems))).Methods("GET", "POST", "DELETE")
-	r.Handle("/api/lists/{listId}/items/{itemId}", s.withHandler(s.deleteListItem)).Methods("DELETE")
+	r.Handle("/api/lists/{listId}/items/{itemId}", s.withHandler(s.withListByID(s.deleteListItem))).Methods("DELETE")
 
 	r.Handle("/api/mutes", s.withHandler(s.handleMutes)).Methods("GET", "POST", "DELETE")
 	r.Handle("/api/mutes/users/{mutedUserID}", s.withHandler(s.deleteUserMute)).Methods("DELETE")

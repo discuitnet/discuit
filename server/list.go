@@ -142,7 +142,7 @@ func (s *Server) withListByName(f func(*responseWriter, *request, *core.List) er
 
 func (s *Server) withListByID(f func(*responseWriter, *request, *core.List) error) handler {
 	return handler(func(w *responseWriter, r *request) error {
-		listID, err := uid.FromString(r.muxVar("listId"))
+		listID, err := strconv.Atoi(r.muxVar("listId"))
 		if err != nil {
 			return httperr.NewBadRequest("invalid-list-id", "Invalid list id.")
 		}
@@ -236,18 +236,9 @@ func (s *Server) handleListItems(w *responseWriter, r *request, list *core.List)
 }
 
 // /api/lists/{listId}/items/{itemId} [DELETE]
-func (s *Server) deleteListItem(w *responseWriter, r *request) error {
+func (s *Server) deleteListItem(w *responseWriter, r *request, list *core.List) error {
 	if !r.loggedIn {
 		return errNotLoggedIn
-	}
-
-	listID, err := uid.FromString(r.muxVar("listId"))
-	if err != nil {
-		return httperr.NewBadRequest("invalid-list-id", "Invalid list id.")
-	}
-	list, err := core.GetList(r.ctx, s.db, listID)
-	if err != nil {
-		return err
 	}
 
 	itemID, err := strconv.Atoi(r.muxVar("itemId"))
