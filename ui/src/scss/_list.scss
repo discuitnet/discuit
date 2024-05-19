@@ -110,7 +110,10 @@
                 > * {
                     margin-bottom: var(--gap);
                 }
-                .list-head-name {
+                .list-head-top {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: baseline;
                     margin-bottom: 0;
                 }
             }

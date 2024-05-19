@@ -154,7 +154,10 @@ const List = () => {
       <main className="page-middle">
         <header className="card card-padding list-head">
           <div className="list-head-main">
-            <h1 className="list-head-name">{list.displayName}</h1>
+            <div className="list-head-top">
+              <h1>{list.displayName}</h1>
+              {!list.public && <div>Private</div>}
+            </div>
             <Link to="/@previnder" className="list-head-user">
               @{list.username}
             </Link>
