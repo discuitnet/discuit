@@ -189,7 +189,7 @@ func GetListByName(ctx context.Context, db *sql.DB, user uid.ID, name string) (*
 // either empty or one of: all, public, private.
 func GetUsersLists(ctx context.Context, db *sql.DB, user uid.ID, sort, filter string) ([]*List, error) {
 	if sort == "" {
-		sort = "name"
+		sort = "lastAdded"
 	}
 	if filter == "" {
 		filter = "all"
