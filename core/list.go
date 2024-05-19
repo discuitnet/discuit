@@ -323,7 +323,16 @@ func (l *List) DeleteItem(ctx context.Context, db *sql.DB, targetType ContentTyp
 }
 
 func (l *List) DeleteAllItems(ctx context.Context, db *sql.DB) error {
-	_, err := db.ExecContext(ctx, "DELETE FROM list_items WHERE list_id = ?", l.ID)
+	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
+		_, err := db.ExecContext(ctx, "DELETE FROM list_items WHERE list_id = ?", l.ID)
+		if err != nil {
+			return err
+		}
+		if _, err := db.Exec("UPDATE lists SET num_items = 0 WHERE id = ?", l.ID); err != nil {
+			return err
+		}
+		return nil
+	})
 	return err
 }
 
