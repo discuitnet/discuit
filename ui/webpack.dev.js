@@ -8,7 +8,7 @@ module.exports = merge(common, {
   },
   devtool: 'inline-source-map',
   devServer: {
-    contentBase: './dist',
+    // contentBase: './dist',
     historyApiFallback: true,
   },
 });

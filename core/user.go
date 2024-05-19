@@ -1155,17 +1155,20 @@ func MakeAdmin(ctx context.Context, db *sql.DB, user string, isAdmin bool) (*Use
 // CreateGhostUser creates the ghost user, if the ghost user isn't already
 // created. The ghost user is the user with the username ghost that takes, so to
 // speak, the place of all deleted users.
-func CreateGhostUser(db *sql.DB) error {
+//
+// The returned bool indicates whether the call to this function created the
+// ghost user (if the ghost user was already created, it will be false).
+func CreateGhostUser(db *sql.DB) (bool, error) {
 	var username string
 	if err := db.QueryRow("SELECT username_lc FROM users WHERE username_lc = ?", "ghost").Scan(&username); err != nil {
 		if err == sql.ErrNoRows {
 			// Ghost user not found; create one.
 			_, createErr := RegisterUser(context.Background(), db, "ghost", "", utils.GenerateStringID(48), false, 0)
-			return createErr
+			return createErr == nil, createErr
 		}
-		return err
+		return false, err
 	}
-	return nil
+	return false, nil
 }
 
 func CalcGhostUserID(user uid.ID, unique string) string {
