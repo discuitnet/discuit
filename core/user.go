@@ -460,6 +460,12 @@ func RegisterUser(ctx context.Context, db *sql.DB, username, email, password str
 		log.Println("Failed to add user to default communities: ", err)
 		// Continue on failure.
 	}
+
+	if err := CreateList(ctx, db, id, "favorites", "Favorites", msql.NullString{}, false); err != nil {
+		log.Println("Failed to create the default community of user: ", username)
+		// Continue on failure.
+	}
+
 	return GetUser(ctx, db, id, nil)
 }
 
