@@ -674,6 +674,11 @@ func (u *User) Delete(ctx context.Context) error {
 			return err
 		}
 
+		// Delete the user's lists.
+		if _, err := tx.ExecContext(ctx, "DELETE FROM lists WHERE user_id = ?", u.ID); err != nil {
+			return err
+		}
+
 		// Delete the user's profile picture
 		if err := u.DeleteProPicTx(ctx, tx); err != nil {
 			return err
