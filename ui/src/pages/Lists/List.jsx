@@ -7,10 +7,10 @@ import { Helmet } from 'react-helmet-async';
 import Link from '../../components/Link';
 import Modal from '../../components/Modal';
 import { ButtonClose } from '../../components/Button';
-import Input from '../../components/Input';
-import { dateString1, mfetch, mfetchjson, stringCount } from '../../helper';
+import Input, { InputWithCount } from '../../components/Input';
+import { APIError, dateString1, mfetch, mfetchjson, stringCount } from '../../helper';
 import { useDispatch, useSelector } from 'react-redux';
-import { snackAlertError } from '../../slices/mainSlice';
+import { listsAdded, snackAlertError } from '../../slices/mainSlice';
 import {
   FeedItem,
   feedInViewItemsUpdated,
@@ -26,6 +26,9 @@ import { MemorizedComment } from '../User/Comment';
 import PageLoading from '../../components/PageLoading';
 import NotFound from '../NotFound';
 import { listAdded, selectList } from '../../slices/listsSlice';
+import { useInputUsername } from '../../hooks';
+import { usernameMaxLength } from '../../config';
+import { useHistory } from 'react-router-dom';
 
 const List = () => {
   const dispatch = useDispatch();
@@ -143,7 +146,7 @@ const List = () => {
 
   return (
     <div className="page-content wrap page-grid page-list">
-      <EditListModal open={editModalOpen} onClose={() => setEditModalOpen(false)} />
+      <EditListModal list={list} open={editModalOpen} onClose={() => setEditModalOpen(false)} />
       <Helmet>
         <title>{`${listname} of @${username}`}</title>
       </Helmet>
@@ -207,11 +210,7 @@ const List = () => {
 
 export default List;
 
-const EditListModal = ({ open, onClose }) => {
-  const [listname, setListname] = useState('Favorites');
-  const [description, setDescription] = useState('');
-  const [isPublic, setIsPublic] = useState(false);
-
+const EditListModal = ({ list, open, onClose }) => {
   return (
     <Modal open={open} onClose={onClose}>
       <div className="modal-card edit-list-modal is-compact-mobile">
@@ -219,47 +218,14 @@ const EditListModal = ({ open, onClose }) => {
           <div className="modal-card-title">Edit list</div>
           <ButtonClose onClick={onClose} />
         </div>
-        <div className="modal-card-content">
-          <Input
-            label="List name"
-            value={listname}
-            onChange={(e) => setListname(e.target.value)}
-            autoFocus
-          />
-          <div className="checkbox is-check-last">
-            <label htmlFor="pub">Public</label>
-            <input
-              className="switch"
-              type="checkbox"
-              id="pub"
-              checked={isPublic}
-              onChange={(e) => setIsPublic(e.target.checked)}
-            />
-          </div>
-          <div className="input-with-label">
-            <div className="input-label-box">
-              <div className="label">Description</div>
-            </div>
-            <textarea
-              rows="5"
-              placeholder=""
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-        </div>
-        <div className="modal-card-actions">
-          <button className="button-main" onClick={null}>
-            Save
-          </button>
-          <button onClick={onClose}>Cancel</button>
-        </div>
+        <EditListForm list={list} onCancel={onClose} onSuccess={onClose} />
       </div>
     </Modal>
   );
 };
 
 EditListModal.propTypes = {
+  list: PropTypes.object.isRequired,
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
 };
@@ -301,4 +267,151 @@ const SVGs = {
       />
     </svg>
   ),
+};
+
+export const EditListForm = ({ list, onCancel, onSuccess }) => {
+  const user = useSelector((state) => state.main.user);
+  const dispatch = useDispatch();
+
+  const [isPublic, setIsPublic] = useState(list ? list.public : false);
+
+  const [name, handleNameChange] = useInputUsername(usernameMaxLength, list ? list.name : '');
+  const [nameError, setNameError] = useState(null);
+  const handleNameBlur = async () => {
+    if (list && list.name === name) {
+      setNameError(null);
+      return;
+    }
+    try {
+      const res = await mfetch(`/api/users/${user.username}/lists/${name}`);
+      if (!res.ok) {
+        if (res.status === 404) {
+          setNameError(null);
+          return;
+        }
+        throw new APIError(res.status, await res.json());
+      }
+      setNameError(`List with name ${name} already exists.`);
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    }
+  };
+
+  const [displayName, setDisplayName] = useState(list ? list.displayName : '');
+  const [description, setDescription] = useState('');
+
+  const createNewList = async () => {
+    const newLists = await mfetchjson(`/api/users/${user.username}/lists`, {
+      method: 'POST',
+      body: JSON.stringify({
+        name,
+        displayName,
+        public: isPublic,
+      }),
+    });
+    dispatch(listsAdded(newLists));
+  };
+
+  const history = useHistory();
+  const updateList = async () => {
+    const newList = await mfetchjson(`/api/lists/${list.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        name,
+        displayName,
+        public: isPublic,
+      }),
+    });
+    const res = await mfetchjson('/api/_initial');
+    dispatch(listsAdded(res.lists));
+    history.replace(`/@${list.username}/lists/${name}`);
+    dispatch(listAdded(list.username, newList));
+  };
+
+  const [formDisabled, setFormDisabled] = useState(false);
+  const handleSubmit = async (event) => {
+    if (event) {
+      event.preventDefault();
+    }
+    if (formDisabled) {
+      return;
+    }
+    if (name === '') {
+      setNameError('Name cannot be empty.');
+      return;
+    }
+    setFormDisabled(true);
+    try {
+      if (list) {
+        await updateList();
+      } else {
+        await createNewList();
+      }
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    }
+    setFormDisabled(false);
+    if (onSuccess) {
+      onSuccess();
+    }
+  };
+
+  return (
+    <>
+      <form className="modal-card-content" onSubmit={handleSubmit}>
+        <div className="edit-list-modal-form" onSubmit={handleSubmit}>
+          <InputWithCount
+            label="Name"
+            maxLength={usernameMaxLength}
+            description="Name will be part of the URL of the list."
+            error={nameError}
+            value={name}
+            onChange={handleNameChange}
+            onBlur={handleNameBlur}
+            autoFocus
+            style={{ marginBottom: 0 }}
+            autoComplete="name"
+          />
+          <Input
+            label="Display name"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+          />
+          <div className="checkbox is-check-last">
+            <label htmlFor="pub">Public</label>
+            <input
+              className="switch"
+              type="checkbox"
+              id="pub"
+              checked={isPublic}
+              onChange={(e) => setIsPublic(e.target.checked)}
+            />
+          </div>
+          <div className="input-with-label">
+            <div className="input-label-box">
+              <div className="label">Description</div>
+            </div>
+            <textarea
+              rows="5"
+              placeholder=""
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+        </div>
+      </form>
+      <div className="modal-card-actions">
+        <button className="button-main" onClick={handleSubmit} disabled={formDisabled}>
+          {list ? 'Save' : 'Create'}
+        </button>
+        <button onClick={onCancel}>Cancel</button>
+      </div>
+    </>
+  );
+};
+
+EditListForm.propTypes = {
+  list: PropTypes.object,
+  onCancel: PropTypes.func.isRequired,
+  onSuccess: PropTypes.func,
 };

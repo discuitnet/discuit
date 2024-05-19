@@ -1068,15 +1068,6 @@
                 }
             }
         }
-        .save-modal-newlist {
-            display: flex;
-            flex-direction: column;
-            padding: var(--card-padding);
-            padding-bottom: 0;
-            > * {
-                margin-bottom: var(--gap);
-            }
-        }
         @include mixins.mobile {
             .save-modal-list {
                 padding: 0;
@@ -1092,6 +1083,20 @@
                     margin: 0;
                 }
             }
+        }
+    }
+    .edit-list-modal {
+        .edit-list-modal-form {
+            padding: 0;
+        }
+    }
+    .edit-list-modal-form {
+        display: flex;
+        flex-direction: column;
+        padding: var(--card-padding);
+        padding-bottom: 0;
+        > * {
+            margin-bottom: var(--gap);
         }
     }
 }

@@ -6,6 +6,7 @@ import Input from './Input';
 import { useDispatch, useSelector } from 'react-redux';
 import { listsAdded, saveToListModalClosed, snackAlertError } from '../slices/mainSlice';
 import { mfetchjson } from '../helper';
+import { EditListForm } from '../pages/Lists/List';
 
 const SaveToListModal = () => {
   const dispatch = useDispatch();
@@ -155,62 +156,9 @@ const TheModal = ({ open, onClose, toSaveItemId, toSaveItemType }) => {
     );
   };
 
-  const [canCreateList, setCanCreateList] = useState(true);
-  const [newListName, setNewListName] = useState('');
-  const [newListPublicStatus, setNewListPublicStatus] = useState(false);
-  const handleCreateNewList = async () => {
-    try {
-      setCanCreateList(false);
-      const newLists = await mfetchjson(`/api/users/${user.username}/lists`, {
-        method: 'POST',
-        body: JSON.stringify({
-          name: newListName,
-          displayName: newListName,
-          public: newListPublicStatus,
-        }),
-      });
-      dispatch(listsAdded(newLists));
-    } catch (error) {
-      dispatch(snackAlertError(error));
-    } finally {
-      setCanCreateList(true);
-      setNewListName('');
-      setNewListPublicStatus(false);
-      setPage('list');
-    }
-  };
-
   const renderNewPage = () => {
-    return (
-      <>
-        <div className="modal-card-content">
-          <div className="save-modal-newlist">
-            <Input
-              label="List name"
-              value={newListName}
-              onChange={(e) => setNewListName(e.target.value)}
-              autoFocus
-            />
-            <div className="checkbox is-check-last">
-              <label htmlFor="pub">Public</label>
-              <input
-                className="switch"
-                type="checkbox"
-                id="pub"
-                checked={newListPublicStatus}
-                onChange={(e) => setNewListPublicStatus(e.target.checked)}
-              />
-            </div>
-          </div>
-        </div>
-        <div className="modal-card-actions">
-          <button className="button-main" onClick={handleCreateNewList} disabled={!canCreateList}>
-            Create
-          </button>
-          <button onClick={() => setPage('list')}>Cancel</button>
-        </div>
-      </>
-    );
+    const switchTab = () => setPage('list');
+    return <EditListForm onCancel={switchTab} onSuccess={switchTab} />;
   };
 
   return (

@@ -29,8 +29,8 @@ export function useDelayedEffect(callback, deps, delay = 1000) {
   }, deps);
 }
 
-export function useInputUsername(maxLength) {
-  const [value, setValue] = useState('');
+export function useInputUsername(maxLength, initialUsername = '') {
+  const [value, setValue] = useState(initialUsername);
   const handleChange = (e) => {
     e.preventDefault();
     const { value } = e.target;
