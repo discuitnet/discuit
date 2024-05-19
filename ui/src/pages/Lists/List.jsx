@@ -98,7 +98,7 @@ const List = () => {
     if (feedReloading) return;
     try {
       setFeedReloading(true);
-      const res = await mfetchjson(`${feedEndpoint}&next=${feed.next}`);
+      const res = await mfetchjson(`${feedEndpoint}?next=${feed.next}`);
       setFeed(res);
     } catch (error) {
       dispatch(snackAlertError(error));

@@ -343,10 +343,10 @@ func GetListItems(ctx context.Context, db *sql.DB, listID uid.ID, limit int, sor
 			}
 			nextTime := time.Unix(i, 0)
 			if sort == ListItemsSortByAddedAsc {
-				query += " AND created_at > ?"
+				query += " AND created_at >= ?"
 			} else {
 				// order is ListItemsSortByAddedDsc.
-				query += " AND created_at < ?"
+				query += " AND created_at <= ?"
 			}
 			args = append(args, nextTime)
 		} else {
@@ -356,10 +356,10 @@ func GetListItems(ctx context.Context, db *sql.DB, listID uid.ID, limit int, sor
 				return nil, fmt.Errorf("failed to parse next (GetListItems, uid.ID): %w", err)
 			}
 			if sort == ListItemsSortByCreatedAsc {
-				query += " AND target_id > ?"
+				query += " AND target_id >= ?"
 			} else {
 				// order is ListItemsSortByCreatedDsc
-				query += " AND target_id < ?"
+				query += " AND target_id <= ?"
 			}
 			args = append(args, nextID)
 		}

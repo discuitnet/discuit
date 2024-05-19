@@ -189,7 +189,7 @@ func (s *Server) handleListItems(w *responseWriter, r *request, list *core.List)
 		sort  core.ListItemsSort = core.ListOrderingDefault
 	)
 
-	if limit, err = r.urlQueryParamsValueInt("limit", 50); err != nil {
+	if limit, err = r.urlQueryParamsValueInt("limit", 10); err != nil {
 		return httperr.NewBadRequest("invalid-limit", "Invalid limit value.")
 	}
 	if nextString := r.urlQueryParamsValue("next"); nextString != "" {
