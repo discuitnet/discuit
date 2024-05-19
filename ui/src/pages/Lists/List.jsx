@@ -8,7 +8,7 @@ import Link from '../../components/Link';
 import Modal from '../../components/Modal';
 import { ButtonClose } from '../../components/Button';
 import Input from '../../components/Input';
-import { mfetch, mfetchjson, stringCount } from '../../helper';
+import { dateString1, mfetch, mfetchjson, stringCount } from '../../helper';
 import { useDispatch, useSelector } from 'react-redux';
 import { snackAlertError } from '../../slices/mainSlice';
 import {
@@ -179,23 +179,15 @@ const List = () => {
           <div className="card-content">
             <div className="card-list-item">
               {SVGs.comment}
-              <div>{stringCount(125, false, 'total item')}</div>
+              <div>{stringCount(list.numItems, false, 'total item')}</div>
             </div>
             <div className="card-list-item">
               {SVGs.comment}
-              <div>{stringCount(100, false, 'post')}</div>
+              <div>{`Created on ${dateString1(list.createdAt)}`}</div>
             </div>
             <div className="card-list-item">
               {SVGs.comment}
-              <div>{stringCount(25, false, 'comment')}</div>
-            </div>
-            <div className="card-list-item">
-              {SVGs.comment}
-              <div>Created on 10 October 2024</div>
-            </div>
-            <div className="card-list-item">
-              {SVGs.comment}
-              <div>Last updated two weeks ago</div>
+              <div>{`Last updated on ${dateString1(list.lastUpdatedAt)}`}</div>
             </div>
           </div>
         </div>
