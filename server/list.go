@@ -116,32 +116,36 @@ func (s *Server) handeList(w *responseWriter, r *request, list *core.List) error
 	return w.writeJSON(list)
 }
 
-func (s *Server) handleListByName(w *responseWriter, r *request) error {
-	user, err := core.GetUserByUsername(r.ctx, s.db, r.muxVar("username"), nil)
-	if err != nil {
-		return err
-	}
+func (s *Server) withListByName(f func(*responseWriter, *request, *core.List) error) handler {
+	return handler(func(w *responseWriter, r *request) error {
+		user, err := core.GetUserByUsername(r.ctx, s.db, r.muxVar("username"), nil)
+		if err != nil {
+			return err
+		}
 
-	list, err := core.GetListByName(r.ctx, s.db, user.ID, r.muxVar("listname"))
-	if err != nil {
-		return err
-	}
+		list, err := core.GetListByName(r.ctx, s.db, user.ID, r.muxVar("listname"))
+		if err != nil {
+			return err
+		}
 
-	return s.handeList(w, r, list)
+		return f(w, r, list)
+	})
 }
 
-func (s *Server) handleListByID(w *responseWriter, r *request) error {
-	listID, err := uid.FromString(r.muxVar("listId"))
-	if err != nil {
-		return httperr.NewBadRequest("invalid-list-id", "Invalid list id.")
-	}
+func (s *Server) withListByID(f func(*responseWriter, *request, *core.List) error) handler {
+	return handler(func(w *responseWriter, r *request) error {
+		listID, err := uid.FromString(r.muxVar("listId"))
+		if err != nil {
+			return httperr.NewBadRequest("invalid-list-id", "Invalid list id.")
+		}
 
-	list, err := core.GetList(r.ctx, s.db, listID)
-	if err != nil {
-		return err
-	}
+		list, err := core.GetList(r.ctx, s.db, listID)
+		if err != nil {
+			return err
+		}
 
-	return s.handeList(w, r, list)
+		return f(w, r, list)
+	})
 }
 
 // [GET, POST, DELETE]
@@ -202,31 +206,6 @@ func (s *Server) handleListItems(w *responseWriter, r *request, list *core.List)
 		return err
 	}
 	return w.writeJSON(resultSet)
-}
-
-func (s *Server) handleListByIDItems(w *responseWriter, r *request) error {
-	listID, err := uid.FromString(r.muxVar("listId"))
-	if err != nil {
-		return httperr.NewBadRequest("invalid-list-id", "Invalid list id.")
-	}
-	list, err := core.GetList(r.ctx, s.db, listID)
-	if err != nil {
-		return err
-	}
-	return s.handleListItems(w, r, list)
-}
-
-func (s *Server) handleListByNameItems(w *responseWriter, r *request) error {
-	user, err := core.GetUserByUsername(r.ctx, s.db, r.muxVar("username"), nil)
-	if err != nil {
-		return err
-	}
-
-	list, err := core.GetListByName(r.ctx, s.db, user.ID, r.muxVar("listname"))
-	if err != nil {
-		return err
-	}
-	return s.handleListItems(w, r, list)
 }
 
 // /api/lists/{listId}/items/{itemId} [DELETE]
