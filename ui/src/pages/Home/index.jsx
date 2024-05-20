@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { createCommunityModalOpened, signupModalOpened } from '../../slices/mainSlice';
 import Link from '../../components/Link';
 import MiniFooter from '../../components/MiniFooter';
 import Sidebar from '../../components/Sidebar';
@@ -16,7 +17,8 @@ import Modal from '../../components/Modal';
 const Home = () => {
   const user = useSelector((state) => state.main.user);
   const loggedIn = user !== null;
-
+  const canCreateForum = loggedIn && (user.isAdmin || !CONFIG.disableForumCreation);
+  
   const location = useLocation();
   const feedType = (() => {
     let f = 'all';
@@ -68,6 +70,16 @@ const Home = () => {
           <Link className="button button-main home-btn-new-post is-m" to="/new">
             Create post
           </Link>
+        )}
+        {canCreateForum && (
+          <>
+            <Link
+              onClick={() => dispatch(createCommunityModalOpened())}
+              className={'button button-main home-btn-new-post is-m'}
+            >
+              Create community
+            </Link>
+          </>
         )}
         <PostsFeed feedType={feedType} />
       </main>
