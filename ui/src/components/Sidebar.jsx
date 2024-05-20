@@ -282,7 +282,7 @@ const Sidebar = ({ isMobile = false }) => {
             My lists
           </Link>
           */}
-          {loggedIn && (
+          {loggedIn && lists.length > 0 && (
             <>
               <div className="sidebar-topic">My Lists</div>
               {lists.map((list) => (

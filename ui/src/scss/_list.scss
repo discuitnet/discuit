@@ -113,9 +113,8 @@
     padding-top: 0;
     .page-middle {
         .list-head {
+            margin-top: 15px;
             margin-left: var(--post-card-votes-margin);
-            border-top-left-radius: 0;
-            border-top-right-radius: 0;
             display: flex;
             flex-direction: column;
             @include mixins.tablet {
