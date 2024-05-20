@@ -72,6 +72,19 @@
                 img {
                     border-radius: var(--border-radius);
                 }
+                &.is-default {
+                    background: rgba(var(--base-fg), 0.05);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    border: 2px rgba(var(--base-fg), 0.1) solid;
+                    svg {
+                        --size: 65px;
+                        width: var(--size);
+                        height: var(--size);
+                        opacity: 0.7;
+                    }
+                }
             }
         }
         .list-thumb-bottom {
