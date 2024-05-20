@@ -99,6 +99,9 @@
     }
     .select-bar {
         margin-left: var(--post-card-votes-margin);
+        @include mixins.tablet {
+            margin-left: 0;
+        }
     }
     .page-user-summary {
         .user-summary-item {
