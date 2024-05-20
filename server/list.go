@@ -1,6 +1,7 @@
 package server
 
 import (
+	"database/sql"
 	"encoding/json"
 	"io"
 	"strconv"
@@ -92,23 +93,37 @@ func (s *Server) handleLists(w *responseWriter, r *request) error {
 	return w.writeJSON(lists)
 }
 
+func viewerListOwner(r *request, db *sql.DB, list *core.List) (bool, error) {
+	if !r.loggedIn {
+		return false, nil
+	}
+
+	viewer, err := core.GetUser(r.ctx, db, *r.viewer, r.viewer)
+	if err != nil {
+		return false, err
+	}
+	return viewer.ID == list.UserID, nil
+}
+
 // [GET, PUT, DELETE]
 func (s *Server) handeList(w *responseWriter, r *request, list *core.List) error {
 	if !r.loggedIn && r.req.Method != "GET" {
 		return errNotLoggedIn
 	}
 
-	if !list.Public {
-		errListNotFound := httperr.NewNotFound("list-not-found", "List not found.")
-		if !r.loggedIn {
-			return errListNotFound
-		}
-		viewer, err := core.GetUser(r.ctx, s.db, *r.viewer, r.viewer)
+	if !list.Public || r.req.Method != "GET" {
+		owner, err := viewerListOwner(r, s.db, list)
 		if err != nil {
 			return err
 		}
-		if viewer.ID != list.UserID {
-			return errListNotFound
+		if !owner {
+			if !list.Public {
+				return httperr.NewNotFound("list-not-found", "List not found.")
+
+			} else {
+				// Not a GET request.
+				return httperr.NewForbidden("not-list-owner", "Not list owner.")
+			}
 		}
 	}
 
@@ -177,17 +192,19 @@ func (s *Server) handleListItems(w *responseWriter, r *request, list *core.List)
 		return errNotLoggedIn
 	}
 
-	if !list.Public {
-		errListNotFound := httperr.NewNotFound("list-not-found", "List not found.")
-		if !r.loggedIn {
-			return errListNotFound
-		}
-		viewer, err := core.GetUser(r.ctx, s.db, *r.viewer, r.viewer)
+	if !list.Public || r.req.Method != "GET" {
+		owner, err := viewerListOwner(r, s.db, list)
 		if err != nil {
 			return err
 		}
-		if viewer.ID != list.UserID {
-			return errListNotFound
+		if !owner {
+			if !list.Public {
+				return httperr.NewNotFound("list-not-found", "List not found.")
+
+			} else {
+				// Not a GET request.
+				return httperr.NewForbidden("not-list-owner", "Not list owner.")
+			}
 		}
 	}
 
