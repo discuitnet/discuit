@@ -134,7 +134,7 @@ const PushNotifications = () => {
 
   return (
     <Modal open={askModalOpen} onClose={handleAskModalClose} noOuterClickClose>
-      <div className="modal-card is-compact-mobile">
+      <div className="modal-card is-compact-mobile is-center">
         <div className="modal-card-head">
           <div className="modal-card-title">Turn on notifications</div>
           <ButtonClose onClick={handleAskModalClose} />

@@ -235,6 +235,10 @@ body {
         --fs-l: 1.7rem;
         --fs-xl: 1.8rem;
     }
+
+    &.is-not-gray {
+        background: var(--color-bg);
+    }
 }
 
 @mixin custom-scrollbar {
@@ -656,7 +660,7 @@ button,
     &.button-icon {
         &:hover,
         &.is-active {
-            background: var(--color-button);
+            background: var(--color-button-hover);
         }
     }
     &.button-icon-simple {
@@ -676,6 +680,13 @@ button,
         span {
             height: var(--button-icon-size);
             margin-left: 8px;
+        }
+        &.is-text-first {
+            flex-direction: row-reverse;
+            span {
+                margin-left: 0;
+                margin-right: 8px;
+            }
         }
     }
     &:disabled,

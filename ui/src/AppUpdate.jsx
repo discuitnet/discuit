@@ -76,7 +76,7 @@ const AppUpdate = () => {
     */
     return (
       <Modal open={modalOpen} onClose={handleClose} noOuterClickClose>
-        <div className="modal-card is-compact-mobile" style={{ minWidth: '300px' }}>
+        <div className="modal-card is-compact-mobile is-center" style={{ minWidth: '300px' }}>
           <div className="modal-card-head">
             <div className="modal-card-title">Update available!</div>
             <ButtonClose onClick={handleClose} />

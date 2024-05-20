@@ -21,7 +21,7 @@ const ModalConfirm = ({
 
   return (
     <Modal open={open} onClose={onClose} onKeyDown={handleKeyDown}>
-      <div className="modal-card is-compact-mobile">
+      <div className="modal-card is-compact-mobile is-center">
         <div className="modal-card-head">
           <div className="modal-card-title">{title}</div>
           <ButtonClose onClick={onClose} />

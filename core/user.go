@@ -460,6 +460,12 @@ func RegisterUser(ctx context.Context, db *sql.DB, username, email, password str
 		log.Println("Failed to add user to default communities: ", err)
 		// Continue on failure.
 	}
+
+	if err := CreateList(ctx, db, id, "bookmarks", "Bookmarks", msql.NullString{}, false); err != nil {
+		log.Println("Failed to create the default community of user: ", username)
+		// Continue on failure.
+	}
+
 	return GetUser(ctx, db, id, nil)
 }
 
@@ -665,6 +671,11 @@ func (u *User) Delete(ctx context.Context) error {
 
 		// Delete the user's web push subscriptions.
 		if _, err := tx.ExecContext(ctx, "DELETE FROM web_push_subscriptions WHERE user_id = ?", u.ID); err != nil {
+			return err
+		}
+
+		// Delete the user's lists.
+		if _, err := tx.ExecContext(ctx, "DELETE FROM lists WHERE user_id = ?", u.ID); err != nil {
 			return err
 		}
 

@@ -99,7 +99,7 @@ func (s *Server) getPost(w *responseWriter, r *request) error {
 		return err
 	}
 
-	if fetchCommunity := r.urlQueryValue("fetchCommunity"); fetchCommunity == "" || fetchCommunity == "true" {
+	if fetchCommunity := r.urlQueryParamsValue("fetchCommunity"); fetchCommunity == "" || fetchCommunity == "true" {
 		comm, err := core.GetCommunityByID(r.ctx, s.db, post.CommunityID, r.viewer)
 		if err != nil {
 			return err
@@ -132,7 +132,7 @@ func (s *Server) updatePost(w *responseWriter, r *request) error {
 		return err
 	}
 
-	query := r.urlQuery()
+	query := r.urlQueryParams()
 	action := query.Get("action")
 	if action == "" {
 		// Update post.
@@ -212,7 +212,7 @@ func (s *Server) deletePost(w *responseWriter, r *request) error {
 	if err != nil {
 		return err
 	}
-	query := r.urlQuery()
+	query := r.urlQueryParams()
 
 	var as core.UserGroup
 	if err = as.UnmarshalText([]byte(query.Get("deleteAs"))); err != nil {

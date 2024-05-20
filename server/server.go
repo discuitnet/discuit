@@ -114,6 +114,14 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/users/{username}/badges", s.withHandler(s.addBadge)).Methods("POST")
 	r.Handle("/api/users/{username}/badges/{badgeId}", s.withHandler(s.deleteBadge)).Methods("DELETE")
 
+	r.Handle("/api/users/{username}/lists", s.withHandler(s.handleLists)).Methods("GET", "POST")
+	r.Handle("/api/lists/_saved_to", s.withHandler(s.getSaveToLists)).Methods("GET")
+	r.Handle("/api/users/{username}/lists/{listname}", s.withHandler(s.withListByName(s.handeList))).Methods("GET", "PUT", "DELETE")
+	r.Handle("/api/lists/{listId}", s.withHandler(s.withListByID(s.handeList))).Methods("GET", "PUT", "DELETE")
+	r.Handle("/api/users/{username}/lists/{listname}/items", s.withHandler(s.withListByName(s.handleListItems))).Methods("GET", "POST", "DELETE")
+	r.Handle("/api/lists/{listId}/items", s.withHandler(s.withListByID(s.handleListItems))).Methods("GET", "POST", "DELETE")
+	r.Handle("/api/lists/{listId}/items/{itemId}", s.withHandler(s.withListByID(s.deleteListItem))).Methods("DELETE")
+
 	r.Handle("/api/mutes", s.withHandler(s.handleMutes)).Methods("GET", "POST", "DELETE")
 	r.Handle("/api/mutes/users/{mutedUserID}", s.withHandler(s.deleteUserMute)).Methods("DELETE")
 	r.Handle("/api/mutes/communities/{mutedCommunityID}", s.withHandler(s.deleteCommunityMute)).Methods("DELETE")
@@ -951,7 +959,7 @@ func (s *Server) rateLimit(r *request, bucketID string, interval time.Duration, 
 	}
 
 	if s.config.AdminApiKey != "" {
-		adminKey := r.urlQueryValue("adminKey")
+		adminKey := r.urlQueryParamsValue("adminKey")
 		if adminKey == s.config.AdminApiKey {
 			return nil // skip rate limits
 		}
@@ -999,7 +1007,7 @@ func (s *Server) getLinkInfo(w *responseWriter, r *request) error {
 		return err
 	}
 
-	url := r.urlQueryValue("url")
+	url := r.urlQueryParamsValue("url")
 	res, err := httputil.Get(url)
 	if err != nil {
 		return err
