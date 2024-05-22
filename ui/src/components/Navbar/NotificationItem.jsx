@@ -17,6 +17,7 @@ import { badgeImage } from '../../pages/User/Badge';
 
 const NotificationItem = ({ notification, ...rest }) => {
   const { type, seen, createdAt, notif } = notification;
+  if (!notif) return null; // notification is invalid
 
   const viewer = useSelector((state) => state.main.user);
 

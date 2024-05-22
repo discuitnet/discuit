@@ -592,6 +592,10 @@ func (n NotificationNewReport) marshalJSONForAPI(ctx context.Context, db *sql.DB
 	var err error
 	report, err := GetReport(ctx, db, n.ReportID)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return json.Marshal(nil)
+		}
+
 		return nil, err
 	}
 	if err = report.FetchTarget(ctx); err != nil {
