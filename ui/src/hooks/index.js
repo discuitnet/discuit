@@ -139,6 +139,13 @@ export function useVoting(initialVote, initialUpvotes, initialDownvotes) {
     downvotes: initialDownvotes,
     vote: initialVote,
   });
+  useEffect(() => {
+    setState({
+      upvotes: initialUpvotes,
+      downvotes: initialDownvotes,
+      vote: initialVote,
+    });
+  }, [initialVote, initialUpvotes, initialDownvotes]);
   const setVote = (up) => {
     setState((prev) => {
       let { upvotes, downvotes, vote } = prev;
