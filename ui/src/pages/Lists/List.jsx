@@ -165,6 +165,9 @@ const List = () => {
     }
   };
 
+  const viewer = useSelector((state) => state.main.user);
+  const viewerListOwner = viewer && list && viewer.id === list.userId;
+
   if (feedLoading || feedLoadingError || listLoading !== 'loaded' || !list) {
     console.log('loading: ', listLoading);
     if (listLoading === 'notfound') {
@@ -192,19 +195,21 @@ const List = () => {
             </Link>
             <div className="list-head-desc">{list.description}</div>
           </div>
-          <div className="list-head-actions">
-            <button onClick={() => setEditModalOpen(true)}>Edit list</button>
-            <Dropdown target={<ButtonMore style={{ background: 'var(--color-button)' }} />}>
-              <div className="dropdown-list">
-                <div className="button-clear dropdown-item" onClick={handleRemoveAllItems}>
-                  Remove all items
+          {viewerListOwner && (
+            <div className="list-head-actions">
+              <button onClick={() => setEditModalOpen(true)}>Edit list</button>
+              <Dropdown target={<ButtonMore style={{ background: 'var(--color-button)' }} />}>
+                <div className="dropdown-list">
+                  <div className="button-clear dropdown-item" onClick={handleRemoveAllItems}>
+                    Remove all items
+                  </div>
+                  <div className="button-clear dropdown-item" onClick={handleDeleteList}>
+                    Delete list
+                  </div>
                 </div>
-                <div className="button-clear dropdown-item" onClick={handleDeleteList}>
-                  Delete list
-                </div>
-              </div>
-            </Dropdown>
-          </div>
+              </Dropdown>
+            </div>
+          )}
         </header>
         <div className="lists-feed">
           {/*<PostsFeed feedType="all" />*/}
