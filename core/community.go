@@ -24,20 +24,20 @@ const maxCommunityAboutLength = 2000 // in runes
 type Community struct {
 	db *sql.DB
 
-	ID            uid.ID          `json:"id"`
-	AuthorID      uid.ID          `json:"userId"`
-	Name          string          `json:"name"`
-	NameLowerCase string          `json:"-"` // TODO: Remove this field (only from this struct, not also from the database).
-	NSFW          bool            `json:"nsfw"`
-	RestrictPost  bool            `json:"restrictPost"`
-	RestrictRead  bool            `json:"restrictRead"`
-	About         msql.NullString `json:"about"`
-	NumMembers    int             `json:"noMembers"`
-	ProPic        *images.Image   `json:"proPic"`
-	BannerImage   *images.Image   `json:"bannerImage"`
-	CreatedAt     time.Time       `json:"createdAt"`
-	DeletedAt     msql.NullTime   `json:"deletedAt"`
-	DeletedBy     uid.NullID      `json:"-"`
+	ID            uid.ID `json:"id"`
+	AuthorID      uid.ID `json:"userId"`
+	Name          string `json:"name"`
+	NameLowerCase string `json:"-"` // TODO: Remove this field (only from this struct, not also from the database).
+	NSFW          bool   `json:"nsfw"`
+	RestrictPost  bool   `json:"restrictPost"`
+	//	RestrictRead  bool            `json:"restrictRead"`
+	About       msql.NullString `json:"about"`
+	NumMembers  int             `json:"noMembers"`
+	ProPic      *images.Image   `json:"proPic"`
+	BannerImage *images.Image   `json:"bannerImage"`
+	CreatedAt   time.Time       `json:"createdAt"`
+	DeletedAt   msql.NullTime   `json:"deletedAt"`
+	DeletedBy   uid.NullID      `json:"-"`
 
 	// IsDefault is nil until Default is called.
 	IsDefault *bool `json:"isDefault,omitempty"`
@@ -59,7 +59,7 @@ func buildSelectCommunityQuery(where string) string {
 		"communities.name_lc",
 		"communities.nsfw",
 		"communities.restrict_post",
-		"communities.restrict_read",
+		//		"communities.restrict_read",
 		"communities.about",
 		"communities.no_members",
 		"communities.created_at",
@@ -417,7 +417,7 @@ func GetCommunitiesPrefix(ctx context.Context, db *sql.DB, s string) ([]*Communi
 	return deduped, nil
 }
 
-// Update updates c.About, c.RestrictPost, c.RestrictRead, and c.NSFW.
+// Update updates c.About, c.RestrictPost, /*c.RestrictRead,*/ and c.NSFW.
 func (c *Community) Update(ctx context.Context, mod uid.ID) error {
 	if is, err := c.UserModOrAdmin(ctx, mod); err != nil {
 		return err
@@ -426,7 +426,7 @@ func (c *Community) Update(ctx context.Context, mod uid.ID) error {
 	}
 
 	c.About.String = utils.TruncateUnicodeString(c.About.String, maxCommunityAboutLength)
-	_, err := c.db.ExecContext(ctx, "UPDATE communities SET nsfw = ?, restrict_post = ?, restrict_read = ?, about = ? WHERE id = ?", c.NSFW, c.RestrictPost, c.RestrictRead, c.About, c.ID)
+	_, err := c.db.ExecContext(ctx, "UPDATE communities SET nsfw = ?, restrict_post = ?, about = ? WHERE id = ?", c.NSFW, c.RestrictPost /*c.RestrictRead,*/, c.About, c.ID)
 	return err
 }
 
@@ -759,6 +759,7 @@ func CanUserPostToCommunity(ctx context.Context, db *sql.DB, community, user uid
 	}
 }
 
+/*
 func CanUserReadCommunity(ctx context.Context, db *sql.DB, community, user uid.ID) (bool, error) {
 	// can read if: (community is not restricted) or (user is moderator or admin)
 	var restrictRead int
@@ -779,6 +780,7 @@ func CanUserReadCommunity(ctx context.Context, db *sql.DB, community, user uid.I
 		return modOrAdmin, nil
 	}
 }
+*/
 
 // UserBanned reports if user is banned from community. If user is banned and
 // the ban is expired he is unbanned.

@@ -24,20 +24,24 @@ const Settings = ({ community }) => {
   );
   const [nsfw, setNSFW] = useState(community.nsfw);
   const [restrictPost, setRestrictPost] = useState(community.restrictPost);
-  const [restrictRead, setRestrictRead] = useState(community.restrictRead);
+//  const [restrictRead, setRestrictRead] = useState(community.restrictRead);
   // need to wrap post/read restriction toggles: since restricted read forces restricted post and unrestricted post forces unrestriced read
   const setRestrictPostWrapper = (restrictPost) => {
     setRestrictPost(restrictPost);
+    /*
     if (!restrictPost && restrictRead) {
       setRestrictRead(false);
     }
+    */
   }
+  /*
   const setRestrictReadWrapper = (restrictRead) => {
     setRestrictRead(restrictRead);
     if (restrictRead && !restrictPost) {
       setRestrictPost(true);
     }
   }
+  */
   const handleSave = async () => {
     try {
       const rcomm = await mfetchjson(`/api/communities/${community.id}`, {
@@ -46,7 +50,7 @@ const Settings = ({ community }) => {
           ...community,
           nsfw,
           restrictPost,
-          restrictRead,
+          //restrictRead,
           about: description,
         }),
       });
@@ -61,7 +65,7 @@ const Settings = ({ community }) => {
   const changed = _changed > 0;
   useEffect(() => {
     setChanged((c) => c + 1);
-  }, [description, nsfw, restrictPost, restrictRead]);
+  }, [description, nsfw, restrictPost/*, restrictRead*/]);
 
   const proPicFileInputRef = useRef(null);
   const bannerFileInputRef = useRef(null);
@@ -245,6 +249,7 @@ const Settings = ({ community }) => {
             />
           </div>
         </div>
+{/*
         <div className="input-with-label">
           <div className="input-label-box">
             <div className="label">Restrict reading</div>
@@ -262,6 +267,7 @@ const Settings = ({ community }) => {
             />
           </div>
         </div>
+*/}
         {user.isAdmin && (
           <button onClick={handleChangeDefault}>
             {community.isDefault ? 'Remove as default community' : 'Set as default community'}
