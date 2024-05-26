@@ -168,7 +168,7 @@ func scanCommunities(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *ui
 			&c.NameLowerCase,
 			&c.NSFW,
 			&c.RestrictPost,
-			&c.RestrictRead,
+			//&c.RestrictRead,
 			&c.About,
 			&c.NumMembers,
 			&c.CreatedAt,
