@@ -23,7 +23,21 @@ const Settings = ({ community }) => {
     community.about || ''
   );
   const [nsfw, setNSFW] = useState(community.nsfw);
-
+  const [restrictPost, setRestrictPost] = useState(community.restrictPost);
+  const [restrictRead, setRestrictRead] = useState(community.restrictRead);
+  // need to wrap post/read restriction toggles: since restricted read forces restricted post and unrestricted post forces unrestriced read
+  const setRestrictPostWrapper = (restrictPost) => {
+    setRestrictPost(restrictPost);
+    if (!restrictPost && restrictRead) {
+      setRestrictRead(false);
+    }
+  }
+  const setRestrictReadWrapper = (restrictRead) => {
+    setRestrictRead(restrictRead);
+    if (restrictRead && !restrictPost) {
+      setRestrictPost(true);
+    }
+  }
   const handleSave = async () => {
     try {
       const rcomm = await mfetchjson(`/api/communities/${community.id}`, {
@@ -31,6 +45,8 @@ const Settings = ({ community }) => {
         body: JSON.stringify({
           ...community,
           nsfw,
+          restrictPost,
+          restrictRead,
           about: description,
         }),
       });
@@ -45,7 +61,7 @@ const Settings = ({ community }) => {
   const changed = _changed > 0;
   useEffect(() => {
     setChanged((c) => c + 1);
-  }, [description, nsfw]);
+  }, [description, nsfw, restrictPost, restrictRead]);
 
   const proPicFileInputRef = useRef(null);
   const bannerFileInputRef = useRef(null);
@@ -209,6 +225,40 @@ const Settings = ({ community }) => {
               type="checkbox"
               checked={nsfw}
               onChange={(e) => setNSFW(e.target.checked)}
+            />
+          </div>
+        </div>
+        <div className="input-with-label">
+          <div className="input-label-box">
+            <div className="label">Restrict posting</div>
+          </div>
+          <div className="checkbox is-check-last">
+            <label htmlFor="c1" style={{ width: 'calc(100% - 25px)' }}>
+              Tick this box to restrict post creation to moderators or admins. Anyone can still comment. Unrestriced posting implies unrestricted reading.
+            </label>
+            <input
+              className="switch"
+              id="c1"
+              type="checkbox"
+              checked={restrictPost}
+              onChange={(e) => setRestrictPostWrapper(e.target.checked)}
+            />
+          </div>
+        </div>
+        <div className="input-with-label">
+          <div className="input-label-box">
+            <div className="label">Restrict reading</div>
+          </div>
+          <div className="checkbox is-check-last">
+            <label htmlFor="c1" style={{ width: 'calc(100% - 25px)' }}>
+              Tick this box to restrict reading the community to moderators or admins. A read restriction implies post restriction.
+            </label>
+            <input
+              className="switch"
+              id="c1"
+              type="checkbox"
+              checked={restrictRead}
+              onChange={(e) => setRestrictReadWrapper(e.target.checked)}
             />
           </div>
         </div>

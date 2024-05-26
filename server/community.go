@@ -195,7 +195,17 @@ func (s *Server) updateCommunity(w *responseWriter, r *request) error {
 	if err = r.unmarshalJSONBody(&rcomm); err != nil {
 		return err
 	}
+
+	// restricted read implies restricted post, and unrestricted post implies unrestricted read--return an error where conflicted
+	// if read is restricted, post must be restricted
+	if (rcomm.RestrictRead && !rcomm.RestrictPost) {
+		//return errors.New("Cannot restrict read while allowing post")
+		rcomm.RestrictPost = true
+	}
+	
 	comm.NSFW = rcomm.NSFW
+	comm.RestrictPost = rcomm.RestrictPost
+	comm.RestrictRead = rcomm.RestrictRead
 	comm.About = rcomm.About
 
 	if err = comm.Update(r.ctx, *r.viewer); err != nil {

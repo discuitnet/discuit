@@ -114,14 +114,14 @@ const Community = () => {
     const url = `/new?community=${community.name}`;
     const handleClick = (e) => {
       e.preventDefault();
-      if (!isBanned) {
+      if (!isBanned && !(community.restrictPost && !(community.userMod || (user && user.isAdmin)))) {
         history.push(url);
       }
     };
     return (
       <>
         <a
-          className={'button button-main border-radius-0' + (isBanned ? ' is-disabled' : '')}
+          className={'button button-main border-radius-0' + (isBanned || (community.restrictPost && !(community.userMod || (user && user.isAdmin)))? ' is-disabled' : '')}
           href={url}
           onClick={handleClick}
         >

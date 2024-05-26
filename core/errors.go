@@ -25,6 +25,7 @@ var (
 
 	errUserNotFound            = httperr.NewNotFound("user_not_found", "User not found.")
 	errUserBannedFromCommunity = httperr.NewForbidden("banned-from-community", "User is banned from the community.")
+	errRestrictPost            = httperr.NewForbidden("restrict-post", "Community restricts posting to mods/admins.")
 
 	errCommentDeleted  = httperr.NewForbidden("comment_deleted", "Comment(s) deleted.")
 	errCommentNotFound = httperr.NewNotFound("comment_not_found", "Comment(s) not found.")
