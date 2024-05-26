@@ -196,17 +196,20 @@ func (s *Server) updateCommunity(w *responseWriter, r *request) error {
 		return err
 	}
 
+	if rcomm.RestrictComment && !rcomm.RestrictPost {
+		return httperr.NewBadRequest("invalid-community-settings", "Cannot restrict comments and allow posts.")
+	}
 	// restricted read implies restricted post, and unrestricted post implies unrestricted read--return an error where conflicted
 	// if read is restricted, post must be restricted
 	/*
 		if (rcomm.RestrictRead && !rcomm.RestrictPost) {
 			//return errors.New("Cannot restrict read while allowing post")
-			rcomm.RestrictPost = true
 		}
 	*/
 
 	comm.NSFW = rcomm.NSFW
 	comm.RestrictPost = rcomm.RestrictPost
+	comm.RestrictComment = rcomm.RestrictComment
 	//comm.RestrictRead = rcomm.RestrictRead
 	comm.About = rcomm.About
 

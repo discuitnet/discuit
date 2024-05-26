@@ -159,8 +159,9 @@ type Post struct {
 	// Whether the logged in user have voted up.
 	ViewerVotedUp msql.NullBool `json:"userVotedUp"`
 
-	AuthorMutedByViewer    bool `json:"isAuthorMuted"`
-	CommunityMutedByViewer bool `json:"isCommunityMuted"`
+	AuthorMutedByViewer      bool `json:"isAuthorMuted"`
+	CommunityMutedByViewer   bool `json:"isCommunityMuted"`
+	CommunityRestrictComment bool `json:"isCommunityRestrictComment"`
 
 	Community *Community `json:"community,omitempty"`
 	Author    *User      `json:"author,omitempty"`
@@ -202,6 +203,7 @@ var selectPostCols = []string{
 	"posts.deleted_content_at",
 	"posts.deleted_content_by",
 	"posts.deleted_content_as",
+	"communities.restrict_comment",
 }
 
 var selectPostJoins = []string{
@@ -342,6 +344,7 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 			&post.DeletedContentAt,
 			&post.DeletedContentBy,
 			&post.DeletedContentAs,
+			&post.CommunityRestrictComment,
 		}
 
 		linkImage := &images.Image{}
@@ -1508,6 +1511,29 @@ func (p *Post) AddComment(ctx context.Context, user uid.ID, g UserGroup, parentC
 		}
 	default:
 		return nil, errInvalidUserGroup
+	}
+
+	if p.CommunityRestrictComment {
+		fmt.Println("debug1")
+		if isMod, err := UserMod(ctx, p.db, p.CommunityID, user); err != nil {
+			fmt.Println("debug2")
+			return nil, err
+		} else {
+			if !isMod {
+				fmt.Println("debug3")
+				if isAdmin, err := IsAdmin(p.db, &user); err != nil {
+					fmt.Println("debug4")
+					return nil, err
+				} else {
+					fmt.Println("debug5")
+					if !isAdmin {
+						fmt.Println("debug6")
+						return nil, httperr.NewForbidden("no-comment-permission", "Commenting restricted to mods/admins.")
+					}
+				}
+			}
+
+		}
 	}
 
 	body = strings.TrimSpace(body)

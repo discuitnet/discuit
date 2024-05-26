@@ -24,21 +24,32 @@ const Settings = ({ community }) => {
   );
   const [nsfw, setNSFW] = useState(community.nsfw);
   const [restrictPost, setRestrictPost] = useState(community.restrictPost);
+  const [restrictComment, setRestrictComment] = useState(community.restrictComment);
 //  const [restrictRead, setRestrictRead] = useState(community.restrictRead);
-  // need to wrap post/read restriction toggles: since restricted read forces restricted post and unrestricted post forces unrestriced read
-  const setRestrictPostWrapper = (restrictPost) => {
-    setRestrictPost(restrictPost);
-    /*
-    if (!restrictPost && restrictRead) {
-      setRestrictRead(false);
+  // need to wrap post/read restriction toggles
+  // allowing posts implies comments are allowed
+  // restricting comments implies posts are restricted
+  // when implemented, restricting read implies post and comment are both restricted, and allowed comment implies allowed read
+  const setRestrictPostWrapper = (_restrictPost) => {
+    setRestrictPost(_restrictPost);
+    if (!_restrictPost && restrictComment) {
+      setRestrictComment(false);
     }
-    */
+  }
+  const setRestrictCommentWrapper = (_restrictComment) => {
+    setRestrictComment(_restrictComment);
+    if (!restrictPost && _restrictComment) {
+      setRestrictPost(true);
+    }
   }
   /*
-  const setRestrictReadWrapper = (restrictRead) => {
-    setRestrictRead(restrictRead);
-    if (restrictRead && !restrictPost) {
+  const setRestrictReadWrapper = (_restrictRead) => {
+    setRestrictRead(_restrictRead);
+    if (_restrictRead && !restrictPost) {
       setRestrictPost(true);
+    }
+    if (_restrictRead && !restrictComment) {
+      setRestrictComment(true);
     }
   }
   */
@@ -50,6 +61,7 @@ const Settings = ({ community }) => {
           ...community,
           nsfw,
           restrictPost,
+          restrictComment,
           //restrictRead,
           about: description,
         }),
@@ -65,7 +77,7 @@ const Settings = ({ community }) => {
   const changed = _changed > 0;
   useEffect(() => {
     setChanged((c) => c + 1);
-  }, [description, nsfw, restrictPost/*, restrictRead*/]);
+  }, [description, nsfw, restrictPost, restrictComment/*, restrictRead*/]);
 
   const proPicFileInputRef = useRef(null);
   const bannerFileInputRef = useRef(null);
@@ -238,7 +250,7 @@ const Settings = ({ community }) => {
           </div>
           <div className="checkbox is-check-last">
             <label htmlFor="c1" style={{ width: 'calc(100% - 25px)' }}>
-              Tick this box to restrict post creation to moderators or admins. Anyone can still comment. Unrestriced posting implies unrestricted reading.
+              Tick this box to restrict post creation to moderators or admins. Anyone can still comment. Unrestriced posting implies unrestricted commenting.
             </label>
             <input
               className="switch"
@@ -249,6 +261,23 @@ const Settings = ({ community }) => {
             />
           </div>
         </div>
+        <div className="input-with-label">
+          <div className="input-label-box">
+            <div className="label">Restrict commenting</div>
+          </div>
+          <div className="checkbox is-check-last">
+            <label htmlFor="c1" style={{ width: 'calc(100% - 25px)' }}>
+              Tick this box to restrict commenting to moderators or admins. Restricted commenting forces restricting posting.
+            </label>
+            <input
+              className="switch"
+              id="c1"
+              type="checkbox"
+              checked={restrictComment}
+              onChange={(e) => setRestrictCommentWrapper(e.target.checked)}
+            />
+          </div>
+        </div>
 {/*
         <div className="input-with-label">
           <div className="input-label-box">
@@ -256,7 +285,7 @@ const Settings = ({ community }) => {
           </div>
           <div className="checkbox is-check-last">
             <label htmlFor="c1" style={{ width: 'calc(100% - 25px)' }}>
-              Tick this box to restrict reading the community to moderators or admins. A read restriction implies post restriction.
+              Tick this box to restrict reading the community to moderators or admins. A read restriction implies post/comment restriction.
             </label>
             <input
               className="switch"

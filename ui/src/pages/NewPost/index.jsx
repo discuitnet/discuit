@@ -49,15 +49,18 @@ const NewPost = () => {
         alert(`You are banned from ${community.name}`);
       }
       setIsBanned(_isBanned);
+      const _isMod = community.userMod;
       setIsRestrictPost(community.restrictPost);
-      if (isRestrictPost && (!user.isAdmin && !isMod)) {
+      if (isRestrictPost && (!user.isAdmin && !_isMod)) {
         alert(`Posting to ${community.name} is restricted to moderators or admins`);
       }
+      setIsMod(_isMod);
     } else {
       setIsBanned(false);
       setIsRestrictPost(false);
+      setIsMod(false);
     }
-    setIsMod(community === null ? false : community.userMod);
+//    setIsMod(community === null ? false : community.userMod);
   }, [community]);
 
   const handleCommunityChange = async (ncomm) => {

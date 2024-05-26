@@ -24,12 +24,13 @@ const maxCommunityAboutLength = 2000 // in runes
 type Community struct {
 	db *sql.DB
 
-	ID            uid.ID `json:"id"`
-	AuthorID      uid.ID `json:"userId"`
-	Name          string `json:"name"`
-	NameLowerCase string `json:"-"` // TODO: Remove this field (only from this struct, not also from the database).
-	NSFW          bool   `json:"nsfw"`
-	RestrictPost  bool   `json:"restrictPost"`
+	ID              uid.ID `json:"id"`
+	AuthorID        uid.ID `json:"userId"`
+	Name            string `json:"name"`
+	NameLowerCase   string `json:"-"` // TODO: Remove this field (only from this struct, not also from the database).
+	NSFW            bool   `json:"nsfw"`
+	RestrictPost    bool   `json:"restrictPost"`
+	RestrictComment bool   `json:"restrictComment"`
 	//	RestrictRead  bool            `json:"restrictRead"`
 	About       msql.NullString `json:"about"`
 	NumMembers  int             `json:"noMembers"`
@@ -59,6 +60,7 @@ func buildSelectCommunityQuery(where string) string {
 		"communities.name_lc",
 		"communities.nsfw",
 		"communities.restrict_post",
+		"communities.restrict_comment",
 		//		"communities.restrict_read",
 		"communities.about",
 		"communities.no_members",
@@ -168,6 +170,7 @@ func scanCommunities(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *ui
 			&c.NameLowerCase,
 			&c.NSFW,
 			&c.RestrictPost,
+			&c.RestrictComment,
 			//&c.RestrictRead,
 			&c.About,
 			&c.NumMembers,
@@ -426,7 +429,7 @@ func (c *Community) Update(ctx context.Context, mod uid.ID) error {
 	}
 
 	c.About.String = utils.TruncateUnicodeString(c.About.String, maxCommunityAboutLength)
-	_, err := c.db.ExecContext(ctx, "UPDATE communities SET nsfw = ?, restrict_post = ?, about = ? WHERE id = ?", c.NSFW, c.RestrictPost /*c.RestrictRead,*/, c.About, c.ID)
+	_, err := c.db.ExecContext(ctx, "UPDATE communities SET nsfw = ?, restrict_post = ?, restrict_comment = ?, about = ? WHERE id = ?", c.NSFW, c.RestrictPost, c.RestrictComment /*c.RestrictRead,*/, c.About, c.ID)
 	return err
 }
 
@@ -750,6 +753,34 @@ func CanUserPostToCommunity(ctx context.Context, db *sql.DB, community, user uid
 		return false, err
 	}
 	if restrictPost == 0 {
+		return true, nil
+	}
+	if modOrAdmin, err := UserModOrAdmin(ctx, db, community, user); err != nil {
+		return false, err
+	} else {
+		return modOrAdmin, nil
+	}
+}
+
+func CanUserCommentToCommunity(ctx context.Context, db *sql.DB, community, user uid.ID) (bool, error) {
+	// can post if: (community is not restricted and user is not banned) or (user is moderator or admin)
+	if isBanned, err := IsUserBannedFromCommunity(ctx, db, community, user); err != nil {
+		return false, err
+	} else {
+		if isBanned {
+			return false, errUserBannedFromCommunity
+		}
+	}
+	var restrictComment int
+	row := db.QueryRowContext(ctx, "SELECT restrict_comment FROM communities WHERE id = ? and restrict_comment = 1", community)
+	if err := row.Scan(&restrictComment); err != nil {
+		// no restrictions == can comment
+		if err == sql.ErrNoRows {
+			return true, nil
+		}
+		return false, err
+	}
+	if restrictComment == 0 {
 		return true, nil
 	}
 	if modOrAdmin, err := UserModOrAdmin(ctx, db, community, user); err != nil {
