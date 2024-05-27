@@ -459,10 +459,18 @@ func (n NotificationNewComment) marshalJSONForAPI(ctx context.Context, db *sql.D
 
 // CreateNewCommentNotification creates a notification of type new_comment. If
 // an identical notification exists in the last 10 items, it is deleted.
-func CreateNewCommentNotification(ctx context.Context, db *sql.DB, post *Post, comment uid.ID, author string) error {
-	if user, err := GetUser(ctx, db, post.AuthorID, nil); err != nil {
+func CreateNewCommentNotification(ctx context.Context, db *sql.DB, post *Post, comment uid.ID, author *User) error {
+	user, err := GetUser(ctx, db, post.AuthorID, nil)
+	if err != nil {
 		return err
-	} else if user.ReplyNotificationsOff {
+	}
+	if user.ReplyNotificationsOff {
+		return nil
+	}
+
+	if muted, err := user.Muted(ctx, db, author.ID); err != nil {
+		return err
+	} else if muted {
 		return nil
 	}
 
@@ -485,7 +493,7 @@ func CreateNewCommentNotification(ctx context.Context, db *sql.DB, post *Post, c
 		PostID:         post.ID,
 		CommentID:      comment,
 		NumComments:    1,
-		CommentAuthor:  author,
+		CommentAuthor:  author.Username,
 		FirstCreatedAt: time.Now(),
 	}
 	return CreateNotification(ctx, db, post.AuthorID, NotificationTypeNewComment, n)
@@ -531,15 +539,23 @@ func (n NotificationCommentReply) marshalJSONForAPI(ctx context.Context, db *sql
 
 // CreateCommentReplyNotification creates a notification of type comment_reply.
 // If an identical notification exists in the last 10 items, it is deleted.
-func CreateCommentReplyNotification(ctx context.Context, db *sql.DB, user uid.ID, parent, comment uid.ID, author string, post *Post) error {
-	if user, err := GetUser(ctx, db, user, nil); err != nil {
+func CreateCommentReplyNotification(ctx context.Context, db *sql.DB, receiver uid.ID, parent, comment uid.ID, author *User, post *Post) error {
+	user, err := GetUser(ctx, db, receiver, nil)
+	if err != nil {
 		return err
-	} else if user.ReplyNotificationsOff {
+	}
+	if user.ReplyNotificationsOff {
+		return nil
+	}
+
+	if muted, err := user.Muted(ctx, db, author.ID); err != nil {
+		return err
+	} else if muted {
 		return nil
 	}
 
 	// Select last 10 notifications to see if an identical notification exists.
-	notifs, _, err := GetNotifications(ctx, db, user, 10, "")
+	notifs, _, err := GetNotifications(ctx, db, receiver, 10, "")
 	if err != nil {
 		return err
 	}
@@ -557,11 +573,11 @@ func CreateCommentReplyNotification(ctx context.Context, db *sql.DB, user uid.ID
 		PostID:          post.ID,
 		ParentCommentID: parent,
 		CommentID:       comment,
-		CommentAuthor:   author,
+		CommentAuthor:   author.Username,
 		NumComments:     1,
 		FirstCreatedAt:  time.Now(),
 	}
-	return CreateNotification(ctx, db, user, NotificationTypeCommentReply, n)
+	return CreateNotification(ctx, db, receiver, NotificationTypeCommentReply, n)
 }
 
 func updateNewNotificationsCount(ctx context.Context, db *sql.DB, user uid.ID) error {
