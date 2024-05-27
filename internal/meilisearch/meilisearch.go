@@ -325,8 +325,6 @@ func (c *MeiliSearch) IndexAllPostsInMeiliSearch(ctx context.Context, db *sql.DB
 			})
 		}
 
-		// TODO: After testing, see if possible to also chunk out the database queries into batches.
-
 		// Convert to interface slice.
 		var interfaceSlice = make([]interface{}, len(postsToIndex))
 		for i, v := range postsToIndex {
