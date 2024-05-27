@@ -779,12 +779,12 @@ func GetUserFeed(ctx context.Context, db *sql.DB, viewer *uid.ID, userID uid.ID,
 }
 
 func getCommentsPostTitles(ctx context.Context, db *sql.DB, comments []*Comment, viewer *uid.ID) error {
-	postToComment := make(map[uid.ID]*Comment)
+	postToComment := make(map[int]*Comment)
 	postIDs := make([]uid.ID, len(comments))
+	postTitles := make(map[uid.ID]string, len(comments))
 	for i, comment := range comments {
 		postIDs[i] = comment.PostID
-		postToComment[comment.PostID] = comment
-
+		postToComment[i] = comment
 	}
 
 	posts, err := GetPostsByIDs(ctx, db, viewer, true, postIDs...)
@@ -793,11 +793,19 @@ func getCommentsPostTitles(ctx context.Context, db *sql.DB, comments []*Comment,
 	}
 
 	for _, post := range posts {
-		comment, ok := postToComment[post.ID]
-		if !ok {
-			return fmt.Errorf("populating comments' postTitle, comment not found of post id %v", post.ID)
+		if post.Title == "" {
+			return fmt.Errorf("populating comments' postTitle, could not find post title of post id %v", post.ID)
 		}
-		comment.PostTitle = post.Title
+
+		if postTitles[post.ID] == post.Title {
+			continue
+		}
+
+		postTitles[post.ID] = post.Title
+	}
+
+	for _, comment := range postToComment {
+		comment.PostTitle = postTitles[comment.PostID]
 	}
 
 	return nil
