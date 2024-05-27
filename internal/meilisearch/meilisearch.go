@@ -37,7 +37,7 @@ type MeiliSearch struct {
 	client *meilisearch.Client
 }
 
-type MeiliSearchCommunity struct {
+type Community struct {
 	ID         uid.ID          `json:"id"`
 	Name       string          `json:"name"`
 	ParsedName string          `json:"parsed_name"`
@@ -47,7 +47,7 @@ type MeiliSearchCommunity struct {
 	CreatedAt  int64           `json:"created_at"`
 }
 
-type MeiliSearchUser struct {
+type User struct {
 	ID                uid.ID          `json:"id"`
 	Username          string          `json:"username"`
 	UsernameLowerCase string          `json:"username_lowercase"`
@@ -56,7 +56,7 @@ type MeiliSearchUser struct {
 	CreatedAt         int64           `json:"created_at"`
 }
 
-type MeiliSearchPost struct {
+type Post struct {
 	ID   uid.ID        `json:"id"`
 	Type core.PostType `json:"type"`
 
@@ -163,9 +163,9 @@ func (c *MeiliSearch) IndexAllCommunitiesInMeiliSearch(ctx context.Context, db *
 		}
 
 		// Convert the communities to the format MeiliSearch expects.
-		var communitiesToIndex []MeiliSearchCommunity
+		var communitiesToIndex []Community
 		for _, community := range communities {
-			communitiesToIndex = append(communitiesToIndex, MeiliSearchCommunity{
+			communitiesToIndex = append(communitiesToIndex, Community{
 				ID:         community.ID,
 				Name:       community.Name,
 				ParsedName: utils.BreakUpOnCapitals(community.Name),
@@ -177,7 +177,7 @@ func (c *MeiliSearch) IndexAllCommunitiesInMeiliSearch(ctx context.Context, db *
 		}
 
 		// Convert to interface slice.
-		var interfaceSlice []interface{} = make([]interface{}, len(communitiesToIndex))
+		var interfaceSlice = make([]interface{}, len(communitiesToIndex))
 		for i, v := range communitiesToIndex {
 			interfaceSlice[i] = v
 		}
@@ -189,12 +189,24 @@ func (c *MeiliSearch) IndexAllCommunitiesInMeiliSearch(ctx context.Context, db *
 		}
 
 		index := c.client.Index("communities")
-		index.UpdateFilterableAttributes(&CommunityFilterableAttributes)
-		index.UpdateSortableAttributes(&CommunitySortableAttributes)
-		index.UpdateRankingRules(&RankingRules)
+		_, err = index.UpdateFilterableAttributes(&CommunityFilterableAttributes)
+		if err != nil {
+			return err
+		}
+		_, err = index.UpdateSortableAttributes(&CommunitySortableAttributes)
+		if err != nil {
+			return err
+		}
+		_, err = index.UpdateRankingRules(&RankingRules)
+		if err != nil {
+			return err
+		}
 
 		// An index is where the documents are stored.
-		c.index("communities", documents)
+		err = c.index("communities", documents)
+		if err != nil {
+			return err
+		}
 
 		// Prepare for the next batch
 		offset += len(communities)
@@ -219,14 +231,14 @@ func (c *MeiliSearch) IndexAllUsersInMeiliSearch(ctx context.Context, db *sql.DB
 		}
 
 		// Convert the users to the format MeiliSearch expects.
-		var usersToIndex []MeiliSearchUser
+		var usersToIndex []User
 		for _, user := range users {
 			// Exclude the ghost user.
 			if user.Username == "ghost" {
 				continue
 			}
 
-			usersToIndex = append(usersToIndex, MeiliSearchUser{
+			usersToIndex = append(usersToIndex, User{
 				ID:                user.ID,
 				Username:          user.Username,
 				UsernameLowerCase: user.UsernameLowerCase,
@@ -237,7 +249,7 @@ func (c *MeiliSearch) IndexAllUsersInMeiliSearch(ctx context.Context, db *sql.DB
 		}
 
 		// Convert to interface slice.
-		var interfaceSlice []interface{} = make([]interface{}, len(usersToIndex))
+		var interfaceSlice = make([]interface{}, len(usersToIndex))
 		for i, v := range usersToIndex {
 			interfaceSlice[i] = v
 		}
@@ -250,12 +262,24 @@ func (c *MeiliSearch) IndexAllUsersInMeiliSearch(ctx context.Context, db *sql.DB
 
 		// Update filterable attributes.
 		index := c.client.Index("users")
-		index.UpdateFilterableAttributes(&UsersFilterableAttributes)
-		index.UpdateSortableAttributes(&UsersSortableAttributes)
-		index.UpdateRankingRules(&RankingRules)
+		_, err = index.UpdateFilterableAttributes(&UsersFilterableAttributes)
+		if err != nil {
+			return err
+		}
+		_, err = index.UpdateSortableAttributes(&UsersSortableAttributes)
+		if err != nil {
+			return err
+		}
+		_, err = index.UpdateRankingRules(&RankingRules)
+		if err != nil {
+			return err
+		}
 
 		// An index is where the documents are stored.
-		c.index("users", documents)
+		err = c.index("users", documents)
+		if err != nil {
+			return err
+		}
 
 		// Prepare for the next batch
 		offset += len(users)
@@ -280,9 +304,9 @@ func (c *MeiliSearch) IndexAllPostsInMeiliSearch(ctx context.Context, db *sql.DB
 		}
 
 		// Convert the posts to the format MeiliSearch expects.
-		var postsToIndex []MeiliSearchPost
+		var postsToIndex []Post
 		for _, post := range posts {
-			postsToIndex = append(postsToIndex, MeiliSearchPost{
+			postsToIndex = append(postsToIndex, Post{
 				ID:   post.ID,
 				Type: post.Type,
 
@@ -304,7 +328,7 @@ func (c *MeiliSearch) IndexAllPostsInMeiliSearch(ctx context.Context, db *sql.DB
 		// TODO: After testing, see if possible to also chunk out the database queries into batches.
 
 		// Convert to interface slice.
-		var interfaceSlice []interface{} = make([]interface{}, len(postsToIndex))
+		var interfaceSlice = make([]interface{}, len(postsToIndex))
 		for i, v := range postsToIndex {
 			interfaceSlice[i] = v
 		}
@@ -317,12 +341,24 @@ func (c *MeiliSearch) IndexAllPostsInMeiliSearch(ctx context.Context, db *sql.DB
 
 		// Update filterable attributes.
 		index := c.client.Index("posts")
-		index.UpdateFilterableAttributes(&PostsFilterableAttributes)
-		index.UpdateSortableAttributes(&PostsSortableAttributes)
-		index.UpdateRankingRules(&RankingRules)
+		_, err = index.UpdateFilterableAttributes(&PostsFilterableAttributes)
+		if err != nil {
+			return err
+		}
+		_, err = index.UpdateSortableAttributes(&PostsSortableAttributes)
+		if err != nil {
+			return err
+		}
+		_, err = index.UpdateRankingRules(&RankingRules)
+		if err != nil {
+			return err
+		}
 
 		// An index is where the documents are stored.
-		c.index("posts", documents)
+		err = c.index("posts", documents)
+		if err != nil {
+			return err
+		}
 
 		// Prepare for the next batch
 		offset += len(posts)
@@ -383,7 +419,7 @@ func CommunityUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *confi
 	}
 
 	client := NewSearchClient(config.MeiliHost, config.MeiliKey)
-	err := client.UpdateOrCreateDocument(ctx, "communities", MeiliSearchCommunity{
+	err := client.UpdateOrCreateDocument(ctx, "communities", Community{
 		ID:         comm.ID,
 		Name:       comm.Name,
 		ParsedName: utils.BreakUpOnCapitals(comm.Name),
@@ -403,7 +439,7 @@ func UserUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *config.Con
 	}
 
 	client := NewSearchClient(config.MeiliHost, config.MeiliKey)
-	err := client.UpdateOrCreateDocument(ctx, "users", MeiliSearchUser{
+	err := client.UpdateOrCreateDocument(ctx, "users", User{
 		ID:                user.ID,
 		Username:          user.Username,
 		UsernameLowerCase: user.UsernameLowerCase,
@@ -422,7 +458,7 @@ func PostUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *config.Con
 	}
 
 	client := NewSearchClient(config.MeiliHost, config.MeiliKey)
-	err := client.UpdateOrCreateDocument(ctx, "posts", MeiliSearchPost{
+	err := client.UpdateOrCreateDocument(ctx, "posts", Post{
 		ID:   post.ID,
 		Type: post.Type,
 
