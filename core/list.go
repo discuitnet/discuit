@@ -482,6 +482,11 @@ func GetListItems(ctx context.Context, db *sql.DB, listID, limit int, sort ListI
 	for _, comment := range comments {
 		commentItemsMap[comment.ID].TargetItem = comment
 	}
+	if len(comments) > 0 {
+		if err := getCommentsPostTitles(ctx, db, comments, viewer); err != nil {
+			return nil, err
+		}
+	}
 
 	return set, nil
 }
