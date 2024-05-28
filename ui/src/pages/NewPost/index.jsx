@@ -60,7 +60,7 @@ const NewPost = () => {
       setIsRestrictPost(false);
       setIsMod(false);
     }
-//    setIsMod(community === null ? false : community.userMod);
+//    setIsMod(community === null ? false : community.userMod); // having asynch issues? commenting out and handling in the if/else clauses with an auxiliary variable
   }, [community]);
 
   const handleCommunityChange = async (ncomm) => {

@@ -25,11 +25,10 @@ const Settings = ({ community }) => {
   const [nsfw, setNSFW] = useState(community.nsfw);
   const [restrictPost, setRestrictPost] = useState(community.restrictPost);
   const [restrictComment, setRestrictComment] = useState(community.restrictComment);
-//  const [restrictRead, setRestrictRead] = useState(community.restrictRead);
-  // need to wrap post/read restriction toggles
+
+  // need to wrap post/comment restriction toggles
   // allowing posts implies comments are allowed
   // restricting comments implies posts are restricted
-  // when implemented, restricting read implies post and comment are both restricted, and allowed comment implies allowed read
   const setRestrictPostWrapper = (_restrictPost) => {
     setRestrictPost(_restrictPost);
     if (!_restrictPost && restrictComment) {
@@ -42,17 +41,7 @@ const Settings = ({ community }) => {
       setRestrictPost(true);
     }
   }
-  /*
-  const setRestrictReadWrapper = (_restrictRead) => {
-    setRestrictRead(_restrictRead);
-    if (_restrictRead && !restrictPost) {
-      setRestrictPost(true);
-    }
-    if (_restrictRead && !restrictComment) {
-      setRestrictComment(true);
-    }
-  }
-  */
+
   const handleSave = async () => {
     try {
       const rcomm = await mfetchjson(`/api/communities/${community.id}`, {
@@ -62,7 +51,6 @@ const Settings = ({ community }) => {
           nsfw,
           restrictPost,
           restrictComment,
-          //restrictRead,
           about: description,
         }),
       });
@@ -77,7 +65,7 @@ const Settings = ({ community }) => {
   const changed = _changed > 0;
   useEffect(() => {
     setChanged((c) => c + 1);
-  }, [description, nsfw, restrictPost, restrictComment/*, restrictRead*/]);
+  }, [description, nsfw, restrictPost, restrictComment]);
 
   const proPicFileInputRef = useRef(null);
   const bannerFileInputRef = useRef(null);
@@ -278,25 +266,6 @@ const Settings = ({ community }) => {
             />
           </div>
         </div>
-{/*
-        <div className="input-with-label">
-          <div className="input-label-box">
-            <div className="label">Restrict reading</div>
-          </div>
-          <div className="checkbox is-check-last">
-            <label htmlFor="c1" style={{ width: 'calc(100% - 25px)' }}>
-              Tick this box to restrict reading the community to moderators or admins. A read restriction implies post/comment restriction.
-            </label>
-            <input
-              className="switch"
-              id="c1"
-              type="checkbox"
-              checked={restrictRead}
-              onChange={(e) => setRestrictReadWrapper(e.target.checked)}
-            />
-          </div>
-        </div>
-*/}
         {user.isAdmin && (
           <button onClick={handleChangeDefault}>
             {community.isDefault ? 'Remove as default community' : 'Set as default community'}
