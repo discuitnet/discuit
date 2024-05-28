@@ -1515,20 +1515,14 @@ func (p *Post) AddComment(ctx context.Context, user uid.ID, g UserGroup, parentC
 	}
 
 	if p.CommunityRestrictComment {
-		fmt.Println("debug1")
 		if isMod, err := UserMod(ctx, p.db, p.CommunityID, user); err != nil {
-			fmt.Println("debug2")
 			return nil, err
 		} else {
 			if !isMod {
-				fmt.Println("debug3")
 				if isAdmin, err := IsAdmin(p.db, &user); err != nil {
-					fmt.Println("debug4")
 					return nil, err
 				} else {
-					fmt.Println("debug5")
 					if !isAdmin {
-						fmt.Println("debug6")
 						return nil, httperr.NewForbidden("no-comment-permission", "Commenting restricted to mods/admins.")
 					}
 				}

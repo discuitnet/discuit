@@ -417,7 +417,7 @@ func GetCommunitiesPrefix(ctx context.Context, db *sql.DB, s string) ([]*Communi
 	return deduped, nil
 }
 
-// Update updates c.About, c.RestrictPost, and c.NSFW.
+// Update updates c.About, c.RestrictPost, c.RestrictComment, and c.NSFW.
 func (c *Community) Update(ctx context.Context, mod uid.ID) error {
 	if is, err := c.UserModOrAdmin(ctx, mod); err != nil {
 		return err
