@@ -917,6 +917,14 @@ func (u *User) UpdateProPic(ctx context.Context, image []byte) error {
 	return nil
 }
 
+func (u *User) Muted(ctx context.Context, db *sql.DB, user uid.ID) (bool, error) {
+	return UserMuted(ctx, db, u.ID, user)
+}
+
+func (u *User) MutedBy(ctx context.Context, db *sql.DB, user uid.ID) (bool, error) {
+	return UserMuted(ctx, db, user, u.ID)
+}
+
 // badgeTypeInt returns the int badge type of badgeType.
 func badgeTypeInt(db *sql.DB, badgeType string) (int, error) {
 	var badgeTypeID int
@@ -1191,4 +1199,16 @@ func UserDeleted(db *sql.DB, user uid.ID) (bool, error) {
 		return false, err
 	}
 	return deletedAt.Valid, nil
+}
+
+// UserMuted reports whether the user muted is muted by the user muter.
+func UserMuted(ctx context.Context, db *sql.DB, muter, muted uid.ID) (bool, error) {
+	var rowID int
+	if err := db.QueryRow("SELECT id FROM muted_users WHERE user_id = ? AND muted_user_id = ?", muter, muted).Scan(&rowID); err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, fmt.Errorf("UserMuted db error: %w", err)
+	}
+	return true, nil
 }
