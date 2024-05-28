@@ -426,7 +426,9 @@ func (c *Community) Update(ctx context.Context, mod uid.ID) error {
 	}
 
 	c.About.String = utils.TruncateUnicodeString(c.About.String, maxCommunityAboutLength)
+	fmt.Println("-------------------1")
 	_, err := c.db.ExecContext(ctx, "UPDATE communities SET nsfw = ?, restrict_post = ?, restrict_comment = ?, about = ? WHERE id = ?", c.NSFW, c.RestrictPost, c.RestrictComment, c.About, c.ID)
+	fmt.Println("-------------------1---")
 	return err
 }
 
@@ -740,13 +742,18 @@ func CanUserPostToCommunity(ctx context.Context, db *sql.DB, community, user uid
 			return false, errUserBannedFromCommunity
 		}
 	}
-	var restrictPost int
+	restrictPost := 0
+	fmt.Println("-------------------2")
 	row := db.QueryRowContext(ctx, "SELECT restrict_post FROM communities WHERE id = ? and restrict_post = 1", community)
+	fmt.Println("-------------------2---")
 	if err := row.Scan(&restrictPost); err != nil {
+		fmt.Println("-------------------3")
 		// no restrictions == can post
 		if err == sql.ErrNoRows {
+			fmt.Println("-------------------3---a")
 			return true, nil
 		}
+		fmt.Println("-------------------3---b")
 		return false, err
 	}
 	if restrictPost == 0 {
