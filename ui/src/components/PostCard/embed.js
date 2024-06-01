@@ -45,7 +45,7 @@ const YoutubeEmbed = ({ url }) => {
       videoId = params.get('v');
     }
   } else if (u.hostname === 'youtu.be' || u.hostname === 'www.youtu.be') {
-    videoId = u.pathname;
+    videoId = u.pathname.slice(1);
   }
 
   return (
