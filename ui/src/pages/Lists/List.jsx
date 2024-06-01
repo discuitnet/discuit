@@ -119,13 +119,37 @@ const List = () => {
     }
   };
 
+  const handleRemoveFromList = async (item, type) => {
+    const endpoint = `/api/lists/${list.id}/items`;
+    try {
+      await mfetchjson(endpoint, {
+        method: 'DELETE',
+        body: JSON.stringify({ targetId: item.id, targetType: type }),
+      });
+      dispatch(feedReloaded(feedEndpoint));
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    }
+  };
+
   const user = useSelector(selectUser(username));
   const handleRenderItem = (item) => {
     if (item.type === 'post') {
-      return <MemorizedPostCard initialPost={item.item} disableEmbeds={user && user.embedsOff} />;
+      return (
+        <MemorizedPostCard
+          initialPost={item.item}
+          disableEmbeds={user && user.embedsOff}
+          onRemoveFromList={() => handleRemoveFromList(item.item, 'post')}
+        />
+      );
     }
     if (item.type === 'comment') {
-      return <MemorizedComment comment={item.item} />;
+      return (
+        <MemorizedComment
+          comment={item.item}
+          onRemoveFromList={() => handleRemoveFromList(item.item, 'comment')}
+        />
+      );
     }
   };
 
