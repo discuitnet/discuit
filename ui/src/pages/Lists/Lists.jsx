@@ -5,16 +5,30 @@ import Sidebar from '../../components/Sidebar';
 import Link from '../../components/Link';
 import Dropdown from '../../components/Dropdown';
 import { useDispatch, useSelector } from 'react-redux';
-import { snackAlertError } from '../../slices/mainSlice';
+import { snackAlert, snackAlertError } from '../../slices/mainSlice';
 import { mfetch, mfetchjson, stringCount, timeAgo } from '../../helper';
 import { selectUser } from '../../slices/usersSlice';
 import { useFetchUser, useFetchUsersLists } from '../../hooks';
 import PageLoading from '../../components/PageLoading';
 import NotFound from '../NotFound';
 import { listsFilterChanged, listsOrderChanged } from '../../slices/listsSlice';
+import { EditListForm } from './List';
+import Modal from '../../components/Modal';
 
 const Lists = () => {
   const dispatch = useDispatch();
+  const [isNewListOpen, setIsNewListOpen] = useState(false);
+
+  const toggleNewListForm = () => {
+    setIsNewListOpen(!isNewListOpen);
+  };
+
+  const handleSuccess = () => {
+    toggleNewListForm();
+    dispatch(snackAlert('List created!', 'success'));
+    // TODO: Append new list to lists.
+    window.location.reload();
+  };
 
   useEffect(() => {
     document.body.classList.add('is-not-gray');
@@ -32,6 +46,8 @@ const Lists = () => {
     loading: listsLoading,
     error: listsError,
   } = useFetchUsersLists(username);
+
+  const authedUser = useSelector((state) => state.main.user);
 
   if (userLoading || listsLoading) {
     return <PageLoading />;
@@ -114,9 +130,13 @@ const Lists = () => {
           <div className="lists-main-head">
             <div className="left">
               {renderOrderDropdown()}
-              {renderFilterDropdown()}
+              {authedUser && authedUser.username === username && renderFilterDropdown()}
+              <button onClick={toggleNewListForm}>New list</button>
             </div>
           </div>
+          <Modal open={isNewListOpen} onClose={toggleNewListForm}>
+            <EditListForm onCancel={toggleNewListForm} onSuccess={handleSuccess} />
+          </Modal>
           <div className="lists-main-main">
             {lists.map((list) => (
               <ListThumbnail key={list.id} list={list} />
