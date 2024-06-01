@@ -14,6 +14,7 @@ import NotFound from '../NotFound';
 import { listsFilterChanged, listsOrderChanged } from '../../slices/listsSlice';
 import { EditListForm } from './List';
 import Modal from '../../components/Modal';
+import { ButtonClose } from '../../components/Button';
 
 const Lists = () => {
   const dispatch = useDispatch();
@@ -135,7 +136,13 @@ const Lists = () => {
             </div>
           </div>
           <Modal open={isNewListOpen} onClose={toggleNewListForm}>
-            <EditListForm onCancel={toggleNewListForm} onSuccess={handleSuccess} />
+            <div className="modal-card save-modal is-compact-mobile is-page-new">
+              <div className="modal-card-head">
+                <div className="modal-card-title">Create list</div>
+                <ButtonClose onClick={toggleNewListForm} />
+              </div>
+              <EditListForm onCancel={toggleNewListForm} onSuccess={handleSuccess} />
+            </div>
           </Modal>
           <div className="lists-main-main">
             {lists.map((list) => (
