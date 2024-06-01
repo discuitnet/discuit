@@ -790,6 +790,11 @@ a,
             grid-template-columns: 1fr;
         }
     }
+    &.page-lists {
+        @include mixins.tablet {
+            grid-template-columns: 0 1fr;
+        }
+    }
     @include mixins.not-mobile {
         .sidebar-left,
         .sidebar-right {
