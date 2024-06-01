@@ -192,3 +192,22 @@
         }
     }
 }
+
+.user-list-item {
+    a {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        color: inherit;
+        .user-list-icon {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
