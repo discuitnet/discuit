@@ -27,6 +27,9 @@ const MarkdownBody = ({ children, noLinks = false, veryBasic = false }) => {
     if (isInternalLink(props.href)) {
       const url = new URL(props.href, `${window.location.protocol}//${window.location.host}`);
       const to = `${url.pathname}${url.search}${url.hash}`;
+      if (to.startsWith('/images/')) {
+        return <a href={to} rel="noreferrer noopener nofollow" {...props} />;
+      }
       return <Link to={to} {...props} />;
     }
     return <a target="_blank" rel="noreferrer noopener nofollow" {...props} />;
