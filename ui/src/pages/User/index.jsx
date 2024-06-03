@@ -206,6 +206,18 @@ const User = () => {
     setTab('content');
   }, [location.pathname]);
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 764 && tab === 'about') {
+        setTab('content');
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [tab]);
+
   const { isMuted, toggleMute } = useMuteUser(
     user ? { userId: user.id, username: user.username } : {}
   );
@@ -461,12 +473,14 @@ const User = () => {
           </div>
         </header>
         <div className="page-user-feed">
-          <SelectBar
-            name=""
-            options={selectBarOptions}
-            value={feedFilter}
-            onChange={handleSelectBarChange}
-          />
+          {tab === 'content' && (
+            <SelectBar
+              name=""
+              options={selectBarOptions}
+              value={feedFilter}
+              onChange={handleSelectBarChange}
+            />
+          )}
           {tab === 'content' && (
             <Feed
               loading={feedLoading !== 'loaded'}
