@@ -28,7 +28,7 @@ const MarkdownBody = ({ children, noLinks = false, veryBasic = false }) => {
       const url = new URL(props.href, `${window.location.protocol}//${window.location.host}`);
       const to = `${url.pathname}${url.search}${url.hash}`;
       if (to.startsWith('/images/')) {
-        return <a href={to} rel="noreferrer noopener nofollow" {...props} />;
+        return <a href={to} rel="noreferrer noopener nofollow" target="_blank" {...props} />;
       }
       return <Link to={to} {...props} />;
     }
