@@ -473,12 +473,14 @@ const User = () => {
           </div>
         </header>
         <div className="page-user-feed">
-          <SelectBar
-            name=""
-            options={selectBarOptions}
-            value={feedFilter}
-            onChange={handleSelectBarChange}
-          />
+          {tab === 'content' && (
+            <SelectBar
+              name=""
+              options={selectBarOptions}
+              value={feedFilter}
+              onChange={handleSelectBarChange}
+            />
+          )}
           {tab === 'content' && (
             <Feed
               loading={feedLoading !== 'loaded'}
