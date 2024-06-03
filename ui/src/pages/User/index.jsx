@@ -403,6 +403,9 @@ const User = () => {
       <div className="card card-sub page-user-modlist">
         <div className="card-head">
           <div className="card-title">Lists</div>
+          <div className="card-link">
+            <Link to={`/@${username}/lists`}>View all</Link>
+          </div>
         </div>
         <div className="card-content">
           <div className="card-list">

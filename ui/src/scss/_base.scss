@@ -396,6 +396,10 @@ code {
             font-weight: 600;
             color: inherit;
         }
+        .card-link {
+            color: var(--color-link);
+            font-size: var(--fs-xs);
+        }
         > a:not(.card-title) {
             font-size: var(--fs-xs);
         }
