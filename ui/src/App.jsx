@@ -56,6 +56,7 @@ import AppUpdate from './AppUpdate';
 import PushNotifications from './PushNotifications';
 import { List, Lists } from './pages/Lists';
 import SaveToListModal from './components/SaveToListModal';
+import MoveToListModal from './components/MoveToListModal';
 
 // Value taken from _mixins.scss file.
 const tabletBreakpoint = 1170;
@@ -242,6 +243,7 @@ const App = () => {
       <Snacks />
       {process.env.NODE_ENV !== 'production' && chatOpen && <Chat />}
       <SaveToListModal />
+      <MoveToListModal />
       <LoginPrompt />
       <Signup open={signupModalOpen} onClose={() => dispatch(signupModalOpened(false))} />
       <Modal
