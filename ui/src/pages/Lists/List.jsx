@@ -132,6 +132,9 @@ const List = () => {
     }
   };
 
+  const viewer = useSelector((state) => state.main.user);
+  const viewerListOwner = viewer && list && viewer.id === list.userId;
+
   const user = useSelector(selectUser(username));
   const handleRenderItem = (item) => {
     if (item.type === 'post') {
@@ -139,8 +142,12 @@ const List = () => {
         <MemorizedPostCard
           initialPost={item.item}
           disableEmbeds={user && user.embedsOff}
-          onRemoveFromList={() => handleRemoveFromList(item.item, 'post')}
-          onMoveToList={(postId) => dispatch(moveToListModalOpened(postId, 'post', list.id))}
+          onRemoveFromList={viewerListOwner ? () => handleRemoveFromList(item.item, 'post') : null}
+          onMoveToList={
+            viewerListOwner
+              ? (postId) => dispatch(moveToListModalOpened(postId, 'post', list.id))
+              : null
+          }
         />
       );
     }
@@ -148,9 +155,13 @@ const List = () => {
       return (
         <MemorizedComment
           comment={item.item}
-          onRemoveFromList={() => handleRemoveFromList(item.item, 'comment')}
-          onMoveToList={(commentId) =>
-            dispatch(moveToListModalOpened(commentId, 'comment', list.id))
+          onRemoveFromList={
+            viewerListOwner ? () => handleRemoveFromList(item.item, 'comment') : null
+          }
+          onMoveToList={
+            viewerListOwner
+              ? (commentId) => dispatch(moveToListModalOpened(commentId, 'comment', list.id))
+              : null
           }
         />
       );
@@ -192,9 +203,6 @@ const List = () => {
       dispatch(snackAlertError(error));
     }
   };
-
-  const viewer = useSelector((state) => state.main.user);
-  const viewerListOwner = viewer && list && viewer.id === list.userId;
 
   if (feedLoading || feedLoadingError || listLoading !== 'loaded' || !list) {
     console.log('loading: ', listLoading);
