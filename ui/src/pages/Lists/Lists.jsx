@@ -19,16 +19,19 @@ import { ButtonClose } from '../../components/Button';
 const Lists = () => {
   const dispatch = useDispatch();
   const [isNewListOpen, setIsNewListOpen] = useState(false);
+  const [lists, setLists] = useState([]);
 
   const toggleNewListForm = () => {
     setIsNewListOpen(!isNewListOpen);
   };
 
-  const handleSuccess = () => {
+  const handleSuccess = async () => {
     toggleNewListForm();
     dispatch(snackAlert('List created!', 'success'));
-    // TODO: Append new list to lists.
-    window.location.reload();
+    const updatedLists = await mfetchjson(
+      `/api/users/${username}/lists?sort=${order}&filter=${filter}`
+    );
+    setLists(updatedLists);
   };
 
   useEffect(() => {
@@ -40,13 +43,17 @@ const Lists = () => {
 
   const { username } = useParams();
   const { user, loading: userLoading, error: userError } = useFetchUser(username);
-  const {
-    lists,
-    order,
-    filter,
-    loading: listsLoading,
-    error: listsError,
-  } = useFetchUsersLists(username);
+  const { order, filter, loading: listsLoading, error: listsError } = useFetchUsersLists(username);
+
+  useEffect(() => {
+    const fetchLists = async () => {
+      const fetchedLists = await mfetchjson(
+        `/api/users/${username}/lists?sort=${order}&filter=${filter}`
+      );
+      setLists(fetchedLists);
+    };
+    fetchLists();
+  }, [username, order, filter]);
 
   const authedUser = useSelector((state) => state.main.user);
 
