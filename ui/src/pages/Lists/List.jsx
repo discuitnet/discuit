@@ -10,7 +10,7 @@ import { ButtonClose, ButtonMore } from '../../components/Button';
 import Input, { InputWithCount } from '../../components/Input';
 import { APIError, dateString1, mfetch, mfetchjson, stringCount, timeAgo } from '../../helper';
 import { useDispatch, useSelector } from 'react-redux';
-import { listsAdded, snackAlertError } from '../../slices/mainSlice';
+import { listsAdded, moveToListModalOpened, snackAlertError } from '../../slices/mainSlice';
 import {
   FeedItem,
   feedInViewItemsUpdated,
@@ -140,6 +140,7 @@ const List = () => {
           initialPost={item.item}
           disableEmbeds={user && user.embedsOff}
           onRemoveFromList={() => handleRemoveFromList(item.item, 'post')}
+          onMoveToList={(postId) => dispatch(moveToListModalOpened(postId, 'post', list.id))}
         />
       );
     }
@@ -148,6 +149,9 @@ const List = () => {
         <MemorizedComment
           comment={item.item}
           onRemoveFromList={() => handleRemoveFromList(item.item, 'comment')}
+          onMoveToList={(commentId) =>
+            dispatch(moveToListModalOpened(commentId, 'comment', list.id))
+          }
         />
       );
     }

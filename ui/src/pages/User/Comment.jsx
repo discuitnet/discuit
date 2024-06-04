@@ -7,7 +7,7 @@ import MarkdownBody from '../../components/MarkdownBody';
 import ShowMoreBox from '../../components/ShowMoreBox';
 import CommunityLink from '../../components/PostCard/CommunityLink';
 
-const Comment = ({ comment, onRemoveFromList = null }) => {
+const Comment = ({ comment, onRemoveFromList = null, onMoveToList = null }) => {
   return (
     <div className="comment">
       <div className="comment-head">
@@ -44,9 +44,20 @@ const Comment = ({ comment, onRemoveFromList = null }) => {
             comment.downvotes
           )} ${stringCount(comment.downvotes, true, 'downvote')}`}
         </div>
-        <div className="comment-remove">
+        <div className="comment-actions">
+          {onMoveToList && (
+            <button
+              className="button-clear comment-move-button"
+              onClick={() => onMoveToList(comment.id)}
+            >
+              Move
+            </button>
+          )}
           {onRemoveFromList && (
-            <button className="button-clear" onClick={() => onRemoveFromList(comment.id)}>
+            <button
+              className="button-clear comment-remove-button"
+              onClick={() => onRemoveFromList(comment.id)}
+            >
               Remove
             </button>
           )}
@@ -59,6 +70,7 @@ const Comment = ({ comment, onRemoveFromList = null }) => {
 Comment.propTypes = {
   comment: PropTypes.object.isRequired,
   onRemoveFromList: PropTypes.func,
+  onMoveToList: PropTypes.func,
 };
 
 export default Comment;

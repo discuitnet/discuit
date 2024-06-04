@@ -17,6 +17,7 @@ const PostCardHeadingDetails = ({
   showEdited = false,
   showAuthorProPic = false,
   onRemoveFromList = null,
+  onMoveToList = null,
 }) => {
   // const userURL = `/@${post.username}`;
   userGroup = userGroup ?? post.userGroup;
@@ -109,6 +110,14 @@ const PostCardHeadingDetails = ({
               >
                 Save to list
               </button>
+              {onMoveToList && (
+                <button
+                  className="button-clear dropdown-item"
+                  onClick={() => onMoveToList(post.id)}
+                >
+                  Move to list
+                </button>
+              )}
               {onRemoveFromList && (
                 <button
                   className="button-clear dropdown-item"
@@ -132,6 +141,7 @@ PostCardHeadingDetails.propTypes = {
   showEdited: PropTypes.bool,
   showAuthorProPic: PropTypes.bool,
   onRemoveFromList: PropTypes.func,
+  onMoveToList: PropTypes.func,
 };
 
 export default PostCardHeadingDetails;
