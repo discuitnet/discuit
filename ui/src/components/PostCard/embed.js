@@ -36,9 +36,9 @@ const YoutubeEmbed = ({ url }) => {
   let videoId = '';
   const u = new URL(url);
   if (['youtube.com', 'www.youtube.com', 'm.youtube.com'].includes(u.hostname)) {
-    // fix embeds for shorts, which seem to only appear on youtube.com and not youtu.be
+    // fix embeds for shorts/live, which seem to only appear on youtube.com and not youtu.be
     let pathArray = u.pathname.split('/');
-    if (pathArray.includes('shorts')) {
+    if (pathArray.includes('shorts') || pathArray.includes('live')) {
       videoId = pathArray[2];
     } else {
       const params = new URLSearchParams(u.search);
