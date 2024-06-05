@@ -10,7 +10,7 @@ import { ButtonClose, ButtonMore } from '../../components/Button';
 import Input, { InputWithCount } from '../../components/Input';
 import { APIError, dateString1, mfetch, mfetchjson, stringCount, timeAgo } from '../../helper';
 import { useDispatch, useSelector } from 'react-redux';
-import { listsAdded, moveToListModalOpened, snackAlertError } from '../../slices/mainSlice';
+import { listsAdded, snackAlertError } from '../../slices/mainSlice';
 import {
   FeedItem,
   feedInViewItemsUpdated,
@@ -143,11 +143,6 @@ const List = () => {
           initialPost={item.item}
           disableEmbeds={user && user.embedsOff}
           onRemoveFromList={viewerListOwner ? () => handleRemoveFromList(item.item, 'post') : null}
-          onMoveToList={
-            viewerListOwner
-              ? (postId) => dispatch(moveToListModalOpened(postId, 'post', list.id))
-              : null
-          }
         />
       );
     }
@@ -157,11 +152,6 @@ const List = () => {
           comment={item.item}
           onRemoveFromList={
             viewerListOwner ? () => handleRemoveFromList(item.item, 'comment') : null
-          }
-          onMoveToList={
-            viewerListOwner
-              ? (commentId) => dispatch(moveToListModalOpened(commentId, 'comment', list.id))
-              : null
           }
         />
       );

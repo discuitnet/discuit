@@ -49,12 +49,6 @@ const initialState = {
     toSaveItemId: null,
     toSaveItemType: null,
   },
-  moveToListModal: {
-    open: false,
-    toMoveItemId: null,
-    toMoveItemType: null,
-    toMoveListId: null,
-  },
 };
 
 export default function mainReducer(state = initialState, action) {
@@ -368,28 +362,6 @@ export default function mainReducer(state = initialState, action) {
         },
       };
     }
-    case 'main/moveToListModalOpened': {
-      return {
-        ...state,
-        moveToListModal: {
-          open: true,
-          toMoveItemId: action.payload.toMoveItemId,
-          toMoveItemType: action.payload.toMoveItemType,
-          toMoveListId: action.payload.toMoveListId,
-        },
-      };
-    }
-    case 'main/moveToListModalClosed': {
-      return {
-        ...state,
-        moveToListModal: {
-          open: false,
-          toMoveItemId: null,
-          toMoveItemType: null,
-          toMoveListId: null,
-        },
-      };
-    }
     default:
       return state;
   }
@@ -673,15 +645,4 @@ export const saveToListModalOpened = (toSaveItemId, toSaveItemType) => {
 
 export const saveToListModalClosed = () => {
   return { type: 'main/saveToListModalClosed' };
-};
-
-export const moveToListModalOpened = (toMoveItemId, toMoveItemType, toMoveListId) => {
-  return {
-    type: 'main/moveToListModalOpened',
-    payload: { toMoveItemId, toMoveItemType, toMoveListId },
-  };
-};
-
-export const moveToListModalClosed = () => {
-  return { type: 'main/moveToListModalClosed' };
 };

@@ -23,7 +23,6 @@ const PostCard = ({
   inModTools = false,
   disableEmbeds = false,
   onRemoveFromList = null,
-  onMoveToList = null,
 }) => {
   const history = useHistory();
 
@@ -96,7 +95,6 @@ const PostCard = ({
             post={post}
             target={target}
             onRemoveFromList={onRemoveFromList}
-            onMoveToList={onMoveToList}
           />
         </div>
         <div className={'post-card-body' + (isDomainHovering ? ' is-domain-hover' : '')}>
@@ -195,7 +193,6 @@ PostCard.propTypes = {
   inModTools: PropTypes.bool,
   disableEmbeds: PropTypes.bool,
   onRemoveFromList: PropTypes.func,
-  onMoveToList: PropTypes.func,
 };
 
 export default PostCard;

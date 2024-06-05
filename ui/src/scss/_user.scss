@@ -180,21 +180,11 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        .comment-actions {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            button {
-                font-size: var(--fs-xs);
-                &:hover {
-                    text-decoration: underline;
-                }
-            }
-            .comment-remove-button {
-                color: var(--color-red);
-            }
-            .comment-move-button {
-                color: var(--color-brand);
+        .comment-remove button {
+            font-size: var(--fs-xs);
+            color: var(--color-red);
+            &:hover {
+                text-decoration: underline;
             }
         }
     }
