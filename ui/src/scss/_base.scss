@@ -413,6 +413,10 @@ code {
             font-weight: 600;
             color: inherit;
         }
+        .card-link {
+            color: var(--color-link);
+            font-size: var(--fs-xs);
+        }
         > a:not(.card-title) {
             font-size: var(--fs-xs);
         }
@@ -805,6 +809,11 @@ a,
         }
         @include mixins.mobile {
             grid-template-columns: 1fr;
+        }
+    }
+    &.page-lists {
+        @include mixins.tablet {
+            grid-template-columns: 0 1fr;
         }
     }
     @include mixins.not-mobile {

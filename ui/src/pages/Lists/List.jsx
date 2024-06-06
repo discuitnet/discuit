@@ -119,13 +119,42 @@ const List = () => {
     }
   };
 
+  const handleRemoveFromList = async (item, type) => {
+    const endpoint = `/api/lists/${list.id}/items`;
+    try {
+      await mfetchjson(endpoint, {
+        method: 'DELETE',
+        body: JSON.stringify({ targetId: item.id, targetType: type }),
+      });
+      dispatch(feedReloaded(feedEndpoint));
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    }
+  };
+
+  const viewer = useSelector((state) => state.main.user);
+  const viewerListOwner = viewer && list && viewer.id === list.userId;
+
   const user = useSelector(selectUser(username));
   const handleRenderItem = (item) => {
     if (item.type === 'post') {
-      return <MemorizedPostCard initialPost={item.item} disableEmbeds={user && user.embedsOff} />;
+      return (
+        <MemorizedPostCard
+          initialPost={item.item}
+          disableEmbeds={user && user.embedsOff}
+          onRemoveFromList={viewerListOwner ? () => handleRemoveFromList(item.item, 'post') : null}
+        />
+      );
     }
     if (item.type === 'comment') {
-      return <MemorizedComment comment={item.item} />;
+      return (
+        <MemorizedComment
+          comment={item.item}
+          onRemoveFromList={
+            viewerListOwner ? () => handleRemoveFromList(item.item, 'comment') : null
+          }
+        />
+      );
     }
   };
 
@@ -164,9 +193,6 @@ const List = () => {
       dispatch(snackAlertError(error));
     }
   };
-
-  const viewer = useSelector((state) => state.main.user);
-  const viewerListOwner = viewer && list && viewer.id === list.userId;
 
   if (feedLoading || feedLoadingError || listLoading !== 'loaded' || !list) {
     console.log('loading: ', listLoading);
