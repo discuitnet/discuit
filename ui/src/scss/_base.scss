@@ -1,23 +1,26 @@
 @use 'mixins';
 
 @font-face {
-  font-family: InterVariable;
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url("../assets/fonts/InterVariable.woff2") format("woff2");
+    font-family: InterVariable;
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('../assets/fonts/InterVariable.woff2') format('woff2');
 }
 @font-face {
-  font-family: InterVariable;
-  font-style: italic;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url("../assets/fonts/InterVariable-Italic.woff2") format("woff2");
+    font-family: InterVariable;
+    font-style: italic;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('../assets/fonts/InterVariable-Italic.woff2') format('woff2');
 }
 
 :root {
-    --font: InterVariable, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-    --font-features: 'ss04' 1, 'case' 1, 'cv10' 1;
+    --custom-font: InterVariable, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial,
+        sans-serif;
+    --system-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --font: var(--custom-font);
+    --font-features: 'ss04' 1, 'case' 1, 'cv10' 1, 'ccmp' 0;
     --fs-base: 10px;
     --fs-xs: 1.2rem; // extra small
     --fs-s: 1.3rem; // small

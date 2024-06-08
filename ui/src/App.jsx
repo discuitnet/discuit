@@ -207,6 +207,23 @@ const App = () => {
     if (isOnline) setShowOfflinePage(false);
   }, [isOnline]);
 
+  // Hacky solution for the emoji symbols not lining up in the wordle community.
+  // See issue #108.
+  useEffect(() => {
+    if (location.pathname.split('/').slice(1)[0] === 'wordle') {
+      const el = document.createElement('style');
+      el.innerText = `
+      .markdown-body {
+        font-family: var(--system-font);
+      }
+      `;
+      document.head.append(el);
+      return () => {
+        el.remove();
+      };
+    }
+  }, [location]);
+
   if (!isOnline && showOfflinePage) {
     return <Offline />;
   }
