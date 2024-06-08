@@ -5,6 +5,7 @@ import (
 
 	"github.com/discuitnet/discuit/config"
 	"github.com/urfave/cli/v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 var Command = &cli.Command{
@@ -13,12 +14,12 @@ var Command = &cli.Command{
 	Action: func(ctx *cli.Context) error {
 		conf := ctx.Context.Value("config").(*config.Config)
 
-		yaml, err := config.RecreateYaml(*conf)
+		yamlData, err := yaml.Marshal(conf)
 		if err != nil {
-			return fmt.Errorf("failed to recreate yaml: %w", err)
+			return fmt.Errorf("failed to marshal yaml: %w", err)
 		}
 
-		fmt.Println(yaml)
+		fmt.Println(string(yamlData))
 
 		return nil
 	},

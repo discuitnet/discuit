@@ -11,10 +11,14 @@ import (
 
 	"github.com/discuitnet/discuit/cli/migrate"
 	"github.com/discuitnet/discuit/config"
+	"github.com/joho/godotenv"
 	"github.com/urfave/cli/v2"
 )
 
 func Before(c *cli.Context) error {
+	// Load environment variables.
+	_ = godotenv.Load()
+
 	// Load config file.
 	conf, err := config.Parse("./config.yaml")
 	if err != nil {

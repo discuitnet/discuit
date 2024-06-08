@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"os"
+	"strconv"
 
 	"github.com/discuitnet/discuit/core"
 	"gopkg.in/yaml.v2"
@@ -146,14 +147,25 @@ func Parse(path string) (*Config, error) {
 
 	// Override with environment variables if present using the map
 	for envVar, configField := range envConfigMap {
-		if value := os.Getenv(envVar); value != "" {
-			switch configField.(type) {
-			case *bool:
-				*(configField.(*bool)) = value == "true"
+		if value, ok := os.LookupEnv(envVar); ok {
+			switch v := configField.(type) {
 			case *string:
-				*(configField.(*string)) = value
+				*v = value
 			case *int:
-				*(configField.(*int)) = int(value[0])
+				if i, err := strconv.Atoi(value); err == nil {
+					*v = i
+				}
+			case *bool:
+				if b, err := strconv.ParseBool(value); err == nil {
+					*v = b
+				}
+			case *core.FeedSort:
+				// TODO: Not sure how to do this yet.
+				if err := v.UnmarshalText([]byte(value)); err != nil {
+					return nil, err
+				}
+			default:
+				return nil, errors.New("unknown type")
 			}
 		}
 	}
@@ -167,15 +179,4 @@ func Parse(path string) (*Config, error) {
 	}
 
 	return c, nil
-}
-
-// RecreateYaml creates a new yaml file with default values and returns a Config.
-func RecreateYaml(c Config) (string, error) {
-	yamlData, err := yaml.Marshal(c)
-	if err != nil {
-		return "", err
-	}
-
-	// Return the yaml file content as a string
-	return string(yamlData), nil
 }
