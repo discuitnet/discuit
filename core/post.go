@@ -265,6 +265,37 @@ func GetPost(ctx context.Context, db *sql.DB, postID *uid.ID, publicID string, v
 	return posts[0], err
 }
 
+func GetPostsByIDs(ctx context.Context, db *sql.DB, viewer *uid.ID, includeDeleted bool, ids ...uid.ID) ([]*Post, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	loggedIn := viewer != nil
+
+	where := fmt.Sprintf("WHERE posts.id IN %s", msql.InClauseQuestionMarks(len(ids)))
+	if !includeDeleted {
+		where += " AND posts.deleted_at IS NULL"
+	}
+
+	var (
+		query = buildSelectPostQuery(loggedIn, where)
+		args  = []any{}
+	)
+	if loggedIn {
+		args = append(args, viewer)
+	}
+	for _, id := range ids {
+		args = append(args, id)
+	}
+
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("db error on query '%s' with args (%v)", query, args)
+	}
+
+	return scanPosts(ctx, db, rows, viewer)
+}
+
 // scanPosts returns ErrPostNotFound is no posts are found.
 func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) ([]*Post, error) {
 	defer rows.Close()
@@ -599,10 +630,11 @@ func createPost(ctx context.Context, db *sql.DB, opts *createPostOpts) (*Post, e
 			Fit:    images.ImageFitCover,
 		})
 		if err != nil {
-			tx.Rollback()
-			return nil, err
+			log.Printf("could not save the og:image of post %s with link %s\n", post.ID, opts.link.URL)
+			// Continue on error...
+		} else {
+			cols = append(cols, msql.ColumnValue{Name: "link_image", Value: imageID})
 		}
-		cols = append(cols, msql.ColumnValue{Name: "link_image", Value: imageID})
 	}
 
 	query, args := msql.BuildInsertQuery("posts", cols)
@@ -634,7 +666,7 @@ func createPost(ctx context.Context, db *sql.DB, opts *createPostOpts) (*Post, e
 
 	// For the user profile page.
 	if _, err := tx.ExecContext(ctx, "INSERT INTO posts_comments (target_id, user_id, target_type) VALUES (?, ?, ?)",
-		post.ID, opts.author, postsCommentsTypePosts); err != nil {
+		post.ID, opts.author, ContentTypePost); err != nil {
 		tx.Rollback()
 		return nil, err
 	}
@@ -695,10 +727,11 @@ func getLinkPostImage(u *url.URL) []byte {
 
 	imageURL, err := httputil.ExtractOpenGraphImage(res.Body)
 	if err != nil {
-		// TODO: Log this error.
+		log.Printf("error extracting the og:image tag of url: %v\n", u)
+		return nil
 	}
 	if imageURL == "" {
-		// Since og:image not found, see if the link itself is an image.
+		// Since og:image is not found, see if the link itself is an image.
 		probablyAnImage := slices.Contains([]string{"image/jpeg", "image/png", "image/webp"}, res.Header.Get("Content-Type"))
 		if !probablyAnImage {
 			exts := []string{".jpg", ".jpeg", ".png", ".webp"}
@@ -719,8 +752,14 @@ func getLinkPostImage(u *url.URL) []byte {
 			return nil
 		}
 		defer res.Body.Close()
+		if res.StatusCode < 200 || res.StatusCode > 299 {
+			return nil
+		}
 		image, err := io.ReadAll(res.Body)
 		if err != nil {
+			return nil
+		}
+		if len(image) == 0 {
 			return nil
 		}
 		return image
@@ -1342,20 +1381,6 @@ func getComments(ctx context.Context, db *sql.DB, viewer *uid.ID, where string, 
 	return ret(c, nil)
 }
 
-func getCommentsList(ctx context.Context, db *sql.DB, viewer *uid.ID, IDs []uid.ID) ([]*Comment, error) {
-	where := fmt.Sprintf("WHERE comments.id IN %s", msql.InClauseQuestionMarks(len(IDs)))
-	args := make([]any, len(IDs))
-	for i := range IDs {
-		args[i] = IDs[i]
-	}
-
-	c, err := getComments(ctx, db, viewer, where, args...)
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}
-
 // CommentsCursor is an API pagination cursor.
 type CommentsCursor struct {
 	Upvotes int
@@ -1415,7 +1440,7 @@ func (p *Post) GetComments(ctx context.Context, viewer *uid.ID, cursor *Comments
 	}
 
 	if len(toGet) > 0 {
-		c2, err := getCommentsList(ctx, p.db, viewer, toGet)
+		c2, err := GetCommentsByIDs(ctx, p.db, viewer, toGet...)
 		if err != nil {
 			return nil, err
 		}
@@ -1446,7 +1471,7 @@ func (p *Post) GetCommentReplies(ctx context.Context, viewer *uid.ID, comment ui
 		return nil, nil
 	}
 
-	return getCommentsList(ctx, p.db, viewer, ids)
+	return GetCommentsByIDs(ctx, p.db, viewer, ids...)
 }
 
 // AddComment adds a new comment to post.

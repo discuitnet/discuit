@@ -116,6 +116,14 @@ const Elements = () => {
           <div className="dropdown-item">Item four</div>
         </div>
       </Dropdown>
+      <Dropdown target="Dropdown with the default target">
+        <div className="dropdown-list">
+          <div className="dropdown-item">Item one</div>
+          <div className="dropdown-item">Item two</div>
+          <div className="dropdown-item">Item three</div>
+          <div className="dropdown-item">Item four</div>
+        </div>
+      </Dropdown>
       <p>
         Lorem ipsum dolor sit amet consectetur adipisicing elit. Natus facere cupiditate,
         asperiores, quam, ullam id nobis est incidunt dolores velit cum saepe quia voluptatem.

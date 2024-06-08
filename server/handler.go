@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/discuitnet/discuit/internal/httperr"
@@ -52,6 +53,14 @@ type request struct {
 
 	loggedIn bool
 	viewer   *uid.ID // logged in user
+
+	// Contains the route variables, if any. Do not access directly, as this may
+	// be nil.
+	muxVars map[string]string
+
+	// Contains the url query parameter variables. Do not access directly, as
+	// this may be nil.
+	queryParams url.Values
 }
 
 func newRequest(r *http.Request, ses *sessions.Session) *request {
@@ -72,7 +81,10 @@ func newRequest(r *http.Request, ses *sessions.Session) *request {
 }
 
 func (r *request) muxVar(name string) string {
-	return mux.Vars(r.req)[name]
+	if r.muxVars == nil {
+		r.muxVars = mux.Vars(r.req)
+	}
+	return r.muxVars[name]
 }
 
 // unmarshalJSONBody returns a bad request httperr.Error on failure to unmarshal
@@ -112,12 +124,41 @@ func (r *request) unmarshalJSONBodyToStringsMap(trim bool) (map[string]string, e
 	return m, nil
 }
 
-func (r *request) urlQuery() url.Values {
+func (r *request) urlQueryParams() url.Values {
 	return r.req.URL.Query()
 }
 
-func (r *request) urlQueryValue(name string) string {
-	return r.urlQuery().Get(name)
+func (r *request) urlQueryParamsValue(key string) string {
+	if r.queryParams == nil {
+		r.queryParams = r.req.URL.Query()
+	}
+	return r.queryParams.Get(key)
+}
+
+// urlQueryParamsValueString parses the URL query parameter of the request as a
+// string. If it's empty, the defaultValue is returned.
+func (r *request) urlQueryParamsValueString(key, defaultValue string) string {
+	if r.queryParams == nil {
+		r.queryParams = r.req.URL.Query()
+	}
+	value := r.queryParams.Get(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
+}
+
+// urlQueryParamsValueString parses the URL query parameter of the request as a
+// int. If it's empty, the defaultValue is returned.
+func (r *request) urlQueryParamsValueInt(key string, defaultValue int) (int, error) {
+	if r.queryParams == nil {
+		r.queryParams = r.req.URL.Query()
+	}
+	valueString := r.queryParams.Get(key)
+	if valueString == "" {
+		return defaultValue, nil
+	}
+	return strconv.Atoi(valueString)
 }
 
 // The error returned from handler is used to handle http error cases (non-1xx

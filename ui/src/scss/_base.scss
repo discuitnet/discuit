@@ -1,7 +1,23 @@
 @use 'mixins';
 
+@font-face {
+  font-family: InterVariable;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../assets/fonts/InterVariable.woff2") format("woff2");
+}
+@font-face {
+  font-family: InterVariable;
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../assets/fonts/InterVariable-Italic.woff2") format("woff2");
+}
+
 :root {
-    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --font: InterVariable, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --font-features: 'ss04' 1, 'case' 1, 'cv10' 1;
     --fs-base: 10px;
     --fs-xs: 1.2rem; // extra small
     --fs-s: 1.3rem; // small
@@ -199,6 +215,7 @@ html.theme-dark {
 
 html {
     font-family: var(--font);
+    font-feature-settings: var(--font-features);
     font-size: var(--fs-base);
     line-height: 1.5; // 1.333;
 }
@@ -234,6 +251,10 @@ body {
         --fs-normal: 1.6rem;
         --fs-l: 1.7rem;
         --fs-xl: 1.8rem;
+    }
+
+    &.is-not-gray {
+        background: var(--color-bg);
     }
 }
 
@@ -391,6 +412,10 @@ code {
         .card-title {
             font-weight: 600;
             color: inherit;
+        }
+        .card-link {
+            color: var(--color-link);
+            font-size: var(--fs-xs);
         }
         > a:not(.card-title) {
             font-size: var(--fs-xs);
@@ -656,7 +681,7 @@ button,
     &.button-icon {
         &:hover,
         &.is-active {
-            background: var(--color-button);
+            background: var(--color-button-hover);
         }
     }
     &.button-icon-simple {
@@ -676,6 +701,13 @@ button,
         span {
             height: var(--button-icon-size);
             margin-left: 8px;
+        }
+        &.is-text-first {
+            flex-direction: row-reverse;
+            span {
+                margin-left: 0;
+                margin-right: 8px;
+            }
         }
     }
     &:disabled,
@@ -777,6 +809,11 @@ a,
         }
         @include mixins.mobile {
             grid-template-columns: 1fr;
+        }
+    }
+    &.page-lists {
+        @include mixins.tablet {
+            grid-template-columns: 0 1fr;
         }
     }
     @include mixins.not-mobile {

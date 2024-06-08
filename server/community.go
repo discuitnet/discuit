@@ -57,7 +57,7 @@ func (s *Server) createCommunity(w *responseWriter, r *request) error {
 
 // /api/communities [GET] (?set=subscribed&sort=size)
 func (s *Server) getCommunities(w *responseWriter, r *request) error {
-	query := r.urlQuery()
+	query := r.urlQueryParams()
 	search := query.Get("q")
 
 	set := query.Get("set") // Either "all" or "default" or "subscribed".
@@ -123,7 +123,7 @@ func (s *Server) getCommunities(w *responseWriter, r *request) error {
 func (s *Server) getCommunity(w *responseWriter, r *request) error {
 	var (
 		communityID = r.muxVar("communityID") // Community ID or name.
-		query       = r.urlQuery()
+		query       = r.urlQueryParams()
 		comm        *core.Community
 		byName      = strings.ToLower(query.Get("byName")) == "true"
 		err         error
@@ -164,7 +164,7 @@ func (s *Server) updateCommunity(w *responseWriter, r *request) error {
 
 	var (
 		communityID = r.muxVar("communityID") // Community ID or name.
-		query       = r.urlQuery()
+		query       = r.urlQueryParams()
 		byName      = strings.ToLower(query.Get("byName")) == "true"
 		comm        *core.Community
 		err         error
@@ -541,7 +541,7 @@ func (s *Server) getCommunityReports(w *responseWriter, r *request) error {
 		return errNotAdminNorMod
 	}
 
-	query := r.urlQuery()
+	query := r.urlQueryParams()
 
 	limit, err := getFeedLimit(query, s.config.PaginationLimit, s.config.PaginationLimitMax)
 	if err != nil {
