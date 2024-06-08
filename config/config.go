@@ -48,8 +48,8 @@ type Config struct {
 	MaxImageSize      int  `yaml:"maxImageSize"`
 
 	// If API requests have a URL query parameter of the form 'adminKey=value',
-	// where value is AdminApiKey, rate limits are disabled.
-	AdminApiKey string `yaml:"adminAPIKey"`
+	// where value is AdminAPIKey, rate limits are disabled.
+	AdminAPIKey string `yaml:"adminAPIKey"`
 
 	DisableImagePosts bool `yaml:"disableImagePosts"`
 
