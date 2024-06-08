@@ -160,7 +160,6 @@ func Parse(path string) (*Config, error) {
 					*v = b
 				}
 			case *core.FeedSort:
-				// TODO: Not sure how to do this yet.
 				if err := v.UnmarshalText([]byte(value)); err != nil {
 					return nil, err
 				}
