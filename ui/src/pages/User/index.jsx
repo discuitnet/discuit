@@ -23,9 +23,9 @@ import PageLoading from '../../components/PageLoading';
 import Feed from '../../components/Feed';
 import NotFound from '../NotFound';
 import { Helmet } from 'react-helmet-async';
-import { Link, useHistory, useLocation } from 'react-router-dom';
+import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
 import CommunityLink from '../../components/PostCard/CommunityLink';
-import { useMuteUser } from '../../hooks';
+import { useFetchUsersLists, useMuteUser } from '../../hooks';
 import UserProPic from '../../components/UserProPic';
 import BadgesList from './BadgesList';
 import SelectBar from '../../components/SelectBar';
@@ -38,7 +38,9 @@ function formatFilterText(filter = '') {
   return 'overview';
 }
 
-const User = ({ username }) => {
+const User = () => {
+  const { username } = useParams();
+
   const dispatch = useDispatch();
   const history = useHistory();
 
@@ -204,6 +206,18 @@ const User = ({ username }) => {
     setTab('content');
   }, [location.pathname]);
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 764 && tab === 'about') {
+        setTab('content');
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [tab]);
+
   const { isMuted, toggleMute } = useMuteUser(
     user ? { userId: user.id, username: user.username } : {}
   );
@@ -211,6 +225,8 @@ const User = ({ username }) => {
   if (userLoading === 'notfound') {
     return <NotFound />;
   }
+
+  const { lists, error: listsError } = useFetchUsersLists(username);
 
   if (!user) {
     return <PageLoading />;
@@ -377,6 +393,77 @@ const User = ({ username }) => {
     );
   };
 
+  const renderLists = () => {
+    if (listsError) {
+      return (
+        <div className="card card-sub page-user-lists">
+          <div className="card-head">
+            <div className="card-title">Lists</div>
+          </div>
+          <div className="card-content">
+            <div className="card-list-item user-list-item">
+              <span>Error loading lists</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    if (!lists || lists.length === 0) {
+      return null;
+    }
+    return (
+      <div className="card card-sub page-user-modlist">
+        <div className="card-head">
+          <div className="card-title">Lists</div>
+          <div className="card-link">
+            <Link to={`/@${username}/lists`}>View all</Link>
+          </div>
+        </div>
+        <div className="card-content">
+          <div className="card-list">
+            {lists.map((list) => (
+              <div className="card-list-item user-list-item" key={list.id}>
+                <Link to={`/@${username}/lists/${list.name}`}>
+                  <div className="user-list-icon">
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M21 5.25H14C13.59 5.25 13.25 4.91 13.25 4.5C13.25 4.09 13.59 3.75 14 3.75H21C21.41 3.75 21.75 4.09 21.75 4.5C21.75 4.91 21.41 5.25 21 5.25Z"
+                        fill="currentColor"
+                      ></path>
+                      <path
+                        d="M21 10.25H14C13.59 10.25 13.25 9.91 13.25 9.5C13.25 9.09 13.59 8.75 14 8.75H21C21.41 8.75 21.75 9.09 21.75 9.5C21.75 9.91 21.41 10.25 21 10.25Z"
+                        fill="currentColor"
+                      ></path>
+                      <path
+                        d="M21 15.25H3C2.59 15.25 2.25 14.91 2.25 14.5C2.25 14.09 2.59 13.75 3 13.75H21C21.41 13.75 21.75 14.09 21.75 14.5C21.75 14.91 21.41 15.25 21 15.25Z"
+                        fill="currentColor"
+                      ></path>
+                      <path
+                        d="M21 20.25H3C2.59 20.25 2.25 19.91 2.25 19.5C2.25 19.09 2.59 18.75 3 18.75H21C21.41 18.75 21.75 19.09 21.75 19.5C21.75 19.91 21.41 20.25 21 20.25Z"
+                        fill="currentColor"
+                      ></path>
+                      <path
+                        d="M7.92 3.5H5.08C3.68 3.5 3 4.18 3 5.58V8.43C3 9.83 3.68 10.51 5.08 10.51H7.93C9.33 10.51 10.01 9.83 10.01 8.43V5.58C10 4.18 9.32 3.5 7.92 3.5Z"
+                        fill="currentColor"
+                      ></path>
+                    </svg>
+                  </div>
+                  <span>{list.displayName}</span>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const items = feed ? feed.items : [];
 
   return (
@@ -459,12 +546,14 @@ const User = ({ username }) => {
           </div>
         </header>
         <div className="page-user-feed">
-          <SelectBar
-            name=""
-            options={selectBarOptions}
-            value={feedFilter}
-            onChange={handleSelectBarChange}
-          />
+          {tab === 'content' && (
+            <SelectBar
+              name=""
+              options={selectBarOptions}
+              value={feedFilter}
+              onChange={handleSelectBarChange}
+            />
+          )}
           {tab === 'content' && (
             <Feed
               loading={feedLoading !== 'loaded'}
@@ -483,6 +572,7 @@ const User = ({ username }) => {
               {renderSummary()}
               {renderBadges()}
               {renderModOf()}
+              {renderLists()}
             </>
           )}
         </div>
@@ -491,6 +581,7 @@ const User = ({ username }) => {
         {renderSummary()}
         {renderBadges()}
         {renderModOf()}
+        {renderLists()}
         {/* <div className="card card-sub user-moderates">
           <div className="card-head">
             <div className="card-title">Moderates</div>

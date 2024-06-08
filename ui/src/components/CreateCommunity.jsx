@@ -69,7 +69,7 @@ const CreateCommunity = ({ open, onClose }) => {
             value={name}
             onChange={handleNameChange}
             label="Community name"
-            description="Communiy name cannot be changed."
+            description="Community name cannot be changed."
             maxLength={communityNameMaxLength}
             style={{ marginBottom: '0' }}
             autoFocus

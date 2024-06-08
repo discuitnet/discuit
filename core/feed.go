@@ -661,7 +661,7 @@ type UserFeedItem struct {
 	// Item is either a post or a comment.
 	Item any `json:"item"`
 	// Type is Item's type.
-	Type string `json:"type"`
+	Type ContentType `json:"type"`
 }
 
 // UserFeedResultSet holds the user page's feed's items.
@@ -680,9 +680,9 @@ func GetUserFeed(ctx context.Context, db *sql.DB, viewer *uid.ID, userID uid.ID,
 
 	if filter != "" {
 		query += "AND target_type = ? "
-		t := postsCommentsTypePosts
+		t := ContentTypePost
 		if filter == "comments" {
-			t = postsCommentsTypeComments
+			t = ContentTypeComment
 		}
 		args = append(args, t)
 	}
@@ -709,10 +709,10 @@ func GetUserFeed(ctx context.Context, db *sql.DB, viewer *uid.ID, userID uid.ID,
 	}
 
 	var ids []uid.ID
-	var types []int
+	var types []ContentType
 	for rows.Next() {
 		id := uid.ID{}
-		var t int
+		var t ContentType
 		if err = rows.Scan(&id, &t); err != nil {
 			return nil, err
 		}
@@ -723,40 +723,88 @@ func GetUserFeed(ctx context.Context, db *sql.DB, viewer *uid.ID, userID uid.ID,
 		return nil, err
 	}
 	if len(ids) == 0 {
-		return &UserFeedResultSet{}, nil
+		return &UserFeedResultSet{Items: []UserFeedItem{}}, nil
 	}
 
 	max := len(ids) - 1
 	if len(ids) < limit+1 {
 		max = len(ids)
 	}
-	set := &UserFeedResultSet{}
+	var (
+		set             = &UserFeedResultSet{Items: make([]UserFeedItem, max)}
+		postIDs         = make([]uid.ID, 0, max)
+		commentIDs      = make([]uid.ID, 0, max)
+		postItemsMap    = make(map[uid.ID]*UserFeedItem, max)
+		commentItemsMap = make(map[uid.ID]*UserFeedItem, max)
+	)
 	for i := 0; i < max; i++ {
-		// TODO: Optimize fetching posts and comments.
-		item := UserFeedItem{}
-		if types[i] == postsCommentsTypePosts {
-			item.Type = "post"
-			if item.Item, err = GetPost(ctx, db, &ids[i], "", viewer, true); err != nil {
-				return nil, err
-			}
-		} else if types[i] == postsCommentsTypeComments {
-			item.Type = "comment"
-			var c *Comment
-			if c, err = GetComment(ctx, db, ids[i], viewer); err != nil {
-				return nil, err
-			}
-			if p, err := GetPost(ctx, db, &c.PostID, "", nil, true); err == nil {
-				c.PostTitle = p.Title
-			} else {
-				return nil, err
-			}
-			item.Item = c
+		item := &set.Items[i]
+		item.Type = types[i]
+		if types[i] == ContentTypePost {
+			postIDs = append(postIDs, ids[i])
+			postItemsMap[ids[i]] = item
+		} else if types[i] == ContentTypeComment {
+			commentIDs = append(commentIDs, ids[i])
+			commentItemsMap[ids[i]] = item
 		}
-		set.Items = append(set.Items, item)
+	}
+
+	if len(postIDs) > 0 {
+		posts, err := GetPostsByIDs(ctx, db, viewer, true, postIDs...)
+		if err != nil {
+			return nil, err
+		}
+		for _, post := range posts {
+			postItemsMap[post.ID].Item = post
+		}
+	}
+
+	if len(commentIDs) > 0 {
+		comments, err := GetCommentsByIDs(ctx, db, viewer, commentIDs...)
+		if err != nil {
+			return nil, err
+		}
+		for _, comment := range comments {
+			commentItemsMap[comment.ID].Item = comment
+		}
+		if err := getCommentsPostTitles(ctx, db, comments, viewer); err != nil {
+			return nil, err
+		}
 	}
 
 	if len(ids) == limit+1 {
 		set.Next = &ids[limit]
 	}
 	return set, nil
+}
+
+func getCommentsPostTitles(ctx context.Context, db *sql.DB, comments []*Comment, viewer *uid.ID) error {
+	postIDs := make([]uid.ID, len(comments))
+	postTitles := make(map[uid.ID]string, len(comments))
+	for i, comment := range comments {
+		postIDs[i] = comment.PostID
+	}
+
+	posts, err := GetPostsByIDs(ctx, db, viewer, true, postIDs...)
+	if err != nil {
+		return err
+	}
+
+	for _, post := range posts {
+		if post.Title == "" {
+			return fmt.Errorf("populating comments' postTitle, could not find post title of post id %v", post.ID)
+		}
+
+		if _, ok := postTitles[post.ID]; ok {
+			continue
+		}
+
+		postTitles[post.ID] = post.Title
+	}
+
+	for _, comment := range comments {
+		comment.PostTitle = postTitles[comment.PostID]
+	}
+
+	return nil
 }

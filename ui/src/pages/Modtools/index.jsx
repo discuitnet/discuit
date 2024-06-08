@@ -29,7 +29,7 @@ function isActiveCls(className, isActive, activeClass = 'is-active') {
 
 const Modtools = () => {
   const dispatch = useDispatch();
-  const { communityName } = useParams();
+  const { name: communityName } = useParams();
 
   const user = useSelector((state) => state.main.user);
 

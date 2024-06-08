@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -14,11 +15,47 @@ import (
 	"github.com/discuitnet/discuit/internal/utils"
 )
 
-// When referencing target_type column of posts_comments table.
+// ContentType distinguishes between different types of user generated content
+// (like posts and comments). It's integer values is used when interacting with
+// the DB. With the use of the MarshalText and UnmarshalText functions, this
+// type, when used as a field in a struct, is JSON marshaled and unmarshaled as
+// a string.
+type ContentType int
+
 const (
-	postsCommentsTypePosts    = 0
-	postsCommentsTypeComments = 1
+	ContentTypePost = ContentType(iota)
+	ContentTypeComment
 )
+
+func (t ContentType) String() string {
+	b, err := t.MarshalText()
+	if err != nil {
+		return "[error]"
+	}
+	return string(b)
+}
+
+func (t ContentType) MarshalText() ([]byte, error) {
+	switch t {
+	case ContentTypePost:
+		return []byte("post"), nil
+	case ContentTypeComment:
+		return []byte("comment"), nil
+	}
+	return nil, errors.New("unsupported content type")
+}
+
+func (t *ContentType) UnmarshalText(data []byte) error {
+	switch string(data) {
+	case "post":
+		*t = ContentTypePost
+	case "comment":
+		*t = ContentTypeComment
+	default:
+		return errors.New("unsupported content type")
+	}
+	return nil
+}
 
 // Comment is a comment of a post.
 type Comment struct {
@@ -131,6 +168,19 @@ func GetComment(ctx context.Context, db *sql.DB, id uid.ID, viewer *uid.ID) (*Co
 		return nil, errCommentNotFound
 	}
 	return comments[0], err
+}
+
+func GetCommentsByIDs(ctx context.Context, db *sql.DB, viewer *uid.ID, ids ...uid.ID) ([]*Comment, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	where := fmt.Sprintf("WHERE comments.id IN %s", msql.InClauseQuestionMarks(len(ids)))
+	args := make([]any, len(ids))
+	for i := range ids {
+		args[i] = ids[i]
+	}
+	return getComments(ctx, db, viewer, where, args...)
 }
 
 func scanComments(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) ([]*Comment, error) {
@@ -354,7 +404,7 @@ func addComment(ctx context.Context, db *sql.DB, post *Post, author *User, paren
 		}
 
 		// For the user profile.
-		if _, err := tx.ExecContext(ctx, "INSERT INTO posts_comments (target_id, user_id, target_type) VALUES (?, ?, ?)", id, author.ID, postsCommentsTypeComments); err != nil {
+		if _, err := tx.ExecContext(ctx, "INSERT INTO posts_comments (target_id, user_id, target_type) VALUES (?, ?, ?)", id, author.ID, ContentTypeComment); err != nil {
 			return err
 		}
 
@@ -378,7 +428,7 @@ func addComment(ctx context.Context, db *sql.DB, post *Post, author *User, paren
 	// Send notifications.
 	if parent != nil && !parent.AuthorID.EqualsTo(author.ID) {
 		go func() {
-			if err := CreateCommentReplyNotification(context.Background(), db, parent.AuthorID, parent.ID, id, author.Username, post); err != nil {
+			if err := CreateCommentReplyNotification(context.Background(), db, parent.AuthorID, parent.ID, id, author, post); err != nil {
 				log.Printf("Create reply notification failed: %v\n", err)
 			}
 		}()
@@ -386,7 +436,7 @@ func addComment(ctx context.Context, db *sql.DB, post *Post, author *User, paren
 	}
 	if !post.AuthorID.EqualsTo(author.ID) && (parent == nil || !(parent.AuthorID.EqualsTo(post.AuthorID))) {
 		go func() {
-			if err := CreateNewCommentNotification(context.Background(), db, post, id, author.Username); err != nil {
+			if err := CreateNewCommentNotification(context.Background(), db, post, id, author); err != nil {
 				log.Printf("Create new_comment notification failed: %v\n", err)
 			}
 		}()

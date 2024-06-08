@@ -17,6 +17,7 @@ const Feed = ({
   onItemHeightChange,
   emptyItemsText = 'Nothing to show',
   banner,
+  onRemoveFromList = null,
 }) => {
   const windowHeight = document.documentElement.clientHeight;
   const rootMargin = Math.round(Math.max(windowHeight * 0.35, 200));
@@ -63,6 +64,7 @@ const Feed = ({
           keepRenderedHtml={isDesktop}
           onViewChange={handleItemViewChange}
           initiallyInView={itemsInitiallyInView.includes(item.key)}
+          onRemoveFromList={onRemoveFromList}
         >
           {onRenderItem(item, index)}
         </FeedItem>
@@ -118,6 +120,7 @@ Feed.propTypes = {
   onItemHeightChange: PropTypes.func.isRequired,
   emptyItemsText: PropTypes.string,
   banner: PropTypes.element,
+  onRemoveFromList: PropTypes.func,
 };
 
 export default Feed;
