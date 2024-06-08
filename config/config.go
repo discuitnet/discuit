@@ -119,7 +119,7 @@ func Parse(path string) (*Config, error) {
 
 		// If API requests have a URL query parameter of the form 'adminKey=value',
 		// where value is AdminApiKey, rate limits are disabled.
-		"DISCUIT_ADMIN_API_KEY": &c.AdminApiKey,
+		"DISCUIT_ADMIN_API_KEY": &c.AdminAPIKey,
 
 		"DISCUIT_DISABLE_IMAGE_POSTS": &c.DisableImagePosts,
 
