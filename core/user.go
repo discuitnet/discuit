@@ -402,17 +402,6 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 				user.EmailPublic = new(string)
 				*user.EmailPublic = user.Email.String
 			}
-		} else {
-			// Set these values to their defaults if it isn't the user themself
-			// requesting the data.
-			user.NumNewNotifications = 0
-			user.EmailConfirmedAt.Valid = false
-			user.UpvoteNotificationsOff = false
-			user.ReplyNotificationsOff = false
-			user.HomeFeed = FeedTypeAll
-			user.EmbedsOff = false
-			user.HideUserProfilePictures = false
-			user.RememberFeedSort = false
 		}
 		// Set the user info of deleted users to the ghost user for everyone
 		// except the admins.
