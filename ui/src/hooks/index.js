@@ -73,7 +73,9 @@ export function useWindowHeight() {
   return useWindowSize().height;
 }
 
-export function useIsMobile(breakpoint = 768) {
+export const mobileBreakpointWidth = 768;
+
+export function useIsMobile(breakpoint = mobileBreakpointWidth) {
   return useWindowWidth() <= breakpoint;
 }
 
