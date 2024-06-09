@@ -223,6 +223,7 @@ html {
     font-feature-settings: var(--font-features);
     font-size: var(--fs-base);
     line-height: 1.5; // 1.333;
+    letter-spacing: -0.15px; // Because Inter is a bit too wide by default.
 }
 
 .rotate-180 {
