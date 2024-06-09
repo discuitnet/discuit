@@ -226,6 +226,11 @@ html {
     letter-spacing: -0.15px; // Because Inter is a bit too wide by default.
 }
 
+html.is-system-font {
+    --font: var(--system-font);
+    letter-spacing: initial;
+}
+
 .rotate-180 {
     transform: rotate(180deg);
 }

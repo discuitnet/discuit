@@ -6,6 +6,7 @@ import { mfetch, mfetchjson, validEmail } from '../../helper';
 import { useIsChanged } from '../../hooks';
 import {
   mutesAdded,
+  settingsChanged,
   snackAlert,
   snackAlertError,
   unmuteCommunity,
@@ -23,6 +24,7 @@ import CommunityLink from '../../components/PostCard/CommunityLink';
 import { Link } from 'react-router-dom/cjs/react-router-dom.min';
 import { ButtonUpload } from '../../components/Button';
 import CommunityProPic from '../../components/CommunityProPic';
+import { getDevicePreference, setDevicePreference } from './devicePrefs';
 
 const Settings = () => {
   const dispatch = useDispatch();
@@ -58,6 +60,13 @@ const Settings = () => {
     !user.hideUserProfilePictures
   );
 
+  // Per-device preferences:
+  const [font, setFont] = useState(getDevicePreference('font') ?? 'custom');
+  const fontOptions = {
+    custom: 'Custom', // value -> display name
+    system: 'System',
+  };
+
   const [changed, resetChanged] = useIsChanged([
     aboutMe /*, email*/,
     notifsSettings,
@@ -66,6 +75,7 @@ const Settings = () => {
     enableEmbeds,
     email,
     showUserProfilePictures,
+    font,
   ]);
 
   const applicationServerKey = useSelector((state) => state.main.vapidPublicKey);
@@ -113,6 +123,8 @@ const Settings = () => {
       dispatch(snackAlert('Please enter a valid email'));
       return;
     }
+    // Save device preferences first:
+    setDevicePreference('font', font);
     try {
       const ruser = await mfetchjson(`/api/_settings?action=updateProfile`, {
         method: 'POST',
@@ -130,6 +142,7 @@ const Settings = () => {
       dispatch(userLoggedIn(ruser));
       dispatch(snackAlert('Settings saved.', 'settings_saved'));
       resetChanged();
+      dispatch(settingsChanged());
     } catch (error) {
       dispatch(snackAlertError(error));
     }
@@ -354,6 +367,28 @@ const Settings = () => {
                 checked={showUserProfilePictures}
                 onChange={(e) => setShowUserProfilePictures(e.target.checked)}
               />
+            </div>
+          </div>
+        </div>
+        <div className="input-with-label settings-device">
+          <div className="input-label-box">
+            <div className="label">Device preferences</div>
+          </div>
+          <div className="settings-list">
+            <div>
+              <div>Font</div>
+              <Dropdown
+                aligned="right"
+                target={<button className="select-bar-dp-target">{fontOptions[font]}</button>}
+              >
+                <div className="dropdown-list">
+                  {Object.keys(fontOptions).map((key) => (
+                    <div key={key} className="dropdown-item" onClick={() => setFont(key)}>
+                      {fontOptions[key]}
+                    </div>
+                  ))}
+                </div>
+              </Dropdown>
             </div>
           </div>
         </div>

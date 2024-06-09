@@ -56,6 +56,7 @@ import AppUpdate from './AppUpdate';
 import PushNotifications from './PushNotifications';
 import { List, Lists } from './pages/Lists';
 import SaveToListModal from './components/SaveToListModal';
+import { getDevicePreference } from './pages/Settings/devicePrefs';
 
 // Value taken from _mixins.scss file.
 const tabletBreakpoint = 1170;
@@ -206,6 +207,17 @@ const App = () => {
   useEffect(() => {
     if (isOnline) setShowOfflinePage(false);
   }, [isOnline]);
+
+  // Device preferences:
+  const settingsChanged = useSelector((state) => state.main.settingsChanged);
+  useEffect(() => {
+    if (getDevicePreference('font') === 'system') {
+      document.documentElement.classList.add('is-system-font');
+      return () => {
+        document.documentElement.classList.remove('is-system-font');
+      };
+    }
+  }, [settingsChanged]);
 
   if (!isOnline && showOfflinePage) {
     return <Offline />;
