@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"os"
+	"strconv"
 
 	"github.com/discuitnet/discuit/core"
 	"gopkg.in/yaml.v2"
@@ -66,7 +67,7 @@ func Parse(path string) (*Config, error) {
 	c := &Config{
 		// Default values.
 		Addr:               ":8080",
-		DBUser:             "root",
+		DBUser:             "discuit",
 		SessionCookieName:  "SID",
 		RedisAddress:       ":6379",
 		PaginationLimit:    10,
@@ -79,33 +80,102 @@ func Parse(path string) (*Config, error) {
 		MaxForumsPerUser:       -1,
 	}
 
-	unmarshal := func() error {
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		if err = yaml.Unmarshal(data, &c); err != nil {
-			return err
-		}
-		return nil
-	}
-	if err := unmarshal(); err != nil {
-		return nil, err
+	var envConfigMap = map[string]interface{}{
+		"DISCUIT_IS_DEVELOPMENT": &c.IsDevelopment,
+
+		"DISCUIT_ADDR":     &c.Addr,
+		"DISCUIT_UI_PROXY": &c.UIProxy,
+
+		"DISCUIT_SITE_NAME":        &c.SiteName,
+		"DISCUIT_SITE_DESCRIPTION": &c.SiteDescription,
+
+		// Primary DB credentials.
+		"DISCUIT_DB_ADDR":     &c.DBAddr,
+		"DISCUIT_DB_USER":     &c.DBUser,
+		"DISCUIT_DB_PASSWORD": &c.DBPassword,
+		"DISCUIT_DB_NAME":     &c.DBName,
+
+		"DISCUIT_SESSION_COOKIE_NAME": &c.SessionCookieName,
+
+		"DISCUIT_REDIS_ADDRESS": &c.RedisAddress,
+
+		"DISCUIT_HMAC_SECRET": &c.HMACSecret,
+
+		"DISCUIT_CSRF_OFF": &c.CSRFOff,
+
+		"DISCUIT_NO_LOG_TO_FILE": &c.NoLogToFile,
+
+		"DISCUIT_PAGINATION_LIMIT":     &c.PaginationLimit,
+		"DISCUIT_PAGINATION_LIMIT_MAX": &c.PaginationLimitMax,
+		"DISCUIT_DEFAULT_FEED_SORT":    &c.DefaultFeedSort,
+
+		// Captcha verification is skipped if empty.
+		"DISCUIT_CAPTCHA_SECRET": &c.CaptchaSecret,
+		"DISCUIT_CERT_FILE":      &c.CertFile,
+		"DISCUIT_KEY_FILE":       &c.KeyFile,
+
+		"DISCUIT_DISABLE_RATE_LIMITS": &c.DisableRateLimits,
+		"DISCUIT_MAX_IMAGE_SIZE":      &c.MaxImageSize,
+
+		// If API requests have a URL query parameter of the form 'adminKey=value',
+		// where value is AdminApiKey, rate limits are disabled.
+		"DISCUIT_ADMIN_API_KEY": &c.AdminAPIKey,
+
+		"DISCUIT_DISABLE_IMAGE_POSTS": &c.DisableImagePosts,
+
+		"DISCUIT_DISABLE_FORUM_CREATION":    &c.DisableForumCreation,
+		"DISCUIT_FORUM_CREATION_REQ_POINTS": &c.ForumCreationReqPoints,
+		"DISCUIT_MAX_FORUMS_PER_USER":       &c.MaxForumsPerUser,
+
+		// The location where images are saved on disk.
+		"DISCUIT_IMAGES_FOLDER_PATH": &c.ImagesFolderPath,
 	}
 
-	if c.Addr == "" {
-		c.Addr = ":80"
-		if c.CertFile != "" {
-			c.Addr = ":443"
+	// Attempt to unmarshal the YAML file if it exists
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if !os.IsNotExist(err) { // If the error is not because the file doesn't exist, return the error
+			return nil, err
+		}
+		// If the file doesn't exist, just log or ignore and proceed to use environment variables
+	} else {
+		// If file reading was successful, unmarshal the YAML content
+		if yamlErr := yaml.Unmarshal(data, &c); yamlErr != nil {
+			return nil, yamlErr
 		}
 	}
 
+	// Override with environment variables if present using the map
+	for envVar, configField := range envConfigMap {
+		if value, ok := os.LookupEnv(envVar); ok {
+			switch v := configField.(type) {
+			case *string:
+				*v = value
+			case *int:
+				if i, err := strconv.Atoi(value); err == nil {
+					*v = i
+				}
+			case *bool:
+				if b, err := strconv.ParseBool(value); err == nil {
+					*v = b
+				}
+			case *core.FeedSort:
+				if err := v.UnmarshalText([]byte(value)); err != nil {
+					return nil, err
+				}
+			default:
+				return nil, errors.New("unknown type")
+			}
+		}
+	}
+
+	// Validation for required fields
 	if c.ForumCreationReqPoints == -1 {
-		return nil, errors.New("c.ForumCreationReqPoints cannot be (-1)")
+		return nil, errors.New("ForumCreationReqPoints cannot be (-1)")
+	}
+	if c.MaxForumsPerUser == -1 {
+		return nil, errors.New("MaxForumsPerUser cannot be (-1)")
 	}
 
-	if c.MaxForumsPerUser == -1 {
-		return nil, errors.New("c.MaxForumsPerUser cannot be (-1)")
-	}
 	return c, nil
 }
