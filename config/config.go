@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/discuitnet/discuit/core"
 	"gopkg.in/yaml.v2"
@@ -178,4 +179,16 @@ func Parse(path string) (*Config, error) {
 	}
 
 	return c, nil
+}
+
+// AddressValid reports whether addr is of the form "host:port". If host is
+// missing, it might return true, but if ":port" is missing it will return
+// false.
+func AddressValid(addr string) bool {
+	s := strings.Index(addr, ":")
+	if s == -1 || s > len(addr)-2 {
+		return false
+	}
+	_, err := strconv.Atoi(addr[s+1:])
+	return err == nil
 }
