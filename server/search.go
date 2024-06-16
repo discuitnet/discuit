@@ -13,7 +13,7 @@ func (s *Server) search(w *responseWriter, r *request) error {
 		return httperr.NewBadRequest("meili_disabled", "MeiliSearch is disabled.")
 	}
 
-	query := r.urlQuery()
+	query := r.urlQueryParams()
 	r.req.ParseForm()
 
 	// query
