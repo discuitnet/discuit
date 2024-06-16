@@ -23,7 +23,7 @@ import PageLoading from '../../components/PageLoading';
 import Feed from '../../components/Feed';
 import NotFound from '../NotFound';
 import { Helmet } from 'react-helmet-async';
-import { Link, useHistory, useLocation } from 'react-router-dom';
+import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
 import CommunityLink from '../../components/PostCard/CommunityLink';
 import { useMuteUser } from '../../hooks';
 import UserProPic from '../../components/UserProPic';
@@ -38,7 +38,9 @@ function formatFilterText(filter = '') {
   return 'overview';
 }
 
-const User = ({ username }) => {
+const User = () => {
+  const { username } = useParams();
+
   const dispatch = useDispatch();
   const history = useHistory();
 
@@ -421,12 +423,16 @@ const User = ({ username }) => {
           )}
           {loggedIn && !user.deleted && (
             <div className="user-card-buttons">
-              <button onClick={toggleMute}>{isMuted ? 'Unmute user' : 'Mute user'}</button>
+              {viewer.id !== user.id && (
+                <button onClick={toggleMute}>{isMuted ? 'Unmute user' : 'Mute user'}</button>
+              )}
               {viewerAdmin && (
                 <>
-                  <button className="button-red" onClick={handleBanUser}>
-                    {user.isBanned ? `Unban user` : 'Ban user'}
-                  </button>
+                  {viewer.id !== user.id && (
+                    <button className="button-red" onClick={handleBanUser}>
+                      {user.isBanned ? `Unban user` : 'Ban user'}
+                    </button>
+                  )}
                   <button className="button-green" onClick={handleGiveSupporterBadge}>
                     {hasSupporterBadge ? 'Remove supporter badge' : 'Give supporter badge'}
                   </button>

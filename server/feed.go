@@ -57,7 +57,7 @@ func (s *Server) getUsersFeed(w *responseWriter, r *request) error {
 		}
 	}
 
-	query := r.urlQuery()
+	query := r.urlQueryParams()
 	limit, err := getFeedLimit(query, s.config.PaginationLimit, s.config.PaginationLimitMax)
 	if err != nil {
 		return err
@@ -91,7 +91,7 @@ var errInvalidFeedFilter = httperr.NewBadRequest("invalid_filter", "Invalid feed
 
 // /api/posts [GET]
 func (s *Server) feed(w *responseWriter, r *request) error {
-	query := r.urlQuery()
+	query := r.urlQueryParams()
 	communityIDText := query.Get("communityId")
 	filter := query.Get("filter")
 	if !isFilterValid(filter) {

@@ -98,3 +98,26 @@ func ExtractOpenGraphTitle(r io.Reader) (string, error) {
 
 	return title, nil
 }
+
+func ProxyRequest(w http.ResponseWriter, r *http.Request, url string) {
+	req, err := http.NewRequest(r.Method, url, r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	req.Header = r.Header
+	req.Header.Set("User-Agent", userAgent)
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	for k, v := range resp.Header {
+		w.Header()[k] = v
+	}
+	w.WriteHeader(resp.StatusCode)
+	io.Copy(w, resp.Body)
+}

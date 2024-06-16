@@ -23,7 +23,7 @@ cd ..
 
 # Run migrations
 echo "Running migrations..."
-/app/discuit -migrate
+/app/discuit migrate
 
 # Start the Discuit server
 echo "Starting Discuit..."

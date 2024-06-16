@@ -73,16 +73,16 @@ sudo apt install libvips-dev
 1.  Run migrations:
 
     ```shell
-    ./discuit -migrate
+    ./discuit migrate
     ```
 
 1.  Start the server:
 
     ```shell
-    ./discuit -serve
+    ./discuit serve
     ```
 
-After creating an account, you can run `./discuit -make-admin username` to make
+After creating an account, you can run `./discuit admin make username` to make
 a user an admin of the site.
 
 Note: Do not install the discuit binary using go install or move it somewhere else. It uses files in this repository at runtime and so it should only be run from the root of this repository.

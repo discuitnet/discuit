@@ -260,7 +260,7 @@ func (i *NullBool) Scan(src interface{}) error {
 	case []byte:
 		i.Bool = string(v) != "0"
 	default:
-		return errors.New("Scanning NullBool, unspecified src type")
+		return errors.New("scanning NullBool, unspecified src type")
 	}
 
 	return nil
@@ -381,7 +381,7 @@ func Transact(ctx context.Context, db *sql.DB, f func(tx *sql.Tx) error) error {
 	}
 
 	if err := f(tx); err != nil {
-		if rErr := tx.Rollback(); err != nil {
+		if rErr := tx.Rollback(); rErr != nil {
 			return fmt.Errorf("%w (rollback error: %w)", err, rErr)
 		}
 		return err

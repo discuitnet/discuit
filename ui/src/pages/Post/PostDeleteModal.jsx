@@ -13,7 +13,7 @@ const PostDeleteModal = ({ open, onClose, onDelete, postType, canDeleteContent =
 
   return (
     <Modal open={open} onClose={onClose}>
-      <div className="modal-card is-compact-mobile modal-delete-post">
+      <div className="modal-card is-compact-mobile is-center modal-delete-post">
         <div className="modal-card-head">
           <div className="modal-card-title">Delete post</div>
           <ButtonClose onClick={onClose} />

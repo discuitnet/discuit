@@ -115,6 +115,7 @@ func (s *Server) initial(w *responseWriter, r *request) error {
 	response := struct {
 		ReportReasons  []core.ReportReason `json:"reportReasons"`
 		User           *core.User          `json:"user"`
+		Lists          []*core.List        `json:"lists"`
 		Communities    []*core.Community   `json:"communities"`
 		NoUsers        int                 `json:"noUsers"`
 		BannedFrom     []uid.ID            `json:"bannedFrom"`
@@ -124,6 +125,7 @@ func (s *Server) initial(w *responseWriter, r *request) error {
 			UserMutes      []*core.Mute `json:"userMutes"`
 		} `json:"mutes"`
 	}{
+		Lists:          []*core.List{},
 		VAPIDPublicKey: s.webPushVAPIDKeys.Public,
 	}
 
@@ -152,6 +154,11 @@ func (s *Server) initial(w *responseWriter, r *request) error {
 			return err
 		} else if userMutes != nil {
 			response.Mutes.UserMutes = userMutes
+		}
+		if lists, err := core.GetUsersLists(r.ctx, s.db, *r.viewer, "", ""); err != nil {
+			return err
+		} else if lists != nil {
+			response.Lists = lists
 		}
 	}
 
@@ -182,7 +189,7 @@ func (s *Server) login(w *responseWriter, r *request) error {
 			return err
 		}
 
-		action := r.urlQueryValue("action")
+		action := r.urlQueryParamsValue("action")
 		if action != "" {
 			switch action {
 			case "logout":
@@ -308,7 +315,7 @@ func (s *Server) updateNotifications(w *responseWriter, r *request) error {
 		return err
 	}
 
-	query := r.urlQuery()
+	query := r.urlQueryParams()
 	switch query.Get("action") {
 	case "resetNewCount":
 		if err = user.ResetNewNotificationsCount(r.ctx); err != nil {
@@ -351,7 +358,7 @@ func (s *Server) getNotifications(w *responseWriter, r *request) error {
 	}
 	res.NewCount = user.NumNewNotifications
 
-	query := r.urlQuery()
+	query := r.urlQueryParams()
 	if res.Items, res.Next, err = core.GetNotifications(r.ctx, s.db, user.ID, 10, query.Get("next")); err != nil {
 		return err
 	}
@@ -378,7 +385,7 @@ func (s *Server) getNotification(w *responseWriter, r *request) error {
 		return httperr.NewForbidden("not_owner", "")
 	}
 
-	query := r.urlQuery()
+	query := r.urlQueryParams()
 	if r.req.Method == "PUT" {
 		action := query.Get("action")
 		switch action {
@@ -459,7 +466,7 @@ func (s *Server) updateUserSettings(w *responseWriter, r *request) error {
 		return err
 	}
 
-	query := r.urlQuery()
+	query := r.urlQueryParams()
 	switch query.Get("action") {
 	case "updateProfile":
 		if err = r.unmarshalJSONBody(&user); err != nil {
@@ -558,7 +565,7 @@ func (s *Server) deleteBadge(w *responseWriter, r *request) error {
 		return err
 	}
 
-	byType := strings.ToLower(r.urlQueryValue("byType")) == "true"
+	byType := strings.ToLower(r.urlQueryParamsValue("byType")) == "true"
 	if byType {
 		if err = user.RemoveBadgesByType(badgeID); err != nil {
 			return err
