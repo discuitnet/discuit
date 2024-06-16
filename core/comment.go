@@ -428,7 +428,7 @@ func addComment(ctx context.Context, db *sql.DB, post *Post, author *User, paren
 	// Send notifications.
 	if parent != nil && !parent.AuthorID.EqualsTo(author.ID) {
 		go func() {
-			if err := CreateCommentReplyNotification(context.Background(), db, parent.AuthorID, parent.ID, id, author.Username, post); err != nil {
+			if err := CreateCommentReplyNotification(context.Background(), db, parent.AuthorID, parent.ID, id, author, post); err != nil {
 				log.Printf("Create reply notification failed: %v\n", err)
 			}
 		}()
@@ -436,7 +436,7 @@ func addComment(ctx context.Context, db *sql.DB, post *Post, author *User, paren
 	}
 	if !post.AuthorID.EqualsTo(author.ID) && (parent == nil || !(parent.AuthorID.EqualsTo(post.AuthorID))) {
 		go func() {
-			if err := CreateNewCommentNotification(context.Background(), db, post, id, author.Username); err != nil {
+			if err := CreateNewCommentNotification(context.Background(), db, post, id, author); err != nil {
 				log.Printf("Create new_comment notification failed: %v\n", err)
 			}
 		}()

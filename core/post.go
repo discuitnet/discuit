@@ -650,10 +650,11 @@ func createPost(ctx context.Context, db *sql.DB, opts *createPostOpts) (*Post, e
 			Fit:    images.ImageFitCover,
 		})
 		if err != nil {
-			tx.Rollback()
-			return nil, err
+			log.Printf("could not save the og:image of post %s with link %s\n", post.ID, opts.link.URL)
+			// Continue on error...
+		} else {
+			cols = append(cols, msql.ColumnValue{Name: "link_image", Value: imageID})
 		}
-		cols = append(cols, msql.ColumnValue{Name: "link_image", Value: imageID})
 	}
 
 	query, args := msql.BuildInsertQuery("posts", cols)
@@ -746,10 +747,11 @@ func getLinkPostImage(u *url.URL) []byte {
 
 	imageURL, err := httputil.ExtractOpenGraphImage(res.Body)
 	if err != nil {
-		// TODO: Log this error.
+		log.Printf("error extracting the og:image tag of url: %v\n", u)
+		return nil
 	}
 	if imageURL == "" {
-		// Since og:image not found, see if the link itself is an image.
+		// Since og:image is not found, see if the link itself is an image.
 		probablyAnImage := slices.Contains([]string{"image/jpeg", "image/png", "image/webp"}, res.Header.Get("Content-Type"))
 		if !probablyAnImage {
 			exts := []string{".jpg", ".jpeg", ".png", ".webp"}
@@ -770,8 +772,14 @@ func getLinkPostImage(u *url.URL) []byte {
 			return nil
 		}
 		defer res.Body.Close()
+		if res.StatusCode < 200 || res.StatusCode > 299 {
+			return nil
+		}
 		image, err := io.ReadAll(res.Body)
 		if err != nil {
+			return nil
+		}
+		if len(image) == 0 {
 			return nil
 		}
 		return image

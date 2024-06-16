@@ -49,6 +49,7 @@ const initialState = {
     toSaveItemId: null,
     toSaveItemType: null,
   },
+  settingsChanged: 0, // A counter to serve as a signal for when user settings change.
 };
 
 export default function mainReducer(state = initialState, action) {
@@ -362,6 +363,12 @@ export default function mainReducer(state = initialState, action) {
         },
       };
     }
+    case 'main/settingsChanged': {
+      return {
+        ...state,
+        settingsChanged: state.settingsChanged + 1,
+      };
+    }
     default:
       return state;
   }
@@ -645,4 +652,8 @@ export const saveToListModalOpened = (toSaveItemId, toSaveItemType) => {
 
 export const saveToListModalClosed = () => {
   return { type: 'main/saveToListModalClosed' };
+};
+
+export const settingsChanged = () => {
+  return { type: 'main/settingsChanged' };
 };

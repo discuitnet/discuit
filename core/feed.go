@@ -767,10 +767,44 @@ func GetUserFeed(ctx context.Context, db *sql.DB, viewer *uid.ID, userID uid.ID,
 		for _, comment := range comments {
 			commentItemsMap[comment.ID].Item = comment
 		}
+		if err := getCommentsPostTitles(ctx, db, comments, viewer); err != nil {
+			return nil, err
+		}
 	}
 
 	if len(ids) == limit+1 {
 		set.Next = &ids[limit]
 	}
 	return set, nil
+}
+
+func getCommentsPostTitles(ctx context.Context, db *sql.DB, comments []*Comment, viewer *uid.ID) error {
+	postIDs := make([]uid.ID, len(comments))
+	postTitles := make(map[uid.ID]string, len(comments))
+	for i, comment := range comments {
+		postIDs[i] = comment.PostID
+	}
+
+	posts, err := GetPostsByIDs(ctx, db, viewer, true, postIDs...)
+	if err != nil {
+		return err
+	}
+
+	for _, post := range posts {
+		if post.Title == "" {
+			return fmt.Errorf("populating comments' postTitle, could not find post title of post id %v", post.ID)
+		}
+
+		if _, ok := postTitles[post.ID]; ok {
+			continue
+		}
+
+		postTitles[post.ID] = post.Title
+	}
+
+	for _, comment := range comments {
+		comment.PostTitle = postTitles[comment.PostID]
+	}
+
+	return nil
 }

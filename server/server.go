@@ -305,7 +305,7 @@ func (s *Server) withHandler(h handler) http.Handler {
 		}
 
 		adminKey := r.URL.Query().Get("adminKey")
-		skipCsrfCheck := s.config.CSRFOff || adminKey == s.config.AdminApiKey || r.Method == "GET"
+		skipCsrfCheck := s.config.CSRFOff || (s.config.AdminAPIKey != "" && s.config.AdminAPIKey == adminKey) || r.Method == "GET"
 		if !skipCsrfCheck {
 			csrftoken := r.Header.Get("X-Csrf-Token")
 			valid, _ := utils.ValidMAC(ses.ID, csrftoken, s.config.HMACSecret)
@@ -960,9 +960,9 @@ func (s *Server) rateLimit(r *request, bucketID string, interval time.Duration, 
 		return nil // skip rate limits
 	}
 
-	if s.config.AdminApiKey != "" {
+	if s.config.AdminAPIKey != "" {
 		adminKey := r.urlQueryParamsValue("adminKey")
-		if adminKey == s.config.AdminApiKey {
+		if adminKey == s.config.AdminAPIKey {
 			return nil // skip rate limits
 		}
 	}

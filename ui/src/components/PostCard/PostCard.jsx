@@ -22,6 +22,7 @@ const PostCard = ({
   compact = false,
   inModTools = false,
   disableEmbeds = false,
+  onRemoveFromList = null,
 }) => {
   const history = useHistory();
 
@@ -90,7 +91,11 @@ const PostCard = ({
         onAuxClick={handleAuxClick}
       >
         <div className="post-card-heading">
-          <PostCardHeadingDetails post={post} target={target} />
+          <PostCardHeadingDetails
+            post={post}
+            target={target}
+            onRemoveFromList={onRemoveFromList}
+          />
         </div>
         <div className={'post-card-body' + (isDomainHovering ? ' is-domain-hover' : '')}>
           <div className="post-card-title">
@@ -186,6 +191,8 @@ PostCard.propTypes = {
   openInTab: PropTypes.bool,
   compact: PropTypes.bool,
   inModTools: PropTypes.bool,
+  disableEmbeds: PropTypes.bool,
+  onRemoveFromList: PropTypes.func,
 };
 
 export default PostCard;

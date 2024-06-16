@@ -86,6 +86,10 @@ func serve(ctx *cli.Context) error {
 		}
 	}()
 
+	if !config.AddressValid(conf.Addr) {
+		log.Fatal("Address needs to be a valid address of the form 'host:port' (host can be empty)")
+	}
+
 	var https bool = conf.CertFile != ""
 
 	server := &http.Server{

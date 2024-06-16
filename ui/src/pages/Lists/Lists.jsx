@@ -5,16 +5,34 @@ import Sidebar from '../../components/Sidebar';
 import Link from '../../components/Link';
 import Dropdown from '../../components/Dropdown';
 import { useDispatch, useSelector } from 'react-redux';
-import { snackAlertError } from '../../slices/mainSlice';
+import { snackAlert, snackAlertError } from '../../slices/mainSlice';
 import { mfetch, mfetchjson, stringCount, timeAgo } from '../../helper';
 import { selectUser } from '../../slices/usersSlice';
 import { useFetchUser, useFetchUsersLists } from '../../hooks';
 import PageLoading from '../../components/PageLoading';
 import NotFound from '../NotFound';
 import { listsFilterChanged, listsOrderChanged } from '../../slices/listsSlice';
+import { EditListForm } from './List';
+import Modal from '../../components/Modal';
+import { ButtonClose } from '../../components/Button';
 
 const Lists = () => {
   const dispatch = useDispatch();
+  const [isNewListOpen, setIsNewListOpen] = useState(false);
+  const [lists, setLists] = useState([]);
+
+  const toggleNewListForm = () => {
+    setIsNewListOpen(!isNewListOpen);
+  };
+
+  const handleSuccess = async () => {
+    toggleNewListForm();
+    dispatch(snackAlert('List created!', 'success'));
+    const updatedLists = await mfetchjson(
+      `/api/users/${username}/lists?sort=${order}&filter=${filter}`
+    );
+    setLists(updatedLists);
+  };
 
   useEffect(() => {
     document.body.classList.add('is-not-gray');
@@ -25,13 +43,19 @@ const Lists = () => {
 
   const { username } = useParams();
   const { user, loading: userLoading, error: userError } = useFetchUser(username);
-  const {
-    lists,
-    order,
-    filter,
-    loading: listsLoading,
-    error: listsError,
-  } = useFetchUsersLists(username);
+  const { order, filter, loading: listsLoading, error: listsError } = useFetchUsersLists(username);
+
+  useEffect(() => {
+    const fetchLists = async () => {
+      const fetchedLists = await mfetchjson(
+        `/api/users/${username}/lists?sort=${order}&filter=${filter}`
+      );
+      setLists(fetchedLists);
+    };
+    fetchLists();
+  }, [username, order, filter]);
+
+  const authedUser = useSelector((state) => state.main.user);
 
   if (userLoading || listsLoading) {
     return <PageLoading />;
@@ -114,9 +138,19 @@ const Lists = () => {
           <div className="lists-main-head">
             <div className="left">
               {renderOrderDropdown()}
-              {renderFilterDropdown()}
+              {authedUser && authedUser.username === username && renderFilterDropdown()}
+              <button onClick={toggleNewListForm}>New list</button>
             </div>
           </div>
+          <Modal open={isNewListOpen} onClose={toggleNewListForm}>
+            <div className="modal-card save-modal is-compact-mobile is-page-new">
+              <div className="modal-card-head">
+                <div className="modal-card-title">Create list</div>
+                <ButtonClose onClick={toggleNewListForm} />
+              </div>
+              <EditListForm onCancel={toggleNewListForm} onSuccess={handleSuccess} />
+            </div>
+          </Modal>
           <div className="lists-main-main">
             {lists.map((list) => (
               <ListThumbnail key={list.id} list={list} />

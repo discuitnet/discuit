@@ -176,6 +176,18 @@
             color: var(--color-brand);
         }
     }
+    .comment-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        .comment-remove button {
+            font-size: var(--fs-xs);
+            color: var(--color-red);
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
     .comment-score {
         font-size: var(--fs-xs);
         opacity: 0.8;
