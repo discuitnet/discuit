@@ -1009,7 +1009,14 @@ func (s *Server) getLinkInfo(w *responseWriter, r *request) error {
 		return err
 	}
 
-	res, err := httputil.Get(r.urlQueryParamsValue("url"))
+	req, err := http.NewRequest("GET", r.urlQueryParamsValue("url"), nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("User-Agent", "facebookexternalhit/1.1")
+
+	// res, err := httputil.Get(r.urlQueryParamsValue("url"))
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
