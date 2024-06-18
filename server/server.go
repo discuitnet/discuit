@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"compress/gzip"
 	"context"
 	"database/sql"
@@ -1008,14 +1009,45 @@ func (s *Server) getLinkInfo(w *responseWriter, r *request) error {
 		return err
 	}
 
-	url := r.urlQueryParamsValue("url")
-	res, err := httputil.Get(url)
+	res, err := httputil.Get(r.urlQueryParamsValue("url"))
 	if err != nil {
 		return err
 	}
 	defer res.Body.Close()
 
-	title, err := httputil.ExtractOpenGraphTitle(res.Body)
+	var resBody io.Reader = res.Body
+	{
+		u, err := url.Parse(r.urlQueryParamsValue("url"))
+		if err != nil {
+			log.Println("ERROR_1")
+		} else {
+			if u.Hostname() == "www.youtube.com" {
+				// Write response to /tmp/discuit-yt-get.html if it doesn't
+				// exist.
+				const l = "/tmp/discuit-yt-get.html"
+				if _, err := os.Open(l); err != nil {
+					if os.IsNotExist(err) {
+						// File doesn't exist. Write new file.
+						data, err := io.ReadAll(res.Body)
+						if err != nil {
+							log.Println("ERROR_3")
+						} else {
+							resBody = bytes.NewBuffer(data)
+							if err = os.WriteFile(l, data, 0755); err != nil {
+								log.Println("ERROR_4")
+							}
+						}
+					} else {
+						log.Println("ERROR_2")
+					}
+				} else {
+					log.Println("FILE OPENED")
+				}
+			}
+		}
+	}
+
+	title, err := httputil.ExtractOpenGraphTitle(resBody)
 	if err != nil {
 		return err
 	}
