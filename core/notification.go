@@ -46,6 +46,7 @@ const (
 	NotificationTypeDeletePost   = NotificationType("deleted_post")
 	NotificationTypeModAdd       = NotificationType("mod_add")
 	NotificationTypeNewBadge     = NotificationType("new_badge")
+	NotificationTypeNewReport    = NotificationType("new_report")
 )
 
 func (t NotificationType) Valid() bool {
@@ -56,6 +57,7 @@ func (t NotificationType) Valid() bool {
 		NotificationTypeDeletePost,
 		NotificationTypeModAdd,
 		NotificationTypeNewBadge,
+		NotificationTypeNewReport,
 	}, t)
 }
 
@@ -173,6 +175,12 @@ func scanNotifications(db *sql.DB, rows *sql.Rows) ([]*Notification, error) {
 			notif.Notif = nc
 		case NotificationTypeNewBadge:
 			nc := &NotificationNewBadge{}
+			if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
+				return nil, err
+			}
+			notif.Notif = nc
+		case NotificationTypeNewReport:
+			nc := &NotificationNewReport{}
 			if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
 				return nil, err
 			}
@@ -578,6 +586,78 @@ func CreateCommentReplyNotification(ctx context.Context, db *sql.DB, receiver ui
 		FirstCreatedAt:  time.Now(),
 	}
 	return CreateNotification(ctx, db, receiver, NotificationTypeCommentReply, n)
+}
+
+type NotificationNewReport struct {
+	ReportID       int       `json:"reportId"`
+	ContentID      uid.ID    `json:"contentId"`
+	ContentType    string    `json:"contentType"`
+	NumReports     int       `json:"noReports"`
+	FirstCreatedAt time.Time `json:"firstCreatedAt"`
+}
+
+func (n NotificationNewReport) marshalJSONForAPI(ctx context.Context, db *sql.DB) ([]byte, error) {
+	type T NotificationNewReport
+	out := struct {
+		T
+		Report *Report `json:"report"`
+	}{
+		T: (T)(n),
+	}
+
+	var err error
+	report, err := GetReport(ctx, db, n.ReportID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return json.Marshal(nil)
+		}
+
+		return nil, err
+	}
+	if err = report.FetchTarget(ctx); err != nil {
+		return nil, err
+	}
+
+	out.Report = report
+	return json.Marshal(out)
+}
+
+func CreateNewReportNotification(ctx context.Context, db *sql.DB, user uid.ID, report int, contentID uid.ID, contentType string) error {
+	if _, err := GetUser(ctx, db, user, nil); err != nil {
+		return err
+	}
+
+	// Select last 10 notifications to see if an identical notification exists.
+	notifs, _, err := GetNotifications(ctx, db, user, 10, "")
+	if err != nil {
+		return err
+	}
+	for _, notif := range notifs {
+		if notif != nil {
+			log.Printf("Debug: notif is not nil, notif.Type: %v, notif.Notif: %v", notif.Type, notif.Notif)
+			if notif.Type == NotificationTypeNewReport {
+				if rc, ok := notif.Notif.(*NotificationNewReport); ok {
+					if rc.ContentID == contentID && rc.ContentType == contentType && !notif.Seen {
+						rc.NumReports++
+						return notif.Update(ctx)
+					}
+				} else {
+					log.Printf("Error: Type assertion failed for notif.Notif as *NotificationNewReport")
+				}
+			}
+		} else {
+			log.Printf("Error: notif is nil")
+		}
+	}
+
+	n := NotificationNewReport{
+		ReportID:       report,
+		ContentID:      contentID,
+		ContentType:    contentType,
+		NumReports:     1,
+		FirstCreatedAt: time.Now(),
+	}
+	return CreateNotification(ctx, db, user, NotificationTypeNewReport, n)
 }
 
 func updateNewNotificationsCount(ctx context.Context, db *sql.DB, user uid.ID) error {
