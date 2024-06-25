@@ -80,8 +80,10 @@ const Signup = ({ open, onClose }) => {
         method: 'POST',
         body: JSON.stringify({ username, email, password, captchaToken }),
       });
-      if (!res.ok) throw new APIError(res.status, await res.json());
-      window.location.reload();
+      const respBody = await res.json();
+      if (!res.ok && respBody.code === 'bad-password') setPasswordError(respBody.message);
+      else if (!res.ok) throw new APIError(res.status, respBody);
+      else window.location.reload();
     } catch (error) {
       dispatch(snackAlertError(error));
     }
