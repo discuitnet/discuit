@@ -30,6 +30,7 @@ function readYamlConfigFile() {
     'instagramURL',
     'discordURL',
     'githubURL',
+    'meiliEnabled',
     'substackURL',
     'disableImagePosts',
     'disableForumCreation',

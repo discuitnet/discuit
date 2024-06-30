@@ -12,15 +12,15 @@ import (
 	"github.com/discuitnet/discuit/cli/forcepasschange"
 	"github.com/discuitnet/discuit/cli/hardreset"
 	"github.com/discuitnet/discuit/cli/injectconfig"
+	"github.com/discuitnet/discuit/cli/meilisearch"
 	"github.com/discuitnet/discuit/cli/migrate"
 	"github.com/discuitnet/discuit/cli/mod"
 	"github.com/discuitnet/discuit/cli/newbadge"
 	"github.com/discuitnet/discuit/cli/populatepost"
 	"github.com/discuitnet/discuit/cli/serve"
-	"github.com/urfave/cli/v2"
-
 	_ "github.com/golang-migrate/migrate/v4/database/mysql"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/urfave/cli/v2"
 )
 
 func main() {
@@ -44,6 +44,7 @@ func main() {
 			newbadge.Command,
 			deleteuser.Command,
 			injectconfig.Command,
+			meilisearch.Command,
 		},
 		DefaultCommand: "serve",
 		After:          discuitCLI.After,

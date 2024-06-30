@@ -11,6 +11,7 @@ import (
 
 	"github.com/discuitnet/discuit/cli/migrate"
 	"github.com/discuitnet/discuit/config"
+	"github.com/discuitnet/discuit/internal/meilisearch"
 	"github.com/joho/godotenv"
 	"github.com/urfave/cli/v2"
 )
@@ -28,9 +29,16 @@ func Before(c *cli.Context) error {
 	// Connect to MariaDB.
 	db := openDatabase(conf.DBAddr, conf.DBUser, conf.DBPassword, conf.DBName)
 
+	// Connect to MeiliSearch.
+	searchClient := &meilisearch.MeiliSearch{}
+	if conf.MeiliEnabled {
+		searchClient = meilisearch.NewSearchClient(conf.MeiliHost, conf.MeiliKey)
+	}
+
 	// Store Config and DB in context.
 	c.Context = context.WithValue(c.Context, "config", conf)
 	c.Context = context.WithValue(c.Context, "db", db)
+	c.Context = context.WithValue(c.Context, "searchClient", searchClient)
 
 	return nil
 }
