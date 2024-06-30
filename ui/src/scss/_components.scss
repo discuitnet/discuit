@@ -431,8 +431,8 @@
                         }
                     }
                     .modal-card-content {
-                        align-items: center;
-                        text-align: center;
+                        // align-items: center;
+                        // text-align: center;
                         padding-top: 0.5rem;
                         padding-left: 2rem;
                         padding-right: 2rem;
@@ -446,11 +446,11 @@
                             width: 100%;
                             margin: 0;
                             background: var(--color-bg);
-                            color: var(--color-gray);
+                            // color: var(--color-gray);
                             border-right: var(--seperator);
                             height: 45px;
                             border-radius: 0;
-                            opacity: 0.8;
+                            // opacity: 0.8;
                             &.button-main {
                                 color: var(--color-brand);
                                 opacity: 1;
@@ -462,6 +462,12 @@
                             &:last-child {
                                 border-bottom-left-radius: var(--border-radius);
                             }
+                        }
+                    }
+                    &.is-center {
+                        .modal-card-content {
+                            align-items: center;
+                            text-align: center;
                         }
                     }
                 }
@@ -519,6 +525,12 @@
     position: relative;
     z-index: 10;
     > .dropdown-target {
+    }
+    .dropdown-target {
+        button,
+        .button {
+            font-weight: inherit;
+        }
     }
     > .dropdown-menu {
         display: none;
@@ -623,6 +635,9 @@
         // transition: all var(--t-time-button);
         color: inherit;
         text-decoration: inherit;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
         &:hover,
         &.is-active {
             background: rgba(var(--base-fg), 0.1);
@@ -639,6 +654,9 @@
             }
             img {
                 border-radius: 50%;
+            }
+            span {
+                width: 100%;
             }
         }
         &.is-m {
@@ -1025,6 +1043,80 @@
         .ptr--icon {
             color: var(--color-text);
             opacity: 0.3;
+        }
+    }
+}
+
+.modal {
+    .save-modal {
+        width: 270px;
+        min-width: initial;
+        --list-item-height: 35px;
+        .modal-card-content {
+            padding: 0;
+        }
+        .save-modal-list {
+            padding: var(--card-padding);
+            margin-bottom: var(--card-padding);
+            display: flex;
+            flex-direction: column;
+            max-height: 30vh;
+            overflow-y: scroll;
+            padding-bottom: 0;
+            margin-bottom: 0;
+            .list-item {
+                display: flex;
+                justify-content: space-between;
+                cursor: pointer;
+                padding: 6px 0; // 6px 8px;
+                height: var(--list-item-height);
+                label {
+                    flex-grow: 1;
+                    cursor: pointer;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    margin-right: 8px;
+                }
+            }
+        }
+        @include mixins.mobile {
+            .save-modal-list {
+                padding: 0;
+                padding-bottom: var(--gap);
+            }
+            .save-modal-newlist {
+                padding: 0;
+            }
+        }
+        &.is-page-list {
+            .modal-card-actions {
+                display: grid;
+                > * {
+                    margin: 0;
+                }
+            }
+        }
+    }
+    .edit-list-modal {
+        .edit-list-modal-form {
+            padding: 0;
+        }
+    }
+    .edit-list-modal-form {
+        display: flex;
+        flex-direction: column;
+        padding: var(--card-padding);
+        padding-bottom: 0;
+        > * {
+            margin-bottom: var(--gap);
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+        @include mixins.mobile {
+            padding: 0;
+            padding-bottom: var(--gap);
         }
     }
 }

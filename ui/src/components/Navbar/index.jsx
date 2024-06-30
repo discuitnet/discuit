@@ -19,7 +19,7 @@ import { useRef } from 'react';
 import { useState } from 'react';
 import { homeReloaded } from '../../views/PostsFeed';
 import { useLocation } from 'react-router-dom';
-import { useIsMobile, useTheme } from '../../hooks';
+import { mobileBreakpointWidth, useTheme, useWindowWidth } from '../../hooks';
 import { clearNotificationsLocalStorage } from '../../PushNotifications';
 
 const Navbar = ({ offline = false }) => {
@@ -94,7 +94,8 @@ const Navbar = ({ offline = false }) => {
     setTheme(checked ? 'dark' : 'light');
   };
 
-  const isMobile = useIsMobile();
+  const windowWidth = useWindowWidth();
+  const isMobile = windowWidth <= mobileBreakpointWidth;
 
   return (
     <header className={'navbar' + (blur ? ' is-blured' : '')} ref={navbarRef}>
@@ -162,7 +163,10 @@ const Navbar = ({ offline = false }) => {
                     true
                   )}`}</span>
                   <span className="navbar-name">
-                    @{isMobile && user.username.length > 10 ? 'me' : user.username}
+                    @
+                    {windowWidth < 400 || (isMobile && user.username.length > 10)
+                      ? 'me'
+                      : user.username}
                   </span>
                 </div>
               }

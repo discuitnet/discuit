@@ -38,6 +38,18 @@ const initialState = {
     userMutes: [],
     communityMutes: [],
   },
+  // listsLoading: true,
+  // lists: [],
+  lists: {
+    loading: true,
+    lists: [],
+  },
+  saveToListModal: {
+    open: false,
+    toSaveItemId: null,
+    toSaveItemType: null,
+  },
+  settingsChanged: 0, // A counter to serve as a signal for when user settings change.
 };
 
 export default function mainReducer(state = initialState, action) {
@@ -320,6 +332,43 @@ export default function mainReducer(state = initialState, action) {
         sidebarScrollY: action.payload,
       };
     }
+    case 'main/listsAdded': {
+      return {
+        ...state,
+        lists: {
+          loading: false,
+          lists: action.payload,
+        },
+      };
+    }
+    case 'main/saveToListModalOpened': {
+      const { toSaveItemId, toSaveItemType } = action.payload;
+      return {
+        ...state,
+        saveToListModal: {
+          open: true,
+          toSaveItemId: toSaveItemId,
+          toSaveItemType: toSaveItemType,
+        },
+      };
+    }
+    case 'main/saveToListModalClosed': {
+      return {
+        ...state,
+        saveToListModal: {
+          ...state.saveToListModal,
+          open: false,
+          toSaveItemId: null,
+          toSaveItemType: null,
+        },
+      };
+    }
+    case 'main/settingsChanged': {
+      return {
+        ...state,
+        settingsChanged: state.settingsChanged + 1,
+      };
+    }
     default:
       return state;
   }
@@ -591,4 +640,20 @@ export const selectIsCommunityMuted = (communityId) => (state) => {
 
 export const sidebarScrollYUpdated = (scrollY) => {
   return { type: 'main/sidebarScrollYUpdated', payload: scrollY };
+};
+
+export const listsAdded = (lists) => {
+  return { type: 'main/listsAdded', payload: lists };
+};
+
+export const saveToListModalOpened = (toSaveItemId, toSaveItemType) => {
+  return { type: 'main/saveToListModalOpened', payload: { toSaveItemId, toSaveItemType } };
+};
+
+export const saveToListModalClosed = () => {
+  return { type: 'main/saveToListModalClosed' };
+};
+
+export const settingsChanged = () => {
+  return { type: 'main/settingsChanged' };
 };

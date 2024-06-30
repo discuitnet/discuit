@@ -11,7 +11,7 @@ hmacSecret: <insert-your-secret-here>
 noLogToFile: false
 csrfOff: false
 
-addr:
+addr: :8080
 sessionCookieName: SID
 
 # MariaDB configuration:

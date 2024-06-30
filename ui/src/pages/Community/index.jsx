@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useHistory, useLocation, useParams } from 'react-router-dom';
 import Link from '../../components/Link';
 import { Helmet } from 'react-helmet-async';
 import MiniFooter from '../../components/MiniFooter';
@@ -22,7 +22,9 @@ import { useMuteCommunity } from '../../hooks';
 import Dropdown from '../../components/Dropdown';
 import { ButtonMore } from '../../components/Button';
 
-const Community = ({ name }) => {
+const Community = () => {
+  const { name } = useParams();
+
   const history = useHistory();
   const location = useLocation();
   const dispatch = useDispatch();

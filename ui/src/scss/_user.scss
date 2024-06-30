@@ -99,6 +99,9 @@
     }
     .select-bar {
         margin-left: var(--post-card-votes-margin);
+        @include mixins.tablet {
+            margin-left: 0;
+        }
     }
     .page-user-summary {
         .user-summary-item {
@@ -171,6 +174,18 @@
         &:hover {
             text-decoration: none;
             color: var(--color-brand);
+        }
+    }
+    .comment-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        .comment-remove button {
+            font-size: var(--fs-xs);
+            color: var(--color-red);
+            &:hover {
+                text-decoration: underline;
+            }
         }
     }
     .comment-score {

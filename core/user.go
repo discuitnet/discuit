@@ -395,8 +395,9 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 	}
 
 	for _, user := range users {
-		// Hide the users' email from everyone except the user and admins.
-		if viewerAdmin || (viewer != nil && *viewer == user.ID) {
+		// Hide everything that only the user themself should see from public
+		// view.
+		if viewer != nil && *viewer == user.ID {
 			if user.Email.Valid {
 				user.EmailPublic = new(string)
 				*user.EmailPublic = user.Email.String
@@ -460,6 +461,12 @@ func RegisterUser(ctx context.Context, db *sql.DB, username, email, password str
 		log.Println("Failed to add user to default communities: ", err)
 		// Continue on failure.
 	}
+
+	if err := CreateList(ctx, db, id, "bookmarks", "Bookmarks", msql.NullString{}, false); err != nil {
+		log.Println("Failed to create the default community of user: ", username)
+		// Continue on failure.
+	}
+
 	return GetUser(ctx, db, id, nil)
 }
 
@@ -665,6 +672,11 @@ func (u *User) Delete(ctx context.Context) error {
 
 		// Delete the user's web push subscriptions.
 		if _, err := tx.ExecContext(ctx, "DELETE FROM web_push_subscriptions WHERE user_id = ?", u.ID); err != nil {
+			return err
+		}
+
+		// Delete the user's lists.
+		if _, err := tx.ExecContext(ctx, "DELETE FROM lists WHERE user_id = ?", u.ID); err != nil {
 			return err
 		}
 
@@ -904,6 +916,14 @@ func (u *User) UpdateProPic(ctx context.Context, image []byte) error {
 	u.ProPic = record.Image()
 	setCommunityProPicCopies(u.ProPic)
 	return nil
+}
+
+func (u *User) Muted(ctx context.Context, db *sql.DB, user uid.ID) (bool, error) {
+	return UserMuted(ctx, db, u.ID, user)
+}
+
+func (u *User) MutedBy(ctx context.Context, db *sql.DB, user uid.ID) (bool, error) {
+	return UserMuted(ctx, db, user, u.ID)
 }
 
 // badgeTypeInt returns the int badge type of badgeType.
@@ -1180,4 +1200,16 @@ func UserDeleted(db *sql.DB, user uid.ID) (bool, error) {
 		return false, err
 	}
 	return deletedAt.Valid, nil
+}
+
+// UserMuted reports whether the user muted is muted by the user muter.
+func UserMuted(ctx context.Context, db *sql.DB, muter, muted uid.ID) (bool, error) {
+	var rowID int
+	if err := db.QueryRow("SELECT id FROM muted_users WHERE user_id = ? AND muted_user_id = ?", muter, muted).Scan(&rowID); err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, fmt.Errorf("UserMuted db error: %w", err)
+	}
+	return true, nil
 }
