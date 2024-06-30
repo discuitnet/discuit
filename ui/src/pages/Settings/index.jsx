@@ -60,6 +60,7 @@ const Settings = () => {
     !user.hideUserProfilePictures
   );
 
+  const [hideDownvotes, setHideDownvotes] = useState(user.hideDownvotes);
   // Per-device preferences:
   const [font, setFont] = useState(getDevicePreference('font') ?? 'custom');
   const fontOptions = {
@@ -75,6 +76,7 @@ const Settings = () => {
     enableEmbeds,
     email,
     showUserProfilePictures,
+    hideDownvotes,
     font,
   ]);
 
@@ -137,6 +139,7 @@ const Settings = () => {
           embedsOff: !enableEmbeds,
           email,
           hideUserProfilePictures: !showUserProfilePictures,
+          hideDownvotes,
         }),
       });
       dispatch(userLoggedIn(ruser));
@@ -366,6 +369,16 @@ const Settings = () => {
                 type="checkbox"
                 checked={showUserProfilePictures}
                 onChange={(e) => setShowUserProfilePictures(e.target.checked)}
+              />
+            </div>
+            <div className="checkbox is-check-last">
+              <label htmlFor="c6">Hide Downvotes</label>
+              <input
+                className="switch"
+                id="c6"
+                type="checkbox"
+                checked={hideDownvotes}
+                onChange={(e) => setHideDownvotes(e.target.checked)}
               />
             </div>
           </div>
