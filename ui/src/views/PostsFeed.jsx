@@ -17,7 +17,7 @@ import {
 } from '../slices/feedsSlice';
 import Feed from '../components/Feed';
 import SelectBar from '../components/SelectBar';
-import { useCanonicalTag, useQuery } from '../hooks';
+import { useCanonicalTag } from '../hooks';
 import WelcomeBanner from '../views/WelcomeBanner';
 import { useHistory } from 'react-router-dom/cjs/react-router-dom.min';
 
@@ -94,7 +94,7 @@ function useFeedSort(rememberLastSort = false) {
   return [sort, setSort];
 }
 
-const PostsFeed = ({ name = 'Posts', feedType = 'all', communityId = null }) => {
+const PostsFeed = ({ feedType = 'all', communityId = null }) => {
   const dispatch = useDispatch();
   // const history = useHistory();
 
@@ -184,6 +184,14 @@ const PostsFeed = ({ name = 'Posts', feedType = 'all', communityId = null }) => 
   useCanonicalTag(canonicalURL(), [location]);
 
   const posts = feed ? feed.items : [];
+  let name = 'Posts';
+  if (!communityId) {
+    if (feedType === 'all') {
+      name = 'Home';
+    } else if (feedType === 'subscriptions') {
+      name = 'Subscriptions';
+    }
+  }
 
   return (
     <div className="posts-feed">
@@ -206,7 +214,6 @@ const PostsFeed = ({ name = 'Posts', feedType = 'all', communityId = null }) => 
 };
 
 PostsFeed.propTypes = {
-  name: PropTypes.string,
   communityId: PropTypes.string,
   feedType: PropTypes.oneOf(['all', 'subscriptions', 'community']),
 };

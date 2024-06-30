@@ -1,23 +1,15 @@
 /* eslint-disable jsx-a11y/click-events-have-key-events */
 /* eslint-disable jsx-a11y/no-static-element-interactions */
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  BrowserRouter as Router,
-  Redirect,
-  Route,
-  Switch,
-  useParams,
-  useHistory,
-  useLocation,
-} from 'react-router-dom';
+import { Redirect, Route, Switch, useHistory, useLocation } from 'react-router-dom';
 import Chat from './components/Chat';
 import LoginPrompt from './components/LoginPrompt';
 import Navbar from './components/Navbar';
 import Snacks from './components/Snacks';
 import Elements from './Elements';
-import { isDeviceIos, isDeviceStandalone, mfetchjson, urlBase64ToUint8Array } from './helper';
+import { isDeviceStandalone, mfetchjson } from './helper';
 import { useCanonicalTag, useLoading, useWindowWidth } from './hooks';
 import AppLoading from './pages/AppLoading';
 import Community from './pages/Community';
@@ -32,6 +24,7 @@ import {
   bannedFromUpdated,
   createCommunityModalOpened,
   initialValuesAdded,
+  listsAdded,
   loginModalOpened,
   mutesAdded,
   noUsersUpdated,
@@ -61,6 +54,9 @@ import AllCommunities from './pages/AllCommunities';
 import Offline from './pages/Offline';
 import AppUpdate from './AppUpdate';
 import PushNotifications from './PushNotifications';
+import { List, Lists } from './pages/Lists';
+import SaveToListModal from './components/SaveToListModal';
+import { getDevicePreference } from './pages/Settings/devicePrefs';
 
 // Value taken from _mixins.scss file.
 const tabletBreakpoint = 1170;
@@ -125,6 +121,7 @@ const App = () => {
         dispatch(bannedFromUpdated(initial.bannedFrom || []));
         dispatch(initialValuesAdded(initial)); // miscellaneous data
         dispatch(mutesAdded(initial.mutes));
+        dispatch(listsAdded(initial.lists));
       } catch (err) {
         console.error(err);
         dispatch(snackAlert('Something went wrong.'));
@@ -211,6 +208,17 @@ const App = () => {
     if (isOnline) setShowOfflinePage(false);
   }, [isOnline]);
 
+  // Device preferences:
+  const settingsChanged = useSelector((state) => state.main.settingsChanged);
+  useEffect(() => {
+    if (getDevicePreference('font') === 'system') {
+      document.documentElement.classList.add('is-system-font');
+      return () => {
+        document.documentElement.classList.remove('is-system-font');
+      };
+    }
+  }, [settingsChanged]);
+
   if (!isOnline && showOfflinePage) {
     return <Offline />;
   }
@@ -245,6 +253,7 @@ const App = () => {
       <AppSwitch />
       <Snacks />
       {process.env.NODE_ENV !== 'production' && chatOpen && <Chat />}
+      <SaveToListModal />
       <LoginPrompt />
       <Signup open={signupModalOpen} onClose={() => dispatch(signupModalOpened(false))} />
       <Modal
@@ -315,10 +324,19 @@ const AppSwitch = () => {
         <Route exact path="/markdown_guide">
           <MarkdownGuide />
         </Route>
-        <Route exact path="/:name">
-          <SlashRoute />
+        <Route exact path="/@:username">
+          <User />
         </Route>
-        <ProtectedRoute path="/:communityName/modtools">
+        <Route exact path="/@:username/lists">
+          <Lists />
+        </Route>
+        <Route exact path="/@:username/lists/:listName">
+          <List />
+        </Route>
+        <Route exact path="/:name">
+          <Community />
+        </Route>
+        <ProtectedRoute path="/:name/modtools">
           <Modtools />
         </ProtectedRoute>
         <Route exact path={['/:name/post/:id', '/:name/post/:id/:commentId']}>
@@ -330,16 +348,6 @@ const AppSwitch = () => {
       </Switch>
     </>
   );
-};
-
-const SlashRoute = () => {
-  const { name } = useParams();
-
-  if (name[0] === '@') {
-    return <User username={name.substr(1)} />;
-  }
-
-  return <Community name={name} />;
 };
 
 /*

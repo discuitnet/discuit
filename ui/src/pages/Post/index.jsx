@@ -12,7 +12,7 @@ import {
   userGroupSingular,
 } from '../../helper';
 import { useIsMobile } from '../../hooks';
-import { snackAlert, snackAlertError } from '../../slices/mainSlice';
+import { saveToListModalOpened, snackAlert, snackAlertError } from '../../slices/mainSlice';
 import AddComment from './AddComment';
 import ReportModal from '../../components/ReportModal';
 import Sidebar from '../../components/Sidebar';
@@ -402,6 +402,14 @@ const Post = () => {
             <div className={'post-card-bottom' + (!hasImage ? ' has-no-img' : '')}>
               <div className="left">
                 <PostShareButton post={post} />
+                {loggedIn && (
+                  <button
+                    className="button-text"
+                    onClick={() => dispatch(saveToListModalOpened(post.id, 'post'))}
+                  >
+                    Save
+                  </button>
+                )}
                 {postOwner && (
                   <button
                     className="button-text"
@@ -438,40 +446,37 @@ const Post = () => {
                       >
                         {isLocked ? 'Unlock' : 'Lock'}
                       </button>
-                      {!post.deleted && (
-                        <button
-                          className="button-clear dropdown-item"
-                          onClick={() => setDeleteModalOpen(true, 'mods')}
-                        >
-                          Delete
-                        </button>
-                      )}
-                      {postOwner && (
-                        <div className="dropdown-item is-non-reactive">
-                          <div className="checkbox">
-                            <input
-                              id={'ch-user-group-m'}
-                              type="checkbox"
-                              checked={userGroup === 'mods' ? true : false}
-                              onChange={(e) => setUserGroup(e.target.checked ? 'mods' : 'normal')}
-                            />
-                            <label htmlFor={'ch-user-group-m'}>Speaking officially</label>
-                          </div>
+                      <button
+                        className="button-clear dropdown-item"
+                        onClick={() => setDeleteModalOpen(true, 'mods')}
+                        disabled={post.deleted}
+                      >
+                        Delete
+                      </button>
+                      <div className="dropdown-item is-non-reactive">
+                        <div className="checkbox">
+                          <input
+                            id={'ch-user-group-m'}
+                            type="checkbox"
+                            checked={userGroup === 'mods' ? true : false}
+                            onChange={(e) => setUserGroup(e.target.checked ? 'mods' : 'normal')}
+                            disabled={!postOwner}
+                          />
+                          <label htmlFor={'ch-user-group-m'}>Speaking officially</label>
                         </div>
-                      )}
-                      {(!post.deleted || (post.deleted && isPinned)) && (
-                        <div className="dropdown-item is-non-reactive">
-                          <div className="checkbox">
-                            <input
-                              id={'ch-pin-m'}
-                              type="checkbox"
-                              checked={isPinned}
-                              onChange={(e) => handlePinChange(e, false)}
-                            />
-                            <label htmlFor={'ch-pin-m'}>Pinned</label>
-                          </div>
+                      </div>
+                      <div className="dropdown-item is-non-reactive">
+                        <div className="checkbox">
+                          <input
+                            id={'ch-pin-m'}
+                            type="checkbox"
+                            checked={isPinned}
+                            onChange={(e) => handlePinChange(e, false)}
+                            disabled={post.deleted && !isPinned}
+                          />
+                          <label htmlFor={'ch-pin-m'}>Pinned</label>
                         </div>
-                      )}
+                      </div>
                     </div>
                   </Dropdown>
                 )}
@@ -480,52 +485,54 @@ const Post = () => {
                     <div className="dropdown-list">
                       <button
                         className="button-clear dropdown-item"
+                        onClick={() => alert(`ID: ${post.id}`)}
+                      >
+                        ID
+                      </button>
+                      <button
+                        className="button-clear dropdown-item"
                         onClick={() => handleLock('admins')}
                       >
                         {isLocked ? 'Unlock' : 'Lock'}
                       </button>
-                      {!post.deleted && (
-                        <button
-                          className="button-clear dropdown-item"
-                          onClick={() => setDeleteModalOpen(true, 'admins')}
-                        >
-                          Delete
-                        </button>
-                      )}
-                      {post.deleted && !post.deletedContent && (
-                        <button
-                          className="button-clear dropdown-item"
-                          onClick={() => setDeleteContentModalOpen(true, 'admins')}
-                        >
-                          Delete {post.type}
-                        </button>
-                      )}
-                      {postOwner && (
-                        <div className="dropdown-item is-non-reactive">
-                          <div className="checkbox">
-                            <input
-                              id={'ch-user-group-a'}
-                              type="checkbox"
-                              checked={userGroup === 'admins' ? true : false}
-                              onChange={(e) => setUserGroup(e.target.checked ? 'admins' : 'normal')}
-                            />
-                            <label htmlFor={'ch-user-group-a'}>Speaking officially</label>
-                          </div>
+                      <button
+                        className="button-clear dropdown-item"
+                        onClick={() => setDeleteModalOpen(true, 'admins')}
+                        disabled={post.deleted}
+                      >
+                        Delete
+                      </button>
+                      <button
+                        className="button-clear dropdown-item"
+                        onClick={() => setDeleteContentModalOpen(true, 'admins')}
+                        disabled={!post.deleted || post.deletedContent}
+                      >
+                        Delete {post.type}
+                      </button>
+                      <div className="dropdown-item is-non-reactive">
+                        <div className="checkbox">
+                          <input
+                            id={'ch-user-group-a'}
+                            type="checkbox"
+                            checked={userGroup === 'admins' ? true : false}
+                            onChange={(e) => setUserGroup(e.target.checked ? 'admins' : 'normal')}
+                            disabled={!postOwner}
+                          />
+                          <label htmlFor={'ch-user-group-a'}>Speaking officially</label>
                         </div>
-                      )}
-                      {(!post.deleted || (post.deleted && isPinnedSite)) && (
-                        <div className="dropdown-item is-non-reactive">
-                          <div className="checkbox">
-                            <input
-                              id={'ch-pin-a'}
-                              type="checkbox"
-                              checked={isPinnedSite}
-                              onChange={(e) => handlePinChange(e, true)}
-                            />
-                            <label htmlFor={'ch-pin-a'}>Pinned</label>
-                          </div>
+                      </div>
+                      <div className="dropdown-item is-non-reactive">
+                        <div className="checkbox">
+                          <input
+                            id={'ch-pin-a'}
+                            type="checkbox"
+                            checked={isPinnedSite}
+                            onChange={(e) => handlePinChange(e, true)}
+                            disabled={post.deleted && !isPinnedSite}
+                          />
+                          <label htmlFor={'ch-pin-a'}>Pinned</label>
                         </div>
-                      )}
+                      </div>
                     </div>
                   </Dropdown>
                 )}
