@@ -13,6 +13,7 @@ import './assets/imgs/logo-manifest-512.png';
 import './assets/imgs/discuit-logo-pwa-badge.png';
 import { isDeviceIos, mfetchjson } from './helper';
 import { forceSwUpdate } from './AppUpdate';
+import ScrollToTheTop from './components/ScrollToTheTop';
 
 const Fallback = ({ error, resetErrorBoundary }) => {
   useEffect(() => {
@@ -55,6 +56,7 @@ root.render(
     <HelmetProvider>
       <ErrorBoundary FallbackComponent={Fallback} onError={logAppError}>
         <Router>
+          <ScrollToTheTop />
           <App />
         </Router>
       </ErrorBoundary>
