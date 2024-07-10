@@ -327,25 +327,25 @@ func TestBuildInsertQuery(t *testing.T) {
 		{
 			table:       "users",
 			vals:        []ColumnValue{{"name", "Leonardo da Vinci"}},
-			expectQuery: "insert into users (name) values (?)",
+			expectQuery: "INSERT INTO users (name) VALUES (?)",
 			expectArgs:  []any{"Leonardo da Vinci"},
 		},
 		{
 			table:       "users",
 			vals:        []ColumnValue{{"name", "Leonardo da Vinci"}, {"email", "leo@vinci.it"}},
-			expectQuery: "insert into users (name, email) values (?, ?)",
+			expectQuery: "INSERT INTO users (name, email) VALUES (?, ?)",
 			expectArgs:  []any{"Leonardo da Vinci", "leo@vinci.it"},
 		},
 		{
 			table:       "users",
 			vals:        []ColumnValue{{"name", "Leonardo da Vinci"}, {"email", "leo@vinci.it"}, {"index", 90}},
-			expectQuery: "insert into users (name, email, index) values (?, ?, ?)",
+			expectQuery: "INSERT INTO users (name, email, index) VALUES (?, ?, ?)",
 			expectArgs:  []any{"Leonardo da Vinci", "leo@vinci.it", 90},
 		},
 		{
 			table:       "users",
 			vals:        []ColumnValue{{"name", "Leonardo da Vinci"}, {"email", "leo@vinci.it"}, {"index", 90}, {"verified", NewNullBool(nil)}},
-			expectQuery: "insert into users (name, email, index, verified) values (?, ?, ?, ?)",
+			expectQuery: "INSERT INTO users (name, email, index, verified) VALUES (?, ?, ?, ?)",
 			expectArgs:  []any{"Leonardo da Vinci", "leo@vinci.it", 90, NewNullBool(nil)},
 		},
 	}
