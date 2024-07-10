@@ -16,11 +16,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
-require (
-	golang.org/x/sys v0.10.0 // indirect
-	golang.org/x/tools v0.5.1-0.20230111220935-a7f7db3f17fc // indirect
-	golang.org/x/tools/cmd/cover v0.1.0-deprecated // indirect
-)
+require golang.org/x/tools v0.5.1-0.20230111220935-a7f7db3f17fc // indirect
 
 require (
 	github.com/Microsoft/go-winio v0.6.0 // indirect
@@ -35,7 +31,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
-	github.com/urfave/cli/v2 v2.27.2 // indirect
+	github.com/urfave/cli/v2 v2.27.2
 	github.com/xrash/smetrics v0.0.0-20240312152122-5f08fbb34913 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 )
