@@ -4,11 +4,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/discuitnet/discuit/testutils"
 	"github.com/gomodule/redigo/redis"
 )
 
 func TestLimit(t *testing.T) {
-	conn := newFakeRedisConn()
+	conn := testutils.NewFakeRedisConn()
 
 	bucketID := "test-bucket"
 	interval := time.Second * 10
@@ -57,7 +58,7 @@ func TestLimit(t *testing.T) {
 }
 
 func TestResetBucket(t *testing.T) {
-	conn := newFakeRedisConn()
+	conn := testutils.NewFakeRedisConn()
 
 	bucketID := "test-bucket"
 	maxTokens := 5
