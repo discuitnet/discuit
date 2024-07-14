@@ -88,7 +88,7 @@ const NewPost = () => {
           setBody(post.body);
           setPost(post);
           if (post.type === 'image') {
-            SetImages(post.image);
+            SetImages(post.images);
           } else if (post.type === 'link') {
             setLink(post.deletedContent ? 'Deleted link' : post.link.url);
           }
