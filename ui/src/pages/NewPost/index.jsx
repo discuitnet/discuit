@@ -223,8 +223,15 @@ const NewPost = () => {
             body,
             community: community.name,
             userGroup,
-            // imageId: postType === 'image' ? images.id : undefined,
-            imageIds: postType === 'image' ? images.map((image) => image.id) : undefined,
+            images:
+              postType === 'image'
+                ? images.map((image) => {
+                    return {
+                      imageId: image.id,
+                      caption: '',
+                    };
+                  })
+                : undefined,
             url: postType === 'link' ? link : undefined,
           }),
         });

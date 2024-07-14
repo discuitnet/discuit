@@ -24,51 +24,53 @@ func (s *Server) addPost(w *responseWriter, r *request) error {
 		return err
 	}
 
-	values, err := r.unmarshalJSONBodyToStringsMap(true)
-	if err != nil {
+	req := struct {
+		PostType  core.PostType       `json:"type"`
+		Title     string              `json:"title"`
+		URL       string              `json:"url"`
+		Body      string              `json:"body"`
+		Community string              `json:"community"`
+		UserGroup core.UserGroup      `json:"userGroup"`
+		ImageId   string              `json:"imageId"`
+		Images    []*core.ImageUpload `json:"images"`
+	}{
+		PostType:  core.PostTypeText,
+		UserGroup: core.UserGroupNormal,
+	}
+	if err := r.unmarshalJSONBody(&req); err != nil {
 		return err
 	}
 
-	var postType core.PostType = core.PostTypeText
-	if values["type"] != "" {
-		if err = postType.UnmarshalText([]byte(values["type"])); err != nil {
-			return err
-		}
-	}
-
-	if s.config.DisableImagePosts && postType == core.PostTypeImage {
-		// Disallow image post creation.
+	// Disallow image post creation if image posts are disabled in config.
+	if s.config.DisableImagePosts && req.PostType == core.PostTypeImage {
 		return httperr.NewForbidden("no_image_posts", "Image posts are not allowed")
 	}
 
-	title := values["title"] // required
-	body := values["body"]
-	commName := values["community"] // required
-
-	userGroup := core.UserGroupNormal
-	if text := values["userGroup"]; text != "" {
-		if err := userGroup.UnmarshalText([]byte(text)); err != nil {
-			return err
-		}
-	}
-
-	comm, err := core.GetCommunityByName(r.ctx, s.db, commName, nil)
+	comm, err := core.GetCommunityByName(r.ctx, s.db, req.Community, nil)
 	if err != nil {
 		return err
 	}
 
 	var post *core.Post
-	switch postType {
+	switch req.PostType {
 	case core.PostTypeText:
-		post, err = core.CreateTextPost(r.ctx, s.db, *r.viewer, comm.ID, title, body)
+		post, err = core.CreateTextPost(r.ctx, s.db, *r.viewer, comm.ID, req.Title, req.Body)
 	case core.PostTypeImage:
-		imageID, idErr := uid.FromString(values["imageId"])
-		if idErr != nil {
-			return httperr.NewBadRequest("invalid_image_id", "Invalid image ID.")
+		var images []*core.ImageUpload
+		if req.Images != nil {
+			images = req.Images
+		} else {
+			imageID, idErr := uid.FromString(req.ImageId)
+			if idErr != nil {
+				return httperr.NewBadRequest("invalid_image_id", "Invalid image ID.")
+			}
+			images = []*core.ImageUpload{
+				{ImageID: imageID},
+			}
 		}
-		post, err = core.CreateImagePost(r.ctx, s.db, *r.viewer, comm.ID, title, imageID)
+		post, err = core.CreateImagePost(r.ctx, s.db, *r.viewer, comm.ID, req.Title, images)
 	case core.PostTypeLink:
-		post, err = core.CreateLinkPost(r.ctx, s.db, *r.viewer, comm.ID, title, values["url"])
+		post, err = core.CreateLinkPost(r.ctx, s.db, *r.viewer, comm.ID, req.Title, req.URL)
 	default:
 		return httperr.NewBadRequest("invalid_post_type", "Invalid post type.")
 	}
@@ -76,8 +78,8 @@ func (s *Server) addPost(w *responseWriter, r *request) error {
 		return err
 	}
 
-	if userGroup != core.UserGroupNormal {
-		if err := post.ChangeUserGroup(r.ctx, *r.viewer, userGroup); err != nil {
+	if req.UserGroup != core.UserGroupNormal {
+		if err := post.ChangeUserGroup(r.ctx, *r.viewer, req.UserGroup); err != nil {
 			return err
 		}
 	}
