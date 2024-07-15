@@ -441,7 +441,7 @@ const NewPost = () => {
                       disabled={isEditPost}
                     />
                   ))}
-                {!(post && post.deletedContent) && (
+                {!isEditPost && !(post && post.deletedContent) && (
                   <ImageUploadArea
                     isUploading={isUploading}
                     onImagesUpload={handleImagesUpload}
