@@ -723,7 +723,7 @@ func CreateImagePost(ctx context.Context, db *sql.DB, author, community uid.ID, 
 	// We don't check whether the image belongs to the person who uploaded it.
 	// This is not a big deal as image ids are hard to guess.
 
-	// Check if the image exists.
+	// Check if the images exist.
 	recordIDs := make([]uid.ID, len(imgs))
 	for i := range imgs {
 		recordIDs[i] = imgs[i].ImageID

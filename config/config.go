@@ -61,6 +61,8 @@ type Config struct {
 
 	// The location where images are saved on disk.
 	ImagesFolderPath string `yaml:"imagesFolderPath"`
+
+	MaxImagesPerPost int `yaml:"maxImagesPerPost"`
 }
 
 // Parse parses the yaml file at path and returns a Config.
@@ -75,6 +77,7 @@ func Parse(path string) (*Config, error) {
 		PaginationLimitMax: 50,
 		DefaultFeedSort:    core.FeedSortHot,
 		MaxImageSize:       25 * (1 << 20),
+		MaxImagesPerPost:   10,
 
 		// Required fields:
 		ForumCreationReqPoints: -1,

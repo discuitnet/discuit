@@ -68,6 +68,9 @@ func (s *Server) addPost(w *responseWriter, r *request) error {
 				{ImageID: imageID},
 			}
 		}
+		if len(images) > s.config.MaxImagesPerPost {
+			return httperr.NewBadRequest("too-many-images", "Maximum images count exceeded.")
+		}
 		post, err = core.CreateImagePost(r.ctx, s.db, *r.viewer, comm.ID, req.Title, images)
 	case core.PostTypeLink:
 		post, err = core.CreateLinkPost(r.ctx, s.db, *r.viewer, comm.ID, req.Title, req.URL)

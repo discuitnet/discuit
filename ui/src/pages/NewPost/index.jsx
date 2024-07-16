@@ -74,7 +74,7 @@ const NewPost = () => {
   const [body, setBody] = useState('');
   const [link, setLink] = useState('');
   const [images, SetImages] = useState([]);
-  const maxNumOfImages = 10; // TODO: Use CONFIG for this const value (also check on the backend).
+  const maxNumOfImages = CONFIG.maxImagesPerPost;
 
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useLoading();
