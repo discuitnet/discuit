@@ -14,6 +14,19 @@ const ImageGallery = ({ className, children, ...props }) => {
   );
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const renderDots = () => {
+    const dots = [];
+    for (let i = 0; i < numImages; i++) {
+      dots.push(
+        <div
+          className={'image-gallery-dot' + (currentImageIndex === i ? ' is-highlighted' : '')}
+        ></div>
+      );
+    }
+    return <div className="image-gallery-dots">{dots}</div>;
+  };
+
   const showLeftArrow = numImages > 1 && currentImageIndex > 0;
   const showRightArrow = numImages > 1 && currentImageIndex < numImages - 1;
 
@@ -40,6 +53,7 @@ const ImageGallery = ({ className, children, ...props }) => {
       <div className="image-gallery-image flex flex-center">
         {Array.isArray(children) ? children[currentImageIndex] : children}
       </div>
+      {renderDots()}
     </div>
   );
 };
