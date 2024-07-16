@@ -967,11 +967,17 @@ func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteConte
 				if _, err := tx.ExecContext(ctx, "DELETE FROM post_images WHERE post_id = ?", p.ID); err != nil {
 					return err
 				}
-				if err := images.DeleteImageTx(ctx, tx, p.db, *p.Image.ID); err != nil {
+
+				imageIDs := make([]uid.ID, len(p.Images))
+				for i := range p.Images {
+					imageIDs[i] = *p.Images[i].ID
+				}
+
+				if err := images.DeleteImagesTx(ctx, tx, p.db, imageIDs...); err != nil {
 					return err
 				}
 			} else if p.Type == PostTypeLink && p.HasLinkImage() {
-				if err := images.DeleteImageTx(ctx, tx, p.db, *p.Link.Image.ID); err != nil {
+				if err := images.DeleteImagesTx(ctx, tx, p.db, *p.Link.Image.ID); err != nil {
 					return err
 				}
 			}
@@ -1780,7 +1786,7 @@ func RemoveTempImages(ctx context.Context, db *sql.DB) (int, error) {
 			return fmt.Errorf("failed to delete %d rows from temp_images: %w", len(imageIDs), err)
 		}
 		for _, id := range imageIDs {
-			if err := images.DeleteImageTx(ctx, tx, db, id); err != nil {
+			if err := images.DeleteImagesTx(ctx, tx, db, id); err != nil {
 				return err
 			}
 		}

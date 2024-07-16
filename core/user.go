@@ -863,7 +863,7 @@ func (u *User) DeleteProPicTx(ctx context.Context, tx *sql.Tx) error {
 	if _, err := u.db.ExecContext(ctx, "UPDATE users SET pro_pic = NULL where id = ?", u.ID); err != nil {
 		return fmt.Errorf("failed to set users.pro_pic to null for user %s: %w", u.Username, err)
 	}
-	if err := images.DeleteImageTx(ctx, tx, u.db, *u.ProPic.ID); err != nil {
+	if err := images.DeleteImagesTx(ctx, tx, u.db, *u.ProPic.ID); err != nil {
 		return fmt.Errorf("failed to delete pro pic of user %s: %w", u.Username, err)
 	}
 	u.ProPic = nil
@@ -897,7 +897,7 @@ func (u *User) UpdateProPic(ctx context.Context, image []byte) error {
 		}
 		if _, err := tx.ExecContext(ctx, "UPDATE users SET pro_pic = ? WHERE id = ?", imageID, u.ID); err != nil {
 			// Attempt to delete the image
-			if err := images.DeleteImageTx(ctx, tx, u.db, imageID); err != nil {
+			if err := images.DeleteImagesTx(ctx, tx, u.db, imageID); err != nil {
 				log.Printf("failed to delete image (core.User.UpdateProPic): %v\n", err)
 			}
 			return fmt.Errorf("failed to set users.pro_pic to value: %w", err)
