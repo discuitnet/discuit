@@ -238,6 +238,11 @@ const Post = () => {
     })();
   };
 
+  // The index of the current image in the image gallery; relavent only, of
+  // course, for image posts. This value is needed to download the current image
+  // in the post share menu.
+  const [imageGalleryCurrentIndex, setImageGalleryCurrentIndex] = useState(0);
+
   const isMobile = useIsMobile();
   const loggedIn = user !== null;
   const isAdmin = loggedIn && user.isAdmin;
@@ -369,7 +374,11 @@ const Post = () => {
               )*/}
               {showImage && post.images.length === 1 && <PostImage post={post} />}
               {showImage && post.images.length > 1 && (
-                <PostImageGallery images={post.images} isMobile={isMobile} />
+                <PostImageGallery
+                  images={post.images}
+                  isMobile={isMobile}
+                  onIndexChange={(index) => setImageGalleryCurrentIndex(index)}
+                />
               )}
               {isEmbed && <Embed url={embedURL} />}
               {(isLocked || post.deleted) && (
@@ -405,7 +414,7 @@ const Post = () => {
             </div>
             <div className={'post-card-bottom' + (!hasImage ? ' has-no-img' : '')}>
               <div className="left">
-                <PostShareButton post={post} />
+                <PostShareButton post={post} imageGalleryCurrentIndex={imageGalleryCurrentIndex} />
                 {loggedIn && (
                   <button
                     className="button-text"

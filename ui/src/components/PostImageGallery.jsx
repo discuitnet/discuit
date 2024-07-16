@@ -3,9 +3,9 @@ import PropTypes from 'prop-types';
 import ImageGallery from './ImageGallery';
 import ServerImage from './ServerImage';
 
-const PostImageGallery = ({ images = [], isMobile }) => {
+const PostImageGallery = ({ images = [], onIndexChange, isMobile }) => {
   return (
-    <ImageGallery className="post-image-gallery">
+    <ImageGallery className="post-image-gallery" onIndexChange={onIndexChange}>
       {images.map((image) => (
         <Image image={image} isMobile={isMobile} />
       ))}
@@ -16,6 +16,7 @@ const PostImageGallery = ({ images = [], isMobile }) => {
 PostImageGallery.propTypes = {
   images: PropTypes.array.isRequired,
   isMobile: PropTypes.bool.isRequired,
+  onIndexChange: PropTypes.func,
 };
 
 export default PostImageGallery;

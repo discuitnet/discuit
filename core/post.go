@@ -305,7 +305,10 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 	loggedIn := viewer != nil
 
 	for rows.Next() {
-		post := &Post{db: db}
+		post := &Post{
+			db:     db,
+			Images: make([]*images.Image, 0),
+		}
 		var linkBytes []byte
 		dest := []interface{}{
 			&post.ID,

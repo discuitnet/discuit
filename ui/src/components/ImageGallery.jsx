@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 
-const ImageGallery = ({ className, children, ...props }) => {
+const ImageGallery = ({ className, children, onIndexChange, ...props }) => {
   const numImages = Array.isArray(children) ? children.length : 1;
 
   const nextIcon = (
@@ -14,6 +14,11 @@ const ImageGallery = ({ className, children, ...props }) => {
   );
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  useEffect(() => {
+    if (onIndexChange) {
+      onIndexChange(currentImageIndex);
+    }
+  }, [currentImageIndex]);
 
   const renderDots = () => {
     const dots = [];
@@ -61,6 +66,7 @@ const ImageGallery = ({ className, children, ...props }) => {
 ImageGallery.propTypes = {
   className: PropTypes.string,
   children: PropTypes.arrayOf(PropTypes.element),
+  onIndexChange: PropTypes.func,
 };
 
 export default ImageGallery;
