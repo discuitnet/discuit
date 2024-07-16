@@ -3,8 +3,7 @@ import PropTypes from 'prop-types';
 
 const ImageGallery = ({ className, children, ...props }) => {
   const numImages = Array.isArray(children) ? children.length : 1;
-  console.log(`numImages: ${numImages}`);
-  console.log(children);
+
   const nextIcon = (
     <svg viewBox="0 0 24 24" fill="#000000" xmlns="http://www.w3.org/2000/svg">
       <path

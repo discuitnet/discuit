@@ -49,7 +49,7 @@ const PostShareButton = ({ post }) => {
         url,
       });
     } catch (err) {
-      console.log(err);
+      console.error(err);
     }
   };
 
