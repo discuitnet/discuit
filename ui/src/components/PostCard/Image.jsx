@@ -1,20 +1,17 @@
 import React, { useLayoutEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { getImageContainSize } from '../../helper';
-import Link from '../../components/Link';
-import CitraImage from '../CitraImage';
+import ServerImage from '../ServerImage';
 
-const Image = ({ post, to, target, isMobile, loading = 'lazy' }) => {
-  const { image } = post;
-
+const Image = ({ image, to, target, isMobile, loading = 'lazy' }) => {
   const maxImageHeight = 520;
   const maxImageHeightMobile = () => window.innerHeight * 0.8;
 
   const [imageSize, setImageSize] = useState({ width: undefined, height: undefined });
   const [cardWidth, setCardWidth] = useState(0);
   const updateImageSize = () => {
-    let w = document.querySelector('.post-card-body').clientWidth,
-      h = isMobile ? maxImageHeightMobile() : maxImageHeight;
+    let w = document.querySelector('.post-card-body').clientWidth;
+    let h = isMobile ? maxImageHeightMobile() : maxImageHeight;
     let { width, height } = getImageContainSize(image.width, image.height, w, h);
     if (w - width < 35 && width / height < 1.15 && width / height > 0.85) {
       // Cover image to fit card if the image is only slightly not fitting.
@@ -26,17 +23,17 @@ const Image = ({ post, to, target, isMobile, loading = 'lazy' }) => {
   };
   useLayoutEffect(() => {
     updateImageSize();
-  }, []);
+  }, [image.id]);
 
   const isImageFittingCard = imageSize.width !== Math.round(cardWidth);
 
   return (
-    <Link
-      className={'post-card-img' + (isImageFittingCard ? ' is-no-fit' : '')}
+    <div
+      className={'post-image' + (isImageFittingCard ? ' is-no-fit' : '')}
       to={to}
       target={target}
     >
-      <CitraImage
+      <ServerImage
         image={image}
         style={{
           width: imageSize.width ?? 0,
@@ -44,7 +41,7 @@ const Image = ({ post, to, target, isMobile, loading = 'lazy' }) => {
         }}
         loading={loading}
       />
-    </Link>
+    </div>
   );
 };
 

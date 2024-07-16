@@ -409,15 +409,29 @@ a {
     }
     &.is-pinned {
         .post-card-text,
-        .post-card-img,
-        .post-card-link-image {
+        .post-image,
+        .image-gallery {
             display: none;
         }
     }
-    .post-card-img {
+    .post-image-gallery,
+    .post-image {
         margin-top: var(--margin-bottom);
+    }
+    .post-image {
         align-self: center;
         display: flex;
+        justify-content: stretch;
+        width: 100%;
+        .image {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .image,
+        img {
+            width: 100%;
+        }
         img {
             object-fit: cover;
         }
@@ -551,6 +565,16 @@ a {
         .post-card-card {
             margin-left: 0;
         }
+    }
+}
+
+.post-image-gallery {
+    background: #808080a3;
+    .image {
+        width: 100%;
+    }
+    img {
+        object-fit: cover;
     }
 }
 

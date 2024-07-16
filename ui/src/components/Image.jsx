@@ -9,7 +9,7 @@ const Image = ({ className, alt, backgroundColor, style = {}, isFullSize = false
   if (backgroundColor) {
     divStyle.background = loaded ? 'none' : backgroundColor;
   }
-  _style.opacity = loaded ? 1 : 0;
+  _style.opacity = loaded ? style.opacity ?? 1 : 0;
 
   let cls = 'image';
   if (isFullSize) cls += ' is-fullsize';

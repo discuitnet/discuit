@@ -36,6 +36,7 @@ import { commentsAdded, newCommentAdded } from '../../slices/commentsSlice';
 import { communityAdded } from '../../slices/communitiesSlice';
 import { useLocation } from 'react-router-dom';
 import { getEmbedComponent } from '../../components/PostCard';
+import PostImageGallery from '../../components/PostImageGallery';
 
 const Post = () => {
   const { id, commentId, communityName } = useParams(); // id is post.publicId
@@ -363,10 +364,13 @@ const Post = () => {
                 <img
                   src="https://source.unsplash.com/featured?people,nature"
                   alt=""
-                  className="post-card-img"
+                  className="post-image"
                 />
               )*/}
-              {showImage && <PostImage post={post} />}
+              {showImage && post.images.length === 1 && <PostImage post={post} />}
+              {showImage && post.images.length > 1 && (
+                <PostImageGallery images={post.images} isMobile={isMobile} />
+              )}
               {isEmbed && <Embed url={embedURL} />}
               {(isLocked || post.deleted) && (
                 <div className="post-card-banners">
