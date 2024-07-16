@@ -146,7 +146,7 @@ const PostCard = ({
             />
           )}
           {showImage && post.images.length > 1 && (
-            <PostImageGallery images={post.images} isMobile={isMobile} />
+            <PostImageGallery post={post} isMobile={isMobile} />
           )}
         </div>
         <div className="post-card-bottom">

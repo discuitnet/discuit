@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 
-const ImageGallery = ({ className, children, onIndexChange, ...props }) => {
+const ImageGallery = ({ className, children, startIndex = 0, onIndexChange, ...props }) => {
   const numImages = Array.isArray(children) ? children.length : 1;
 
   const nextIcon = (
@@ -13,7 +13,7 @@ const ImageGallery = ({ className, children, onIndexChange, ...props }) => {
     </svg>
   );
 
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(startIndex);
   useEffect(() => {
     if (onIndexChange) {
       onIndexChange(currentImageIndex);
@@ -67,6 +67,7 @@ ImageGallery.propTypes = {
   className: PropTypes.string,
   children: PropTypes.arrayOf(PropTypes.element),
   onIndexChange: PropTypes.func,
+  startIndex: PropTypes.number,
 };
 
 export default ImageGallery;

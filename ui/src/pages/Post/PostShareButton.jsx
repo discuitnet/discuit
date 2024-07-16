@@ -29,7 +29,7 @@ const Target = ({ ...props }) => {
   );
 };
 
-const PostShareButton = ({ post, imageGalleryCurrentIndex = 0 }) => {
+const PostShareButton = ({ post }) => {
   const dispatch = useDispatch();
 
   const url = `${window.location.origin}/${post.communityName}/post/${post.publicId}`;
@@ -62,10 +62,10 @@ const PostShareButton = ({ post, imageGalleryCurrentIndex = 0 }) => {
       );
     }
 
-    const image = post.images[imageGalleryCurrentIndex];
+    const image = post.images[post.imageGalleryIndex];
     const url = image.url;
     const filename = `discuit-${post.communityName}[${post.publicId}]-${
-      imageGalleryCurrentIndex + 1
+      post.imageGalleryIndex + 1
     }.${image.format}`;
     return (
       <a href={url} className="button-clear dropdown-item" download={filename}>
@@ -111,7 +111,6 @@ const PostShareButton = ({ post, imageGalleryCurrentIndex = 0 }) => {
 
 PostShareButton.propTypes = {
   post: PropTypes.object.isRequired,
-  imageGalleryCurrentIndex: PropTypes.number,
 };
 
 export default PostShareButton;

@@ -1,11 +1,24 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
 import ImageGallery from './ImageGallery';
 import ServerImage from './ServerImage';
+import { useDispatch } from 'react-redux';
+import { postImageGalleryIndexUpdated } from '../slices/postsSlice';
 
-const PostImageGallery = ({ images = [], onIndexChange, isMobile }) => {
+const PostImageGallery = ({ post, isMobile }) => {
+  const { images } = post;
+
+  const dispatch = useDispatch();
+  const handleIndexChange = (index) => {
+    dispatch(postImageGalleryIndexUpdated(post.publicId, index));
+  };
+
   return (
-    <ImageGallery className="post-image-gallery" onIndexChange={onIndexChange}>
+    <ImageGallery
+      className="post-image-gallery"
+      startIndex={post.imageGalleryIndex}
+      onIndexChange={handleIndexChange}
+    >
       {images.map((image) => (
         <Image image={image} isMobile={isMobile} />
       ))}
@@ -16,7 +29,6 @@ const PostImageGallery = ({ images = [], onIndexChange, isMobile }) => {
 PostImageGallery.propTypes = {
   images: PropTypes.array.isRequired,
   isMobile: PropTypes.bool.isRequired,
-  onIndexChange: PropTypes.func,
 };
 
 export default PostImageGallery;
