@@ -230,9 +230,13 @@
 
     .post-image-gallery {
         margin-top: 0;
-        background: #000;
-        img {
-            object-fit: contain;
+        .image {
+            img {
+                height: 520px;
+                @include mixins.mobile {
+                    height: 520px;
+                }
+            }
         }
     }
 

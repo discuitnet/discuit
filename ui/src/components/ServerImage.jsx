@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import Image from './Image';
 
-const ServerImage = ({ image, sizes, style = {}, ...props }) => {
+const ServerImage = ({ onLoad, image, sizes, style = {}, ...props }) => {
   let src = image.url,
     srcset = '';
   if (image.copies) {
@@ -16,6 +16,7 @@ const ServerImage = ({ image, sizes, style = {}, ...props }) => {
 
   return (
     <Image
+      onLoad={onLoad}
       srcSet={srcset}
       sizes={sizes}
       src={src}
@@ -28,6 +29,7 @@ const ServerImage = ({ image, sizes, style = {}, ...props }) => {
 };
 
 ServerImage.propTypes = {
+  onLoad: PropTypes.func,
   image: PropTypes.object.isRequired,
   sizes: PropTypes.string,
   style: PropTypes.object,

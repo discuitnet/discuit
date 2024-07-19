@@ -1125,6 +1125,7 @@
     position: relative;
     .image-gallery-next-btn {
         position: absolute;
+        z-index: 100;
         cursor: pointer;
         right: 0;
         top: 50%;
@@ -1156,7 +1157,17 @@
         }
     }
     .image-gallery-image {
+        background: #000;
         width: 100%;
+        img {
+            object-fit: contain;
+        }
+        &.is-previous,
+        &.is-next {
+            width: 0;
+            height: 0;
+            overflow: hidden;
+        }
     }
     // &:hover {
     //     .image-gallery-next-btn {
@@ -1165,6 +1176,7 @@
     // }
     .image-gallery-dots {
         position: absolute;
+        z-index: 100;
         bottom: 15px;
         left: 50%;
         transform: translateX(-50%);

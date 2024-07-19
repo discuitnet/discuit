@@ -422,7 +422,6 @@ a {
         align-self: center;
         display: flex;
         justify-content: stretch;
-        width: 100%;
         .image {
             display: flex;
             align-items: center;
@@ -569,12 +568,42 @@ a {
 }
 
 .post-image-gallery {
-    background: #808080a3;
-    .image {
+    .post-image-gallery-image {
         width: 100%;
-    }
-    img {
-        object-fit: cover;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        .image {
+            position: relative;
+            z-index: 10;
+            &.is-loading {
+                visibility: hidden;
+            }
+            img {
+                height: 520px;
+                @include mixins.mobile {
+                    height: 435px;
+                }
+            }
+            &.is-blured {
+                position: absolute;
+                z-index: 0;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                overflow: hidden;
+                background: #313131;
+                img {
+                    width: 100%;
+                    height: 100%;
+                    filter: blur(60px);
+                    object-fit: cover;
+                    opacity: 0.5;
+                }
+            }
+        }
     }
 }
 

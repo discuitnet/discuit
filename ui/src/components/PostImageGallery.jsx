@@ -20,7 +20,7 @@ const PostImageGallery = ({ post, isMobile }) => {
       onIndexChange={handleIndexChange}
     >
       {images.map((image) => (
-        <Image image={image} isMobile={isMobile} />
+        <Image image={image} />
       ))}
     </ImageGallery>
   );
@@ -33,19 +33,15 @@ PostImageGallery.propTypes = {
 
 export default PostImageGallery;
 
-const Image = ({ image, isMobile }) => {
+const Image = ({ image }) => {
   return (
-    <ServerImage
-      image={image}
-      loading="lazy"
-      style={{
-        height: isMobile ? '435px' : '520px',
-      }}
-    />
+    <div className="post-image-gallery-image">
+      <ServerImage image={image} loading="lazy" />
+      <ServerImage className="is-blured" image={image} loading="lazy" />
+    </div>
   );
 };
 
 Image.propTypes = {
   image: PropTypes.object.isRequired,
-  isMobile: PropTypes.bool.isRequired,
 };
