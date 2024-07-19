@@ -5,7 +5,7 @@ import ServerImage from './ServerImage';
 import { useDispatch } from 'react-redux';
 import { postImageGalleryIndexUpdated } from '../slices/postsSlice';
 
-const PostImageGallery = ({ post, isMobile }) => {
+const PostImageGallery = ({ post, isMobile, keyboardControlsOn = false }) => {
   const { images } = post;
 
   const dispatch = useDispatch();
@@ -18,6 +18,7 @@ const PostImageGallery = ({ post, isMobile }) => {
       className="post-image-gallery"
       startIndex={post.imageGalleryIndex}
       onIndexChange={handleIndexChange}
+      keyboardControlsOn={keyboardControlsOn}
     >
       {images.map((image) => (
         <Image image={image} />
@@ -29,6 +30,7 @@ const PostImageGallery = ({ post, isMobile }) => {
 PostImageGallery.propTypes = {
   images: PropTypes.array.isRequired,
   isMobile: PropTypes.bool.isRequired,
+  keyboardControlsOn: PropTypes.bool,
 };
 
 export default PostImageGallery;

@@ -372,7 +372,7 @@ const Post = () => {
               )*/}
               {showImage && post.images.length === 1 && <PostImage post={post} />}
               {showImage && post.images.length > 1 && (
-                <PostImageGallery post={post} isMobile={isMobile} />
+                <PostImageGallery post={post} isMobile={isMobile} keyboardControlsOn />
               )}
               {isEmbed && <Embed url={embedURL} />}
               {(isLocked || post.deleted) && (

@@ -1,7 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 
-const ImageGallery = ({ className, children, startIndex = 0, onIndexChange, ...props }) => {
+const ImageGallery = ({
+  className,
+  children,
+  startIndex = 0,
+  onIndexChange,
+  keyboardControlsOn = false,
+  ...props
+}) => {
   const numImages = Array.isArray(children) ? children.length : 1;
 
   const nextIcon = (
@@ -48,6 +55,7 @@ const ImageGallery = ({ className, children, startIndex = 0, onIndexChange, ...p
       dots.push(
         <div
           className={'image-gallery-dot' + (currentImageIndex === i ? ' is-highlighted' : '')}
+          key={`dot-${i}`}
         ></div>
       );
     }
@@ -56,6 +64,30 @@ const ImageGallery = ({ className, children, startIndex = 0, onIndexChange, ...p
 
   const showLeftArrow = numImages > 1 && currentImageIndex > 0;
   const showRightArrow = numImages > 1 && currentImageIndex < numImages - 1;
+
+  useEffect(() => {
+    if (keyboardControlsOn) {
+      const f = (event) => {
+        if (
+          event.target.nodeName === 'TEXTAREA' ||
+          event.target.nodeName === 'INPUT' ||
+          event.target.isContentEditable
+        ) {
+          return;
+        }
+        if (showLeftArrow && event.key === 'ArrowLeft') {
+          setCurrentImageIndex((n) => n - 1);
+        }
+        if (showRightArrow && event.key === 'ArrowRight') {
+          setCurrentImageIndex((n) => n + 1);
+        }
+      };
+      window.addEventListener('keydown', f);
+      return () => {
+        window.removeEventListener('keydown', f);
+      };
+    }
+  }, [showLeftArrow, showRightArrow, keyboardControlsOn]);
 
   return (
     <div className={'image-gallery' + (className ? ` ${className}` : '')} {...props}>
@@ -88,6 +120,7 @@ ImageGallery.propTypes = {
   children: PropTypes.arrayOf(PropTypes.element),
   onIndexChange: PropTypes.func,
   startIndex: PropTypes.number,
+  keyboardControlsOn: PropTypes.bool,
 };
 
 export default ImageGallery;
