@@ -20,6 +20,28 @@ const ImageGallery = ({ className, children, startIndex = 0, onIndexChange, ...p
     }
   }, [currentImageIndex]);
 
+  const renderImages = () => {
+    let img1, img2, img3;
+    if (Array.isArray(children)) {
+      img2 = children[currentImageIndex];
+      if (currentImageIndex > 0) {
+        img1 = children[currentImageIndex - 1];
+      }
+      if (currentImageIndex < children.length - 1) {
+        img3 = children[currentImageIndex + 1];
+      }
+    } else {
+      img2 = children;
+    }
+    return (
+      <div className="image-gallery-images">
+        <div className="image-gallery-image flex flex-center is-slot-1">{img1}</div>
+        <div className="image-gallery-image flex flex-center is-slot-2">{img2}</div>
+        <div className="image-gallery-image flex flex-center is-slot-3">{img3}</div>
+      </div>
+    );
+  };
+
   const renderDots = () => {
     const dots = [];
     for (let i = 0; i < numImages; i++) {
@@ -55,9 +77,7 @@ const ImageGallery = ({ className, children, startIndex = 0, onIndexChange, ...p
       >
         {nextIcon}
       </div>
-      <div className="image-gallery-image flex flex-center">
-        {Array.isArray(children) ? children[currentImageIndex] : children}
-      </div>
+      {renderImages()}
       {renderDots()}
     </div>
   );

@@ -230,14 +230,6 @@
 
     .post-image-gallery {
         margin-top: 0;
-        .image {
-            img {
-                height: 520px;
-                @include mixins.mobile {
-                    height: 520px;
-                }
-            }
-        }
     }
 
     .post-comments {

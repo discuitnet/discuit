@@ -568,6 +568,15 @@ a {
 }
 
 .post-image-gallery {
+    .image-gallery-image {
+        height: 520px;
+        @include mixins.mobile {
+            height: 435px;
+        }
+        .post-image-gallery-image {
+            height: 100%;
+        }
+    }
     .post-image-gallery-image {
         width: 100%;
         position: relative;
@@ -579,12 +588,6 @@ a {
             z-index: 10;
             &.is-loading {
                 visibility: hidden;
-            }
-            img {
-                height: 520px;
-                @include mixins.mobile {
-                    height: 435px;
-                }
             }
             &.is-blured {
                 position: absolute;
