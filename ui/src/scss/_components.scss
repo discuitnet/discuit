@@ -1123,6 +1123,11 @@
 
 .image-gallery {
     position: relative;
+
+    // Without this, Chrome, for some reason, automatically selects the images
+    // when clicking on the next and previous buttons quickly.
+    user-select: none;
+
     .image-gallery-next-btn {
         position: absolute;
         z-index: 100;
@@ -1130,14 +1135,9 @@
         right: 0;
         top: 50%;
         transform: translateY(-50%);
-        // opacity: 0;
-        // transition: opacity 200ms;
         --padding: 30px;
         padding: var(--padding); // for a larger click area
         padding-right: 10px;
-        // @include mixins.tablet {
-        //     opacity: 1;
-        // }
         &.is-previous {
             left: 0;
             right: unset;
@@ -1147,9 +1147,6 @@
                 transform: rotate(180deg);
             }
         }
-        // &:hover {
-        //     opacity: 1 !important;
-        // }
         svg {
             --size: 28px;
             width: var(--size);
@@ -1188,11 +1185,6 @@
             overflow: hidden;
         }
     }
-    // &:hover {
-    //     .image-gallery-next-btn {
-    //         opacity: 0.7;
-    //     }
-    // }
     .image-gallery-dots {
         position: absolute;
         z-index: 100;
