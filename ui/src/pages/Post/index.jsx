@@ -269,10 +269,9 @@ const Post = () => {
   const getDeletedBannerText = (post) => {
     if (post.deletedContent) {
       if (post.deletedAs === post.deletedContentAs) {
-        return `This post and its ${post.type} have been removed by ${userGroupSingular(
-          post.deletedAs,
-          true
-        )}.`;
+        return `This post and its ${
+          post.type === 'image' ? 'image(s)' : post.type
+        } have been removed by ${userGroupSingular(post.deletedAs, true)}.`;
       } else {
         return `This post has been removed by ${userGroupSingular(post.deletedAs, true)} and its ${
           post.type
@@ -282,6 +281,10 @@ const Post = () => {
     }
     return `This post has been removed by ${userGroupSingular(post.deletedAs, true)}.`;
   };
+
+  const deletePostContentButtonText = `Delete ${
+    post.type === 'image' ? (post.images.length > 1 ? 'images' : 'image') : post.type
+  }`;
 
   return (
     <div className="page-content page-post wrap">
@@ -301,7 +304,7 @@ const Post = () => {
             canDeleteContent={canDeletePostContent}
           />
           <PostContentDeleteModal
-            postType={post.type}
+            post={post}
             open={deleteContentModalOpen}
             onClose={() => setDeleteContentModalOpen(false)}
             onDelete={handleContentDelete}
@@ -431,7 +434,7 @@ const Post = () => {
                 )}
                 {postOwner && post.deleted && !post.deletedContent && post.type !== 'text' && (
                   <button className="button-red" onClick={() => setDeleteContentModalOpen(true)}>
-                    Delete {post.type}
+                    {deletePostContentButtonText}
                   </button>
                 )}
                 {/*loggedIn && isMod && (
@@ -511,7 +514,7 @@ const Post = () => {
                         onClick={() => setDeleteContentModalOpen(true, 'admins')}
                         disabled={!post.deleted || post.deletedContent}
                       >
-                        Delete {post.type}
+                        {deletePostContentButtonText}
                       </button>
                       <div className="dropdown-item is-non-reactive">
                         <div className="checkbox">
