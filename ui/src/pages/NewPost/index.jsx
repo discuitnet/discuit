@@ -175,7 +175,8 @@ const NewPost = () => {
     }
   };
 
-  const [isSubmitDisabled, setIsSubmitting] = useState(false);
+  const [_isSubmitDisabled, setIsSubmitting] = useState(false);
+  const isSubmitDisabled = _isSubmitDisabled || isUploading;
   const handleSubmit = async () => {
     if (isSubmitDisabled) return;
     if (isBanned) {
