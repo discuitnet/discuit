@@ -150,7 +150,7 @@
                 &.is-locked {
                 }
             }
-            .post-card-img {
+            .post-image {
                 margin-top: 0;
             }
         }
@@ -224,6 +224,15 @@
                         display: flex;
                     }
                 }
+            }
+        }
+    }
+
+    .post-image-gallery {
+        margin-top: 0;
+        .image-gallery-image {
+            @include mixins.not-mobile {
+                height: 600px;
             }
         }
     }

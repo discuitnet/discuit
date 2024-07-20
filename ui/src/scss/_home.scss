@@ -409,15 +409,28 @@ a {
     }
     &.is-pinned {
         .post-card-text,
-        .post-card-img,
-        .post-card-link-image {
+        .post-image,
+        .image-gallery {
             display: none;
         }
     }
-    .post-card-img {
+    .post-image-gallery,
+    .post-image {
         margin-top: var(--margin-bottom);
+    }
+    .post-image {
         align-self: center;
         display: flex;
+        justify-content: stretch;
+        .image {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .image,
+        img {
+            width: 100%;
+        }
         img {
             object-fit: cover;
         }
@@ -550,6 +563,49 @@ a {
         }
         .post-card-card {
             margin-left: 0;
+        }
+    }
+}
+
+.post-image-gallery {
+    .image-gallery-image {
+        height: 520px;
+        @include mixins.mobile {
+            height: 435px;
+        }
+        .post-image-gallery-image {
+            height: 100%;
+        }
+    }
+    .post-image-gallery-image {
+        width: 100%;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        .image {
+            position: relative;
+            z-index: 10;
+            &.is-loading {
+                visibility: hidden;
+            }
+            &.is-blured {
+                position: absolute;
+                z-index: 0;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                overflow: hidden;
+                background: #313131;
+                img {
+                    width: 100%;
+                    height: 100%;
+                    filter: blur(60px);
+                    object-fit: cover;
+                    opacity: 0.5;
+                }
+            }
         }
     }
 }

@@ -319,38 +319,52 @@ func TestInClauseQuestionMark(t *testing.T) {
 func TestBuildInsertQuery(t *testing.T) {
 	tests := []struct {
 		table string // table name
-		vals  []ColumnValue
+		rows  [][]ColumnValue
 
 		expectQuery string
 		expectArgs  []any
 	}{
 		{
 			table:       "users",
-			vals:        []ColumnValue{{"name", "Leonardo da Vinci"}},
+			rows:        [][]ColumnValue{{{"name", "Leonardo da Vinci"}}},
 			expectQuery: "INSERT INTO users (name) VALUES (?)",
 			expectArgs:  []any{"Leonardo da Vinci"},
 		},
 		{
-			table:       "users",
-			vals:        []ColumnValue{{"name", "Leonardo da Vinci"}, {"email", "leo@vinci.it"}},
-			expectQuery: "INSERT INTO users (name, email) VALUES (?, ?)",
-			expectArgs:  []any{"Leonardo da Vinci", "leo@vinci.it"},
+			table: "users",
+			rows: [][]ColumnValue{
+				{{"name", "Leonardo da Vinci"}},
+				{{"name", "Raphael"}},
+				{{"name", "Sandro Botticelli"}},
+			},
+			expectQuery: "INSERT INTO users (name) VALUES (?), (?), (?)",
+			expectArgs:  []any{"Leonardo da Vinci", "Raphael", "Sandro Botticelli"},
+		},
+		{
+			table: "users",
+			rows: [][]ColumnValue{
+				{{"name", "Leonardo da Vinci"}, {"email", "leo@vinci.it"}},
+				{{"name", "Raphael"}, {"email", "raph@el.com"}},
+				{{"name", "Sandro Botticelli"}, {"email", "san@celli.xy"}},
+			},
+			expectQuery: "INSERT INTO users (name, email) VALUES (?, ?), (?, ?), (?, ?)",
+			expectArgs:  []any{"Leonardo da Vinci", "leo@vinci.it", "Raphael", "raph@el.com", "Sandro Botticelli", "san@celli.xy"},
 		},
 		{
 			table:       "users",
-			vals:        []ColumnValue{{"name", "Leonardo da Vinci"}, {"email", "leo@vinci.it"}, {"index", 90}},
+			rows:        [][]ColumnValue{{{"name", "Leonardo da Vinci"}, {"email", "leo@vinci.it"}, {"index", 90}}},
 			expectQuery: "INSERT INTO users (name, email, index) VALUES (?, ?, ?)",
 			expectArgs:  []any{"Leonardo da Vinci", "leo@vinci.it", 90},
 		},
 		{
 			table:       "users",
-			vals:        []ColumnValue{{"name", "Leonardo da Vinci"}, {"email", "leo@vinci.it"}, {"index", 90}, {"verified", NewNullBool(nil)}},
+			rows:        [][]ColumnValue{{{"name", "Leonardo da Vinci"}, {"email", "leo@vinci.it"}, {"index", 90}, {"verified", NewNullBool(nil)}}},
 			expectQuery: "INSERT INTO users (name, email, index, verified) VALUES (?, ?, ?, ?)",
 			expectArgs:  []any{"Leonardo da Vinci", "leo@vinci.it", 90, NewNullBool(nil)},
 		},
 	}
 	for _, test := range tests {
-		gotQuery, gotArgs := BuildInsertQuery(test.table, test.vals)
+		gotQuery, gotArgs := BuildInsertQuery(test.table, test.rows...)
 		if test.expectQuery != gotQuery {
 			t.Errorf("expected: %v, got: %v", test.expectQuery, gotQuery)
 		}

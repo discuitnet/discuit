@@ -35,8 +35,6 @@ const prepareText = (isMobile = false) => {
     be added as a moderator of that community.`;
 };
 
-let posY = 0;
-
 const AllCommunities = () => {
   const user = useSelector((state) => state.main.user);
   const loggedIn = user !== null;
@@ -64,18 +62,6 @@ const AllCommunities = () => {
       }
     })();
   }, []);
-
-  // const history = useHistory();
-  // useEffect(() => {
-  //   if (history.action === 'POP') {
-  //     window.scrollTo(0, posY);
-  //     console.log('scrolling to pos', posY);
-  //   }
-  //   return () => {
-  //     posY = window.scrollY;
-  //     console.log('marked pos: ', posY);
-  //   };
-  // }, []);
 
   if (loading) {
     return <PageLoading />;
@@ -113,10 +99,6 @@ const AllCommunities = () => {
 };
 
 const heights = {};
-
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'O') console.log(heights);
-});
 
 const CommItem = ({ itemKey, children }) => {
   const [ref, inView] = useInView({

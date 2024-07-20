@@ -25,7 +25,7 @@ const Fallback = ({ error, resetErrorBoundary }) => {
       setReloadDisabled(true);
       await forceSwUpdate();
     } catch (error) {
-      console.log(error);
+      console.error(error);
     } finally {
       window.location.reload();
     }

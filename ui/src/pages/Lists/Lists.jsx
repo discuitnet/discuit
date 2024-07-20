@@ -104,7 +104,6 @@ const Lists = () => {
     private: 'Private',
   };
   const renderFilterDropdown = () => {
-    console.log(`filter is: `, filter);
     const items = [];
     for (const [key, value] of Object.entries(filterOptions)) {
       items.push(

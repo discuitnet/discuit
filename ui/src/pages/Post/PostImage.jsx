@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { getImageContainSize } from '../../helper';
-import CitraImage from '../../components/CitraImage';
+import ServerImage from '../../components/ServerImage';
 import { useIsMobile } from '../../hooks';
 
 // Min image container height, in fact.
@@ -42,8 +42,8 @@ const PostImage = ({ post }) => {
   const imageNoFit = imageSize.width !== Math.round(cardWidth);
 
   return (
-    <div className={'post-card-img' + (imageNoFit ? ' is-no-fit' : '')}>
-      <CitraImage
+    <div className={'post-image' + (imageNoFit ? ' is-no-fit' : '')}>
+      <ServerImage
         image={image}
         sizes="(min-height: 1280px) 840px, 94vw"
         style={{
