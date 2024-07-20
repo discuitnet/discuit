@@ -716,6 +716,69 @@ func (u *User) Delete(ctx context.Context) error {
 	})
 }
 
+// DeleteContent deletes all posts and comments of user that were created in the
+// last n days.
+func (u *User) DeleteContent(ctx context.Context, n int, admin uid.ID) error {
+	t := time.Now()
+	defer func() {
+		log.Printf("Took %v to delete content of user %s\n", time.Since(t), u.Username)
+	}()
+
+	where, args := "WHERE posts.user_id = ?", []any{u.ID}
+	if n > 0 {
+		since := time.Now().Add(-1 * time.Hour * 24 * time.Duration(n))
+		where += " AND posts.created_at > ?"
+		args = append(args, since)
+	}
+
+	query := buildSelectPostQuery(false, where)
+	rows, err := u.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	posts, err := scanPosts(ctx, u.db, rows, nil)
+	if err != nil {
+		return err
+	}
+
+	for _, post := range posts {
+		if !(post.Deleted && post.DeletedContent) {
+			if err := post.Delete(ctx, admin, UserGroupAdmins, true, false); err != nil {
+				return err
+			}
+			log.Printf("Deleted %s's post: %s\n", post.AuthorUsername, post.Title)
+		}
+	}
+
+	where, args = "WHERE comments.user_id = ?", []any{u.ID}
+	if n > 0 {
+		since := time.Now().Add(-1 * time.Hour * 24 * time.Duration(n))
+		where += " AND comments.created_at > ?"
+		args = append(args, since)
+	}
+
+	query = buildSelectCommentsQuery(false, where)
+	rows, err = u.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	comments, err := scanComments(ctx, u.db, rows, nil)
+	if err != nil {
+		return err
+	}
+
+	for _, comment := range comments {
+		if !comment.Deleted {
+			if err := comment.Delete(ctx, admin, UserGroupAdmins); err != nil {
+				return err
+			}
+			log.Printf("Deleted %s's comment: %v\n", comment.AuthorUsername, comment.ID)
+		}
+	}
+
+	return nil
+}
+
 // Ban bans the user from site. Important: Make sure to log out all sessions of
 // this user before calling this function, and never allow this user to login.
 //

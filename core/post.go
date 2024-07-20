@@ -889,7 +889,7 @@ func (p *Post) setGhostAuthorID() {
 // Delete deletes p on behalf of user, who's deleting the post in his capacity
 // as g. In case the post is deleted by an admin or a mod, a notification is
 // sent to the original poster.
-func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteContent bool) error {
+func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteContent bool, sendNotif bool) error {
 	if p.Deleted && !(deleteContent && !p.DeletedContent) {
 		return &httperr.Error{
 			HTTPStatus: http.StatusConflict,
@@ -1003,7 +1003,7 @@ func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteConte
 		RemoveAllReportsOfPost(ctx, p.db, p.ID)
 	}
 
-	if g == UserGroupAdmins || g == UserGroupMods {
+	if sendNotif && (g == UserGroupAdmins || g == UserGroupMods) {
 		go func() {
 			if err := CreatePostDeletedNotification(context.Background(), p.db, p.AuthorID, g, true, p.ID); err != nil {
 				log.Printf("Failed to create deleted_post notification on post %v\n", p.PublicID)
