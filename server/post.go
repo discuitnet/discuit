@@ -286,10 +286,10 @@ func (s *Server) imageUpload(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	if err := s.rateLimit(r, "uploads_1_"+r.viewer.String(), time.Second*2, 1); err != nil {
+	if err := s.rateLimit(r, "uploads_1_"+r.viewer.String(), time.Second*1, 5); err != nil {
 		return err
 	}
-	if err := s.rateLimit(r, "uploads_2_"+r.viewer.String(), time.Hour*24, 40); err != nil {
+	if err := s.rateLimit(r, "uploads_2_"+r.viewer.String(), time.Hour*24, 80); err != nil {
 		return err
 	}
 
