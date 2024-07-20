@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,9 +24,5 @@ jobs:
     - name: Install dependencies
       run: go mod tidy
 
-  test:
-    runs-on: ubuntu-latest
-
-    steps:
     - name: Run tests
       run: go test -race -cover -coverprofile coverage.out -timeout 180s  github.com/discuitnet/discuit/...
