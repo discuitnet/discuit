@@ -63,6 +63,16 @@ type Config struct {
 	ImagesFolderPath string `yaml:"imagesFolderPath"`
 
 	MaxImagesPerPost int `yaml:"maxImagesPerPost"`
+
+	// For the front-end:
+	CaptchaSiteKey string `yaml:"captchaSiteKey"`
+	EmailContact   string `yaml:"emailContact"`
+	FacebookURL    string `yaml:"facebookURL"`
+	TwitterURL     string `yaml:"twitterURL"`
+	InstagramURL   string `yaml:"instagramURL"`
+	DiscordURL     string `yaml:"discordURL"`
+	GithubURL      string `yaml:"githubURL"`
+	SubstackURL    string `yaml:"substackURL"`
 }
 
 // Parse parses the yaml file at path and returns a Config.
@@ -133,6 +143,16 @@ func Parse(path string) (*Config, error) {
 
 		// The location where images are saved on disk.
 		"DISCUIT_IMAGES_FOLDER_PATH": &c.ImagesFolderPath,
+
+		// For the front-end:
+		"DISCUIT_CAPTCHA_SITEKEY": &c.CaptchaSiteKey,
+		"DISCUIT_EMAIL_CONTACT":   &c.EmailContact,
+		"DISCUIT_FACEBOOK_URL":    &c.FacebookURL,
+		"DISCUIT_TWITTER_URL":     &c.TwitterURL,
+		"DISCUIT_INSTAGRAM_URL":   &c.InstagramURL,
+		"DISCUIT_DISCORD_URL":     &c.DiscordURL,
+		"DISCUIT_GITHUB_URL":      &c.GithubURL,
+		"DISCUIT_SUBSTACK_URL":    &c.SubstackURL,
 	}
 
 	// Attempt to unmarshal the YAML file if it exists
