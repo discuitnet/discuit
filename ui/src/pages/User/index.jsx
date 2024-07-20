@@ -29,6 +29,7 @@ import { useFetchUsersLists, useMuteUser } from '../../hooks';
 import UserProPic from '../../components/UserProPic';
 import BadgesList from './BadgesList';
 import SelectBar from '../../components/SelectBar';
+import BanUserButton from './BanUserButton';
 
 function formatFilterText(filter = '') {
   filter.toLowerCase();
@@ -152,27 +153,6 @@ const User = () => {
   const itemsInitiallyInView = useSelector(selectFeedInViewItems(feedUrl));
   const handleSaveVisibleItems = (items) => {
     dispatch(feedInViewItemsUpdated(feedUrl, items));
-  };
-
-  const handleBanUser = async () => {
-    if (!window.confirm('Are you sure?')) return;
-    try {
-      const res = await mfetch(`/api/_admin`, {
-        method: 'POST',
-        body: JSON.stringify({
-          action: user.isBanned ? 'unban_user' : 'ban_user',
-          username: user.username,
-        }),
-      });
-      if (res.status === 200) {
-        alert(`User ${user.isBanned ? 'un' : ''}banned successfully.`);
-        window.location.reload();
-      } else {
-        alert('Failed to ban user: ' + (await res.text()));
-      }
-    } catch (error) {
-      dispatch(snackAlertError(error));
-    }
   };
 
   const refetchUser = async () => {
@@ -513,11 +493,7 @@ const User = () => {
               )}
               {viewerAdmin && (
                 <>
-                  {viewer.id !== user.id && (
-                    <button className="button-red" onClick={handleBanUser}>
-                      {user.isBanned ? `Unban user` : 'Ban user'}
-                    </button>
-                  )}
+                  {viewer.id !== user.id && <BanUserButton user={user} />}
                   <button className="button-green" onClick={handleGiveSupporterBadge}>
                     {hasSupporterBadge ? 'Remove supporter badge' : 'Give supporter badge'}
                   </button>

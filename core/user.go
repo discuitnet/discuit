@@ -746,7 +746,6 @@ func (u *User) DeleteContent(ctx context.Context, n int, admin uid.ID) error {
 			if err := post.Delete(ctx, admin, UserGroupAdmins, true, false); err != nil {
 				return err
 			}
-			log.Printf("Deleted %s's post: %s\n", post.AuthorUsername, post.Title)
 		}
 	}
 
@@ -772,7 +771,6 @@ func (u *User) DeleteContent(ctx context.Context, n int, admin uid.ID) error {
 			if err := comment.Delete(ctx, admin, UserGroupAdmins); err != nil {
 				return err
 			}
-			log.Printf("Deleted %s's comment: %v\n", comment.AuthorUsername, comment.ID)
 		}
 	}
 
