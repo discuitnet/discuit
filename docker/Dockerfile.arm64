@@ -1,36 +1,16 @@
-# syntax=docker/dockerfile:1.4
-
 # Use official Go image for the backend build
-FROM --platform=$BUILDPLATFORM golang:1.21 AS backend-builder
-
-
-# FIX: docker buildx acting weird with the --platform flag
-# 24.04 dpkg: error processing archive libvips42_8.7.4-1+deb10u1_arm64.deb (--install):
-# 24.04  package architecture (arm64) does not match system (amd64)
-# 24.05 Errors were encountered while processing:
-# 24.05  libvips42_8.7.4-1+deb10u1_arm64.deb
+FROM golang:1.21 AS backend-builder
 
 # Install runtime dependencies (libvips)
-ARG TARGETARCH
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget \
-    software-properties-common && \
-    if [ "$TARGETARCH" = "arm64" ]; then \
-        wget http://ftp.us.debian.org/debian/pool/main/v/vips/libvips42_8.7.4-1+deb10u1_arm64.deb && \
-        dpkg -i libvips42_8.7.4-1+deb10u1_arm64.deb; \
-        # wget http://ftp.us.debian.org/debian/pool/main/v/vips/libvips42_8.7.4-1+deb10u1_amd64.deb && \
-        # dpkg -i libvips42_8.7.4-1+deb10u1_amd64.deb; \
-    else \
-        apt-get install -y libvips-dev; \
-    fi && \
+    libvips-dev && \
+    libvips=8.8.4 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Set the environment variables for the build
-ARG TARGETOS
-ARG TARGETARCH
-ENV GOOS=$TARGETOS
-ENV GOARCH=$TARGETARCH
+ENV GOOS=linux
+ENV GOARCH=arm64
 
 # Copy the source code and build the backend
 WORKDIR /app
@@ -40,7 +20,7 @@ COPY . .
 RUN go build -ldflags "-s -w" -o discuit .
 
 # Use official Node image for the frontend build
-FROM --platform=$BUILDPLATFORM node:18 AS frontend-builder
+FROM node:18 AS frontend-builder
 
 # Copy required configuration files and build files
 WORKDIR /app
@@ -60,19 +40,11 @@ FROM node:18
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install runtime dependencies
-ARG TARGETARCH
 RUN apt-get update && apt-get install -y --no-install-recommends \
     mariadb-server \
     redis-server \
-    wget && \
-    if [ "$TARGETARCH" = "arm64" ]; then \
-        wget http://ftp.us.debian.org/debian/pool/main/v/vips/libvips42_8.7.4-1+deb10u1_arm64.deb && \
-        dpkg -i libvips42_8.7.4-1+deb10u1_arm64.deb; \
-        # wget http://ftp.us.debian.org/debian/pool/main/v/vips/libvips42_8.7.4-1+deb10u1_amd64.deb && \
-        # dpkg -i libvips42_8.7.4-1+deb10u1_amd64.deb; \
-    else \
-        apt-get install -y libvips-dev; \
-    fi && \
+    libvips-dev && \
+    libvips=8.8.4 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
