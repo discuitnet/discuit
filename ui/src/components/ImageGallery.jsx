@@ -93,19 +93,13 @@ const ImageGallery = ({
     <div className={'image-gallery' + (className ? ` ${className}` : '')} {...props}>
       <div
         className="image-gallery-next-btn is-button is-previous"
-        onClick={() => showLeftArrow && setCurrentImageIndex((n) => n - 1)}
-        style={{
-          opacity: showLeftArrow ? 1 : 0,
-        }}
+        onClick={() => setCurrentImageIndex(showLeftArrow ? (n) => n - 1 : numImages - 1)}
       >
         {nextIcon}
       </div>
       <div
         className="image-gallery-next-btn is-button"
-        onClick={() => showRightArrow && setCurrentImageIndex((n) => n + 1)}
-        style={{
-          opacity: showRightArrow ? 1 : 0,
-        }}
+        onClick={() => setCurrentImageIndex(showRightArrow ? (n) => n + 1 : 0)}
       >
         {nextIcon}
       </div>
