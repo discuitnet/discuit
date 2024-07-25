@@ -396,8 +396,9 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 	}
 
 	for _, user := range users {
-		// Hide the users' email from everyone except the user and admins.
-		if viewerAdmin || (viewer != nil && *viewer == user.ID) {
+		// Hide everything that only the user themself should see from public
+		// view.
+		if viewer != nil && *viewer == user.ID {
 			if user.Email.Valid {
 				user.EmailPublic = new(string)
 				*user.EmailPublic = user.Email.String
@@ -468,6 +469,12 @@ func RegisterUser(ctx context.Context, db *sql.DB, username, email, password str
 		log.Println("Failed to add user to default communities: ", err)
 		// Continue on failure.
 	}
+
+	if err := CreateList(ctx, db, id, "bookmarks", "Bookmarks", msql.NullString{}, false); err != nil {
+		log.Println("Failed to create the default community of user: ", username)
+		// Continue on failure.
+	}
+
 	return GetUser(ctx, db, id, nil)
 }
 
@@ -676,6 +683,11 @@ func (u *User) Delete(ctx context.Context) error {
 			return err
 		}
 
+		// Delete the user's lists.
+		if _, err := tx.ExecContext(ctx, "DELETE FROM lists WHERE user_id = ?", u.ID); err != nil {
+			return err
+		}
+
 		// Delete the user's profile picture
 		if err := u.DeleteProPicTx(ctx, tx); err != nil {
 			return err
@@ -710,6 +722,67 @@ func (u *User) Delete(ctx context.Context) error {
 		u.NumNewNotifications = 0
 		return nil
 	})
+}
+
+// DeleteContent deletes all posts and comments of user that were created in the
+// last n days.
+func (u *User) DeleteContent(ctx context.Context, n int, admin uid.ID) error {
+	t := time.Now()
+	defer func() {
+		log.Printf("Took %v to delete content of user %s\n", time.Since(t), u.Username)
+	}()
+
+	where, args := "WHERE posts.user_id = ?", []any{u.ID}
+	if n > 0 {
+		since := time.Now().Add(-1 * time.Hour * 24 * time.Duration(n))
+		where += " AND posts.created_at > ?"
+		args = append(args, since)
+	}
+
+	query := buildSelectPostQuery(false, where)
+	rows, err := u.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	posts, err := scanPosts(ctx, u.db, rows, nil)
+	if err != nil {
+		return err
+	}
+
+	for _, post := range posts {
+		if !(post.Deleted && post.DeletedContent) {
+			if err := post.Delete(ctx, admin, UserGroupAdmins, true, false); err != nil {
+				return err
+			}
+		}
+	}
+
+	where, args = "WHERE comments.user_id = ?", []any{u.ID}
+	if n > 0 {
+		since := time.Now().Add(-1 * time.Hour * 24 * time.Duration(n))
+		where += " AND comments.created_at > ?"
+		args = append(args, since)
+	}
+
+	query = buildSelectCommentsQuery(false, where)
+	rows, err = u.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	comments, err := scanComments(ctx, u.db, rows, nil)
+	if err != nil {
+		return err
+	}
+
+	for _, comment := range comments {
+		if !comment.Deleted {
+			if err := comment.Delete(ctx, admin, UserGroupAdmins); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 // Ban bans the user from site. Important: Make sure to log out all sessions of
@@ -859,7 +932,7 @@ func (u *User) DeleteProPicTx(ctx context.Context, tx *sql.Tx) error {
 	if _, err := u.db.ExecContext(ctx, "UPDATE users SET pro_pic = NULL where id = ?", u.ID); err != nil {
 		return fmt.Errorf("failed to set users.pro_pic to null for user %s: %w", u.Username, err)
 	}
-	if err := images.DeleteImageTx(ctx, tx, u.db, *u.ProPic.ID); err != nil {
+	if err := images.DeleteImagesTx(ctx, tx, u.db, *u.ProPic.ID); err != nil {
 		return fmt.Errorf("failed to delete pro pic of user %s: %w", u.Username, err)
 	}
 	u.ProPic = nil
@@ -893,7 +966,7 @@ func (u *User) UpdateProPic(ctx context.Context, image []byte) error {
 		}
 		if _, err := tx.ExecContext(ctx, "UPDATE users SET pro_pic = ? WHERE id = ?", imageID, u.ID); err != nil {
 			// Attempt to delete the image
-			if err := images.DeleteImageTx(ctx, tx, u.db, imageID); err != nil {
+			if err := images.DeleteImagesTx(ctx, tx, u.db, imageID); err != nil {
 				log.Printf("failed to delete image (core.User.UpdateProPic): %v\n", err)
 			}
 			return fmt.Errorf("failed to set users.pro_pic to value: %w", err)
@@ -912,6 +985,14 @@ func (u *User) UpdateProPic(ctx context.Context, image []byte) error {
 	u.ProPic = record.Image()
 	setCommunityProPicCopies(u.ProPic)
 	return nil
+}
+
+func (u *User) Muted(ctx context.Context, db *sql.DB, user uid.ID) (bool, error) {
+	return UserMuted(ctx, db, u.ID, user)
+}
+
+func (u *User) MutedBy(ctx context.Context, db *sql.DB, user uid.ID) (bool, error) {
+	return UserMuted(ctx, db, user, u.ID)
 }
 
 // badgeTypeInt returns the int badge type of badgeType.
@@ -1188,4 +1269,16 @@ func UserDeleted(db *sql.DB, user uid.ID) (bool, error) {
 		return false, err
 	}
 	return deletedAt.Valid, nil
+}
+
+// UserMuted reports whether the user muted is muted by the user muter.
+func UserMuted(ctx context.Context, db *sql.DB, muter, muted uid.ID) (bool, error) {
+	var rowID int
+	if err := db.QueryRow("SELECT id FROM muted_users WHERE user_id = ? AND muted_user_id = ?", muter, muted).Scan(&rowID); err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, fmt.Errorf("UserMuted db error: %w", err)
+	}
+	return true, nil
 }

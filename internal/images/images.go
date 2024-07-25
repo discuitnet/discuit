@@ -860,21 +860,30 @@ func SaveImageTx(ctx context.Context, tx *sql.Tx, storeName string, file []byte,
 	return id, nil
 }
 
-func DeleteImageTx(ctx context.Context, tx *sql.Tx, db *sql.DB, image uid.ID) error {
-	record, err := GetImageRecord(ctx, db, image)
+func DeleteImagesTx(ctx context.Context, tx *sql.Tx, db *sql.DB, images ...uid.ID) error {
+	records, err := GetImageRecords(ctx, db, images...)
 	if err != nil {
 		return err
 	}
 
-	if err := record.store().delete(record); err != nil {
-		return err
+	for _, record := range records {
+		if err := record.store().delete(record); err != nil {
+			return err
+		}
 	}
 
 	// Attempt to remove images from cache. Continue even on failure.
-	if err := removeFromCache(image); err != nil {
-		log.Printf("error removing images from cache on image id %v", err)
+	for _, image := range images {
+		if err := removeFromCache(image); err != nil {
+			log.Printf("error removing images from cache on image id %v", err)
+		}
 	}
 
-	_, err = tx.ExecContext(ctx, "DELETE FROM images WHERE id = ?", image)
+	args := make([]any, len(images))
+	for i := range images {
+		args[i] = images[i]
+	}
+
+	_, err = tx.ExecContext(ctx, fmt.Sprintf("DELETE FROM images WHERE id IN %s", msql.InClauseQuestionMarks(len(images))), args...)
 	return err
 }

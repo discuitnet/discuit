@@ -6,15 +6,17 @@ import TimeAgo from '../TimeAgo';
 import { useIsMobile, useMuteCommunity, useMuteUser } from '../../hooks';
 import Dropdown from '../Dropdown';
 import { ButtonMore } from '../Button';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { UserLink } from '../UserProPic';
 import { userHasSupporterBadge } from '../../pages/User';
+import { saveToListModalOpened } from '../../slices/mainSlice';
 
 const PostCardHeadingDetails = ({
   post,
   userGroup,
   showEdited = false,
   showAuthorProPic = false,
+  onRemoveFromList = null,
 }) => {
   // const userURL = `/@${post.username}`;
   userGroup = userGroup ?? post.userGroup;
@@ -30,7 +32,7 @@ const PostCardHeadingDetails = ({
   const isMobile = useIsMobile();
   const isPinned = post.isPinned || post.isPinnedSite;
 
-  // const dispatch = useDispatch();
+  const dispatch = useDispatch();
   //
   // const isAuthorMuted = useSelector(selectIsUserMuted(post.userId));
   // const isCommunityMuted = useSelector(selectIsCommunityMuted(post.communityId));
@@ -101,6 +103,20 @@ const PostCardHeadingDetails = ({
                   {muteUserText}
                 </button>
               )}
+              <button
+                className="button-clear dropdown-item"
+                onClick={() => dispatch(saveToListModalOpened(post.id, 'post'))}
+              >
+                Save to list
+              </button>
+              {onRemoveFromList && (
+                <button
+                  className="button-clear dropdown-item"
+                  onClick={() => onRemoveFromList(post.id)}
+                >
+                  Remove from list
+                </button>
+              )}
             </div>
           </Dropdown>
         )}
@@ -115,6 +131,7 @@ PostCardHeadingDetails.propTypes = {
   userGroup: PropTypes.string,
   showEdited: PropTypes.bool,
   showAuthorProPic: PropTypes.bool,
+  onRemoveFromList: PropTypes.func,
 };
 
 export default PostCardHeadingDetails;

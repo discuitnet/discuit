@@ -1,7 +1,28 @@
 @use 'mixins';
 
+@font-face {
+    font-family: InterVariable;
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('../assets/fonts/InterVariable.woff2') format('woff2');
+    unicode-range: U+0-2B1B, U+2B1D-10FFF;
+}
+@font-face {
+    font-family: InterVariable;
+    font-style: italic;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('../assets/fonts/InterVariable-Italic.woff2') format('woff2');
+    unicode-range: U+0-2B1B, U+2B1D-10FFF;
+}
+
 :root {
-    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --custom-font: InterVariable, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial,
+        sans-serif;
+    --system-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --font: var(--custom-font);
+    --font-features: 'ss04' 1, 'case' 1, 'cv10' 1, 'ccmp' 1;
     --fs-base: 10px;
     --fs-xs: 1.2rem; // extra small
     --fs-s: 1.3rem; // small
@@ -199,8 +220,15 @@ html.theme-dark {
 
 html {
     font-family: var(--font);
+    font-feature-settings: var(--font-features);
     font-size: var(--fs-base);
     line-height: 1.5; // 1.333;
+    letter-spacing: -0.15px; // Because Inter is a bit too wide by default.
+}
+
+html.is-system-font {
+    --font: var(--system-font);
+    letter-spacing: initial;
 }
 
 .rotate-180 {
@@ -234,6 +262,10 @@ body {
         --fs-normal: 1.6rem;
         --fs-l: 1.7rem;
         --fs-xl: 1.8rem;
+    }
+
+    &.is-not-gray {
+        background: var(--color-bg);
     }
 }
 
@@ -355,6 +387,10 @@ ul {
     // list-style-position: inside;
 }
 
+.safari16 body {
+    font-variation-settings: 'opsz' 14;
+}
+
 code {
     font-family: monospace;
 }
@@ -391,6 +427,10 @@ code {
         .card-title {
             font-weight: 600;
             color: inherit;
+        }
+        .card-link {
+            color: var(--color-link);
+            font-size: var(--fs-xs);
         }
         > a:not(.card-title) {
             font-size: var(--fs-xs);
@@ -656,7 +696,7 @@ button,
     &.button-icon {
         &:hover,
         &.is-active {
-            background: var(--color-button);
+            background: var(--color-button-hover);
         }
     }
     &.button-icon-simple {
@@ -676,6 +716,13 @@ button,
         span {
             height: var(--button-icon-size);
             margin-left: 8px;
+        }
+        &.is-text-first {
+            flex-direction: row-reverse;
+            span {
+                margin-left: 0;
+                margin-right: 8px;
+            }
         }
     }
     &:disabled,
@@ -777,6 +824,11 @@ a,
         }
         @include mixins.mobile {
             grid-template-columns: 1fr;
+        }
+    }
+    &.page-lists {
+        @include mixins.tablet {
+            grid-template-columns: 0 1fr;
         }
     }
     @include mixins.not-mobile {

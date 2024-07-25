@@ -11,29 +11,33 @@ import (
 
 	"github.com/discuitnet/discuit/cli/migrate"
 	"github.com/discuitnet/discuit/config"
+	"github.com/joho/godotenv"
 	"github.com/urfave/cli/v2"
 )
 
 func Before(c *cli.Context) error {
+	// Load environment variables.
+	_ = godotenv.Load()
+
 	// Load config file.
 	conf, err := config.Parse("./config.yaml")
 	if err != nil {
 		log.Fatal("Error parsing config file: ", err)
 	}
 
-	// Connect to MariaDB.
-	db := openDatabase(conf.DBAddr, conf.DBUser, conf.DBPassword, conf.DBName)
+	if os.Args[1] != "inject-config" {
+		db := openDatabase(conf.DBAddr, conf.DBUser, conf.DBPassword, conf.DBName)
+		c.Context = context.WithValue(c.Context, "db", db)
+	}
 
-	// Store Config and DB in context.
 	c.Context = context.WithValue(c.Context, "config", conf)
-	c.Context = context.WithValue(c.Context, "db", db)
-
 	return nil
 }
 
 func After(c *cli.Context) error {
-	db := c.Context.Value("db").(*sql.DB)
-	defer db.Close()
+	if db, ok := c.Context.Value("db").(*sql.DB); ok {
+		db.Close()
+	}
 	return nil
 }
 

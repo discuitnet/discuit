@@ -13,6 +13,7 @@ import Image from './Image';
 import LinkImage from './LinkImage';
 import { useIsMobile } from '../../hooks';
 import getEmbedComponent from './embed';
+import PostImageGallery from '../PostImageGallery';
 
 const PostCard = ({
   index = 100, // index in feed
@@ -22,6 +23,7 @@ const PostCard = ({
   compact = false,
   inModTools = false,
   disableEmbeds = false,
+  onRemoveFromList = null,
 }) => {
   const history = useHistory();
 
@@ -38,7 +40,7 @@ const PostCard = ({
     let isButtonClick = false;
     let el = e.target;
     while (el && !el.classList.contains('post-card-card')) {
-      if (el.nodeName === 'BUTTON' || el.nodeName === 'A') {
+      if (el.nodeName === 'BUTTON' || el.nodeName === 'A' || el.classList.contains('is-button')) {
         isButtonClick = true;
         break;
       }
@@ -90,7 +92,7 @@ const PostCard = ({
         onAuxClick={handleAuxClick}
       >
         <div className="post-card-heading">
-          <PostCardHeadingDetails post={post} target={target} />
+          <PostCardHeadingDetails post={post} target={target} onRemoveFromList={onRemoveFromList} />
         </div>
         <div className={'post-card-body' + (isDomainHovering ? ' is-domain-hover' : '')}>
           <div className="post-card-title">
@@ -134,14 +136,17 @@ const PostCard = ({
               </ShowMoreBox>
             </div>
           )}
-          {showImage && (
+          {showImage && post.images.length === 1 && (
             <Image
-              post={post}
+              image={post.images[0]}
               to={postURL}
               target={target}
               isMobile={isMobile}
               loading={imageLoadingStyle}
             />
+          )}
+          {showImage && post.images.length > 1 && (
+            <PostImageGallery post={post} isMobile={isMobile} />
           )}
         </div>
         <div className="post-card-bottom">
@@ -186,6 +191,8 @@ PostCard.propTypes = {
   openInTab: PropTypes.bool,
   compact: PropTypes.bool,
   inModTools: PropTypes.bool,
+  disableEmbeds: PropTypes.bool,
+  onRemoveFromList: PropTypes.func,
 };
 
 export default PostCard;

@@ -49,20 +49,24 @@ const PostShareButton = ({ post }) => {
         url,
       });
     } catch (err) {
-      console.log(err);
+      console.error(err);
     }
   };
 
   const renderImageDownloadButton = () => {
-    if (!post.image) {
+    if (post.images.length === 0) {
       return (
         <div className="button-clear dropdown-item" style={{ opacity: 'var(--disabled-opacity)' }}>
           Download image
         </div>
       );
     }
-    const url = post.image.url;
-    const filename = `discuit-${post.communityName}[${post.publicId}].${post.image.format}`;
+
+    const image = post.images[post.imageGalleryIndex];
+    const url = image.url;
+    const filename = `discuit-${post.communityName}[${post.publicId}]-${
+      post.imageGalleryIndex + 1
+    }.${image.format}`;
     return (
       <a href={url} className="button-clear dropdown-item" download={filename}>
         Download image

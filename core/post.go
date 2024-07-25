@@ -113,7 +113,8 @@ type Post struct {
 	Title string          `json:"title"`
 	Body  msql.NullString `json:"body"`
 
-	Image *images.Image `json:"image"`
+	Image  *images.Image   `json:"image"`
+	Images []*images.Image `json:"images"`
 
 	link *postLink `json:"-"` // what's saved to the DB
 
@@ -265,6 +266,37 @@ func GetPost(ctx context.Context, db *sql.DB, postID *uid.ID, publicID string, v
 	return posts[0], err
 }
 
+func GetPostsByIDs(ctx context.Context, db *sql.DB, viewer *uid.ID, includeDeleted bool, ids ...uid.ID) ([]*Post, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	loggedIn := viewer != nil
+
+	where := fmt.Sprintf("WHERE posts.id IN %s", msql.InClauseQuestionMarks(len(ids)))
+	if !includeDeleted {
+		where += " AND posts.deleted_at IS NULL"
+	}
+
+	var (
+		query = buildSelectPostQuery(loggedIn, where)
+		args  = []any{}
+	)
+	if loggedIn {
+		args = append(args, viewer)
+	}
+	for _, id := range ids {
+		args = append(args, id)
+	}
+
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("db error on query '%s' with args (%v)", query, args)
+	}
+
+	return scanPosts(ctx, db, rows, viewer)
+}
+
 // scanPosts returns ErrPostNotFound is no posts are found.
 func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) ([]*Post, error) {
 	defer rows.Close()
@@ -273,7 +305,10 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 	loggedIn := viewer != nil
 
 	for rows.Next() {
-		post := &Post{db: db}
+		post := &Post{
+			db:     db,
+			Images: make([]*images.Image, 0),
+		}
 		var linkBytes []byte
 		dest := []interface{}{
 			&post.ID,
@@ -506,6 +541,7 @@ func populatePostsImages(ctx context.Context, db *sql.DB, posts []*Post) error {
 				img.AppendCopy("large", 1080, 2160, images.ImageFitContain, "")
 				img.AppendCopy("large", 2160, 4320, images.ImageFitContain, "")
 				post.Image = img
+				post.Images = append(post.Images, img)
 				break
 			}
 		}
@@ -530,6 +566,11 @@ var (
 	postsTablesValidity = []time.Duration{0 - time.Hour*24, 0 - time.Hour*24*7, 0 - time.Hour*24*30, 0 - time.Hour*24*365}
 )
 
+type ImageUpload struct {
+	ImageID uid.ID `json:"imageId"`
+	Caption string `json:"caption"`
+}
+
 type createPostOpts struct {
 	// Required:
 	author    uid.ID
@@ -541,7 +582,8 @@ type createPostOpts struct {
 	body      string // for text posts
 	link      postLink
 	linkImage []byte // for link posts (thumbnail image)
-	image     uid.ID // for image posts
+	// image     uid.ID // for image posts
+	images []*ImageUpload // for image posts
 }
 
 func createPost(ctx context.Context, db *sql.DB, opts *createPostOpts) (*Post, error) {
@@ -599,10 +641,11 @@ func createPost(ctx context.Context, db *sql.DB, opts *createPostOpts) (*Post, e
 			Fit:    images.ImageFitCover,
 		})
 		if err != nil {
-			tx.Rollback()
-			return nil, err
+			log.Printf("could not save the og:image of post %s with link %s\n", post.ID, opts.link.URL)
+			// Continue on error...
+		} else {
+			cols = append(cols, msql.ColumnValue{Name: "link_image", Value: imageID})
 		}
-		cols = append(cols, msql.ColumnValue{Name: "link_image", Value: imageID})
 	}
 
 	query, args := msql.BuildInsertQuery("posts", cols)
@@ -612,13 +655,28 @@ func createPost(ctx context.Context, db *sql.DB, opts *createPostOpts) (*Post, e
 	}
 
 	if opts.postType == PostTypeImage {
-		// Save image post image.
-		if _, err = tx.ExecContext(ctx, "INSERT INTO post_images (post_id, image_id) VALUES (?, ?)", post.ID, opts.image); err != nil {
+		// Insert the rows into post_images table.
+		var rows [][]msql.ColumnValue
+		for _, image := range opts.images {
+			row := []msql.ColumnValue{
+				{Name: "post_id", Value: post.ID},
+				{Name: "image_id", Value: image.ImageID},
+			}
+			rows = append(rows, row)
+		}
+
+		query, args := msql.BuildInsertQuery("post_images", rows...)
+		if _, err = tx.ExecContext(ctx, query, args...); err != nil {
 			tx.Rollback()
 			return nil, err
 		}
-		// Delete row from temp images table.
-		if _, err = tx.ExecContext(ctx, "DELETE FROM temp_images_2 WHERE image_id = ?", opts.image); err != nil {
+
+		// Delete rows from the temp_images table.
+		imageIDs := make([]any, len(opts.images))
+		for i := range opts.images {
+			imageIDs[i] = opts.images[i].ImageID
+		}
+		if _, err = tx.ExecContext(ctx, fmt.Sprintf("DELETE FROM temp_images WHERE image_id IN %s", msql.InClauseQuestionMarks(len(opts.images))), imageIDs...); err != nil {
 			tx.Rollback()
 			return nil, err
 		}
@@ -634,7 +692,7 @@ func createPost(ctx context.Context, db *sql.DB, opts *createPostOpts) (*Post, e
 
 	// For the user profile page.
 	if _, err := tx.ExecContext(ctx, "INSERT INTO posts_comments (target_id, user_id, target_type) VALUES (?, ?, ?)",
-		post.ID, opts.author, postsCommentsTypePosts); err != nil {
+		post.ID, opts.author, ContentTypePost); err != nil {
 		tx.Rollback()
 		return nil, err
 	}
@@ -661,12 +719,16 @@ func CreateTextPost(ctx context.Context, db *sql.DB, author, community uid.ID, t
 	})
 }
 
-func CreateImagePost(ctx context.Context, db *sql.DB, author, community uid.ID, title string, imageID uid.ID) (*Post, error) {
+func CreateImagePost(ctx context.Context, db *sql.DB, author, community uid.ID, title string, imgs []*ImageUpload) (*Post, error) {
 	// We don't check whether the image belongs to the person who uploaded it.
 	// This is not a big deal as image ids are hard to guess.
 
-	// Check if the image exists.
-	if _, err := images.GetImageRecord(ctx, db, imageID); err != nil {
+	// Check if the images exist.
+	recordIDs := make([]uid.ID, len(imgs))
+	for i := range imgs {
+		recordIDs[i] = imgs[i].ImageID
+	}
+	if _, err := images.GetImageRecords(ctx, db, recordIDs...); err != nil {
 		if err == images.ErrImageNotFound {
 			return nil, errImageNotFound
 		}
@@ -678,7 +740,7 @@ func CreateImagePost(ctx context.Context, db *sql.DB, author, community uid.ID, 
 		author:    author,
 		community: community,
 		title:     title,
-		image:     imageID,
+		images:    imgs,
 	})
 }
 
@@ -695,10 +757,11 @@ func getLinkPostImage(u *url.URL) []byte {
 
 	imageURL, err := httputil.ExtractOpenGraphImage(res.Body)
 	if err != nil {
-		// TODO: Log this error.
+		log.Printf("error extracting the og:image tag of url: %v\n", u)
+		return nil
 	}
 	if imageURL == "" {
-		// Since og:image not found, see if the link itself is an image.
+		// Since og:image is not found, see if the link itself is an image.
 		probablyAnImage := slices.Contains([]string{"image/jpeg", "image/png", "image/webp"}, res.Header.Get("Content-Type"))
 		if !probablyAnImage {
 			exts := []string{".jpg", ".jpeg", ".png", ".webp"}
@@ -719,8 +782,14 @@ func getLinkPostImage(u *url.URL) []byte {
 			return nil
 		}
 		defer res.Body.Close()
+		if res.StatusCode < 200 || res.StatusCode > 299 {
+			return nil
+		}
 		image, err := io.ReadAll(res.Body)
 		if err != nil {
+			return nil
+		}
+		if len(image) == 0 {
 			return nil
 		}
 		return image
@@ -820,7 +889,7 @@ func (p *Post) setGhostAuthorID() {
 // Delete deletes p on behalf of user, who's deleting the post in his capacity
 // as g. In case the post is deleted by an admin or a mod, a notification is
 // sent to the original poster.
-func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteContent bool) error {
+func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteContent bool, sendNotif bool) error {
 	if p.Deleted && !(deleteContent && !p.DeletedContent) {
 		return &httperr.Error{
 			HTTPStatus: http.StatusConflict,
@@ -898,11 +967,17 @@ func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteConte
 				if _, err := tx.ExecContext(ctx, "DELETE FROM post_images WHERE post_id = ?", p.ID); err != nil {
 					return err
 				}
-				if err := images.DeleteImageTx(ctx, tx, p.db, *p.Image.ID); err != nil {
+
+				imageIDs := make([]uid.ID, len(p.Images))
+				for i := range p.Images {
+					imageIDs[i] = *p.Images[i].ID
+				}
+
+				if err := images.DeleteImagesTx(ctx, tx, p.db, imageIDs...); err != nil {
 					return err
 				}
 			} else if p.Type == PostTypeLink && p.HasLinkImage() {
-				if err := images.DeleteImageTx(ctx, tx, p.db, *p.Link.Image.ID); err != nil {
+				if err := images.DeleteImagesTx(ctx, tx, p.db, *p.Link.Image.ID); err != nil {
 					return err
 				}
 			}
@@ -928,7 +1003,7 @@ func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteConte
 		RemoveAllReportsOfPost(ctx, p.db, p.ID)
 	}
 
-	if g == UserGroupAdmins || g == UserGroupMods {
+	if sendNotif && (g == UserGroupAdmins || g == UserGroupMods) {
 		go func() {
 			if err := CreatePostDeletedNotification(context.Background(), p.db, p.AuthorID, g, true, p.ID); err != nil {
 				log.Printf("Failed to create deleted_post notification on post %v\n", p.PublicID)
@@ -1342,20 +1417,6 @@ func getComments(ctx context.Context, db *sql.DB, viewer *uid.ID, where string, 
 	return ret(c, nil)
 }
 
-func getCommentsList(ctx context.Context, db *sql.DB, viewer *uid.ID, IDs []uid.ID) ([]*Comment, error) {
-	where := fmt.Sprintf("WHERE comments.id IN %s", msql.InClauseQuestionMarks(len(IDs)))
-	args := make([]any, len(IDs))
-	for i := range IDs {
-		args[i] = IDs[i]
-	}
-
-	c, err := getComments(ctx, db, viewer, where, args...)
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}
-
 // CommentsCursor is an API pagination cursor.
 type CommentsCursor struct {
 	Upvotes int
@@ -1415,7 +1476,7 @@ func (p *Post) GetComments(ctx context.Context, viewer *uid.ID, cursor *Comments
 	}
 
 	if len(toGet) > 0 {
-		c2, err := getCommentsList(ctx, p.db, viewer, toGet)
+		c2, err := GetCommentsByIDs(ctx, p.db, viewer, toGet...)
 		if err != nil {
 			return nil, err
 		}
@@ -1446,7 +1507,7 @@ func (p *Post) GetCommentReplies(ctx context.Context, viewer *uid.ID, comment ui
 		return nil, nil
 	}
 
-	return getCommentsList(ctx, p.db, viewer, ids)
+	return GetCommentsByIDs(ctx, p.db, viewer, ids...)
 }
 
 // AddComment adds a new comment to post.
@@ -1679,7 +1740,7 @@ func SavePostImage(ctx context.Context, db *sql.DB, authorID uid.ID, image []byt
 			return fmt.Errorf("failed to save post image (author: %v): %w", authorID, err)
 		}
 		imageID = id
-		if _, err := tx.ExecContext(ctx, "INSERT INTO temp_images_2 (user_id, image_id) values (?, ?)", authorID, imageID); err != nil {
+		if _, err := tx.ExecContext(ctx, "INSERT INTO temp_images (user_id, image_id) values (?, ?)", authorID, imageID); err != nil {
 			return fmt.Errorf("failed to insert row into temp_images (author: %v, image: %v): %w", authorID, imageID, err)
 		}
 		return nil
@@ -1694,7 +1755,7 @@ func SavePostImage(ctx context.Context, db *sql.DB, authorID uid.ID, image []byt
 // many were removed.
 func RemoveTempImages(ctx context.Context, db *sql.DB) (int, error) {
 	t := time.Now().Add(-time.Hour * 12)
-	rows, err := db.QueryContext(ctx, "select image_id from temp_images_2 where created_at < ?", t)
+	rows, err := db.QueryContext(ctx, "select image_id from temp_images where created_at < ?", t)
 	if err != nil {
 		return 0, err
 	}
@@ -1720,12 +1781,12 @@ func RemoveTempImages(ctx context.Context, db *sql.DB) (int, error) {
 		for i := range imageIDs {
 			args[i] = imageIDs[i]
 		}
-		query := fmt.Sprintf("DELETE FROM temp_images_2 WHERE image_id IN %s", msql.InClauseQuestionMarks(len(imageIDs)))
+		query := fmt.Sprintf("DELETE FROM temp_images WHERE image_id IN %s", msql.InClauseQuestionMarks(len(imageIDs)))
 		if _, err := db.ExecContext(ctx, query, args...); err != nil {
 			return fmt.Errorf("failed to delete %d rows from temp_images: %w", len(imageIDs), err)
 		}
 		for _, id := range imageIDs {
-			if err := images.DeleteImageTx(ctx, tx, db, id); err != nil {
+			if err := images.DeleteImagesTx(ctx, tx, db, id); err != nil {
 				return err
 			}
 		}

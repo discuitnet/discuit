@@ -260,7 +260,7 @@ func (i *NullBool) Scan(src interface{}) error {
 	case []byte:
 		i.Bool = string(v) != "0"
 	default:
-		return errors.New("Scanning NullBool, unspecified src type")
+		return errors.New("scanning NullBool, unspecified src type")
 	}
 
 	return nil
@@ -351,22 +351,30 @@ type ColumnValue struct {
 
 // BuildInsertQuery prepares an insert sql statement on table. It returns the
 // query string and an array of args for, for example, sql.DB's Exec.
-func BuildInsertQuery(table string, cols []ColumnValue) (query string, args []any) {
-	var b, b2 strings.Builder
+func BuildInsertQuery(table string, rows ...[]ColumnValue) (query string, args []any) {
+	var b strings.Builder
 	fmt.Fprintf(&b, "INSERT INTO %s (", table)
-	b2.WriteString("VALUES (")
-	for i, item := range cols {
+	for i, item := range rows[0] {
 		if i > 0 {
 			b.WriteString(", ")
-			b2.WriteString(", ")
 		}
 		b.WriteString(item.Name)
-		b2.WriteString("?")
-		args = append(args, item.Value)
 	}
-	b.WriteString(") ")
-	b2.WriteString(")")
-	b.WriteString(b2.String())
+	b.WriteString(") VALUES ")
+	for i, row := range rows {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString("(")
+		for i, col := range row {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			b.WriteString("?")
+			args = append(args, col.Value)
+		}
+		b.WriteString(")")
+	}
 	query = b.String()
 	return
 }
@@ -381,7 +389,7 @@ func Transact(ctx context.Context, db *sql.DB, f func(tx *sql.Tx) error) error {
 	}
 
 	if err := f(tx); err != nil {
-		if rErr := tx.Rollback(); err != nil {
+		if rErr := tx.Rollback(); rErr != nil {
 			return fmt.Errorf("%w (rollback error: %w)", err, rErr)
 		}
 		return err

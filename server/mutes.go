@@ -68,7 +68,7 @@ func (s *Server) handleMutes(w *responseWriter, r *request) error {
 			return err
 		}
 	case "DELETE":
-		muteType := core.MuteType(r.urlQueryValue("type"))
+		muteType := core.MuteType(r.urlQueryParamsValue("type"))
 		if !muteType.Valid() {
 			return httperr.NewBadRequest("invalid_mute_type", "Invalid mute type.")
 		}

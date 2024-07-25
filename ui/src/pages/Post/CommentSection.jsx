@@ -102,7 +102,6 @@ const CommentSection = ({
       _toRender = comments.children.length;
       setToRender(comments.children.length);
     }
-    console.log(_toRender);
     for (let i = 0; i < _toRender; i++) {
       const n = comments.children[i];
       rendered.push(

@@ -19,7 +19,7 @@ function makeid(length) {
 }
 
 function readYamlConfigFile() {
-  const file = fs.readFileSync('../config.yaml', 'utf-8');
+  const file = fs.readFileSync('../ui-config.yaml', 'utf-8');
   const preConfig = YAML.parse(file);
   const allowedKeys = [
     'siteName',
@@ -35,6 +35,7 @@ function readYamlConfigFile() {
     'disableForumCreation',
     'forumCreationReqPoints',
     'defaultFeedSort',
+    'maxImagesPerPost',
   ];
   const config = {};
   for (let key in preConfig) {

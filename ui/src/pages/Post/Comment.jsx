@@ -7,7 +7,12 @@ import AddComment from './AddComment';
 import { useDispatch } from 'react-redux';
 import { kRound, mfetchjson, stringCount, toTitleCase, userGroupSingular } from '../../helper';
 import Dropdown from '../../components/Dropdown';
-import { loginPromptToggled, snackAlert, snackAlertError } from '../../slices/mainSlice';
+import {
+  loginPromptToggled,
+  saveToListModalOpened,
+  snackAlert,
+  snackAlertError,
+} from '../../slices/mainSlice';
 import TimeAgo from '../../components/TimeAgo';
 import ModalConfirm from '../../components/Modal/ModalConfirm';
 import ReportModal from '../../components/ReportModal';
@@ -342,6 +347,10 @@ const Comment = ({
     );
   }
 
+  const handleSave = () => {
+    dispatch(saveToListModalOpened(comment.id, 'comment'));
+  };
+
   const upCls = {};
   const downCls = {};
   if (vote === true) {
@@ -618,6 +627,11 @@ const Comment = ({
                       Report
                     </div>
                   )}
+                  {loggedIn && (
+                    <div className="dropdown-item" onClick={handleSave}>
+                      Save to list
+                    </div>
+                  )}
                   {isAdmin && (
                     <>
                       <div className="dropdown-item is-topic">Admin actions</div>
@@ -649,6 +663,11 @@ const Comment = ({
               )}
               {showReport && (
                 <ReportModal target={comment} targetType="comment" disabled={isBanned} />
+              )}
+              {loggedIn && (
+                <button className="button-text" onClick={handleSave}>
+                  Save
+                </button>
               )}
               {isAdmin && (
                 <Dropdown

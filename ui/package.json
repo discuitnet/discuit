@@ -5,13 +5,15 @@
   "private": true,
   "scripts": {
     "start": "webpack serve --open --config webpack.dev.js",
-    "build": "webpack --config webpack.dev.js",
-    "build:prod": "webpack --config webpack.prod.js",
-    "build:local": "webpack --config webpack.local.js",
+    "start:prod-proxy": "cross-env PROXY_HOST=https://discuit.net webpack serve --open --config webpack.dev.js",
+    "build": "npm run generate:yaml && webpack --config webpack.dev.js",
+    "build:prod": "npm run generate:yaml && webpack --config webpack.prod.js",
+    "build:local": "npm run generate:yaml && webpack --config webpack.local.js",
     "watch": "webpack --watch --config webpack.dev.js",
     "lint": "eslint --fix . --ext .jsx --ext .js",
     "format": "prettier --write './**/*.{js,jsx,ts,tsx,css,md,json,scss,html}' --config ./.prettierrc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "generate:yaml": "node ./scripts/generate-yaml.js"
   },
   "keywords": [],
   "author": "",
@@ -48,6 +50,7 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.20.0",
+    "cross-env": "^7.0.3",
     "node-polyfill-webpack-plugin": "^1.1.4",
     "prop-types": "^15.8.1",
     "react": "^18.2.0",
