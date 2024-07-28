@@ -13,8 +13,6 @@ jobs:
         
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          install: true
         
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -26,29 +24,32 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           platforms: linux/arm64
-          push: false
+          push: true
           file: docker/Dockerfile.arm64
           tags: |
-            discuit/discuit:latest-arm64
             discuit/discuit:${{ github.sha }}-arm64
 
-      # - name: Build for ARM64
-      #   run: |
-      #     docker buildx build --platform linux/arm64 --load -f docker/Dockerfile.arm64 -t discuit/discuit:arm64 .
-
-      # - name: Build for AMD64
-      #   run: |
-      #     docker buildx build --platform linux/amd64 --load -f docker/Dockerfile.amd64 -t discuit/discuit:amd64 .
-
-      # - name: Create and push Docker manifest
-      #   run: |
-      #     docker manifest create discuit/discuit:latest --amend discuit/discuit:arm64 --amend discuit/discuit:amd64
-      #     docker manifest push discuit/discuit:latest
+      - name: Build and push Docker image for AMD64
+        uses: docker/build-push-action@v5
+        with:
+          platforms: linux/amd64
+          push: true
+          file: docker/Dockerfile.amd64
+          tags: |
+            discuit/discuit:${{ github.sha }}-amd64
 
       - name: Create and push Docker manifest
         uses: int128/docker-manifest-create-action@v2
         with:
           tags: |
             discuit/discuit:latest
+            discuit/discuit:${{ github.sha }}
           sources: |
-            discuit/discuit:arm64
+            discuit/discuit:${{ github.sha }}-arm64
+            discuit/discuit:${{ github.sha }}-amd64
+
+      # # TODO: Clean up old images used for multi-arch builds
+      # - name: Clean up old images
+      #   run: |
+      #     docker image rm discuit/discuit:${{ github.sha }}-arm64
+      #     docker image rm discuit/discuit:${{ github.sha }}-amd64
