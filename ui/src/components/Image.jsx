@@ -2,28 +2,49 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { useImageLoaded } from '../hooks';
 
-const Image = ({ className, alt, backgroundColor, style = {}, isFullSize = false, ...props }) => {
-  const [loaded, handleLoad] = useImageLoaded();
+const Image = ({
+  className,
+  alt,
+  src,
+  onLoad,
+  backgroundColor,
+  style = {},
+  isFullSize = false,
+  ...props
+}) => {
+  const [loaded, _handleLoad] = useImageLoaded(src);
   const divStyle = {},
-    _style = { ...style };
-  if (backgroundColor) {
-    divStyle.background = loaded ? 'none' : backgroundColor;
+    imgStyle = { ...style };
+  if (!loaded) {
+    if (backgroundColor) {
+      divStyle.background = backgroundColor;
+    }
+    imgStyle.opacity = 0;
   }
-  _style.opacity = loaded ? 1 : 0;
+
+  const handleLoad = () => {
+    _handleLoad();
+    if (onLoad) {
+      onLoad();
+    }
+  };
 
   let cls = 'image';
   if (isFullSize) cls += ' is-fullsize';
+  if (!loaded) cls += ' is-loading';
 
   return (
     <div style={divStyle} className={cls + (className ? ` ${className}` : '')}>
-      <img alt={alt} style={_style} onLoad={handleLoad} {...props} />
+      <img alt={alt} style={imgStyle} onLoad={handleLoad} src={src} {...props} />
     </div>
   );
 };
 
 Image.propTypes = {
   className: PropTypes.string,
+  src: PropTypes.string,
   alt: PropTypes.string,
+  onLoad: PropTypes.func,
   backgroundColor: PropTypes.string,
   style: PropTypes.object,
   isFullSize: PropTypes.bool,

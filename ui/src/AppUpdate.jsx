@@ -5,7 +5,7 @@ import { useIsMobile } from './hooks';
 
 export const forceSwUpdate = async () => {
   if ('serviceWorker' in navigator) {
-    console.log('force updating service worker');
+    console.log('Force updating service worker');
     const registration = await navigator.serviceWorker.ready;
     return registration.update();
   }
@@ -52,11 +52,6 @@ const AppUpdate = () => {
   }, []);
 
   const handleReload = async () => {
-    // if (newSw.current) {
-    //   newSw.postMessage('skipWaiting');
-    // } else {
-    //   console.log('New service worker is not found');
-    // }
     window.location.reload();
   };
 

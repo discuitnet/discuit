@@ -351,22 +351,30 @@ type ColumnValue struct {
 
 // BuildInsertQuery prepares an insert sql statement on table. It returns the
 // query string and an array of args for, for example, sql.DB's Exec.
-func BuildInsertQuery(table string, cols []ColumnValue) (query string, args []any) {
-	var b, b2 strings.Builder
+func BuildInsertQuery(table string, rows ...[]ColumnValue) (query string, args []any) {
+	var b strings.Builder
 	fmt.Fprintf(&b, "INSERT INTO %s (", table)
-	b2.WriteString("VALUES (")
-	for i, item := range cols {
+	for i, item := range rows[0] {
 		if i > 0 {
 			b.WriteString(", ")
-			b2.WriteString(", ")
 		}
 		b.WriteString(item.Name)
-		b2.WriteString("?")
-		args = append(args, item.Value)
 	}
-	b.WriteString(") ")
-	b2.WriteString(")")
-	b.WriteString(b2.String())
+	b.WriteString(") VALUES ")
+	for i, row := range rows {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString("(")
+		for i, col := range row {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			b.WriteString("?")
+			args = append(args, col.Value)
+		}
+		b.WriteString(")")
+	}
 	query = b.String()
 	return
 }

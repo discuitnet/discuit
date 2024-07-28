@@ -22,7 +22,7 @@
         sans-serif;
     --system-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
     --font: var(--custom-font);
-    --font-features: 'ss04' 1, 'case' 1, 'cv10' 1, 'ccmp' 0;
+    --font-features: 'ss04' 1, 'case' 1, 'cv10' 1, 'ccmp' 1;
     --fs-base: 10px;
     --fs-xs: 1.2rem; // extra small
     --fs-s: 1.3rem; // small
@@ -385,6 +385,10 @@ h3 {
 ol,
 ul {
     // list-style-position: inside;
+}
+
+.safari16 body {
+    font-variation-settings: 'opsz' 14;
 }
 
 code {

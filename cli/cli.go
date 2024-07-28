@@ -26,8 +26,10 @@ func Before(c *cli.Context) error {
 		log.Fatal("Error parsing config file: ", err)
 	}
 
-	// Connect to MariaDB.
-	db := openDatabase(conf.DBAddr, conf.DBUser, conf.DBPassword, conf.DBName)
+	if os.Args[1] != "inject-config" {
+		db := openDatabase(conf.DBAddr, conf.DBUser, conf.DBPassword, conf.DBName)
+		c.Context = context.WithValue(c.Context, "db", db)
+	}
 
 	// Connect to MeiliSearch.
 	searchClient := &meilisearch.MeiliSearch{}
@@ -35,17 +37,15 @@ func Before(c *cli.Context) error {
 		searchClient = meilisearch.NewSearchClient(conf.MeiliHost, conf.MeiliKey)
 	}
 
-	// Store Config and DB in context.
-	c.Context = context.WithValue(c.Context, "config", conf)
-	c.Context = context.WithValue(c.Context, "db", db)
 	c.Context = context.WithValue(c.Context, "searchClient", searchClient)
-
+	c.Context = context.WithValue(c.Context, "config", conf)
 	return nil
 }
 
 func After(c *cli.Context) error {
-	db := c.Context.Value("db").(*sql.DB)
-	defer db.Close()
+	if db, ok := c.Context.Value("db").(*sql.DB); ok {
+		db.Close()
+	}
 	return nil
 }
 

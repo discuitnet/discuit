@@ -195,6 +195,7 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	s.staticRouter.PathPrefix("/images/").Handler(&images.Server{
 		SkipHashCheck: conf.IsDevelopment,
 		DB:            db,
+		EnableCORS:    true,
 	})
 
 	if conf.UIProxy != "" {

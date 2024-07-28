@@ -252,15 +252,16 @@ export function useRemoveCanonicalTag(deps) {
   }, deps);
 }
 
-export function useImageLoaded() {
+export function useImageLoaded(imgSrc) {
   const [loaded, setLoaded] = useState(true);
   const timer = useRef();
   useInsertionEffect(() => {
+    setLoaded(true);
     timer.current = setTimeout(() => {
       setLoaded(false);
     }, 10);
     return () => clearTimeout(timer.current);
-  }, []);
+  }, [imgSrc]);
   const handleLoad = () => {
     clearTimeout(timer.current);
     setLoaded(true);

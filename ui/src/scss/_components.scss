@@ -1120,3 +1120,92 @@
         }
     }
 }
+
+.image-gallery {
+    position: relative;
+
+    // Without this, Chrome, for some reason, automatically selects the images
+    // when clicking on the next and previous buttons quickly.
+    user-select: none;
+
+    .image-gallery-next-btn {
+        position: absolute;
+        z-index: 100;
+        cursor: pointer;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        --padding: 30px;
+        padding: var(--padding); // for a larger click area
+        padding-right: 10px;
+        &.is-previous {
+            left: 0;
+            right: unset;
+            padding: var(--padding); // for a larger click area
+            padding-left: 10px;
+            svg {
+                transform: rotate(180deg);
+            }
+        }
+        svg {
+            --size: 28px;
+            width: var(--size);
+            height: var(--size);
+        }
+    }
+    .image-gallery-images {
+        position: relative;
+        overflow: hidden;
+        .is-slot-1 {
+            position: absolute;
+            top: 0;
+            left: -100%;
+        }
+        .is-slot-3 {
+            position: absolute;
+            top: 0;
+            right: -100%;
+        }
+    }
+    .image-gallery-image {
+        background: #000;
+        height: 480px;
+        width: 100%;
+        .image {
+            width: 100%;
+            height: 100%;
+        }
+        img {
+            object-fit: contain;
+        }
+        &.is-previous,
+        &.is-next {
+            width: 0;
+            height: 0;
+            overflow: hidden;
+        }
+    }
+    .image-gallery-dots {
+        position: absolute;
+        z-index: 100;
+        bottom: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        .image-gallery-dot {
+            --size: 6px;
+            width: var(--size);
+            height: var(--size);
+            background: #fff;
+            border-radius: 50%;
+            margin-right: 6px;
+            opacity: 0.45;
+            &:last-child {
+                margin-right: 0;
+            }
+            &.is-highlighted {
+                opacity: 1;
+            }
+        }
+    }
+}

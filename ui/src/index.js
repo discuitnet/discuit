@@ -25,7 +25,7 @@ const Fallback = ({ error, resetErrorBoundary }) => {
       setReloadDisabled(true);
       await forceSwUpdate();
     } catch (error) {
-      console.log(error);
+      console.error(error);
     } finally {
       window.location.reload();
     }
@@ -73,4 +73,16 @@ if (isDeviceIos()) {
     shouldPullToRefresh: () =>
       !window.scrollY && window.getComputedStyle(document.body).overflowY !== 'hidden',
   });
+
+  // Workaround for a bug in Safari 16.0-16.3 where optical size of fonts was not automatically
+  // adjusted based on the font size.
+  // See; https://bugs.webkit.org/show_bug.cgi?id=247987
+  if (
+    (navigator.userAgent.includes('Safari') && navigator.userAgent.includes('Version/16.0')) ||
+    navigator.userAgent.includes('Version/16.1') ||
+    navigator.userAgent.includes('Version/16.2') ||
+    navigator.userAgent.includes('Version/16.3')
+  ) {
+    document.documentElement.classList.add('safari16');
+  }
 }

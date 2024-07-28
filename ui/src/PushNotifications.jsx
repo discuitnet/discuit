@@ -65,17 +65,15 @@ const updatePushSubscription = async (loggedIn, applicationServerKey) => {
       applicationServerKey: urlBase64ToUint8Array(applicationServerKey),
     });
 
-    console.log(subscription);
-
     // Send subscription to server. Always do this. User could be using
     // multiple accounts on this session, which will all use the same
     // PushSubscription.
-    const res = await mfetchjson('/api/push_subscriptions', {
+    await mfetchjson('/api/push_subscriptions', {
       method: 'POST',
       body: JSON.stringify(subscription),
     });
 
-    console.log(res);
+    console.log('Push subscription updated.');
   } catch (error) {
     console.error(error);
   }

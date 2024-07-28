@@ -574,7 +574,7 @@ func (c *Community) DeleteProPicTx(ctx context.Context, tx *sql.Tx) error {
 	if _, err := c.db.ExecContext(ctx, "UPDATE communities SET pro_pic_2 = NULL where id = ?", c.ID); err != nil {
 		return fmt.Errorf("failed to set communities.pro_pic to null: %w", err)
 	}
-	if err := images.DeleteImageTx(ctx, tx, c.db, *c.ProPic.ID); err != nil {
+	if err := images.DeleteImagesTx(ctx, tx, c.db, *c.ProPic.ID); err != nil {
 		return fmt.Errorf("failed to delete pro pic (community: %s): %w", c.Name, err)
 	}
 	c.ProPic = nil
@@ -640,7 +640,7 @@ func (c *Community) DeleteBannerImageTx(ctx context.Context, tx *sql.Tx) error {
 	if _, err := tx.ExecContext(ctx, "UPDATE communities SET banner_image_2 = NULL WHERE id = ?", c.ID); err != nil {
 		return fmt.Errorf("failed to set communities.banner to null (community: %s): %w", c.Name, err)
 	}
-	if err := images.DeleteImageTx(ctx, tx, c.db, *c.BannerImage.ID); err != nil {
+	if err := images.DeleteImagesTx(ctx, tx, c.db, *c.BannerImage.ID); err != nil {
 		return fmt.Errorf("failed to delete banner image: %w", err)
 	}
 	c.BannerImage = nil
