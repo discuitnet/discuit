@@ -195,7 +195,6 @@ const List = () => {
   };
 
   if (feedLoading || feedLoadingError || listLoading !== 'loaded' || !list) {
-    console.log('loading: ', listLoading);
     if (listLoading === 'notfound') {
       return <NotFound />;
     }

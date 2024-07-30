@@ -716,6 +716,67 @@ func (u *User) Delete(ctx context.Context) error {
 	})
 }
 
+// DeleteContent deletes all posts and comments of user that were created in the
+// last n days.
+func (u *User) DeleteContent(ctx context.Context, n int, admin uid.ID) error {
+	t := time.Now()
+	defer func() {
+		log.Printf("Took %v to delete content of user %s\n", time.Since(t), u.Username)
+	}()
+
+	where, args := "WHERE posts.user_id = ?", []any{u.ID}
+	if n > 0 {
+		since := time.Now().Add(-1 * time.Hour * 24 * time.Duration(n))
+		where += " AND posts.created_at > ?"
+		args = append(args, since)
+	}
+
+	query := buildSelectPostQuery(false, where)
+	rows, err := u.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	posts, err := scanPosts(ctx, u.db, rows, nil)
+	if err != nil && err != errPostNotFound {
+		return err
+	}
+
+	for _, post := range posts {
+		if !(post.Deleted && post.DeletedContent) {
+			if err := post.Delete(ctx, admin, UserGroupAdmins, true, false); err != nil {
+				return err
+			}
+		}
+	}
+
+	where, args = "WHERE comments.user_id = ?", []any{u.ID}
+	if n > 0 {
+		since := time.Now().Add(-1 * time.Hour * 24 * time.Duration(n))
+		where += " AND comments.created_at > ?"
+		args = append(args, since)
+	}
+
+	query = buildSelectCommentsQuery(false, where)
+	rows, err = u.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	comments, err := scanComments(ctx, u.db, rows, nil)
+	if err != nil && err != errCommentNotFound {
+		return err
+	}
+
+	for _, comment := range comments {
+		if !comment.Deleted {
+			if err := comment.Delete(ctx, admin, UserGroupAdmins); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 // Ban bans the user from site. Important: Make sure to log out all sessions of
 // this user before calling this function, and never allow this user to login.
 //
@@ -863,7 +924,7 @@ func (u *User) DeleteProPicTx(ctx context.Context, tx *sql.Tx) error {
 	if _, err := u.db.ExecContext(ctx, "UPDATE users SET pro_pic = NULL where id = ?", u.ID); err != nil {
 		return fmt.Errorf("failed to set users.pro_pic to null for user %s: %w", u.Username, err)
 	}
-	if err := images.DeleteImageTx(ctx, tx, u.db, *u.ProPic.ID); err != nil {
+	if err := images.DeleteImagesTx(ctx, tx, u.db, *u.ProPic.ID); err != nil {
 		return fmt.Errorf("failed to delete pro pic of user %s: %w", u.Username, err)
 	}
 	u.ProPic = nil
@@ -897,7 +958,7 @@ func (u *User) UpdateProPic(ctx context.Context, image []byte) error {
 		}
 		if _, err := tx.ExecContext(ctx, "UPDATE users SET pro_pic = ? WHERE id = ?", imageID, u.ID); err != nil {
 			// Attempt to delete the image
-			if err := images.DeleteImageTx(ctx, tx, u.db, imageID); err != nil {
+			if err := images.DeleteImagesTx(ctx, tx, u.db, imageID); err != nil {
 				log.Printf("failed to delete image (core.User.UpdateProPic): %v\n", err)
 			}
 			return fmt.Errorf("failed to set users.pro_pic to value: %w", err)

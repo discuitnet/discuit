@@ -6,6 +6,7 @@ const initialState = {
 
 const typePostsAdded = 'posts/typePostsAdded';
 const typeCommentsCountIncremented = 'posts/commentsCountIncremented';
+const typeImageGalleryIndexUpdated = 'posts/imageGalleryIndexUpdated';
 
 export default function postsReducer(state = initialState, action) {
   switch (action.type) {
@@ -41,6 +42,20 @@ export default function postsReducer(state = initialState, action) {
         },
       };
     }
+    case typeImageGalleryIndexUpdated: {
+      const { postId, imageGalleryIndex } = action.payload;
+      const post = state.items[postId];
+      return {
+        ...state,
+        items: {
+          ...state.items,
+          [post.publicId]: {
+            ...post,
+            imageGalleryIndex,
+          },
+        },
+      };
+    }
     default:
       return state;
   }
@@ -53,6 +68,7 @@ function preparePost(post) {
     comments: undefined,
     commentsNext: undefined,
     fetchedAt: Date.now(),
+    imageGalleryIndex: 0,
   };
 }
 
@@ -66,4 +82,8 @@ export const postAdded = (post) => {
 
 export const commentsCountIncremented = (postId) => {
   return { type: typeCommentsCountIncremented, payload: postId };
+};
+
+export const postImageGalleryIndexUpdated = (postId, newIndex) => {
+  return { type: typeImageGalleryIndexUpdated, payload: { postId, imageGalleryIndex: newIndex } };
 };

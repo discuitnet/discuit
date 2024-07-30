@@ -35,6 +35,7 @@ function readYamlConfigFile() {
     'disableForumCreation',
     'forumCreationReqPoints',
     'defaultFeedSort',
+    'maxImagesPerPost',
   ];
   const config = {};
   for (let key in preConfig) {
