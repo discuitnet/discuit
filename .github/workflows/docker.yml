@@ -25,6 +25,7 @@ jobs:
         with:
           platforms: linux/arm64
           push: true
+          file: docker/Dockerfile.arm64
           tags: |
             discuit/discuit:${{ github.sha }}-arm64
 
@@ -33,6 +34,7 @@ jobs:
         with:
           platforms: linux/amd64
           push: true
+          file: docker/Dockerfile.amd64
           tags: |
             discuit/discuit:${{ github.sha }}-amd64
 

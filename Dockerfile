@@ -12,6 +12,7 @@ WORKDIR /app
 COPY go.* ./
 RUN go mod download
 COPY . .
+# RUN apt-get update && apt-get install -y wget software-properties-common libvips-dev libvips42
 RUN apt-get update && apt-get install -y wget software-properties-common libvips-dev libvips42
 RUN go build -ldflags "-s -w" -o discuit .
 
@@ -45,6 +46,13 @@ RUN apt-get update && apt-get install -y \
     mariadb-server \
     redis-server \
     wget && \
+    # if [ "$TARGETARCH" = "arm64" ]; then \
+    #     apt-get install -y libcfitsio7 libgif7 libgsf-1-114 libhdf5-103 libilmbase23 libmatio4 libopenexr23 libopenslide0 liborc-0.4-0 libpoppler-glib8 libtiff5 libwebp6 && \
+    #     wget http://ftp.us.debian.org/debian/pool/main/v/vips/libvips42_8.7.4-1+deb10u1_arm64.deb && \
+    #     dpkg -i libvips42_8.7.4-1+deb10u1_arm64.deb; \
+    # else \
+    #     apt-get install -y libvips-dev; \
+    # fi && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
