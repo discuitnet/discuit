@@ -48,8 +48,21 @@ jobs:
             discuit/discuit:${{ github.sha }}-arm64
             discuit/discuit:${{ github.sha }}-amd64
 
-      # # TODO: Clean up old images used for multi-arch builds
-      # - name: Clean up old images
-      #   run: |
-      #     docker image rm discuit/discuit:${{ github.sha }}-arm64
-      #     docker image rm discuit/discuit:${{ github.sha }}-amd64
+      - name: Authenticate and obtain Docker Hub JWT token (for cleanup)
+        id: get_token
+        run: |
+          TOKEN=$(curl -s -H "Content-Type: application/json" \
+          -X POST -d '{"username": "${{ secrets.DOCKERHUB_USERNAME }}", "password": "${{ secrets.DOCKERHUB_TOKEN }}"}' \
+          https://hub.docker.com/v2/users/login/ | jq -r .token)
+          echo "::add-mask::$TOKEN" # Mask the token in the logs
+          echo "TOKEN=$TOKEN" >> $GITHUB_ENV
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Clean up old images
+        env:
+          TOKEN: ${{ env.TOKEN }}
+        run: |
+          curl -s -H "Authorization: JWT $TOKEN" -X DELETE "https://hub.docker.com/v2/repositories/discuit/discuit/tags/${{ github.sha }}-arm64/"
+          curl -s -H "Authorization: JWT $TOKEN" -X DELETE "https://hub.docker.com/v2/repositories/discuit/discuit/tags/${{ github.sha }}-amd64/"
