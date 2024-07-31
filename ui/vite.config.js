@@ -1,5 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import fs from 'fs'
+import YAML from 'yaml'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -11,42 +13,43 @@ export default defineConfig({
         secure: false,
       },
       '/images': {
-        target: 'https://localhost:443',
+        target:        'https://localhost:443',
         secure: false,
       },
     },
   },
   define: {
-    ...parseYamlFile()
+    ...parseYamlConfigFile()
   }
 })
 
-function parseYamlFile() {
-  // const config = YAML.parse(fs.readFileSync("config.yaml", "utf-8"));
-  // if (typeof config !== "object") {
-  //   throw new Error("config.yaml file is not an object");
-  // }
+function parseYamlConfigFile() {
+   const config = YAML.parse(fs.readFileSync("../ui-config.yaml", "utf-8"));
+   if (typeof config !== "object") {
+     throw new Error("config.yaml file is not an object");
+   }
 
-  // for (const key in config) {
-  //   define[`import.meta.env.VITE_${key.toUpperCase()}`] = JSON.stringify(
-  //     config[key]
-  //   );
-  // }
+   const define = {
+    'import.meta.env.VITE_CACHESTORAGEVERSION': JSON.stringify(makeid(8))
+   };
+   for (const key in config) {
+     define[`import.meta.env.VITE_${key.toUpperCase()}`] = JSON.stringify(
+       config[key]
+     );
+   }
 
-  return {
-    VITE_SITENAME: '""',
-    VITE_CAPTCHASITEKEY: '""',
-    VITE_EMAILCONTACT: '""',
-    VITE_FACEBOOKURL: '""',
-    VITE_TWITTERURL: '""',
-    VITE_INSTAGRAMURL: '""',
-    VITE_DISCORDURL: '""',
-    VITE_GITHUBURL: '""',
-    VITE_SUBSTACKURL: '""',
-    VITE_DISABLEIMAGEPOSTS: '""',
-    VITE_DISABLEFORUMCREATION: '""',
-    VITE_FORUMCREATIONREQPOINTS: '""',
-    VITE_DEFAULTFEEDSORT: '""',
-    VITE_MAXIMAGESPERPOST: '""',
+   console.log(define);
+   return define;
+}
+
+function makeid(length) {
+  let result = '';
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const charactersLength = chars.length;
+  let counter = 0;
+  while (counter < length) {
+    result += chars.charAt(Math.floor(Math.random() * charactersLength));
+    counter += 1;
   }
+  return result;
 }
