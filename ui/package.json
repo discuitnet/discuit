@@ -4,11 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "npm run generate-yaml && vite",
+    "build": "npm run generate-yaml && vite build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "format": "prettier . --write"
+    "format": "prettier . --write",
+    "generate-yaml": "node scripts/generate-yaml.js"
   },
   "dependencies": {
     "pulltorefreshjs": "^0.1.22",

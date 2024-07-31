@@ -1,9 +1,9 @@
-const exec = require('child_process').exec;
-const fs = require('fs');
-const path = require('path');
+import { exec } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
 // Get the root path
-const rootPath = path.join(__dirname, '../../');
+const rootPath = path.join(import.meta.dirname, '../../');
 
 // Run the command to get the config
 (async () => {
