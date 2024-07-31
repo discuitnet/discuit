@@ -56,8 +56,10 @@ const About = () => {
       answer: (
         <>
           You can send an email to{' '}
-          <a href={`mailto:${import.meta.env.VITE_EMAILCONTACT}`}>{import.meta.env.VITE_EMAILCONTACT}</a>, or join our{' '}
-          <a href={import.meta.env.VITE_DISCORDURL}>Discord server </a>
+          <a href={`mailto:${import.meta.env.VITE_EMAILCONTACT}`}>
+            {import.meta.env.VITE_EMAILCONTACT}
+          </a>
+          , or join our <a href={import.meta.env.VITE_DISCORDURL}>Discord server </a>
           (after you join, create a ticket to contact an admin).
         </>
       ),

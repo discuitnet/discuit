@@ -879,7 +879,10 @@ a,
         border: 1px solid var(--bc, var(--border));
         background: var(--b, var(--background));
         // transition: background 0.3s, border-color 0.3s, box-shadow 0.2s;
-        transition: background 0.2s, border-color 0.2s, box-shadow 0.14s;
+        transition:
+            background 0.2s,
+            border-color 0.2s,
+            box-shadow 0.14s;
         &:after {
             content: '';
             display: block;

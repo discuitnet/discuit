@@ -1,7 +1,7 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import fs from 'fs'
-import YAML from 'yaml'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import fs from 'fs';
+import YAML from 'yaml';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -13,33 +13,31 @@ export default defineConfig({
         secure: false,
       },
       '/images': {
-        target:        'https://localhost:443',
+        target: 'https://localhost:443',
         secure: false,
       },
     },
   },
   define: {
-    ...parseYamlConfigFile()
-  }
-})
+    ...parseYamlConfigFile(),
+  },
+});
 
 function parseYamlConfigFile() {
-   const config = YAML.parse(fs.readFileSync("../ui-config.yaml", "utf-8"));
-   if (typeof config !== "object") {
-     throw new Error("config.yaml file is not an object");
-   }
+  const config = YAML.parse(fs.readFileSync('../ui-config.yaml', 'utf-8'));
+  if (typeof config !== 'object') {
+    throw new Error('config.yaml file is not an object');
+  }
 
-   const define = {
-    'import.meta.env.VITE_CACHESTORAGEVERSION': JSON.stringify(makeid(8))
-   };
-   for (const key in config) {
-     define[`import.meta.env.VITE_${key.toUpperCase()}`] = JSON.stringify(
-       config[key]
-     );
-   }
+  const define = {
+    'import.meta.env.VITE_CACHESTORAGEVERSION': JSON.stringify(makeid(8)),
+  };
+  for (const key in config) {
+    define[`import.meta.env.VITE_${key.toUpperCase()}`] = JSON.stringify(config[key]);
+  }
 
-   console.log(define);
-   return define;
+  console.log(define);
+  return define;
 }
 
 function makeid(length) {

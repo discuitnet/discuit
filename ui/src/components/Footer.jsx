@@ -23,32 +23,62 @@ const Footer = () => {
         <div className="footer-col">
           <div className="footer-title">Social</div>
           {import.meta.env.VITE_TWITTERURL && (
-            <a href={import.meta.env.VITE_TWITTERURL} className="footer-item" target="_blank" re="noopener">
+            <a
+              href={import.meta.env.VITE_TWITTERURL}
+              className="footer-item"
+              target="_blank"
+              re="noopener"
+            >
               Twitter / X
             </a>
           )}
           {import.meta.env.VITE_SUBSTACKURL && (
-            <a href={import.meta.env.VITE_SUBSTACKURL} className="footer-item" target="_blank" re="noopener">
+            <a
+              href={import.meta.env.VITE_SUBSTACKURL}
+              className="footer-item"
+              target="_blank"
+              re="noopener"
+            >
               Blog
             </a>
           )}
           {import.meta.env.VITE_FACEBOOKURL && (
-            <a href={import.meta.env.VITE_FACEBOOKURL} className="footer-item" target="_blank" re="noopener">
+            <a
+              href={import.meta.env.VITE_FACEBOOKURL}
+              className="footer-item"
+              target="_blank"
+              re="noopener"
+            >
               Facebook
             </a>
           )}
           {import.meta.env.VITE_INSTAGRAMURL && (
-            <a href={import.meta.env.VITE_INSTAGRAMURL} className="footer-item" target="_blank" re="noopener">
+            <a
+              href={import.meta.env.VITE_INSTAGRAMURL}
+              className="footer-item"
+              target="_blank"
+              re="noopener"
+            >
               Instagram
             </a>
           )}
           {import.meta.env.VITE_DISCORDURL && (
-            <a href={import.meta.env.VITE_DISCORDURL} className="footer-item" target="_blank" re="noopener">
+            <a
+              href={import.meta.env.VITE_DISCORDURL}
+              className="footer-item"
+              target="_blank"
+              re="noopener"
+            >
               Discord
             </a>
           )}
           {import.meta.env.VITE_GITHUBURL && (
-            <a href={import.meta.env.VITE_GITHUBURL} className="footer-item" target="_blank" re="noopener">
+            <a
+              href={import.meta.env.VITE_GITHUBURL}
+              className="footer-item"
+              target="_blank"
+              re="noopener"
+            >
               Github
             </a>
           )}
