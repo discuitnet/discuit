@@ -11,8 +11,8 @@ const MiniFooter = () => {
       <a href="https://docs.discuit.net/" target="_blank" re="noopener">
         Docs
       </a>
-      <a href={`mailto:${CONFIG.emailContact}`}>Contact</a>
-      <span>© 2024 {CONFIG.siteName}.</span>
+      <a href={`mailto:${import.meta.env.VITE_EMAILCONTACT}`}>Contact</a>
+      <span>© 2024 {import.meta.env.VITE_SITENAME}.</span>
     </footer>
   );
 };

@@ -8,7 +8,7 @@ const PrivacyPolicy = () => {
         <h1>Privacy Policy</h1>
         <h2>What information we collect</h2>
         <p>
-          To make your experience using {CONFIG.siteName} better, we collect information from your
+          To make your experience using {import.meta.env.VITE_SITENAME} better, we collect information from your
           interactions with our website.
         </p>
         <p>Information we collect from all visitors to our website includes:</p>

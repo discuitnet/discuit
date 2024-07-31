@@ -17,7 +17,7 @@ const WelcomeBanner = ({ className, children, hideIfMember = false, ...props }) 
     return null;
   }
 
-  const canCreateForum = loggedIn && (user.isAdmin || !CONFIG.disableForumCreation);
+  const canCreateForum = loggedIn && (user.isAdmin || !import.meta.env.VITE_DISABLEFORUMCREATION);
 
   return (
     <div

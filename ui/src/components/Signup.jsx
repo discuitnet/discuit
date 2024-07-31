@@ -65,7 +65,7 @@ const Signup = ({ open, onClose }) => {
     setRepeatPasswordError(null);
   }, [repeatPassword]);
 
-  const CAPTCHA_ENABLED = CONFIG.captchaSiteKey ? true : false;
+  const CAPTCHA_ENABLED = import.meta.env.VITE_CAPTCHASITEKEY ? true : false;
   const captchaRef = useRef();
   const handleCaptchaVerify = (token) => {
     if (!token) {
@@ -195,7 +195,7 @@ const Signup = ({ open, onClose }) => {
               <div style={{ margin: 0 }}>
                 <ReCAPTCHA
                   ref={captchaRef}
-                  sitekey={CONFIG.captchaSiteKey}
+                  sitekey={import.meta.env.VITE_CAPTCHASITEKEY}
                   onChange={handleCaptchaVerify}
                   size="invisible"
                   onError={handleCaptchaError}

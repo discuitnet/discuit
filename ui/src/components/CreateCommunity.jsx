@@ -42,7 +42,7 @@ const CreateCommunity = ({ open, onClose }) => {
         const error = await res.json();
         if (error.code === 'not_enough_points') {
           setFormError(
-            `You need at least ${CONFIG.forumCreationReqPoints} points to create a community.`
+            `You need at least ${import.meta.env.VITE_FORUMCREATIONREQPOINTS} points to create a community.`
           );
         } else if (error.code === 'max_limit_reached') {
           setFormError(

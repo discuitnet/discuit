@@ -1,7 +1,7 @@
 import { selectImageCopyURL, stringCount } from './src/helper';
 import { badgeImage } from './src/pages/User/Badge';
 
-const CACHE_VERSION = CONFIG.cacheStorageVersion;
+const CACHE_VERSION = import.meta.env.VITE_CACHESTORAGEVERSION;
 
 const cacheEndpoints = async (urls = []) => {
   const cache = await caches.open(CACHE_VERSION);

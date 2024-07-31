@@ -110,7 +110,7 @@ const Navbar = ({ offline = false }) => {
             style={{ fontSize: '1.65rem' }}
             onClick={handleLogoClick}
           >
-            {CONFIG.siteName}
+            {import.meta.env.VITE_SITENAME}
           </Link>
           <Search />
         </div>

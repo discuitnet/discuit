@@ -17,7 +17,7 @@ import Modal from '../../components/Modal';
 const Home = () => {
   const user = useSelector((state) => state.main.user);
   const loggedIn = user !== null;
-  const canCreateForum = loggedIn && (user.isAdmin || !CONFIG.disableForumCreation);
+  const canCreateForum = loggedIn && (user.isAdmin || !import.meta.env.VITE_DISABLEFORUMCREATION);
   
   const location = useLocation();
   const feedType = (() => {

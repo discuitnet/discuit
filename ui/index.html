@@ -30,6 +30,9 @@
         <meta name="twitter:description" content="" />
         <meta name="twitter:image" content="./src/assets/imgs/banner-og-image.jpg" />
         <script>
+            /*
+            TODO: Must be uncommented before migration to Vite is complete.
+
             (() => {
                 if ('onbeforeinstallprompt' in window) {
                     window.addEventListener('beforeinstallprompt', (e) => {
@@ -72,6 +75,7 @@
                     }
                 }
             })();
+            */
         </script>
         <link rel="shortcut icon" href="./src/assets/imgs/favicon.png" />
         <link rel="mask-icon" href="./src/assets/imgs/favicon.png" color="#6b02f2" />
@@ -85,5 +89,6 @@
         <div id="root"></div>
         <div id="modal-root"></div>
         <div id="snacks-root"></div>
+        <script type="module" src="/src/main.jsx"></script>
     </body>
 </html>

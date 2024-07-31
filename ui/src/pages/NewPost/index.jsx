@@ -74,7 +74,7 @@ const NewPost = () => {
   const [body, setBody] = useState('');
   const [link, setLink] = useState('');
   const [images, SetImages] = useState([]);
-  const maxNumOfImages = CONFIG.maxImagesPerPost;
+  const maxNumOfImages = import.meta.env.VITE_MAXIMAGESPERPOST;
 
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useLoading();
@@ -327,7 +327,7 @@ const NewPost = () => {
     );
   }
 
-  const isImagePostsDisabled = CONFIG.disableImagePosts === true;
+  const isImagePostsDisabled = import.meta.env.VITE_DISABLEIMAGEPOSTS === true;
 
   return (
     <div className="page-new">

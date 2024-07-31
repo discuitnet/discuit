@@ -31,7 +31,7 @@ const sortOptions = [
   { text: 'Year', id: 'year' },
   // { text: 'All', id: 'all' },
 ];
-const sortDefault = CONFIG.defaultFeedSort;
+const sortDefault = import.meta.env.VITE_DEFAULTFEEDSORT;
 const baseURL = '/api/posts';
 
 export const homeReloaded = (homeFeed = 'all', rememberFeedSort = false) => {

@@ -7,7 +7,7 @@ const Footer = () => {
       <div className="wrap">
         <div className="footer-col footer-show">
           <Link to="/" className="footer-logo">
-            {CONFIG.siteName}
+            {import.meta.env.VITE_SITENAME}
           </Link>
           <div className="footer-description">Better discussions on the internet.</div>
         </div>
@@ -16,39 +16,39 @@ const Footer = () => {
           <Link to="/about" className="footer-item">
             About
           </Link>
-          <a href={`mailto:${CONFIG.emailContact}`} className="footer-item">
+          <a href={`mailto:${import.meta.env.VITE_EMAILCONTACT}`} className="footer-item">
             Contact
           </a>
         </div>
         <div className="footer-col">
           <div className="footer-title">Social</div>
-          {CONFIG.twitterURL && (
-            <a href={CONFIG.twitterURL} className="footer-item" target="_blank" re="noopener">
+          {import.meta.env.VITE_TWITTERURL && (
+            <a href={import.meta.env.VITE_TWITTERURL} className="footer-item" target="_blank" re="noopener">
               Twitter / X
             </a>
           )}
-          {CONFIG.substackURL && (
-            <a href={CONFIG.substackURL} className="footer-item" target="_blank" re="noopener">
+          {import.meta.env.VITE_SUBSTACKURL && (
+            <a href={import.meta.env.VITE_SUBSTACKURL} className="footer-item" target="_blank" re="noopener">
               Blog
             </a>
           )}
-          {CONFIG.facebookURL && (
-            <a href={CONFIG.facebookURL} className="footer-item" target="_blank" re="noopener">
+          {import.meta.env.VITE_FACEBOOKURL && (
+            <a href={import.meta.env.VITE_FACEBOOKURL} className="footer-item" target="_blank" re="noopener">
               Facebook
             </a>
           )}
-          {CONFIG.instagramURL && (
-            <a href={CONFIG.instagramURL} className="footer-item" target="_blank" re="noopener">
+          {import.meta.env.VITE_INSTAGRAMURL && (
+            <a href={import.meta.env.VITE_INSTAGRAMURL} className="footer-item" target="_blank" re="noopener">
               Instagram
             </a>
           )}
-          {CONFIG.discordURL && (
-            <a href={CONFIG.discordURL} className="footer-item" target="_blank" re="noopener">
+          {import.meta.env.VITE_DISCORDURL && (
+            <a href={import.meta.env.VITE_DISCORDURL} className="footer-item" target="_blank" re="noopener">
               Discord
             </a>
           )}
-          {CONFIG.githubURL && (
-            <a href={CONFIG.githubURL} className="footer-item" target="_blank" re="noopener">
+          {import.meta.env.VITE_GITHUBURL && (
+            <a href={import.meta.env.VITE_GITHUBURL} className="footer-item" target="_blank" re="noopener">
               Github
             </a>
           )}

@@ -190,7 +190,7 @@ const App = () => {
 
   const notifsNewCount = useSelector((state) => state.main.notifications.newCount);
   const notifsNewCountStr = notifsNewCount > 0 ? `(${notifsNewCount}) ` : '';
-  const titleTemplate = `${notifsNewCountStr} %s - ${CONFIG.siteName}`;
+  const titleTemplate = `${notifsNewCountStr} %s - ${import.meta.env.VITE_SITENAME}`;
 
   const loginModalOpen = useSelector((state) => state.main.loginModalOpen);
   const signupModalOpen = useSelector((state) => state.main.signupModalOpen);
@@ -232,10 +232,10 @@ const App = () => {
   return (
     <>
       <Helmet
-        defaultTitle={`${notifsNewCountStr} ${CONFIG.siteName}`}
+        defaultTitle={`${notifsNewCountStr} ${import.meta.env.VITE_SITENAME}`}
         titleTemplate={titleTemplate}
       >
-        <meta property="og:site_name" content={CONFIG.siteName} />
+        <meta property="og:site_name" content={import.meta.env.VITE_SITENAME} />
       </Helmet>
       <ScrollToTop />
       <CanonicalTag />
