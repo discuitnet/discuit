@@ -167,10 +167,10 @@
         align-items: center;
         z-index: 100;
         background: var(--color-bg);
+        padding: var(--card-padding) calc(var(--card-padding) * 2);
         .notifs-title {
             font-size: var(--fs-2xl);
         }
-        padding: var(--card-padding) calc(var(--card-padding) * 2);
         .dropdown-menu {
             width: max-content;
         }
@@ -339,6 +339,8 @@
     }
     .modal-card {
         @include mixins.card;
+    }
+    .modal-card {
         position: relative;
         z-index: 2;
         min-width: 320px;
@@ -960,6 +962,9 @@
 
 .select-bar {
     @include mixins.card-sub;
+}
+
+.select-bar {
     padding: calc(var(--card-padding) / 2) var(--card-padding);
     .select-bar-options {
         display: flex;

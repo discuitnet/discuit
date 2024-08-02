@@ -396,9 +396,9 @@ code {
 }
 
 .card {
-    @include mixins.card;
     display: flex;
     flex-direction: column;
+    @include mixins.card;
 }
 
 .card-padding {
@@ -768,21 +768,23 @@ a,
 
 .button-hamburger {
     @include mixins.button-clear;
-    background: transparent;
-    cursor: pointer;
-    width: 23px;
-    height: var(--input-height);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    .hamburger-lines {
-        width: 100%;
-        div {
+    & {
+        background: transparent;
+        cursor: pointer;
+        width: 23px;
+        height: var(--input-height);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        .hamburger-lines {
             width: 100%;
-            height: 0;
-            border-top: 2px solid rgba(var(--base-fg), 0.7);
-            border-radius: 5px;
-            margin: 5px 0;
+            div {
+                width: 100%;
+                height: 0;
+                border-top: 2px solid rgba(var(--base-fg), 0.7);
+                border-radius: 5px;
+                margin: 5px 0;
+            }
         }
     }
 }
@@ -1074,12 +1076,14 @@ table {
 
 .skeleton {
     @include mixins.card;
-    width: 100%;
-    padding: var(--card-padding);
-    display: flex;
-    flex-direction: column;
-    > * {
-        margin-bottom: 8px;
+    & {
+        width: 100%;
+        padding: var(--card-padding);
+        display: flex;
+        flex-direction: column;
+        > * {
+            margin-bottom: 8px;
+        }
     }
 }
 
@@ -1120,16 +1124,18 @@ table {
 
 select {
     @include mixins.card-sub;
-    color: inherit;
-    border: none;
-    padding: 7px;
-    padding-right: 26px;
-    appearance: none;
-    background-image: url('data:image/svg+xml;base64,PHN2ZyBjbGFzcz0ic2VsZWN0LWJhci1tLWFycm93IiB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTZMNiAxMEgxOEwxMiAxNloiIGZpbGw9IiMwMDAiPjwvcGF0aD48L3N2Zz4=');
-    background-repeat: no-repeat;
-    background-position: calc(100% - 4px) calc(50% - 1px);
-    @include mixins.mobile() {
-        border-radius: var(--border-radius);
+    & {
+        color: inherit;
+        border: none;
+        padding: 7px;
+        padding-right: 26px;
+        appearance: none;
+        background-image: url('data:image/svg+xml;base64,PHN2ZyBjbGFzcz0ic2VsZWN0LWJhci1tLWFycm93IiB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMTZMNiAxMEgxOEwxMiAxNloiIGZpbGw9IiMwMDAiPjwvcGF0aD48L3N2Zz4=');
+        background-repeat: no-repeat;
+        background-position: calc(100% - 4px) calc(50% - 1px);
+        @include mixins.mobile() {
+            border-radius: var(--border-radius);
+        }
     }
 }
 

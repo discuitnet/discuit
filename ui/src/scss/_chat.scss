@@ -1,8 +1,10 @@
 @use 'mixins';
 
 .chat-main {
-    @include mixins.card;
     @include mixins.box-shadow;
+    @include mixins.card;
+}
+.chat-main {
     position: fixed;
     bottom: 0;
     right: 40px;
@@ -14,17 +16,17 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    --padding: 0.4rem;
     .chat-main-title {
         padding: 0.5rem var(--card-padding);
         display: flex;
         justify-content: space-between;
         align-items: center;
+        border-bottom: var(--seperator);
         .button-icon {
             transform: scale(0.75);
         }
-        border-bottom: var(--seperator);
     }
-    --padding: 0.4rem;
     .chat-main-content {
         display: grid;
         grid-template-columns: 2fr 4fr;
