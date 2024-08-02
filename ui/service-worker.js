@@ -1,15 +1,17 @@
 import { selectImageCopyURL, stringCount } from './src/helper';
 import { badgeImage } from './src/pages/User/Badge';
 
-const CACHE_VERSION = import.meta.env.VITE_CACHESTORAGEVERSION;
+const SW_BUILD_ID = import.meta.env.VITE_SW_BUILD_ID;
+
+console.log(`Service worker version: ${SW_BUILD_ID}`);
 
 const cacheEndpoints = async (urls = []) => {
-  const cache = await caches.open(CACHE_VERSION);
+  const cache = await caches.open(SW_BUILD_ID);
   await cache.addAll(urls);
 };
 
 const putInCache = async (request, response) => {
-  const cache = await caches.open(CACHE_VERSION);
+  const cache = await caches.open(SW_BUILD_ID);
   await cache.put(request, response);
 };
 
@@ -30,7 +32,7 @@ const deleteCache = async (key) => {
 };
 
 const deleteOldCaches = async () => {
-  const cacheKeepList = [CACHE_VERSION];
+  const cacheKeepList = [SW_BUILD_ID];
   const keyList = await caches.keys();
   const cachesToDelete = keyList.filter((key) => !cacheKeepList.includes(key));
   await Promise.all(cachesToDelete.map(deleteCache));
@@ -104,7 +106,7 @@ const cacheFirst = async ({ request, preloadResponsePromise }) => {
     return networkRes;
   } catch (error) {
     if (request.method === 'GET' && request.headers.get('accept').includes('text/html')) {
-      const cache = await caches.open(CACHE_VERSION);
+      const cache = await caches.open(SW_BUILD_ID);
       const fallbackRes = await cache.match('/');
       if (fallbackRes) return fallbackRes;
     }

@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Build dir for the service worker
+dist-sw
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
