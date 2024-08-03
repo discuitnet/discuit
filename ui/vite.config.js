@@ -29,11 +29,29 @@ function parseYamlConfigFile() {
     throw new Error('config.yaml file is not an object');
   }
 
+  const allowedKeys = [
+    'siteName',
+    'captchaSiteKey',
+    'emailContact',
+    'facebookURL',
+    'twitterURL',
+    'instagramURL',
+    'discordURL',
+    'githubURL',
+    'substackURL',
+    'disableImagePosts',
+    'disableForumCreation',
+    'forumCreationReqPoints',
+    'defaultFeedSort',
+    'maxImagesPerPost',
+  ];
+
   const define = {};
   for (const key in config) {
-    define[`import.meta.env.VITE_${key.toUpperCase()}`] = JSON.stringify(config[key]);
+    if (allowedKeys.includes(key)) {
+      define[`import.meta.env.VITE_${key.toUpperCase()}`] = JSON.stringify(config[key]);
+    }
   }
 
-  console.log(define);
   return define;
 }
