@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "npm run generate-yaml && vite",
+    "dev:prod-proxy": "npm run generate-yaml && VITE_DEV_PROXY=https://discuit.net vite",
     "build-sw": "vite build --config sw.vite.config.js",
     "build": "npm run generate-yaml && vite build && npm run build-sw && npm run copy-sw",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
