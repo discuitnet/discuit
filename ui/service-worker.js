@@ -1,5 +1,5 @@
 import { selectImageCopyURL, stringCount } from './src/helper';
-import { badgeImage } from './src/pages/User/Badge';
+import { badgeImage } from './src/pages/User/badgeImage';
 
 const SW_BUILD_ID = import.meta.env.VITE_SW_BUILD_ID;
 
