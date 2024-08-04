@@ -1,26 +1,29 @@
-import { defineConfig } from 'vite';
+/* eslint-disable no-undef */
 import react from '@vitejs/plugin-react';
 import fs from 'fs';
-import YAML from 'yaml';
+import { defineConfig } from 'vite';
 import viteCompression from 'vite-plugin-compression';
+import YAML from 'yaml';
+
+const { define: yamlConfigDefine, config: yamlConfig } = parseYamlConfigFile();
+
+const proxyAddr = hostnameToURL(process.env.VITE_DEV_PROXY ?? yamlConfig.addr);
 
 export default defineConfig({
   plugins: [react(), viteCompression(), viteCompression({ algorithm: 'brotliCompress' })],
   server: {
     proxy: {
       '/api': {
-        target: 'https://localhost:443',
+        target: proxyAddr,
         secure: false,
       },
       '/images': {
-        target: 'https://localhost:443',
+        target: proxyAddr,
         secure: false,
       },
     },
   },
-  define: {
-    ...parseYamlConfigFile(),
-  },
+  define: yamlConfigDefine,
 });
 
 function parseYamlConfigFile() {
@@ -29,25 +32,86 @@ function parseYamlConfigFile() {
     throw new Error('config.yaml file is not an object');
   }
 
-  const define = {
-    'import.meta.env.VITE_CACHESTORAGEVERSION': JSON.stringify(makeid(8)),
-  };
+  const allowedKeys = [
+    'addr',
+    'siteName',
+    'captchaSiteKey',
+    'emailContact',
+    'facebookURL',
+    'twitterURL',
+    'instagramURL',
+    'discordURL',
+    'githubURL',
+    'substackURL',
+    'disableImagePosts',
+    'disableForumCreation',
+    'forumCreationReqPoints',
+    'defaultFeedSort',
+    'maxImagesPerPost',
+  ];
+
+  const define = {},
+    retConfig = {};
   for (const key in config) {
-    define[`import.meta.env.VITE_${key.toUpperCase()}`] = JSON.stringify(config[key]);
+    if (allowedKeys.includes(key)) {
+      define[`import.meta.env.VITE_${key.toUpperCase()}`] = JSON.stringify(config[key]);
+      retConfig[key] = config[key];
+    }
   }
 
-  console.log(define);
-  return define;
+  return { define, config: retConfig };
 }
 
-function makeid(length) {
-  let result = '';
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  const charactersLength = chars.length;
-  let counter = 0;
-  while (counter < length) {
-    result += chars.charAt(Math.floor(Math.random() * charactersLength));
-    counter += 1;
+/**
+ * Takes in a string of the form 'host:port' and returns a full URL. Either the
+ * 'host' part or the 'port' could be ommitted, but not both.
+ *
+ * @param {string} addr - Either a full URL or a partial URL of the form 'host:port'.
+ * @returns {string}
+ */
+function hostnameToURL(addr) {
+  let scheme, hostname, port;
+
+  let n = addr.indexOf('://');
+  if (n !== -1) {
+    scheme = addr.substring(0, n);
+    addr = addr.substring(n + 3);
+    if (!(scheme === 'http' || scheme === 'https')) {
+      throw new Error(`unknown scheme: ${scheme}`);
+    }
   }
-  return result;
+
+  n = addr.indexOf(':');
+  if (n !== -1) {
+    hostname = addr.substring(0, n);
+    port = addr.substring(n);
+    const portErr = new Error('port is not a number');
+    if (port.length === 1) {
+      throw portErr;
+    }
+    port = port.substring(1);
+    if (isNaN(parseInt(port.substring(1), 10))) {
+      throw portErr;
+    }
+  } else {
+    hostname = addr;
+  }
+
+  if (!hostname && !port) {
+    throw new Error('empty address');
+  }
+
+  if (!hostname) {
+    hostname = 'localhost';
+  }
+
+  if (!scheme) {
+    scheme = port === '443' ? 'https' : 'http';
+  }
+
+  let portString = '';
+  if (port && !((scheme === 'http' && port === '80') || (scheme === 'https' && port === '443'))) {
+    portString = `:${port}`;
+  }
+  return `${scheme}://${hostname}${portString}`;
 }

@@ -5,11 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "npm run generate-yaml && vite",
-    "build": "npm run generate-yaml && vite build",
+    "dev:prod-proxy": "npm run generate-yaml && VITE_DEV_PROXY=https://discuit.net vite",
+    "build-sw": "vite build --config sw.vite.config.js",
+    "build": "npm run generate-yaml && vite build && npm run build-sw && npm run copy-sw",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "format": "prettier . --write",
-    "generate-yaml": "node scripts/generate-yaml.js"
+    "generate-yaml": "node scripts/generate-yaml.js",
+    "copy-sw": "node scripts/copy-sw.js"
   },
   "dependencies": {
     "pulltorefreshjs": "^0.1.22",
