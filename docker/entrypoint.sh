@@ -24,7 +24,7 @@ mysql -e "GRANT ALL PRIVILEGES ON discuit.* TO 'discuit'@'127.0.0.1';"
 # Build the UI
 echo "Building the UI..."
 cd /app/ui
-npm run build:prod
+npm run build
 cd ..
 
 # Start the Discuit server
