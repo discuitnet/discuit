@@ -180,7 +180,7 @@ const NotificationItem = ({ notification, ...rest }) => {
       to = `/${notif.communityName}`;
       image = getNotifImage(notif);
       break;
-    case 'new_badge':
+    case 'new_badge': {
       to = `/@${viewer.username}`;
       const { src } = badgeImage(notif.badgeType);
       image = {
@@ -188,6 +188,7 @@ const NotificationItem = ({ notification, ...rest }) => {
         backgroundColor: 'transparent',
       };
       break;
+    }
   }
 
   const actionsRef = useRef();

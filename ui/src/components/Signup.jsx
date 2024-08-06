@@ -1,17 +1,15 @@
-/* eslint-disable react/jsx-no-target-blank */
-import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import React, { useEffect, useRef, useState } from 'react';
+import ReCAPTCHA from 'react-google-recaptcha';
+import { Helmet } from 'react-helmet-async';
+import { useDispatch } from 'react-redux';
+import { usernameMaxLength } from '../config';
+import { APIError, mfetch, validEmail } from '../helper';
+import { useDelayedEffect, useInputUsername } from '../hooks';
+import { loginModalOpened, snackAlert, snackAlertError } from '../slices/mainSlice';
 import { ButtonClose } from './Button';
 import Input, { InputPassword, InputWithCount } from './Input';
 import Modal from './Modal';
-import { useDispatch } from 'react-redux';
-import { loginModalOpened, snackAlert, snackAlertError } from '../slices/mainSlice';
-import { APIError, mfetch, validEmail } from '../helper';
-import { useDelayedEffect, useInputUsername } from '../hooks';
-import { usernameMaxLength } from '../config';
-import ReCAPTCHA from 'react-google-recaptcha';
-import { useRef } from 'react';
-import { Helmet } from 'react-helmet-async';
 
 const errors = [
   'Username cannot be empty.',

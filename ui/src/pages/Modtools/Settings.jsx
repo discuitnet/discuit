@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
+import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import CommunityProPic from '../../components/CommunityProPic';
 import { InputWithCount, useInputMaxLength } from '../../components/Input';
 import { mfetch, mfetchjson } from '../../helper';
-import { snackAlert, snackAlertError } from '../../slices/mainSlice';
 import { communityAdded } from '../../slices/communitiesSlice';
-import CommunityProPic from '../../components/CommunityProPic';
+import { snackAlert, snackAlertError } from '../../slices/mainSlice';
 import Banner from '../Community/Banner';
 
 const descriptionMaxLength = 2000;

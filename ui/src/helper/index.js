@@ -1,5 +1,4 @@
 export function stringCount(num, onlyName = false, thingName = 'point', thingNameMultiple) {
-  // let s = `${num} ${thingName}`;
   let s = onlyName ? '' : `${num} `;
   if (thingNameMultiple) {
     s += num === 1 ? thingName : thingNameMultiple;

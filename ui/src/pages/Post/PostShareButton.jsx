@@ -1,9 +1,9 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 import { useDispatch } from 'react-redux';
+import Dropdown from '../../components/Dropdown';
 import { copyToClipboard } from '../../helper';
 import { snackAlert } from '../../slices/mainSlice';
-import Dropdown from '../../components/Dropdown';
 
 const Target = ({ ...props }) => {
   return (

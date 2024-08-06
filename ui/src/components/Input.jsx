@@ -1,5 +1,5 @@
-import React, { forwardRef, useState } from 'react';
 import PropTypes from 'prop-types';
+import React, { forwardRef, useState } from 'react';
 
 const Input = forwardRef(function Input(
   { className, style, type = 'text', label, description, error, ...rest },

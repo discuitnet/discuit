@@ -8,7 +8,7 @@ const MiniFooter = () => {
       <Link to="/terms">Terms</Link>
       <Link to="/privacy-policy">Privacy</Link>
       <Link to="/guidelines">Guidelines</Link>
-      <a href="https://docs.discuit.net/" target="_blank" re="noopener">
+      <a href="https://docs.discuit.net/" target="_blank" rel="noopener">
         Docs
       </a>
       <a href={`mailto:${import.meta.env.VITE_EMAILCONTACT}`}>Contact</a>

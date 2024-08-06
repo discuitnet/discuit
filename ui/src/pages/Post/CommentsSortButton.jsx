@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
 import PropTypes from 'prop-types';
+import React, { useState } from 'react';
 import Dropdown from '../../components/Dropdown';
 
 const options = ['Top', 'Latest', 'Oldest'];

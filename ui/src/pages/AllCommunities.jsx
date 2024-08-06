@@ -1,31 +1,28 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
-import Sidebar from '../components/Sidebar';
-import WelcomeBanner from '../views/WelcomeBanner';
-import MiniFooter from '../components/MiniFooter';
-import CommunityProPic from '../components/CommunityProPic';
-import PageLoading from '../components/PageLoading';
-import { mfetch, mfetchjson } from '../helper';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useInView } from 'react-intersection-observer';
 import { useDispatch, useSelector } from 'react-redux';
+import { useHistory } from 'react-router-dom';
+import { ButtonClose } from '../components/Button';
+import CommunityProPic from '../components/CommunityProPic';
+import { InputWithCount, useInputMaxLength } from '../components/Input';
+import MarkdownBody from '../components/MarkdownBody';
+import MiniFooter from '../components/MiniFooter';
+import Modal from '../components/Modal';
+import PageLoading from '../components/PageLoading';
+import ShowMoreBox from '../components/ShowMoreBox';
+import Sidebar from '../components/Sidebar';
+import { communityNameMaxLength } from '../config';
+import { mfetch, mfetchjson } from '../helper';
+import { useInputUsername } from '../hooks';
 import {
   allCommunitiesUpdated,
   loginPromptToggled,
   snackAlert,
   snackAlertError,
 } from '../slices/mainSlice';
-import ShowMoreBox from '../components/ShowMoreBox';
-import MarkdownBody from '../components/MarkdownBody';
-import Link from '../components/Link';
 import LoginForm from '../views/LoginForm';
-import Modal from '../components/Modal';
-import { ButtonClose } from '../components/Button';
-import { InputWithCount, useInputMaxLength } from '../components/Input';
-import { communityNameMaxLength } from '../config';
-import { useInputUsername } from '../hooks';
 import JoinButton from './Community/JoinButton';
-import { useHistory, useLocation } from 'react-router-dom';
-import Feed from '../components/Feed';
-import { useInView } from 'react-intersection-observer';
 
 const prepareText = (isMobile = false) => {
   const x = isMobile ? 'by filling out the form below' : 'by clicking on the button below';

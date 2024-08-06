@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { useHistory } from 'react-router-dom';
-import { ButtonClose } from './Button';
-import Modal from './Modal';
-import { InputWithCount, useInputMaxLength } from './Input';
+import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { sidebarCommunitiesUpdated, snackAlertError } from '../slices/mainSlice';
-import { mfetch, mfetchjson } from '../helper';
-import { useInputUsername } from '../hooks';
+import { useHistory } from 'react-router-dom';
 import { communityAboutMaxLength, communityNameMaxLength } from '../config';
+import { mfetch } from '../helper';
+import { useInputUsername } from '../hooks';
+import { sidebarCommunitiesUpdated, snackAlertError } from '../slices/mainSlice';
+import { ButtonClose } from './Button';
+import { InputWithCount, useInputMaxLength } from './Input';
+import Modal from './Modal';
 
 const CreateCommunity = ({ open, onClose }) => {
   const [name, handleNameChange] = useInputUsername(communityNameMaxLength);

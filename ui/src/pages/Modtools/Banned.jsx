@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { ButtonClose } from '../../components/Button';
 import Input from '../../components/Input';
 import Modal from '../../components/Modal';
 import { APIError, mfetch, mfetchjson } from '../../helper';
-import { snackAlert, snackAlertError } from '../../slices/mainSlice';
 import { useLoading } from '../../hooks';
+import { snackAlert, snackAlertError } from '../../slices/mainSlice';
 
 const Banned = ({ community }) => {
   const dispatch = useDispatch();

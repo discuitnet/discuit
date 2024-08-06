@@ -1,16 +1,21 @@
-import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { useParams } from 'react-router-dom';
-import Sidebar from '../../components/Sidebar';
-import MiniFooter from '../../components/MiniFooter';
+import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import Link from '../../components/Link';
-import Modal from '../../components/Modal';
-import { ButtonClose, ButtonMore } from '../../components/Button';
-import Input, { InputWithCount } from '../../components/Input';
-import { APIError, dateString1, mfetch, mfetchjson, stringCount, timeAgo } from '../../helper';
 import { useDispatch, useSelector } from 'react-redux';
-import { listsAdded, snackAlertError } from '../../slices/mainSlice';
+import { useHistory, useParams } from 'react-router-dom';
+import { ButtonClose, ButtonMore } from '../../components/Button';
+import Dropdown from '../../components/Dropdown';
+import Feed from '../../components/Feed';
+import Input, { InputWithCount } from '../../components/Input';
+import Link from '../../components/Link';
+import MiniFooter from '../../components/MiniFooter';
+import Modal from '../../components/Modal';
+import PageLoading from '../../components/PageLoading';
+import { MemorizedPostCard } from '../../components/PostCard/PostCard';
+import Sidebar from '../../components/Sidebar';
+import { usernameMaxLength } from '../../config';
+import { APIError, dateString1, mfetch, mfetchjson, stringCount, timeAgo } from '../../helper';
+import { useInputUsername } from '../../hooks';
 import {
   FeedItem,
   feedInViewItemsUpdated,
@@ -20,17 +25,11 @@ import {
   selectFeed,
   selectFeedInViewItems,
 } from '../../slices/feedsSlice';
-import Feed from '../../components/Feed';
-import { MemorizedPostCard } from '../../components/PostCard/PostCard';
-import { selectUser } from '../../slices/usersSlice';
-import { MemorizedComment } from '../User/Comment';
-import PageLoading from '../../components/PageLoading';
-import NotFound from '../NotFound';
 import { listAdded, selectList } from '../../slices/listsSlice';
-import { useInputUsername } from '../../hooks';
-import { usernameMaxLength } from '../../config';
-import { useHistory } from 'react-router-dom';
-import Dropdown from '../../components/Dropdown';
+import { listsAdded, snackAlertError } from '../../slices/mainSlice';
+import { selectUser } from '../../slices/usersSlice';
+import NotFound from '../NotFound';
+import { MemorizedComment } from '../User/Comment';
 
 const List = () => {
   const dispatch = useDispatch();

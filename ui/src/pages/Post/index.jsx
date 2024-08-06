@@ -1,9 +1,12 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import PropTypes from 'prop-types';
+import React, { useEffect, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useParams } from 'react-router-dom';
+import Dropdown from '../../components/Dropdown';
 import MiniFooter from '../../components/MiniFooter';
 import PostVotes from '../../components/PostCard/PostVotes';
+import ReportModal from '../../components/ReportModal';
+import Sidebar from '../../components/Sidebar';
 import {
   mfetch,
   mfetchjson,
@@ -13,30 +16,26 @@ import {
 } from '../../helper';
 import { useIsMobile } from '../../hooks';
 import { saveToListModalOpened, snackAlert, snackAlertError } from '../../slices/mainSlice';
-import AddComment from './AddComment';
-import ReportModal from '../../components/ReportModal';
-import Sidebar from '../../components/Sidebar';
-import CommentSection from './CommentSection';
-import PostShareButton from './PostShareButton';
 import PageNotLoaded from '../PageNotLoaded';
-import Dropdown from '../../components/Dropdown';
-import { Helmet } from 'react-helmet-async';
+import AddComment from './AddComment';
+import CommentSection from './CommentSection';
 import PostDeleteModal, { PostContentDeleteModal } from './PostDeleteModal';
+import PostShareButton from './PostShareButton';
 // import CommentsSortButton from './CommentsSortButton';
-import PostVotesBar from './PostVotesBar';
+import { useLocation } from 'react-router-dom';
 import MarkdownBody from '../../components/MarkdownBody';
-import PostCardHeadingDetails from '../../components/PostCard/PostCardHeadingDetails';
-import { ExternalLink, LinkOrDiv } from '../../components/Utils';
-import PostImage from './PostImage';
+import { getEmbedComponent } from '../../components/PostCard';
 import LinkImage from '../../components/PostCard/LinkImage';
-import CommunityCard from './CommunityCard';
+import PostCardHeadingDetails from '../../components/PostCard/PostCardHeadingDetails';
+import PostImageGallery from '../../components/PostImageGallery';
 import Spinner from '../../components/Spinner';
-import { postAdded } from '../../slices/postsSlice';
+import { ExternalLink, LinkOrDiv } from '../../components/Utils';
 import { commentsAdded, newCommentAdded } from '../../slices/commentsSlice';
 import { communityAdded } from '../../slices/communitiesSlice';
-import { useLocation } from 'react-router-dom';
-import { getEmbedComponent } from '../../components/PostCard';
-import PostImageGallery from '../../components/PostImageGallery';
+import { postAdded } from '../../slices/postsSlice';
+import CommunityCard from './CommunityCard';
+import PostImage from './PostImage';
+import PostVotesBar from './PostVotesBar';
 
 const Post = () => {
   const { id, commentId, communityName } = useParams(); // id is post.publicId
@@ -363,7 +362,7 @@ const Post = () => {
                   <MarkdownBody>{post.body}</MarkdownBody>
                 </div>
               )}
-              {/*process.env.NODE_ENV !== 'production' && (
+              {/*import.meta.env.MODE !== 'production' && (
                 <img
                   src="https://source.unsplash.com/featured?people,nature"
                   alt=""

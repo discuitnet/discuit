@@ -27,7 +27,7 @@ const Footer = () => {
               href={import.meta.env.VITE_TWITTERURL}
               className="footer-item"
               target="_blank"
-              re="noopener"
+              rel="noopener"
             >
               Twitter / X
             </a>
@@ -37,7 +37,7 @@ const Footer = () => {
               href={import.meta.env.VITE_SUBSTACKURL}
               className="footer-item"
               target="_blank"
-              re="noopener"
+              rel="noopener"
             >
               Blog
             </a>
@@ -47,7 +47,7 @@ const Footer = () => {
               href={import.meta.env.VITE_FACEBOOKURL}
               className="footer-item"
               target="_blank"
-              re="noopener"
+              rel="noopener"
             >
               Facebook
             </a>
@@ -57,7 +57,7 @@ const Footer = () => {
               href={import.meta.env.VITE_INSTAGRAMURL}
               className="footer-item"
               target="_blank"
-              re="noopener"
+              rel="noopener"
             >
               Instagram
             </a>
@@ -67,7 +67,7 @@ const Footer = () => {
               href={import.meta.env.VITE_DISCORDURL}
               className="footer-item"
               target="_blank"
-              re="noopener"
+              rel="noopener"
             >
               Discord
             </a>
@@ -77,7 +77,7 @@ const Footer = () => {
               href={import.meta.env.VITE_GITHUBURL}
               className="footer-item"
               target="_blank"
-              re="noopener"
+              rel="noopener"
             >
               Github
             </a>
@@ -94,7 +94,12 @@ const Footer = () => {
           <Link className="footer-item" to="guidelines">
             Guidelines
           </Link>
-          <a className="footer-item" href="https://docs.discuit.net/" target="_blank" re="noopener">
+          <a
+            className="footer-item"
+            href="https://docs.discuit.net/"
+            target="_blank"
+            rel="noopener"
+          >
             Documentation
           </a>
         </div>

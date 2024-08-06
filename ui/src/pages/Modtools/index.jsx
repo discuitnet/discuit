@@ -12,16 +12,15 @@ import {
 } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar';
 import { APIError, mfetch } from '../../helper';
-import { useLoading } from '../../hooks';
 import { communityAdded, selectCommunity } from '../../slices/communitiesSlice';
 import { snackAlertError } from '../../slices/mainSlice';
 import PageNotLoaded from '../PageNotLoaded';
 import Banned from './Banned';
+import Mods from './Mods';
 import Removed from './Removed';
 import Reports from './Reports';
 import Rules from './Rules';
 import Settings from './Settings';
-import Mods from './Mods';
 
 function isActiveCls(className, isActive, activeClass = 'is-active') {
   return className + (isActive ? ` ${activeClass}` : '');

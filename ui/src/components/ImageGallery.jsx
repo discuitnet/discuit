@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import React, { useEffect, useState } from 'react';
 
 const ImageGallery = ({
   className,
@@ -25,7 +25,7 @@ const ImageGallery = ({
     if (onIndexChange) {
       onIndexChange(currentImageIndex);
     }
-  }, [currentImageIndex]);
+  }, [currentImageIndex, onIndexChange]);
 
   const renderImages = () => {
     let img1, img2, img3;

@@ -1,15 +1,13 @@
-/* eslint-disable jsx-a11y/no-static-element-interactions */
-/* eslint-disable jsx-a11y/click-events-have-key-events */
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useLocation } from 'react-router-dom';
 import Link from '../components/Link';
 import { sidebarScrollYUpdated, toggleSidebarOpen } from '../slices/mainSlice';
+import WelcomeBanner from '../views/WelcomeBanner';
 import { ButtonClose } from './Button';
 import CommunityProPic from './CommunityProPic';
 import Search from './Navbar/Search';
-import WelcomeBanner from '../views/WelcomeBanner';
-import { useLocation } from 'react-router-dom';
 
 const Sidebar = ({ isMobile = false }) => {
   const dispatch = useDispatch();

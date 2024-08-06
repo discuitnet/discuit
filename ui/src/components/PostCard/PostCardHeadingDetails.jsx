@@ -1,15 +1,15 @@
-import React from 'react';
 import PropTypes from 'prop-types';
-import { toTitleCase, userGroupSingular } from '../../helper';
-import CommunityLink from './CommunityLink';
-import TimeAgo from '../TimeAgo';
-import { useIsMobile, useMuteCommunity, useMuteUser } from '../../hooks';
-import Dropdown from '../Dropdown';
-import { ButtonMore } from '../Button';
+import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { UserLink } from '../UserProPic';
+import { toTitleCase, userGroupSingular } from '../../helper';
+import { useIsMobile, useMuteCommunity, useMuteUser } from '../../hooks';
 import { userHasSupporterBadge } from '../../pages/User';
 import { saveToListModalOpened } from '../../slices/mainSlice';
+import { ButtonMore } from '../Button';
+import Dropdown from '../Dropdown';
+import TimeAgo from '../TimeAgo';
+import { UserLink } from '../UserProPic';
+import CommunityLink from './CommunityLink';
 
 const PostCardHeadingDetails = ({
   post,

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import Modal from './components/Modal';
 import { ButtonClose } from './components/Button';
+import Modal from './components/Modal';
 import { mfetchjson, urlBase64ToUint8Array } from './helper';
 import { useIsMobile } from './hooks';
 

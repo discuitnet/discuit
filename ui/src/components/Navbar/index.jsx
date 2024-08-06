@@ -1,8 +1,11 @@
-import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { ButtonHamburger, ButtonNotifications } from '../Button';
-import Dropdown from '../Dropdown';
+import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useLocation } from 'react-router-dom';
+import Link from '../../components/Link';
+import { kRound, mfetch, onKeyEnter, stringCount } from '../../helper';
+import { mobileBreakpointWidth, useTheme, useWindowWidth } from '../../hooks';
+import { clearNotificationsLocalStorage } from '../../PushNotifications';
 import {
   chatOpenToggled,
   loginModalOpened,
@@ -12,15 +15,10 @@ import {
   snackAlertError,
   toggleSidebarOpen,
 } from '../../slices/mainSlice';
-import Link from '../../components/Link';
-import { kRound, mfetch, onKeyEnter, stringCount } from '../../helper';
-import Search from './Search';
-import { useRef } from 'react';
-import { useState } from 'react';
 import { homeReloaded } from '../../views/PostsFeed';
-import { useLocation } from 'react-router-dom';
-import { mobileBreakpointWidth, useTheme, useWindowWidth } from '../../hooks';
-import { clearNotificationsLocalStorage } from '../../PushNotifications';
+import { ButtonHamburger, ButtonNotifications } from '../Button';
+import Dropdown from '../Dropdown';
+import Search from './Search';
 
 const Navbar = ({ offline = false }) => {
   const dispatch = useDispatch();
@@ -115,7 +113,7 @@ const Navbar = ({ offline = false }) => {
           <Search />
         </div>
         <div className="right">
-          {process.env.NODE_ENV !== 'production' && (
+          {import.meta.env.MODE !== 'production' && (
             <button
               className="button-text is-no-m"
               onClick={() => dispatch(chatOpenToggled())}
@@ -124,7 +122,7 @@ const Navbar = ({ offline = false }) => {
               Chat
             </button>
           )}
-          {process.env.NODE_ENV !== 'production' && (
+          {import.meta.env.MODE !== 'production' && (
             <Link className="is-no-m" to="/elements">
               Elements
             </Link>

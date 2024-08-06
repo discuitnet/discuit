@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import Modal from '../../components/Modal';
+import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { ButtonClose } from '../../components/Button';
 import Input from '../../components/Input';
-import { useSelector } from 'react-redux';
+import Modal from '../../components/Modal';
 import { mfetch } from '../../helper';
-import { useDispatch } from 'react-redux';
 import { snackAlertError } from '../../slices/mainSlice';
 
 const Mods = ({ community }) => {

@@ -1,9 +1,8 @@
-import React from 'react';
 import PropTypes from 'prop-types';
-import { useDispatch } from 'react-redux';
-import { createCommunityModalOpened, signupModalOpened } from '../slices/mainSlice';
+import React from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { createCommunityModalOpened, signupModalOpened } from '../slices/mainSlice';
 
 const WelcomeBanner = ({ className, children, hideIfMember = false, ...props }) => {
   const dispatch = useDispatch();

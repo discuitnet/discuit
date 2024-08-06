@@ -1,10 +1,10 @@
-import React, { useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
-import FeedItem from './FeedItem';
-import Spinner from '../Spinner';
-import PostCardSkeleton from '../PostCard/PostCardSkeleton';
+import React, { useEffect, useRef } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useWindowWidth } from '../../hooks';
+import PostCardSkeleton from '../PostCard/PostCardSkeleton';
+import Spinner from '../Spinner';
+import FeedItem from './FeedItem';
 
 const Feed = ({
   loading,

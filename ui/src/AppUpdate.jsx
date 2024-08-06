@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import Modal from './components/Modal';
 import { ButtonClose } from './components/Button';
+import Modal from './components/Modal';
 import { useIsMobile } from './hooks';
 
 export const forceSwUpdate = async () => {

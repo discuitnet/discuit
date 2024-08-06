@@ -1,8 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
+import { Link } from 'react-router-dom/cjs/react-router-dom.min';
+import {
+  getNotificationsPermissions,
+  shouldAskForNotificationsPermissions,
+} from '../../PushNotifications';
+import { ButtonUpload } from '../../components/Button';
+import CommunityProPic from '../../components/CommunityProPic';
+import Dropdown from '../../components/Dropdown';
 import Input from '../../components/Input';
-import { mfetch, mfetchjson, validEmail } from '../../helper';
+import CommunityLink from '../../components/PostCard/CommunityLink';
+import { APIError, mfetch, mfetchjson, validEmail } from '../../helper';
 import { useIsChanged } from '../../hooks';
 import {
   mutesAdded,
@@ -15,15 +24,6 @@ import {
 } from '../../slices/mainSlice';
 import ChangePassword from './ChangePassword';
 import DeleteAccount from './DeleteAccount';
-import {
-  getNotificationsPermissions,
-  shouldAskForNotificationsPermissions,
-} from '../../PushNotifications';
-import Dropdown from '../../components/Dropdown';
-import CommunityLink from '../../components/PostCard/CommunityLink';
-import { Link } from 'react-router-dom/cjs/react-router-dom.min';
-import { ButtonUpload } from '../../components/Button';
-import CommunityProPic from '../../components/CommunityProPic';
 import { getDevicePreference, setDevicePreference } from './devicePrefs';
 
 const Settings = () => {

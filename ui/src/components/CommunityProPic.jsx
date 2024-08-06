@@ -1,8 +1,8 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 import favicon from '../assets/imgs/favicon.png';
-import { useImageLoaded } from '../hooks';
 import { selectImageCopyURL } from '../helper';
+import { useImageLoaded } from '../hooks';
 
 const CommunityProPic = ({ className, name, proPic, size = 'small', ...rest }) => {
   let src = favicon;

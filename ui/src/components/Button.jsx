@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
 import PropTypes from 'prop-types';
+import React, { useRef } from 'react';
 
 export const ButtonClose = ({ className, style = {}, ...props }) => {
   const cls = 'button-icon' + (className ? ` ${className}` : '');
@@ -206,5 +206,6 @@ export const ButtonUpload = ({ children, onChange, ...rest }) => {
 };
 
 ButtonUpload.propTypes = {
+  children: PropTypes.node.isRequired,
   onChange: PropTypes.func.isRequired,
 };

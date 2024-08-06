@@ -1,20 +1,19 @@
-import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { useParams } from 'react-router-dom';
-import Sidebar from '../../components/Sidebar';
-import Link from '../../components/Link';
-import Dropdown from '../../components/Dropdown';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { snackAlert, snackAlertError } from '../../slices/mainSlice';
-import { mfetch, mfetchjson, stringCount, timeAgo } from '../../helper';
-import { selectUser } from '../../slices/usersSlice';
-import { useFetchUser, useFetchUsersLists } from '../../hooks';
-import PageLoading from '../../components/PageLoading';
-import NotFound from '../NotFound';
-import { listsFilterChanged, listsOrderChanged } from '../../slices/listsSlice';
-import { EditListForm } from './List';
-import Modal from '../../components/Modal';
+import { useParams } from 'react-router-dom';
 import { ButtonClose } from '../../components/Button';
+import Dropdown from '../../components/Dropdown';
+import Link from '../../components/Link';
+import Modal from '../../components/Modal';
+import PageLoading from '../../components/PageLoading';
+import Sidebar from '../../components/Sidebar';
+import { mfetchjson, stringCount, timeAgo } from '../../helper';
+import { useFetchUser, useFetchUsersLists } from '../../hooks';
+import { listsFilterChanged, listsOrderChanged } from '../../slices/listsSlice';
+import { snackAlert } from '../../slices/mainSlice';
+import NotFound from '../NotFound';
+import { EditListForm } from './List';
 
 const Lists = () => {
   const dispatch = useDispatch();

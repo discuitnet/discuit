@@ -1,8 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { ButtonMore } from '../Button';
-import Dropdown from '../Dropdown';
+import { useInView } from 'react-intersection-observer';
+import { useDispatch, useSelector } from 'react-redux';
 import { APIError, mfetch, mfetchjson } from '../../helper';
-import { useDispatch } from 'react-redux';
 import {
   notificationsAllDeleted,
   notificationsAllSeen,
@@ -12,8 +11,8 @@ import {
   snackAlert,
   snackAlertError,
 } from '../../slices/mainSlice';
-import { useSelector } from 'react-redux';
-import { useInView } from 'react-intersection-observer';
+import { ButtonMore } from '../Button';
+import Dropdown from '../Dropdown';
 import NotificationItem from './NotificationItem';
 
 const NotificationsView = () => {
