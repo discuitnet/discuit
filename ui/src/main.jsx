@@ -48,15 +48,17 @@ const container = document.getElementById('root');
 const root = createRoot(container);
 
 root.render(
-  <Provider store={store}>
-    <HelmetProvider>
-      <ErrorBoundary FallbackComponent={Fallback} onError={logAppError}>
-        <Router>
-          <App />
-        </Router>
-      </ErrorBoundary>
-    </HelmetProvider>
-  </Provider>
+  <React.StrictMode>
+    <Provider store={store}>
+      <HelmetProvider>
+        <ErrorBoundary FallbackComponent={Fallback} onError={logAppError}>
+          <Router>
+            <App />
+          </Router>
+        </ErrorBoundary>
+      </HelmetProvider>
+    </Provider>
+  </React.StrictMode>
 );
 
 if (isDeviceIos()) {
