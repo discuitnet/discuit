@@ -64,8 +64,10 @@
                 changeMetaColorTheme(theme);
             })();
             (() => {
-                if ('serviceWorker' in navigator) {
+                const mode = '%MODE%'; // Supported by Vite.
+                if ('serviceWorker' in navigator && mode === 'production') {
                     try {
+                        console.log('Registering the service-worker');
                         navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
                     } catch (error) {
                         console.error(error);
