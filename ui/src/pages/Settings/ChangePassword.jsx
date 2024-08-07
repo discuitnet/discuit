@@ -39,8 +39,14 @@ const ChangePassword = () => {
         }),
       });
       if (!res.ok) {
-        if (res.status === 401) {
+        const respBody = await res.json();
+        if (respBody.code === 'password_not_match') {
           alert('Incorrect previous password');
+          return;
+        }
+        if (respBody.code === 'bad-password') {
+          // TODO: Display in the modal itself, as this can be long.
+          alert(respBody.message);
           return;
         }
         throw new APIError(res.status, await res.json());
