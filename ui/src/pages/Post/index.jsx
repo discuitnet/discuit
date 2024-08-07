@@ -265,6 +265,7 @@ const Post = () => {
 
   const canVote = !post.locked;
   const canComment = !(post.locked || isBanned);
+  const imageHeight = showImage ? post.image.height : 0;
 
   const getDeletedBannerText = (post) => {
     if (post.deletedContent) {
@@ -578,6 +579,7 @@ const Post = () => {
                     isBanned={isBanned}
                     canVote={canVote}
                     canComment={canComment}
+                    imageHeight={imageHeight}
                   />
                   {post.noComments === 0 && (
                     <div className="post-comments-none is-no-m">No comments yet.</div>
