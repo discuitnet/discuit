@@ -26,51 +26,73 @@ export default defineConfig({
   define: yamlConfigDefine,
 });
 
-function parseYamlConfigFile() {
-  const config = YAML.parse(fs.readFileSync('../ui-config.yaml', 'utf-8'));
-  if (typeof config !== 'object') {
+/**
+ * AppConfig contains a subset of the config values in the config.yaml file.
+ *
+ */
+interface AppConfig {
+  addr: string;
+  siteName: string;
+  captchaSiteKey: string;
+  emailContact: string;
+  facebookURL: string;
+  twitterURL: string;
+  instagramURL: string;
+  discordURL: string;
+  githubURL: string;
+  substackURL: string;
+  disableImagePosts: boolean;
+  disableForumCreation: boolean;
+  forumCreationReqPoints: number;
+  defaultFeedSort: string;
+  maxImagesPerPost: number;
+}
+
+function parseYamlConfigFile(): { define: { [index: string]: string }; config: AppConfig } {
+  const configFile = YAML.parse(fs.readFileSync('../ui-config.yaml', 'utf-8'));
+  if (typeof configFile !== 'object') {
     throw new Error('config.yaml file is not an object');
   }
 
-  const allowedKeys = [
-    'addr',
-    'siteName',
-    'captchaSiteKey',
-    'emailContact',
-    'facebookURL',
-    'twitterURL',
-    'instagramURL',
-    'discordURL',
-    'githubURL',
-    'substackURL',
-    'disableImagePosts',
-    'disableForumCreation',
-    'forumCreationReqPoints',
-    'defaultFeedSort',
-    'maxImagesPerPost',
-  ];
+  const config: AppConfig = {
+    addr: configFile.addr,
+    siteName: configFile.siteName,
+    captchaSiteKey: configFile.captchaSiteKey,
+    emailContact: configFile.emailContact,
+    facebookURL: configFile.facebookURL,
+    twitterURL: configFile.twitterURL,
+    instagramURL: configFile.instagramURL,
+    discordURL: configFile.discordURL,
+    githubURL: configFile.githubURL,
+    substackURL: configFile.substackURL,
+    disableImagePosts: configFile.disableImagePosts,
+    disableForumCreation: configFile.disableForumCreation,
+    forumCreationReqPoints: configFile.forumCreationReqPoints,
+    defaultFeedSort: configFile.defaultFeedSort,
+    maxImagesPerPost: configFile.maxImagesPerPost,
+  };
 
-  const define = {},
-    retConfig = {};
+  const define: { [key: string]: string } = {};
   for (const key in config) {
-    if (allowedKeys.includes(key)) {
-      define[`import.meta.env.VITE_${key.toUpperCase()}`] = JSON.stringify(config[key]);
-      retConfig[key] = config[key];
+    if (Object.keys(config).includes(key)) {
+      define[`import.meta.env.VITE_${key.toUpperCase()}`] = JSON.stringify(
+        config[key as keyof typeof config]
+      );
     }
   }
 
-  return { define, config: retConfig };
+  return { define, config };
 }
 
 /**
  * Takes in a string of the form 'host:port' and returns a full URL. Either the
  * 'host' part or the 'port' could be ommitted, but not both.
  *
- * @param {string} addr - Either a full URL or a partial URL of the form 'host:port'.
- * @returns {string}
  */
-function hostnameToURL(addr) {
-  let scheme, hostname, port;
+function hostnameToURL(addr: string) {
+  let scheme: string = '',
+    hostname: string = '',
+    port: string = '';
 
   let n = addr.indexOf('://');
   if (n !== -1) {
