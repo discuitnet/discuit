@@ -14,24 +14,40 @@ import {
 } from '../slices/mainSlice';
 import { selectUser, userAdded } from '../slices/usersSlice';
 
-export function useDelayedEffect(callback, deps, delay = 1000) {
-  const [timer, setTimer] = useState(null);
+/**
+ * Run a callback function after a specific amount of time.
+ *
+ * @param effect The callback function to run after the delay. You most definitely want to wrap this inside a `React.useCallback`.
+ * @param delay In number of miliseconds.
+ */
+export function useDelayedEffect(effect: () => void, delay = 1000) {
   useEffect(() => {
-    if (timer) {
-      clearTimeout(timer);
-    }
-    const newTimer = setTimeout(() => {
-      callback();
+    const timer = window.setTimeout(() => {
+      effect();
     }, delay);
-    setTimer(newTimer);
-  }, deps);
+    return () => {
+      window.clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effect, delay]);
 }
 
-export function useInputUsername(maxLength, initialUsername = '') {
+/**
+ * Makes an input or textarea element accept only characters valid in a
+ * username. See the exported `usernameLegalLetters` array for a list of valid
+ * usernname characters.
+ *
+ * @param maxLength Maximum length of the username.
+ * @param initialUsername Initial value of the username.
+ * @returns
+ */
+export function useInputUsername(maxLength: number, initialUsername = '') {
   const [value, setValue] = useState(initialUsername);
-  const handleChange = (e) => {
-    e.preventDefault();
-    const { value } = e.target;
+  const handleChange: React.ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement> = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    event.preventDefault();
+    const { value } = event.target;
     for (let i = 0; i < value.length; i++) {
       let found = false;
       for (let j = 0; j < usernameLegalLetters.length; j++)
@@ -77,20 +93,23 @@ export function useIsMobile(breakpoint = mobileBreakpointWidth) {
   return useWindowWidth() <= breakpoint;
 }
 
-export function useLoading(initialState = 'initial', timeout = 80) {
-  const [loading, setLoading] = useState(initialState);
+export type LoadingState = 'initial' | 'loading' | 'loaded' | 'error';
+
+export function useLoading(initialState: LoadingState = 'initial', timeout = 80) {
+  const [loading, setLoading] = useState<LoadingState>(initialState);
   useEffect(() => {
     if (loading === initialState) {
-      setTimeout(
-        () =>
-          setLoading((loading) => {
-            if (loading === initialState) return 'loading';
-            return loading;
-          }),
-        timeout
-      );
+      const timer = window.setTimeout(() => {
+        setLoading((loading) => {
+          if (loading === initialState) return 'loading';
+          return loading;
+        });
+      }, timeout);
+      return () => {
+        window.clearTimeout(timer);
+      };
     }
-  }, [loading]);
+  }, [loading, initialState, timeout]);
 
   return [loading, setLoading];
 }
@@ -101,17 +120,22 @@ export function usePagination(initial = 1) {
   const query = useQuery();
   let page = initial;
   if (query.has('page')) {
-    const n = parseInt(query.get('page'));
-    if (!isNaN(n)) page = n;
+    const _page = query.get('page');
+    if (_page !== null) {
+      const n = parseInt(_page);
+      if (!isNaN(n)) {
+        page = n;
+      }
+    }
   }
 
-  const setPage = (n, clearOtherParms = false) => {
+  const setPage = (n: number, clearOtherParms = false) => {
     let path = '';
     if (clearOtherParms) {
       path = `${history.location.pathname}?page=${n}`;
     } else {
       const params = new URLSearchParams(history.location.search);
-      params.set('page', n);
+      params.set('page', n.toString());
       path = `${history.location.pathname}?${params.toString()}`;
     }
     history.push(path);
@@ -133,7 +157,11 @@ export function useIsChanged(deps = []) {
   return [c > 1, resetChanged];
 }
 
-export function useVoting(initialVote, initialUpvotes, initialDownvotes) {
+export function useVoting(
+  initialVote: boolean | null,
+  initialUpvotes: number,
+  initialDownvotes: number
+) {
   const [state, setState] = useState({
     upvotes: initialUpvotes,
     downvotes: initialDownvotes,
@@ -146,7 +174,7 @@ export function useVoting(initialVote, initialUpvotes, initialDownvotes) {
       vote: initialVote,
     });
   }, [initialVote, initialUpvotes, initialDownvotes]);
-  const setVote = (up) => {
+  const setVote = (up: boolean) => {
     setState((prev) => {
       let { upvotes, downvotes, vote } = prev;
       if (vote === null) {
@@ -173,7 +201,12 @@ export function useVoting(initialVote, initialUpvotes, initialDownvotes) {
   };
 
   const [requesting, setRequesting] = useState(false);
-  const doVote = async (up, fetch, onSuccess, onFailure) => {
+  const doVote = async (
+    up: boolean,
+    fetch: () => Promise<unknown>,
+    onSuccess: (arg0: unknown) => void,
+    onFailure: (arg0: unknown) => void
+  ) => {
     if (requesting) return;
     setRequesting(true);
     const prev = {
@@ -199,25 +232,6 @@ export function useVoting(initialVote, initialUpvotes, initialDownvotes) {
   };
 }
 
-// If the condition is true and the user pressed the escape key the
-// callback is run.
-export function useEscapeKeydown(callback, condition = true) {
-  useEffect(() => {
-    if (condition) {
-      const listner = (e) => {
-        if (condition && e.key === 'Escape') {
-          callback(e);
-          e.stopPropagation();
-        }
-      };
-      window.addEventListener('keydown', listner);
-      return () => {
-        window.removeEventListener('keydown', listner);
-      };
-    }
-  }, [condition]);
-}
-
 function removeCanonicalTag() {
   const metaTags = Array.from(document.head.querySelectorAll('meta'));
   for (let i = 0; i < metaTags.length; i++) {
@@ -229,7 +243,7 @@ function removeCanonicalTag() {
   return false;
 }
 
-export function useCanonicalTag(href, deps) {
+export function useCanonicalTag(href: string, deps?: React.DependencyList) {
   useEffect(() => {
     removeCanonicalTag();
     if (href) {
@@ -238,36 +252,46 @@ export function useCanonicalTag(href, deps) {
       tag.setAttribute('href', href);
       document.head.append(tag);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
   useEffect(() => {
-    return () => removeCanonicalTag();
+    return () => {
+      removeCanonicalTag();
+    };
   }, []);
 }
 
-export function useRemoveCanonicalTag(deps) {
+export function useRemoveCanonicalTag(deps?: React.DependencyList) {
   useEffect(() => {
     removeCanonicalTag();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 }
 
-export function useImageLoaded(imgSrc) {
+export function useImageLoaded(imgSrc: string) {
   const [loaded, setLoaded] = useState(true);
-  const timer = useRef();
+  const timer = useRef<number | null>(null);
   useInsertionEffect(() => {
     setLoaded(true);
-    timer.current = setTimeout(() => {
+    timer.current = window.setTimeout(() => {
       setLoaded(false);
     }, 10);
-    return () => clearTimeout(timer.current);
+    return () => {
+      if (timer.current !== null) {
+        window.clearTimeout(timer.current);
+      }
+    };
   }, [imgSrc]);
   const handleLoad = () => {
-    clearTimeout(timer.current);
+    if (timer.current !== null) {
+      window.clearTimeout(timer.current);
+    }
     setLoaded(true);
   };
   return [loaded, handleLoad];
 }
 
-function changeMetaColorTheme(theme = 'light') {
+function changeMetaColorTheme() {
   Array.from(document.head.querySelectorAll('meta[name="theme-color"]')).forEach((item) =>
     item.remove()
   );
@@ -306,7 +330,7 @@ export function useTheme() {
     } else {
       localStorage.setItem('theme', theme);
     }
-    changeMetaColorTheme(theme);
+    changeMetaColorTheme();
   }, [theme]);
   useEffect(() => {
     if (!window.matchMedia) return;
@@ -328,7 +352,7 @@ export function useForceUpdate() {
   return forceUpdate;
 }
 
-export function useMuteUser({ userId, username }) {
+export function useMuteUser({ userId, username }: { userId: string; username: string }) {
   const dispatch = useDispatch();
   const isMuted = useSelector(selectIsUserMuted(userId));
   const toggleMute = () => {
@@ -342,7 +366,13 @@ export function useMuteUser({ userId, username }) {
   };
 }
 
-export function useMuteCommunity({ communityId, communityName }) {
+export function useMuteCommunity({
+  communityId,
+  communityName,
+}: {
+  communityId: string;
+  communityName: string;
+}) {
   const dispatch = useDispatch();
   const isMuted = useSelector(selectIsCommunityMuted(communityId));
   const toggleMute = () => {
@@ -362,11 +392,11 @@ export function useMuteCommunity({ communityId, communityName }) {
  * store.
  *
  */
-export function useFetchUser(username, showSnackAlertOnError = true) {
+export function useFetchUser(username: string, showSnackAlertOnError = true) {
   const dispatch = useDispatch();
   const user = useSelector(selectUser(username));
   const [loading, setLoading] = useState(!user);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
     if (user) {
@@ -384,7 +414,7 @@ export function useFetchUser(username, showSnackAlertOnError = true) {
           throw new APIError(res.status, await res.json());
         }
         dispatch(userAdded(await res.json()));
-      } catch (error) {
+      } catch (error: unknown) {
         setError(error);
         if (showSnackAlertOnError) {
           dispatch(snackAlertError(error));
@@ -403,10 +433,18 @@ export function useFetchUser(username, showSnackAlertOnError = true) {
   };
 }
 
-export function useFetchUsersLists(username, showSnackAlertOnError = true) {
+export function useFetchUsersLists(username: string, showSnackAlertOnError = true) {
   const dispatch = useDispatch();
-  const { lists, order, filter } = useSelector(selectUsersLists(username));
-  const [error, setError] = useState(null);
+  const {
+    lists,
+    order,
+    filter,
+  }: {
+    lists: unknown;
+    order: unknown;
+    filter: unknown;
+  } = useSelector(selectUsersLists(username));
+  const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
     if (lists) {
@@ -418,8 +456,8 @@ export function useFetchUsersLists(username, showSnackAlertOnError = true) {
         const lists = await mfetchjson(
           `/api/users/${username}/lists?sort=${order}&filter=${filter}`
         );
-        dispatch(usersListsAdded(username, lists, order, filter));
-      } catch (error) {
+        dispatch(usersListsAdded(username, lists, order as string, filter as string));
+      } catch (error: unknown) {
         setError(error);
         if (showSnackAlertOnError) {
           dispatch(snackAlertError(error));

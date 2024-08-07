@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import React, { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch } from 'react-redux';
@@ -26,7 +26,7 @@ const Signup = ({ open, onClose }) => {
 
   const [username, handleUsernameChange] = useInputUsername(usernameMaxLength);
   const [usernameError, setUsernameError] = useState(null);
-  const checkUsernameExists = async () => {
+  const checkUsernameExists = useCallback(async () => {
     if (username === '') return true;
     try {
       const res = await mfetch(`/api/users/${username}`);
@@ -42,8 +42,8 @@ const Signup = ({ open, onClose }) => {
     } catch (error) {
       dispatch(snackAlertError(error));
     }
-  };
-  useDelayedEffect(checkUsernameExists, [username]);
+  }, [dispatch, username]);
+  useDelayedEffect(checkUsernameExists);
 
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState(null);
