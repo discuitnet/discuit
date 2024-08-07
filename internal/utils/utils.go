@@ -4,6 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"io"
 	"math/rand"
 	"strings"
@@ -194,4 +195,56 @@ func ExtractStringsFromMap(m map[string]any, trim bool) map[string]string {
 		}
 	}
 	return strMap
+}
+
+// BreakUpOnCapitals breaks up a string s into words based on capital letters.
+// For example, "HelloWorld" becomes "Hello World".
+func BreakUpOnCapitals(s string) string {
+	var words []string
+	var word string
+	for _, r := range s {
+		if r >= 'A' && r <= 'Z' {
+			if word != "" {
+				words = append(words, word)
+			}
+			word = string(r)
+		} else {
+			word += string(r)
+		}
+	}
+	if word != "" {
+		words = append(words, word)
+	}
+	return strings.Join(words, " ")
+}
+
+// CalculateBatchSize calculates the size of a batch of objects in bytes.
+func CalculateBatchSize(objects []map[string]interface{}) (int, error) {
+	var size int
+	for _, obj := range objects {
+		data, err := json.Marshal(obj)
+		if err != nil {
+			return 0, err
+		}
+		size += len(data)
+	}
+	return size, nil
+}
+
+// ConvertToMapSlice converts a slice of objects to a slice of maps.
+func ConvertToMapSlice(objects []interface{}) ([]map[string]interface{}, error) {
+	var documents []map[string]interface{}
+	for _, obj := range objects {
+		data, err := json.Marshal(obj)
+		if err != nil {
+			return nil, err
+		}
+		var doc map[string]interface{}
+		err = json.Unmarshal(data, &doc)
+		if err != nil {
+			return nil, err
+		}
+		documents = append(documents, doc)
+	}
+	return documents, nil
 }

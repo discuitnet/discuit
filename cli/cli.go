@@ -11,6 +11,7 @@ import (
 
 	"github.com/discuitnet/discuit/cli/migrate"
 	"github.com/discuitnet/discuit/config"
+	"github.com/discuitnet/discuit/internal/meilisearch"
 	"github.com/joho/godotenv"
 	"github.com/urfave/cli/v2"
 )
@@ -30,6 +31,13 @@ func Before(c *cli.Context) error {
 		c.Context = context.WithValue(c.Context, "db", db)
 	}
 
+	// Connect to MeiliSearch.
+	searchClient := &meilisearch.MeiliSearch{}
+	if conf.MeiliEnabled {
+		searchClient = meilisearch.NewSearchClient(conf.MeiliHost, conf.MeiliKey)
+	}
+
+	c.Context = context.WithValue(c.Context, "searchClient", searchClient)
 	c.Context = context.WithValue(c.Context, "config", conf)
 	return nil
 }
