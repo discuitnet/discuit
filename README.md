@@ -90,17 +90,19 @@ Note: Do not install the discuit binary using go install or move it somewhere el
 
 1. **Build the Docker Image**
 
-   ```shell
-   docker build -t discuit .
-   ```
+    > **Note**: If you need to run discuit on a different architecture, simply change the Dockerfile in the `-f` flag to the appropriate Dockerfile for your architecture, currently we support `linux/amd64` (docker/Dockerfile.amd64), and `linux/arm64` (docker/Dockerfile.arm64).
+
+    ```shell
+    docker build -t discuit -f docker/Dockerfile.amd64 .
+    ```
 
 2. **Run the Docker Container**
 
-   > **Note**: The following command while having a persistent database, the included config.yaml file is not. You will need to mount the file to the container if you want to persist the configuration.
+    > **Note**: The following command while having a persistent database, the included config.yaml file is not. You will need to mount the file to the container if you want to persist the configuration.
 
-   ```shell
-   docker run -d --name discuit -v discuit-db:/var/lib/mysql -v discuit-redis:/var/lib/redis -v discuit-images:/app/images -p 8080:80 discuit
-   ```
+    ```shell
+    docker run -d --name discuit -v discuit-db:/var/lib/mysql -v discuit-redis:/var/lib/redis -v discuit-images:/app/images -p 8080:80 discuit
+    ```
 
 3. **Accessing Discuit**: After the container starts, you can access Discuit by navigating to `http://localhost:8080` on your web browser, or to the specific port if you customized the port mapping.
 
