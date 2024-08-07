@@ -1,0 +1,1 @@
+alter table users add column hide_downvotes bool not null default false;
