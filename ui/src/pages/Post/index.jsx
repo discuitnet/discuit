@@ -264,7 +264,7 @@ const Post = () => {
   const showImage = !post.deletedContent && post.type === 'image' && post.image;
 
   const canVote = !post.locked;
-  const canComment = !(post.locked || isBanned);
+  const canComment = !(post.locked || isBanned || (community.restrictComment && (!isMod && !isAdmin)));
 
   const getDeletedBannerText = (post) => {
     if (post.deletedContent) {

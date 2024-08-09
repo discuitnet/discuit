@@ -160,8 +160,9 @@ type Post struct {
 	// Whether the logged in user have voted up.
 	ViewerVotedUp msql.NullBool `json:"userVotedUp"`
 
-	AuthorMutedByViewer    bool `json:"isAuthorMuted"`
-	CommunityMutedByViewer bool `json:"isCommunityMuted"`
+	AuthorMutedByViewer      bool `json:"isAuthorMuted"`
+	CommunityMutedByViewer   bool `json:"isCommunityMuted"`
+	CommunityRestrictComment bool `json:"isCommunityRestrictComment"`
 
 	Community *Community `json:"community,omitempty"`
 	Author    *User      `json:"author,omitempty"`
@@ -203,6 +204,7 @@ var selectPostCols = []string{
 	"posts.deleted_content_at",
 	"posts.deleted_content_by",
 	"posts.deleted_content_as",
+	"communities.restrict_comment",
 }
 
 var selectPostJoins = []string{
@@ -346,6 +348,7 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 			&post.DeletedContentAt,
 			&post.DeletedContentBy,
 			&post.DeletedContentAs,
+			&post.CommunityRestrictComment,
 		}
 
 		linkImage := &images.Image{}
@@ -591,11 +594,11 @@ func createPost(ctx context.Context, db *sql.DB, opts *createPostOpts) (*Post, e
 		return nil, err
 	}
 
-	// Check if the author is banned from community.
-	if is, err := IsUserBannedFromCommunity(ctx, db, opts.community, opts.author); err != nil {
+	// Check if author has post permissions in community
+	if canPost, err := CanUserPostToCommunity(ctx, db, opts.community, opts.author); err != nil {
 		return nil, err
-	} else if is {
-		return nil, errUserBannedFromCommunity
+	} else if !canPost {
+		return nil, errRestrictPost
 	}
 
 	// Truncate title and body if max lengths are exceeded.
@@ -1545,6 +1548,23 @@ func (p *Post) AddComment(ctx context.Context, user uid.ID, g UserGroup, parentC
 		}
 	default:
 		return nil, errInvalidUserGroup
+	}
+
+	if p.CommunityRestrictComment {
+		if isMod, err := UserMod(ctx, p.db, p.CommunityID, user); err != nil {
+			return nil, err
+		} else {
+			if !isMod {
+				if isAdmin, err := IsAdmin(p.db, &user); err != nil {
+					return nil, err
+				} else {
+					if !isAdmin {
+						return nil, httperr.NewForbidden("no-comment-permission", "Commenting restricted to mods/admins.")
+					}
+				}
+			}
+
+		}
 	}
 
 	body = strings.TrimSpace(body)
