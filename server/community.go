@@ -195,7 +195,14 @@ func (s *Server) updateCommunity(w *responseWriter, r *request) error {
 	if err = r.unmarshalJSONBody(&rcomm); err != nil {
 		return err
 	}
+
+	if rcomm.RestrictComment && !rcomm.RestrictPost {
+		return httperr.NewBadRequest("invalid-community-settings", "Cannot restrict comments and allow posts.")
+	}
+
 	comm.NSFW = rcomm.NSFW
+	comm.RestrictPost = rcomm.RestrictPost
+	comm.RestrictComment = rcomm.RestrictComment
 	comm.About = rcomm.About
 
 	if err = comm.Update(r.ctx, *r.viewer); err != nil {

@@ -42,6 +42,7 @@ const NewPost = () => {
   const [community, setCommunity] = useState(null);
   const [isBanned, setIsBanned] = useState(false);
   const [isMod, setIsMod] = useState(false);
+  const [isRestrictPost, setIsRestrictPost] = useState(false)
   useEffect(() => {
     if (community !== null) {
       const _isBanned = bannedFrom.find((id) => id === community.id) !== undefined;
@@ -49,16 +50,25 @@ const NewPost = () => {
         alert(`You are banned from ${community.name}`);
       }
       setIsBanned(_isBanned);
+      const _isMod = community.userMod;
+      setIsRestrictPost(community.restrictPost);
+      if (isRestrictPost && (!user.isAdmin && !_isMod)) {
+        alert(`Posting to ${community.name} is restricted to moderators or admins`);
+      }
+      setIsMod(_isMod);
     } else {
       setIsBanned(false);
+      setIsRestrictPost(false);
+      setIsMod(false);
     }
-    setIsMod(community === null ? false : community.userMod);
+//    setIsMod(community === null ? false : community.userMod); // having asynch issues? commenting out and handling in the if/else clauses with an auxiliary variable
   }, [community]);
 
   const handleCommunityChange = async (ncomm) => {
     try {
       const rcomm = await mfetchjson(`/api/communities/${ncomm.id}`);
       setCommunity(rcomm);
+      setIsRestrictPost(rcomm.restrictPost);
       const query = new URLSearchParams(history.location.search);
       if (query.get('community') !== ncomm.name) {
         query.set('community', ncomm.name);
@@ -181,6 +191,10 @@ const NewPost = () => {
     if (isSubmitDisabled) return;
     if (isBanned) {
       alert('You are banned from community');
+      return;
+    }
+    if (isRestrictPost && (!user.isAdmin && !isMod)) {
+      alert('Posting to community is restricted to moderators or admins');
       return;
     }
     if (community === null) {

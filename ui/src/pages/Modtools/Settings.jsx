@@ -23,6 +23,24 @@ const Settings = ({ community }) => {
     community.about || ''
   );
   const [nsfw, setNSFW] = useState(community.nsfw);
+  const [restrictPost, setRestrictPost] = useState(community.restrictPost);
+  const [restrictComment, setRestrictComment] = useState(community.restrictComment);
+
+  // need to wrap post/comment restriction toggles
+  // allowing posts implies comments are allowed
+  // restricting comments implies posts are restricted
+  const setRestrictPostWrapper = (_restrictPost) => {
+    setRestrictPost(_restrictPost);
+    if (!_restrictPost && restrictComment) {
+      setRestrictComment(false);
+    }
+  }
+  const setRestrictCommentWrapper = (_restrictComment) => {
+    setRestrictComment(_restrictComment);
+    if (!restrictPost && _restrictComment) {
+      setRestrictPost(true);
+    }
+  }
 
   const handleSave = async () => {
     try {
@@ -31,6 +49,8 @@ const Settings = ({ community }) => {
         body: JSON.stringify({
           ...community,
           nsfw,
+          restrictPost,
+          restrictComment,
           about: description,
         }),
       });
@@ -45,7 +65,7 @@ const Settings = ({ community }) => {
   const changed = _changed > 0;
   useEffect(() => {
     setChanged((c) => c + 1);
-  }, [description, nsfw]);
+  }, [description, nsfw, restrictPost, restrictComment]);
 
   const proPicFileInputRef = useRef(null);
   const bannerFileInputRef = useRef(null);
@@ -209,6 +229,40 @@ const Settings = ({ community }) => {
               type="checkbox"
               checked={nsfw}
               onChange={(e) => setNSFW(e.target.checked)}
+            />
+          </div>
+        </div>
+        <div className="input-with-label">
+          <div className="input-label-box">
+            <div className="label">Restrict posting</div>
+          </div>
+          <div className="checkbox is-check-last">
+            <label htmlFor="c1" style={{ width: 'calc(100% - 25px)' }}>
+              Tick this box to restrict post creation to moderators or admins. Anyone can still comment. Unrestriced posting implies unrestricted commenting.
+            </label>
+            <input
+              className="switch"
+              id="c1"
+              type="checkbox"
+              checked={restrictPost}
+              onChange={(e) => setRestrictPostWrapper(e.target.checked)}
+            />
+          </div>
+        </div>
+        <div className="input-with-label">
+          <div className="input-label-box">
+            <div className="label">Restrict commenting</div>
+          </div>
+          <div className="checkbox is-check-last">
+            <label htmlFor="c1" style={{ width: 'calc(100% - 25px)' }}>
+              Tick this box to restrict commenting to moderators or admins. Restricted commenting forces restricting posting.
+            </label>
+            <input
+              className="switch"
+              id="c1"
+              type="checkbox"
+              checked={restrictComment}
+              onChange={(e) => setRestrictCommentWrapper(e.target.checked)}
             />
           </div>
         </div>
