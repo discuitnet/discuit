@@ -17,6 +17,7 @@ import { badgeImage } from '../../pages/User/Badge';
 
 const NotificationItem = ({ notification, ...rest }) => {
   const { type, seen, createdAt, notif } = notification;
+  if (!notif) return null; // notification is invalid
 
   const viewer = useSelector((state) => state.main.user);
 
@@ -114,6 +115,44 @@ const NotificationItem = ({ notification, ...rest }) => {
           </>
         );
       }
+      case 'new_report': {
+        let type = notif.report.type;
+        if (type === 'post') {
+          if (notif.noReports === 1) {
+            return (
+              <>
+                <b>{notif.noReports}</b> user has reported the post{' '}
+                <b>{notif.report.target.title}</b> in <b>{notif.report.target.communityName}</b>.
+              </>
+            );
+          } else {
+            return (
+              <>
+                <b>{notif.noReports}</b> users have reported the post{' '}
+                <b>{notif.report.target.title}</b> in <b>{notif.report.target.communityName}</b>.
+              </>
+            );
+          }
+        } else if (type === 'comment') {
+          if (notif.noReports === 1) {
+            return (
+              <>
+                <b>{notif.noReports}</b> user has reported a comment in{' '}
+                <b>{notif.report.target.communityName}</b>.
+              </>
+            );
+          } else {
+            return (
+              <>
+                <b>{notif.noReports}</b> users have reported a comment in{' '}
+                <b>{notif.report.target.communityName}</b>.
+              </>
+            );
+          }
+        } else {
+          return null;
+        }
+      }
       default: {
         return null; // unknown notification type
       }
@@ -187,6 +226,16 @@ const NotificationItem = ({ notification, ...rest }) => {
         url: src,
         backgroundColor: 'transparent',
       };
+      break;
+    case 'new_report':
+      switch (notif.report.type) {
+        case 'post':
+          to = `/${notif.report.target.communityName}/post/${notif.report.target.publicId}`;
+          break;
+        case 'comment':
+          to = `/${notif.report.target.communityName}/post/${notif.report.target.postPublicId}/${notif.report.target.id}`;
+          break;
+      }
       break;
   }
 
