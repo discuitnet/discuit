@@ -1,11 +1,53 @@
+import clsx from 'clsx';
 import React, { useRef } from 'react';
 
-const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
-  (props, ref) => {
-    return <button ref={ref} {...props} />;
+type ButtonVariant = 'normal' | 'text';
+type ButtonColor = 'main' | 'gray' | 'red';
+
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant;
+  color?: ButtonColor;
+  icon?: React.ReactElement;
+}
+
+const defaultButtonVariant: ButtonVariant = 'normal';
+const defaultButtonColor: ButtonColor = 'gray';
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      className,
+      variant = defaultButtonVariant,
+      color = defaultButtonColor,
+      icon,
+      children,
+      ...props
+    }: ButtonProps,
+    ref
+  ) => {
+    const variantClsName = variant === 'text' ? 'is-text' : '';
+    let colorClsName = '';
+    if (color === 'main') {
+      colorClsName = 'is-main';
+    } else if (color === 'red') {
+      colorClsName = 'is-red';
+    }
+    const cls = clsx(className, variantClsName, colorClsName, icon && !children ? 'is-icon' : null);
+
+    return (
+      <button className={cls ? cls : undefined} ref={ref} {...props}>
+        {icon ? (
+          <>
+            <span className="button-icon">{icon}</span>
+            <span>{children}</span>
+          </>
+        ) : (
+          children
+        )}
+      </button>
+    );
   }
 );
-
 Button.displayName = 'Button';
 
 export default Button;
