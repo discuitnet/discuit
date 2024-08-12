@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import React, { useRef } from 'react';
+import Spinner from './Spinner';
 
 type ButtonVariant = 'normal' | 'text';
 type ButtonColor = 'main' | 'gray' | 'red';
@@ -8,6 +9,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   variant?: ButtonVariant;
   color?: ButtonColor;
   icon?: React.ReactElement;
+  loading?: boolean;
 }
 
 const defaultButtonVariant: ButtonVariant = 'normal';
@@ -20,6 +22,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       variant = defaultButtonVariant,
       color = defaultButtonColor,
       icon,
+      loading = false,
       children,
       ...props
     }: ButtonProps,
@@ -36,9 +39,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     return (
       <button className={cls ? cls : undefined} ref={ref} {...props}>
+        {loading && (
+          <span className="button-icon">
+            <Spinner color="currentColor" />
+          </span>
+        )}
         {icon ? (
           <>
-            <span className="button-icon">{icon}</span>
+            {!loading && <span className="button-icon">{icon}</span>}
             <span>{children}</span>
           </>
         ) : (

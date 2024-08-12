@@ -145,6 +145,15 @@ const Elements = () => {
       </a>
       <Button icon={icons.help} />
       <Button icon={icons.trash} />
+      <Button color="main" loading>
+        Button
+      </Button>
+      <Button icon={icons.trash} loading>
+        Button with icon
+      </Button>
+      <Button variant="text" icon={icons.trash} loading color="red">
+        Button with icon
+      </Button>
 
       {/** Delete later */}
       <div className="input-with-label">

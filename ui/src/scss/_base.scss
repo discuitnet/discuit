@@ -750,10 +750,13 @@ button,
             height: 100%;
         }
     }
-    span {
+    > span {
         margin-right: 8px;
         &:last-of-type {
             margin-right: 0;
+        }
+        &:first-of-type {
+            margin-right: 8px;
         }
     }
     &.is-icon {
