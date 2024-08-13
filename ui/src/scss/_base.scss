@@ -619,7 +619,9 @@ textarea {
 }
 
 form,
-.form {
+.form,
+.form-section,
+.form-section-body {
     display: flex;
     flex-direction: column;
     .form-field {
@@ -627,6 +629,24 @@ form,
         &:last-child {
             margin-bottom: 0;
         }
+    }
+}
+
+form,
+.form {
+    .form-section {
+        margin-bottom: var(--gap);
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+}
+
+.form-section {
+    .form-section-heading {
+        font-size: 2.1rem;
+        font-weight: 600;
+        margin-bottom: var(--gap);
     }
 }
 

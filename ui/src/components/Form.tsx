@@ -11,6 +11,7 @@ export function FormField({
   description,
   error,
   children,
+  ...props
 }: {
   className?: string;
   label?: string;
@@ -19,11 +20,29 @@ export function FormField({
   children: React.ReactNode;
 }) {
   return (
-    <div className={clsx('form-field', className, error && 'is-error')}>
+    <div className={clsx('form-field', className, error && 'is-error')} {...props}>
       {label && <div className="form-label">{label}</div>}
       {description && <div className="form-description">{description}</div>}
       <div className="form-control">{children}</div>
       {typeof error === 'boolean' && <div className="form-error">{error}</div>}
+    </div>
+  );
+}
+
+export function FormSection({
+  className,
+  heading,
+  children,
+  ...props
+}: {
+  className?: string;
+  heading?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={clsx('form-section', className)} {...props}>
+      {heading && <div className="form-section-heading">{heading}</div>}
+      <div className="form-section-body">{children}</div>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Button, { ButtonClose, ButtonMore } from './components/Button';
 import Dropdown from './components/Dropdown';
-import { Form, FormField } from './components/Form';
+import { Form, FormField, FormSection } from './components/Form';
 import Input, { Checkbox, InputWithCount, Radio, useInputMaxLength } from './components/Input';
 import Modal from './components/Modal';
 import ModalConfirm from './components/Modal/ModalConfirm';
@@ -200,48 +200,50 @@ function Elements() {
 
       <Section title="Forms" bodyStyle={{ width: '50%' }}>
         <Form>
-          <FormField label="Username" description="Enter a unique username for your account.">
-            <input type="text" />
-          </FormField>
-          <FormField label="Password" error="Password cannot be empty.">
-            <input type="password" />
-          </FormField>
-          <FormField label="About" description="Tell us something about yourself.">
-            <textarea name="" id="" rows={5}></textarea>
-          </FormField>
-          {/* TODO: Add checkboxes and other form items in here */}
-          <FormField>
-            <Checkbox label="Yes" />
-            <Checkbox label="No" />
-            <Checkbox label="Both" />
-          </FormField>
-          <FormField>
-            <Radio name="insert-unique-name" label="Yes" />
-            <Radio name="insert-unique-name" label="No" />
-            <Radio name="insert-unique-name" label="Both" />
-          </FormField>
-          <FormField>
-            <Checkbox label="This is a switch" variant="switch" />
-          </FormField>
+          <FormSection heading="General">
+            <FormField label="Username" description="Enter a unique username for your account.">
+              <input type="text" />
+            </FormField>
+            <FormField label="Password" error="Password cannot be empty.">
+              <input type="password" />
+            </FormField>
+            <FormField label="About" description="Tell us something about yourself.">
+              <textarea name="" id="" rows={5}></textarea>
+            </FormField>
+          </FormSection>
+          <FormSection heading="Preferences">
+            <FormField>
+              <Checkbox label="Yes" />
+              <Checkbox label="No" />
+              <Checkbox label="Both" />
+            </FormField>
+            <FormField>
+              <Radio name="insert-unique-name" label="Yes" />
+              <Radio name="insert-unique-name" label="No" />
+              <Radio name="insert-unique-name" label="Both" />
+            </FormField>
+            <FormField>
+              <Checkbox label="This is a switch" variant="switch" />
+            </FormField>
+          </FormSection>
           <FormField>
             <Button color="main">Submit</Button>
           </FormField>
         </Form>
       </Section>
 
+      <Section title="Dropdown">
+        <Dropdown target={<button>Dropdown</button>}>
+          <div className="dropdown-list">
+            <div className="dropdown-item">Item one</div>
+            <div className="dropdown-item">Item two</div>
+            <div className="dropdown-item">Item three</div>
+            <div className="dropdown-item">Item four</div>
+          </div>
+        </Dropdown>
+      </Section>
+
       {/** Delete later */}
-      <div className="input-with-label">
-        <div className="label">Name</div>
-        <input type="text" />
-      </div>
-      <Dropdown target={<button>Dropdown</button>}>
-        <div className="dropdown-list">
-          <div className="dropdown-item">Item one</div>
-          <div className="dropdown-item">Item two</div>
-          <div className="dropdown-item">Item three</div>
-          <div className="dropdown-item">Item four</div>
-        </div>
-      </Dropdown>
       <Dropdown target="Dropdown with the default target">
         <div className="dropdown-list">
           <div className="dropdown-item">Item one</div>
