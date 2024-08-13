@@ -8,6 +8,7 @@ import { APIError, mfetch, validEmail } from '../helper';
 import { useDelayedEffect, useInputUsername } from '../hooks';
 import { loginModalOpened, snackAlert, snackAlertError } from '../slices/mainSlice';
 import { ButtonClose } from './Button';
+import { Form, FormField } from './Form';
 import Input, { InputPassword, InputWithCount } from './Input';
 import Modal from './Modal';
 
@@ -146,49 +147,50 @@ const Signup = ({ open, onClose }) => {
         <style>{`.grecaptcha-badge { visibility: hidden; }`}</style>
       </Helmet>
       <Modal open={open} onClose={onClose} noOuterClickClose={false}>
-        <div className="modal-card modal-form modal-signup">
+        <div className="modal-card modal-signup">
           <div className="modal-card-head">
             <div className="modal-card-title">Signup</div>
             <ButtonClose onClick={onClose} />
           </div>
-          <form className="modal-card-content" onSubmit={handleSubmit}>
-            <InputWithCount
+          <Form className="modal-card-content" onSubmit={handleSubmit}>
+            <FormField
+              className="is-username"
               label="Username"
-              maxLength={usernameMaxLength}
               description="The name you will use when interacting with the community."
               error={usernameError}
-              value={username}
-              onChange={handleUsernameChange}
-              onBlur={() => checkUsernameExists()}
-              autoFocus
-              style={{ marginBottom: 0 }}
-              autoComplete="username"
-            />
-            <Input
-              type="email"
+            >
+              <InputWithCount
+                maxLength={usernameMaxLength}
+                value={username}
+                onChange={handleUsernameChange}
+                onBlur={() => checkUsernameExists()}
+                autoFocus
+                autoComplete="username"
+              />
+            </FormField>
+            <FormField
               label="Email (optional)"
               description="Without an email address, there's no way to recover your account if you lose your password."
-              value={email}
               error={emailError}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <InputPassword
-              label="Password"
-              value={password}
-              error={passwordError}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="new-password"
-            />
-            <InputPassword
-              label="Repeat password"
-              value={repeatPassword}
-              error={repeatPasswordError}
-              onChange={(e) => {
-                setRepeatPassword(e.target.value);
-              }}
-              style={{ marginBottom: 0 }}
-              autoComplete="new-password"
-            />
+            >
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            </FormField>
+            <FormField label="Password" error={passwordError}>
+              <InputPassword
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+            </FormField>
+            <FormField label="Repeat password" error={repeatPasswordError}>
+              <InputPassword
+                value={repeatPassword}
+                onChange={(e) => {
+                  setRepeatPassword(e.target.value);
+                }}
+                autoComplete="new-password"
+              />
+            </FormField>
             {CAPTCHA_ENABLED && (
               <div style={{ margin: 0 }}>
                 <ReCAPTCHA
@@ -200,33 +202,37 @@ const Signup = ({ open, onClose }) => {
                 />
               </div>
             )}
-            <p className="modal-signup-terms">
-              {'By creating an account, you agree to our '}
-              <a target="_blank" href="/terms">
-                Terms
-              </a>
-              {' and '}
-              <a target="_blank" href="/privacy-policy">
-                {' Privacy Policy'}
-              </a>
-              .
-            </p>
-            <p className="modal-signup-terms is-captcha">
-              This site is protected by reCAPTCHA and the Google{' '}
-              <a href="https://policies.google.com/privacy-policy" target="_blank">
-                Privacy Policy
-              </a>{' '}
-              and{' '}
-              <a href="https://policies.google.com/terms" target="_blank">
-                Terms of Service
-              </a>{' '}
-              apply.
-            </p>
-            <input type="submit" className="button button-main" value="Signup" />
-            <button className="button-link modal-alt-link" onClick={handleOnLogin}>
-              Already have an account? Login
-            </button>
-          </form>
+            <FormField>
+              <p className="modal-signup-terms">
+                {'By creating an account, you agree to our '}
+                <a target="_blank" href="/terms">
+                  Terms
+                </a>
+                {' and '}
+                <a target="_blank" href="/privacy-policy">
+                  {' Privacy Policy'}
+                </a>
+                .
+              </p>
+              <p className="modal-signup-terms is-captcha">
+                This site is protected by reCAPTCHA and the Google{' '}
+                <a href="https://policies.google.com/privacy-policy" target="_blank">
+                  Privacy Policy
+                </a>{' '}
+                and{' '}
+                <a href="https://policies.google.com/terms" target="_blank">
+                  Terms of Service
+                </a>{' '}
+                apply.
+              </p>
+            </FormField>
+            <FormField className="is-submit">
+              <input type="submit" className="button button-main" value="Signup" />
+              <button className="button-link" onClick={handleOnLogin}>
+                Already have an account? Login
+              </button>
+            </FormField>
+          </Form>
         </div>
       </Modal>
     </>

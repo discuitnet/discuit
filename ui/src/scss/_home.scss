@@ -87,18 +87,16 @@ a {
         }
     }
 }
-.page-content {
-    .login-box {
+.login-box {
+    display: flex;
+    flex-direction: column;
+    .form-field.is-submit .form-control {
         display: flex;
         flex-direction: column;
-        > * {
-            margin-bottom: 8px;
-            &:last-child {
-                margin-bottom: 0;
-            }
-        }
-        .modal-alt-link {
+        button {
+            margin-top: calc(var(--gap) / 2);
             text-align: center;
+            align-self: center;
         }
     }
 }
@@ -709,6 +707,28 @@ a {
 .modal {
     .modal-signup {
         transition: max-height 1s;
+        .modal-signup-terms {
+            margin-bottom: 0;
+            text-align: center;
+            font-size: 1.4rem;
+            &.is-captcha {
+                margin-top: 5px;
+                font-size: 1.2rem;
+            }
+        }
+        .form-field.is-username {
+            margin-bottom: 5px;
+        }
+        .form-field.is-submit .form-control {
+            display: flex;
+            flex-direction: column;
+            button {
+                margin-top: calc(var(--gap) / 2);
+                text-align: center;
+                align-self: center;
+            }
+        }
+        /*
         .modal-card-content {
             display: flex;
             flex-direction: column;
@@ -718,18 +738,6 @@ a {
             .input-with-label {
                 margin: 0;
                 margin-bottom: var(--gap);
-            }
-            .modal-signup-terms {
-                margin-bottom: 0;
-                text-align: center;
-                font-size: 1.4rem;
-                &.is-captcha {
-                    margin-top: 5px;
-                    font-size: 1.2rem;
-                }
-                &:not(.is-captcha) {
-                    margin-top: var(--gap);
-                }
             }
             .modal-alt-link {
                 margin-top: 0;
@@ -744,6 +752,7 @@ a {
                 margin: 0;
             }
         }
+            */
     }
     .modal-login {
         .form-error {

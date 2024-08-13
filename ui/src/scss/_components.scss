@@ -369,15 +369,6 @@
             display: flex;
             flex-direction: column;
         }
-        .modal-card-content.is-form,
-        form.modal-card-content {
-            > * {
-                margin-bottom: var(--gap);
-                &:last-child {
-                    margin-bottom: 0;
-                }
-            }
-        }
         .modal-card-actions {
             padding: var(--card-padding);
             display: flex;

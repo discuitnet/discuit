@@ -2,84 +2,43 @@ import clsx from 'clsx';
 import React, { ChangeEvent, forwardRef, useState } from 'react';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  description?: string;
-  error?: string;
+  error: boolean;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { className, style, type = 'text', label, description, error, ...rest }: InputProps,
+  { className, type = 'text', error = false, ...rest }: InputProps,
   ref
 ) {
-  if (label) {
-    return (
-      <div className={clsx('input-with-label', className, error && 'is-error')} style={style}>
-        {(label || description || error) && (
-          <div className="input-label-box">
-            {label && <div className="label">{label}</div>}
-            {description && <div className="input-desc">{description}</div>}
-          </div>
-        )}
-        <input ref={ref} type={type} {...rest} />
-        {error && (
-          <div className="form-error" style={{ textAlign: 'left' }}>
-            {error}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <input className={clsx(className, error && 'is-error')} type={type} style={style} {...rest} />
-  );
+  return <input className={clsx(className, error && 'is-error')} type={type} ref={ref} {...rest} />;
 });
 
 export default Input;
 
-export interface InputWithCountProps extends React.HTMLAttributes<HTMLElement> {
-  textarea: boolean;
-  type: 'text' | 'password';
-  label?: string;
-  description?: string;
-  maxLength: number;
-  error?: string;
-  value: string;
-}
-
 export const InputWithCount = ({
   className,
-  style,
   textarea = false,
   type = 'text',
-  label,
-  description,
   maxLength = 100,
-  error,
+  error = false,
   value,
   onChange,
-  ...rest
-}: InputWithCountProps) => {
-  if (className) className = ` ${className}`;
+  ...props
+}: {
+  className?: string;
+  textarea: boolean;
+  type: string;
+  maxLength: number;
+  error: boolean;
+  value?: string;
+  onChange?: React.ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
+}) => {
   const length = value ? value.length : 0;
-
   return (
-    <div className={clsx('input-with-label', className, error && 'is-error')} style={style}>
-      {(label || description || error) && (
-        <div className="input-label-box">
-          {label && <div className="label">{label}</div>}
-          {description && <div className="input-desc">{description}</div>}
-          {error && (
-            <div className="form-error" style={{ textAlign: 'left' }}>
-              {error}
-            </div>
-          )}
-        </div>
-      )}
+    <div className={clsx('input-with-limit', className)} {...props}>
       {textarea ? (
-        <textarea value={value} onChange={onChange} {...rest}></textarea>
+        <textarea value={value} onChange={onChange}></textarea>
       ) : (
-        <input type={type} value={value} onChange={onChange} {...rest} />
+        <input type={type} value={value} onChange={onChange} />
       )}
       <div className="input-count">{`${length} / ${maxLength}`}</div>
     </div>
@@ -144,44 +103,16 @@ const InputPasswordVisibleIcon = ({
 };
 
 export const InputPassword = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { className, style, label, description, error, value, onChange, ...rest }: InputProps,
+  { className, error = false, value, ...props }: InputProps,
   ref
 ) {
-  if (className) className = ` ${className}`;
   const [showPassword, setShowPassword] = useState(false);
   const type = showPassword ? 'text' : 'password';
   const handleShowClick = () => setShowPassword((x) => !x);
 
-  if (label !== '') {
-    return (
-      <div
-        className={'input-with-label' + (className ? className : '') + (error ? ' is-error' : '')}
-        style={style}
-      >
-        {(label || description || error) && (
-          <div className="input-label-box">
-            {label && <div className="label">{label}</div>}
-            {description && <div className="input-desc">{description}</div>}
-            {error && (
-              <div className="form-error" style={{ textAlign: 'left' }}>
-                {error}
-              </div>
-            )}
-          </div>
-        )}
-        <div className="input-input">
-          <input ref={ref} type={type} value={value} onChange={onChange} {...rest} />
-          {value !== '' && (
-            <InputPasswordVisibleIcon visible={showPassword} onClick={handleShowClick} />
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className={'input-input' + (className ? className : '')} style={style}>
-      <input ref={ref} type={type} value={value} onChange={onChange} {...rest} />
+    <div className={clsx('input-password', className)}>
+      <input className={clsx(error && 'is-error')} ref={ref} type={type} value={value} {...props} />
       {value !== '' && (
         <InputPasswordVisibleIcon visible={showPassword} onClick={handleShowClick} />
       )}

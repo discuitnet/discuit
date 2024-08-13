@@ -623,7 +623,7 @@ form,
     display: flex;
     flex-direction: column;
     .form-field {
-        margin-bottom: 10px;
+        margin-bottom: 12px;
         &:last-child {
             margin-bottom: 0;
         }
@@ -660,31 +660,18 @@ form,
     }
 }
 
-.input-with-label {
+.input-with-limit {
     display: flex;
     flex-direction: column;
-    .input-label-box {
-        display: flex;
-        flex-direction: column;
-        margin-bottom: 0.5rem;
-    }
     .input-count {
         font-size: var(--fs-xs);
         opacity: 0.6;
         align-self: flex-end;
         margin-top: 0.2rem;
     }
-    &.is-error {
-        input {
-            border-color: rgba(var(--base-red), 0.8);
-            &:focus {
-                border-color: rgba(var(--base-red), 1);
-            }
-        }
-    }
 }
 
-.input-input {
+.input-password {
     display: flex;
     flex-direction: column;
     position: relative;
@@ -710,10 +697,6 @@ form,
             background-color: rgba(var(--color-fg), 0.25);
         }
     }
-}
-
-.input-desc {
-    opacity: 0.9;
 }
 
 input,

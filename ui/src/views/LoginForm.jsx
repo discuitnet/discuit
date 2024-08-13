@@ -1,7 +1,8 @@
 import PropTypes from 'prop-types';
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useLocation } from 'react-router-dom';
+import { Form, FormField } from '../components/Form';
 import Input, { InputPassword } from '../components/Input';
 import { APIError, mfetch } from '../helper';
 import { loginModalOpened, signupModalOpened, snackAlertError } from '../slices/mainSlice';
@@ -71,27 +72,35 @@ const LoginForm = ({ isModal = false }) => {
   };
 
   return (
-    <form className="login-box modal-card-content" onSubmit={handleLoginSubmit}>
-      <Input
-        ref={usernameRef}
-        label="Username"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        autoFocus={isModal}
-        autoComplete="username"
-      />
-      <InputPassword
-        label="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        autoComplete="current-password"
-      />
-      {loginError && <div className="form-error text-center">{loginError}</div>}
-      <input type="submit" className="button button-main" value="Login" />
-      <button className="button-link modal-alt-link" onClick={handleOnSignup}>
-        {"Don't have an account? Signup"}
-      </button>
-    </form>
+    <Form className="login-box modal-card-content" onSubmit={handleLoginSubmit}>
+      <FormField label="Username">
+        <Input
+          ref={usernameRef}
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          autoFocus={isModal}
+          autoComplete="username"
+        />
+      </FormField>
+      <FormField label="Password">
+        <InputPassword
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
+        />
+      </FormField>
+      {loginError && (
+        <FormField>
+          <div className="form-error text-center">{loginError}</div>
+        </FormField>
+      )}
+      <FormField className="is-submit">
+        <input type="submit" className="button button-main" value="Login" />
+        <button className="button-link" onClick={handleOnSignup}>
+          {"Don't have an account? Signup"}
+        </button>
+      </FormField>
+    </Form>
   );
 };
 
