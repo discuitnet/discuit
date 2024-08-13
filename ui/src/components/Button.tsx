@@ -24,6 +24,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       icon,
       loading = false,
       children,
+      disabled,
       ...props
     }: ButtonProps,
     ref
@@ -38,7 +39,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const cls = clsx(className, variantClsName, colorClsName, icon && !children ? 'is-icon' : null);
 
     return (
-      <button className={cls ? cls : undefined} ref={ref} {...props}>
+      <button className={cls ? cls : undefined} ref={ref} {...props} disabled={loading || disabled}>
         {loading && (
           <span className="button-icon">
             <Spinner color="currentColor" />

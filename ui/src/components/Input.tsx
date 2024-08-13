@@ -1,46 +1,51 @@
-import PropTypes from 'prop-types';
-import React, { forwardRef, useState } from 'react';
+import clsx from 'clsx';
+import React, { ChangeEvent, forwardRef, useState } from 'react';
 
-const Input = forwardRef(function Input(
-  { className, style, type = 'text', label, description, error, ...rest },
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label?: string;
+  description?: string;
+  error?: string;
+}
+
+const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
+  { className, style, type = 'text', label, description, error, ...rest }: InputProps,
   ref
 ) {
-  if (className) className = ` ${className}`;
-  if (label !== '') {
+  if (label) {
     return (
-      <div
-        className={'input-with-label' + (className ? className : '') + (error ? ' is-error' : '')}
-        style={style}
-      >
+      <div className={clsx('input-with-label', className, error && 'is-error')} style={style}>
         {(label || description || error) && (
           <div className="input-label-box">
             {label && <div className="label">{label}</div>}
             {description && <div className="input-desc">{description}</div>}
-            {error && (
-              <div className="form-error" style={{ textAlign: 'left' }}>
-                {error}
-              </div>
-            )}
           </div>
         )}
         <input ref={ref} type={type} {...rest} />
+        {error && (
+          <div className="form-error" style={{ textAlign: 'left' }}>
+            {error}
+          </div>
+        )}
       </div>
     );
   }
 
-  return <input className={className ? className : ''} type={type} style={style} {...rest} />;
+  return (
+    <input className={clsx(className, error && 'is-error')} type={type} style={style} {...rest} />
+  );
 });
 
-Input.propTypes = {
-  className: PropTypes.string,
-  style: PropTypes.object,
-  type: PropTypes.string,
-  label: PropTypes.string,
-  description: PropTypes.string,
-  error: PropTypes.string,
-};
-
 export default Input;
+
+export interface InputWithCountProps extends React.HTMLAttributes<HTMLElement> {
+  textarea: boolean;
+  type: 'text' | 'password';
+  label?: string;
+  description?: string;
+  maxLength: number;
+  error?: string;
+  value: string;
+}
 
 export const InputWithCount = ({
   className,
@@ -54,15 +59,12 @@ export const InputWithCount = ({
   value,
   onChange,
   ...rest
-}) => {
+}: InputWithCountProps) => {
   if (className) className = ` ${className}`;
   const length = value ? value.length : 0;
 
   return (
-    <div
-      className={'input-with-label' + (className ? className : '') + (error ? ' is-error' : '')}
-      style={style}
-    >
+    <div className={clsx('input-with-label', className, error && 'is-error')} style={style}>
       {(label || description || error) && (
         <div className="input-label-box">
           {label && <div className="label">{label}</div>}
@@ -84,37 +86,27 @@ export const InputWithCount = ({
   );
 };
 
-InputWithCount.propTypes = {
-  className: PropTypes.string,
-  textarea: PropTypes.bool,
-  type: PropTypes.string,
-  label: PropTypes.string,
-  description: PropTypes.string,
-  maxLength: PropTypes.number,
-  style: PropTypes.object,
-  error: PropTypes.string,
-  value: PropTypes.string,
-  onChange: PropTypes.func,
-};
-
-export function useInputMaxLength(maxLength, initial = '') {
+export function useInputMaxLength(maxLength: number, initial = '') {
   const [value, setValue] = useState(initial);
-  const handleChange = (e) => {
+  const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | string) => {
     let value = '';
-    if (typeof e === 'object') {
-      if (e !== null) value = e.target.value;
-    } else if (typeof e === 'string') {
-      value = e;
-    } else if (typeof e === 'number') {
-      value = e.String();
+    if (event instanceof Event) {
+      value = (event as ChangeEvent<HTMLInputElement | HTMLTextAreaElement>).target.value;
+    } else {
+      value = event as string;
     }
     setValue(value.slice(0, maxLength));
   };
-
   return [value, handleChange];
 }
 
-const InputPasswordVisibleIcon = ({ visible = true, onClick }) => {
+const InputPasswordVisibleIcon = ({
+  visible = true,
+  onClick,
+}: {
+  visible: boolean;
+  onClick: () => void;
+}) => {
   return (
     <div
       className="input-password-show flex flex-center"
@@ -151,13 +143,8 @@ const InputPasswordVisibleIcon = ({ visible = true, onClick }) => {
   );
 };
 
-InputPasswordVisibleIcon.propTypes = {
-  visible: PropTypes.bool.isRequired,
-  onClick: PropTypes.func.isRequired,
-};
-
-export const InputPassword = forwardRef(function Input(
-  { className, style, label, description, error, value, onChange, ...rest },
+export const InputPassword = forwardRef<HTMLInputElement, InputProps>(function Input(
+  { className, style, label, description, error, value, onChange, ...rest }: InputProps,
   ref
 ) {
   if (className) className = ` ${className}`;
@@ -185,11 +172,7 @@ export const InputPassword = forwardRef(function Input(
         <div className="input-input">
           <input ref={ref} type={type} value={value} onChange={onChange} {...rest} />
           {value !== '' && (
-            <InputPasswordVisibleIcon
-              visible={showPassword}
-              onClick={handleShowClick}
-              title="Show password"
-            />
+            <InputPasswordVisibleIcon visible={showPassword} onClick={handleShowClick} />
           )}
         </div>
       </div>
@@ -205,13 +188,3 @@ export const InputPassword = forwardRef(function Input(
     </div>
   );
 });
-
-InputPassword.propTypes = {
-  className: PropTypes.string,
-  style: PropTypes.object,
-  label: PropTypes.string,
-  description: PropTypes.string,
-  error: PropTypes.string,
-  value: PropTypes.string.isRequired,
-  onChange: PropTypes.func.isRequired,
-};

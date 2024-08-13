@@ -1,15 +1,16 @@
+import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Button, { ButtonClose, ButtonMore } from './components/Button';
 import Dropdown from './components/Dropdown';
-import { InputWithCount, useInputMaxLength } from './components/Input';
+import Input, { InputWithCount, useInputMaxLength } from './components/Input';
 import Modal from './components/Modal';
 import ModalConfirm from './components/Modal/ModalConfirm';
 import PostCardSkeleton from './components/PostCard/PostCardSkeleton';
 import Spinner from './components/Spinner';
 import { snackAlert } from './slices/mainSlice';
 
-const Elements = () => {
+function Elements() {
   const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -94,66 +95,96 @@ const Elements = () => {
       </div>
 
       {/* Headings: */}
-      <h1>Heading 1</h1>
-      <h2>Heading 2</h2>
-      <h3>Heading 3</h3>
+      <Section title="Headings">
+        <h1>Heading 1</h1>
+        <h2>Heading 2</h2>
+        <h3>Heading 3</h3>
+      </Section>
 
       {/* Buttons: */}
-      <Button>Button</Button>
-      <Button color="main">Button</Button>
-      <Button color="red">Button</Button>
-      <Button variant="text">Button</Button>
-      <Button variant="text" color="main">
-        Button
-      </Button>
-      <Button variant="text" color="red">
-        Button
-      </Button>
-      <Button icon={icons.trash}>Button with icon</Button>
-      <Button icon={icons.bubbles}>Button with icon</Button>
-      <Button variant="text" icon={icons.bubbles}>
-        Button with icon
-      </Button>
-      <Button variant="text" icon={icons.bubbles} color="red">
-        Button with icon
-      </Button>
-      <a className="button" href="https://www.google.com/">
-        Link button
-      </a>
-      <a className="button is-main" href="https://www.google.com/">
-        Link button
-      </a>
-      <a className="button is-red" href="https://www.google.com/">
-        Link button
-      </a>
-      <a className="button is-text" href="https://www.google.com/">
-        Link button
-      </a>
-      <a className="button is-text is-main" href="https://www.google.com/">
-        Link button
-      </a>
-      <a className="button is-text is-red" href="https://www.google.com/">
-        Link button
-      </a>
-      <a className="button" href="https://www.google.com/">
-        <span className="button-icon">{icons.trash}</span>
-        <span>Link button with icon</span>
-      </a>
-      <a className="button" href="https://www.google.com/">
-        <span className="button-icon">{icons.bubbles}</span>
-        <span>Link button with icon</span>
-      </a>
-      <Button icon={icons.help} />
-      <Button icon={icons.trash} />
-      <Button color="main" loading>
-        Button
-      </Button>
-      <Button icon={icons.trash} loading>
-        Button with icon
-      </Button>
-      <Button variant="text" icon={icons.trash} loading color="red">
-        Button with icon
-      </Button>
+      <Section title="Buttons">
+        <Section title="Normal buttons">
+          <Button>Button</Button>
+          <Button color="main">Button</Button>
+          <Button color="red">Button</Button>
+        </Section>
+        <Section title="Text buttons">
+          <Button variant="text">Button</Button>
+          <Button variant="text" color="main">
+            Button
+          </Button>
+          <Button variant="text" color="red">
+            Button
+          </Button>
+        </Section>
+        <Section title="With icon">
+          <Button icon={icons.trash}>Button with icon</Button>
+          <Button icon={icons.bubbles}>Button with icon</Button>
+          <Button variant="text" icon={icons.bubbles}>
+            Button with icon
+          </Button>
+          <Button variant="text" icon={icons.bubbles} color="red">
+            Button with icon
+          </Button>
+        </Section>
+        <Section title="Link elements as buttons">
+          <a className="button" href="https://www.google.com/">
+            Link button
+          </a>
+          <a className="button is-main" href="https://www.google.com/">
+            Link button
+          </a>
+          <a className="button is-red" href="https://www.google.com/">
+            Link button
+          </a>
+          <a className="button is-text" href="https://www.google.com/">
+            Link button
+          </a>
+          <a className="button is-text is-main" href="https://www.google.com/">
+            Link button
+          </a>
+          <a className="button is-text is-red" href="https://www.google.com/">
+            Link button
+          </a>
+          <a className="button" href="https://www.google.com/">
+            <span className="button-icon">{icons.trash}</span>
+            <span>Link button with icon</span>
+          </a>
+          <a className="button" href="https://www.google.com/">
+            <span className="button-icon">{icons.bubbles}</span>
+            <span>Link button with icon</span>
+          </a>
+        </Section>
+        <Section title="Icon buttons">
+          <Button icon={icons.help} />
+          <Button icon={icons.trash} />
+        </Section>
+        <Section title="Button loading state">
+          <Button color="main" loading>
+            Button
+          </Button>
+          <Button icon={icons.trash} loading>
+            Button with icon
+          </Button>
+          <Button variant="text" icon={icons.trash} loading color="red">
+            Button with icon
+          </Button>
+        </Section>
+      </Section>
+
+      <Section title="Input" bodyStyle={{ width: '50%' }}>
+        <Input />
+        <Input label="Username" />
+        <Input
+          label="Username"
+          description="This is a description. It should appear underneath the label."
+        />
+        <Input
+          label="Username"
+          description="This is a description. It should appear underneath the label."
+          error="Username cannot be empty."
+        />
+      </Section>
 
       {/** Delete later */}
       <div className="input-with-label">
@@ -314,6 +345,23 @@ const Elements = () => {
       </div>
     </div>
   );
-};
+}
 
 export default Elements;
+
+function Section({ title, children, bodyStyle, ...props }) {
+  return (
+    <div className="test-elements-section" {...props}>
+      {title && <h2>{title}</h2>}
+      <div className="test-elements-section-body" style={bodyStyle}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+Section.propTypes = {
+  title: PropTypes.node,
+  children: PropTypes.node,
+  bodyStyle: PropTypes.object,
+};
