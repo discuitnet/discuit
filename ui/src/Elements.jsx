@@ -293,16 +293,6 @@ function Elements() {
         </div>
       </Dropdown>
       <button onClick={() => dispatch(snackAlert('same thing'))}>Snack Alert</button>
-      <div className="input-with-label">
-        <div className="label">About page</div>
-        <div className="input-desc">Lorem ipsum dolor sit amet consectetur adipisicing elit.</div>
-        <input type="text" />
-      </div>
-      <div className="input-with-label">
-        <div className="label">Another input</div>
-        <input type="text" />
-        <div className="input-desc">Description underneath input.</div>
-      </div>
       <div className="checkbox">
         <input id="c1" type="checkbox" />
         <label htmlFor="c1">Checkbox</label>

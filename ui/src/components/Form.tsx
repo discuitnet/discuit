@@ -24,7 +24,7 @@ export function FormField({
       {label && <div className="form-label">{label}</div>}
       {description && <div className="form-description">{description}</div>}
       <div className="form-control">{children}</div>
-      {typeof error === 'boolean' && <div className="form-error">{error}</div>}
+      {typeof error === 'string' && <div className="form-error">{error}</div>}
     </div>
   );
 }

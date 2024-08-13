@@ -1,7 +1,8 @@
 import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { ButtonClose } from '../../components/Button';
+import { FormField } from '../../components/Form';
 import { InputWithCount, useInputMaxLength } from '../../components/Input';
 import Modal from '../../components/Modal';
 import { mfetchjson } from '../../helper';
@@ -117,23 +118,19 @@ const Rules = ({ community }) => {
               if (!modalDisabled) handleSave();
             }}
           >
-            <InputWithCount
-              label="Rule"
-              maxLength={ruleMaxLength}
-              value={rule}
-              onChange={setRule}
-              autoFocus
-            />
-            <InputWithCount
-              textarea
-              rows="5"
-              label="Description"
-              description=""
-              maxLength={descriptionMaxLength}
-              value={description}
-              onChange={setDescription}
-              style={{ resize: 'vertical' }}
-            />
+            <FormField label="Rule">
+              <InputWithCount maxLength={ruleMaxLength} value={rule} onChange={setRule} autoFocus />
+            </FormField>
+            <FormField label="Description">
+              <InputWithCount
+                textarea
+                rows="5"
+                maxLength={descriptionMaxLength}
+                value={description}
+                onChange={setDescription}
+                style={{ resize: 'vertical' }}
+              />
+            </FormField>
           </form>
           <div className="modal-card-actions">
             <button className="button-main" disabled={modalDisabled} onClick={handleSave}>

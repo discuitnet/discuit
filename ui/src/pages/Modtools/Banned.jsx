@@ -1,7 +1,8 @@
 import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { ButtonClose } from '../../components/Button';
+import { FormField } from '../../components/Form';
 import Input from '../../components/Input';
 import Modal from '../../components/Modal';
 import { APIError, mfetch, mfetchjson } from '../../helper';
@@ -99,13 +100,9 @@ const Banned = ({ community }) => {
               handleBanClick();
             }}
           >
-            <Input
-              label="Username"
-              value={username}
-              error={modalError}
-              onChange={(e) => setUsername(e.target.value)}
-              autoFocus
-            />
+            <FormField label="Username" error={modalError}>
+              <Input value={username} onChange={(e) => setUsername(e.target.value)} autoFocus />
+            </FormField>
           </form>
           <div className="modal-card-actions">
             <button className="button-main" disabled={username === ''} onClick={handleBanClick}>

@@ -644,7 +644,7 @@ form,
 
 .form-section {
     .form-section-heading {
-        font-size: 2.1rem;
+        font-size: var(--fs-xl);
         font-weight: 600;
         margin-bottom: var(--gap);
     }
@@ -661,6 +661,9 @@ form,
     }
     .form-control {
         margin-top: 7px;
+        &:first-child {
+            margin-top: 0;
+        }
     }
     .form-error {
         margin-top: 2px;
@@ -1166,6 +1169,21 @@ a,
     }
     > label {
         cursor: pointer;
+    }
+    &.is-space-between {
+        display: grid;
+        grid-template-columns: 1fr max-content;
+        align-items: center;
+        order: 1;
+        label {
+            grid-row: 1 /2;
+            grid-column: 1 / 2;
+            margin: 0;
+        }
+        input {
+            grid-row: 1 /2;
+            grid-column: 2 / 3;
+        }
     }
 }
 

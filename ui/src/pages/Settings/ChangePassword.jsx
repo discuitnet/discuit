@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { ButtonClose } from '../../components/Button';
+import { FormField } from '../../components/Form';
 import { InputPassword } from '../../components/Input';
 import Modal from '../../components/Modal';
 import { APIError, mfetch } from '../../helper';
@@ -65,26 +66,26 @@ const ChangePassword = () => {
             <ButtonClose onClick={handleClose} />
           </div>
           <div
-            className="modal-card-content"
+            className="form modal-card-content"
             onKeyDown={(e) => e.key === 'Enter' && changePassword()}
             role="none"
           >
-            <InputPassword
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              label="Previous password"
-              autoFocus
-            />
-            <InputPassword
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              label="New password"
-            />
-            <InputPassword
-              value={repeatPassword}
-              onChange={(e) => setRepeatPassword(e.target.value)}
-              label="Repeat password"
-            />
+            <FormField label="Previous password">
+              <InputPassword
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoFocus
+              />
+            </FormField>
+            <FormField label="New password">
+              <InputPassword value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+            </FormField>
+            <FormField label="Repeat password">
+              <InputPassword
+                value={repeatPassword}
+                onChange={(e) => setRepeatPassword(e.target.value)}
+              />
+            </FormField>
           </div>
           <div className="modal-card-actions">
             <button className="button-main" onClick={changePassword}>

@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import React, { ChangeEvent, forwardRef, useMemo, useState } from 'react';
+import React, { forwardRef, useMemo, useState } from 'react';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: boolean;
@@ -34,11 +34,11 @@ export const InputWithCount = ({
 }) => {
   const length = value ? value.length : 0;
   return (
-    <div className={clsx('input-with-limit', className)} {...props}>
+    <div className={clsx('input-with-limit', className)}>
       {textarea ? (
-        <textarea value={value} onChange={onChange}></textarea>
+        <textarea value={value} onChange={onChange} {...props}></textarea>
       ) : (
-        <input type={type} value={value} onChange={onChange} />
+        <input type={type} value={value} onChange={onChange} {...props} />
       )}
       <div className="input-count">{`${length} / ${maxLength}`}</div>
     </div>
@@ -47,12 +47,15 @@ export const InputWithCount = ({
 
 export function useInputMaxLength(maxLength: number, initial = '') {
   const [value, setValue] = useState(initial);
-  const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | string) => {
+  const handleChange = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | string
+  ) => {
     let value = '';
-    if (event instanceof Event) {
-      value = (event as ChangeEvent<HTMLInputElement | HTMLTextAreaElement>).target.value;
+    if (typeof event === 'string') {
+      value = event;
     } else {
-      value = event as string;
+      event.preventDefault();
+      value = event.target.value;
     }
     setValue(value.slice(0, maxLength));
   };
@@ -123,12 +126,18 @@ export const InputPassword = forwardRef<HTMLInputElement, InputProps>(function I
 export interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   variant?: 'checkbox' | 'switch';
+  spaceBetween?: boolean;
 }
 
-export function Checkbox({ label, variant = 'checkbox', ...props }: CheckboxProps) {
+export function Checkbox({
+  label,
+  variant = 'checkbox',
+  spaceBetween = false,
+  ...props
+}: CheckboxProps) {
   const id = useMemo(() => Math.round(Math.random() * 1000000), []).toString();
   return (
-    <div className="checkbox">
+    <div className={clsx('checkbox', spaceBetween && 'is-space-between')}>
       <Input
         className={clsx(variant === 'switch' && 'switch')}
         id={id}
@@ -142,12 +151,13 @@ export function Checkbox({ label, variant = 'checkbox', ...props }: CheckboxProp
 
 export interface RadioProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
+  spaceBetween?: boolean;
 }
 
-export function Radio({ label, ...props }: RadioProps) {
+export function Radio({ label, spaceBetween = false, ...props }: RadioProps) {
   const id = useMemo(() => Math.round(Math.random() * 1000000), []).toString();
   return (
-    <div className="radio">
+    <div className={clsx('radio', spaceBetween && 'is-space-between')}>
       <Input id={id} type="radio" {...props} />
       <label htmlFor={id}>{label}</label>
     </div>

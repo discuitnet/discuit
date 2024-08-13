@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import { communityAboutMaxLength, communityNameMaxLength } from '../config';
@@ -7,6 +7,7 @@ import { mfetch } from '../helper';
 import { useInputUsername } from '../hooks';
 import { sidebarCommunitiesUpdated, snackAlertError } from '../slices/mainSlice';
 import { ButtonClose } from './Button';
+import { FormField } from './Form';
 import { InputWithCount, useInputMaxLength } from './Input';
 import Modal from './Modal';
 
@@ -64,29 +65,38 @@ const CreateCommunity = ({ open, onClose }) => {
           <div className="modal-card-title">Create community</div>
           <ButtonClose onClick={onClose} />
         </div>
-        <div className="modal-card-content flex-column inner-gap-1">
-          <InputWithCount
-            value={name}
-            onChange={handleNameChange}
-            label="Community name"
-            description="Community name cannot be changed."
-            maxLength={communityNameMaxLength}
-            style={{ marginBottom: '0' }}
-            autoFocus
-          />
-          <InputWithCount
-            value={description}
-            onChange={handleDescChange}
+        <div className="form modal-card-content flex-column inner-gap-1">
+          <FormField label="Community name" description="Community name cannot be changed.">
+            <InputWithCount
+              value={name}
+              onChange={handleNameChange}
+              maxLength={communityNameMaxLength}
+              style={{ marginBottom: '0' }}
+              autoFocus
+            />
+          </FormField>
+          <FormField
             label="Description"
             description="A short description to let people know what the community is all about."
-            textarea
-            rows="4"
-            maxLength={communityAboutMaxLength}
-          />
-          {formError !== '' && <div className="form-error text-center">{formError}</div>}
-          <button onClick={handleCreate} className="button-main">
-            Create
-          </button>
+          >
+            <InputWithCount
+              value={description}
+              onChange={handleDescChange}
+              textarea
+              rows="4"
+              maxLength={communityAboutMaxLength}
+            />
+          </FormField>
+          {formError !== '' && (
+            <div className="form-field">
+              <div className="form-error text-center">{formError}</div>
+            </div>
+          )}
+          <FormField>
+            <button onClick={handleCreate} className="button-main" style={{ width: '100%' }}>
+              Create
+            </button>
+          </FormField>
         </div>
       </div>
     </Modal>
