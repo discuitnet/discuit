@@ -1099,6 +1099,7 @@ a,
                 height: 15px;
                 background: var(--ab, var(--border));
                 transform: translateX(var(--x, 0));
+                transition: all 0.2s;
             }
             &:checked {
                 --ab: var(--active-inner);
@@ -1133,10 +1134,15 @@ a,
 .radio {
     // display: flex;
     // align-items: center;
-    display: grid;
-    grid-template-columns: max-content 1fr;
-    &.is-check-last {
-        grid-template-columns: 1fr max-content;
+    // display: grid;
+    // grid-template-columns: max-content 1fr;
+    // &.is-check-last {
+    //     grid-template-columns: 1fr max-content;
+    // }
+    display: inline-block;
+    margin-right: var(--gap);
+    &:last-child {
+        margin-right: 0;
     }
     > label {
         cursor: pointer;

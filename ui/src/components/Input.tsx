@@ -1,8 +1,8 @@
 import clsx from 'clsx';
-import React, { ChangeEvent, forwardRef, useState } from 'react';
+import React, { ChangeEvent, forwardRef, useMemo, useState } from 'react';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  error: boolean;
+  error?: boolean;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
@@ -119,3 +119,37 @@ export const InputPassword = forwardRef<HTMLInputElement, InputProps>(function I
     </div>
   );
 });
+
+export interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label: string;
+  variant?: 'checkbox' | 'switch';
+}
+
+export function Checkbox({ label, variant = 'checkbox', ...props }: CheckboxProps) {
+  const id = useMemo(() => Math.round(Math.random() * 1000000), []).toString();
+  return (
+    <div className="checkbox">
+      <Input
+        className={clsx(variant === 'switch' && 'switch')}
+        id={id}
+        type="checkbox"
+        {...props}
+      />
+      <label htmlFor={id}>{label}</label>
+    </div>
+  );
+}
+
+export interface RadioProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label: string;
+}
+
+export function Radio({ label, ...props }: RadioProps) {
+  const id = useMemo(() => Math.round(Math.random() * 1000000), []).toString();
+  return (
+    <div className="radio">
+      <Input id={id} type="radio" {...props} />
+      <label htmlFor={id}>{label}</label>
+    </div>
+  );
+}

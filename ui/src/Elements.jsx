@@ -4,7 +4,7 @@ import { useDispatch } from 'react-redux';
 import Button, { ButtonClose, ButtonMore } from './components/Button';
 import Dropdown from './components/Dropdown';
 import { Form, FormField } from './components/Form';
-import Input, { InputWithCount, useInputMaxLength } from './components/Input';
+import Input, { Checkbox, InputWithCount, Radio, useInputMaxLength } from './components/Input';
 import Modal from './components/Modal';
 import ModalConfirm from './components/Modal/ModalConfirm';
 import PostCardSkeleton from './components/PostCard/PostCardSkeleton';
@@ -210,6 +210,19 @@ function Elements() {
             <textarea name="" id="" rows={5}></textarea>
           </FormField>
           {/* TODO: Add checkboxes and other form items in here */}
+          <FormField>
+            <Checkbox label="Yes" />
+            <Checkbox label="No" />
+            <Checkbox label="Both" />
+          </FormField>
+          <FormField>
+            <Radio name="insert-unique-name" label="Yes" />
+            <Radio name="insert-unique-name" label="No" />
+            <Radio name="insert-unique-name" label="Both" />
+          </FormField>
+          <FormField>
+            <Checkbox label="This is a switch" variant="switch" />
+          </FormField>
           <FormField>
             <Button color="main">Submit</Button>
           </FormField>
