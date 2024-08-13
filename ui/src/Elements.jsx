@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Button, { ButtonClose, ButtonMore } from './components/Button';
 import Dropdown from './components/Dropdown';
+import { Form, FormField } from './components/Form';
 import Input, { InputWithCount, useInputMaxLength } from './components/Input';
 import Modal from './components/Modal';
 import ModalConfirm from './components/Modal/ModalConfirm';
@@ -184,6 +185,35 @@ function Elements() {
           description="This is a description. It should appear underneath the label."
           error="Username cannot be empty."
         />
+        <div className="form-field">
+          <div className="form-label">Username</div>
+          <div className="form-description">
+            Lorem ipsum dolor, sit amet consectetur adipisicing elit. Quisquam porro laborum quas
+            natus iste illum a, repellat perspiciatis soluta facilis!
+          </div>
+          <div className="form-control">
+            <input className="is-error" type="text" />
+          </div>
+          <div className="form-error">Lorem ipsum dolor sit amet consectetur.</div>
+        </div>
+      </Section>
+
+      <Section title="Forms" bodyStyle={{ width: '50%' }}>
+        <Form>
+          <FormField label="Username" description="Enter a unique username for your account.">
+            <input type="text" />
+          </FormField>
+          <FormField label="Password" error="Password cannot be empty.">
+            <input type="password" />
+          </FormField>
+          <FormField label="About" description="Tell us something about yourself.">
+            <textarea name="" id="" rows={5}></textarea>
+          </FormField>
+          {/* TODO: Add checkboxes and other form items in here */}
+          <FormField>
+            <Button color="main">Submit</Button>
+          </FormField>
+        </Form>
       </Section>
 
       {/** Delete later */}

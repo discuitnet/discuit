@@ -567,11 +567,17 @@ code {
     all: unset;
 }
 
-input[type='text'],
-input[type='email'],
-input[type='search'],
-input[type='password'],
-textarea {
+$inputs: "input[type='text'], \
+    input[type='email'], \
+    input[type='search'], \
+    input[type='password'], \
+    textarea";
+
+@mixin input-is-error {
+    border-color: var(--color-red);
+}
+
+#{$inputs} {
     color: inherit;
     background-color: var(--color-input);
     border: 2px solid transparent;
@@ -588,7 +594,7 @@ textarea {
         background-color: var(--color-input-active);
     }
     &.is-error {
-        border-color: var(--color-red);
+        @include input-is-error();
     }
     &::placeholder {
         color: rgba(var(--base-fg), 0.65);
@@ -610,6 +616,48 @@ textarea {
 
 .text-center {
     text-align: center;
+}
+
+form,
+.form {
+    display: flex;
+    flex-direction: column;
+    .form-field {
+        margin-bottom: 10px;
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    .form-label {
+        font-weight: 600;
+    }
+    .form-description {
+        opacity: 0.9;
+    }
+    .form-control {
+        margin-top: 7px;
+    }
+    .form-error {
+        margin-top: 2px;
+        color: var(--color-red);
+    }
+    &.is-error {
+        #{$inputs} {
+            @include input-is-error();
+        }
+    }
+}
+
+.form-control {
+    input,
+    textarea {
+        width: 100%;
+    }
 }
 
 .input-with-label {
