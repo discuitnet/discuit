@@ -21,6 +21,9 @@ jobs:
       with:
         go-version: 1.21
 
+    - name: Install system dependencies
+      run: sudo apt-get install -y libvips-dev
+
     - name: Install dependencies
       run: go mod tidy
 
