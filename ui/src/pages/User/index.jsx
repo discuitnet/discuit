@@ -202,11 +202,11 @@ const User = () => {
     user ? { userId: user.id, username: user.username } : {}
   );
 
+  const { lists, error: listsError } = useFetchUsersLists(username, false);
+
   if (userLoading === 'notfound') {
     return <NotFound />;
   }
-
-  const { lists, error: listsError } = useFetchUsersLists(username);
 
   if (!user) {
     return <PageLoading />;

@@ -297,7 +297,7 @@ func GetPostsByIDs(ctx context.Context, db *sql.DB, viewer *uid.ID, includeDelet
 	return scanPosts(ctx, db, rows, viewer)
 }
 
-// scanPosts returns ErrPostNotFound is no posts are found.
+// scanPosts returns errPostNotFound is no posts are found.
 func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) ([]*Post, error) {
 	defer rows.Close()
 

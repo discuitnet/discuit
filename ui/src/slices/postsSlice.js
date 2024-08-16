@@ -45,6 +45,9 @@ export default function postsReducer(state = initialState, action) {
     case typeImageGalleryIndexUpdated: {
       const { postId, imageGalleryIndex } = action.payload;
       const post = state.items[postId];
+      if (!post) {
+        return state;
+      }
       return {
         ...state,
         items: {

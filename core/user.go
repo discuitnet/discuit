@@ -737,7 +737,7 @@ func (u *User) DeleteContent(ctx context.Context, n int, admin uid.ID) error {
 		return err
 	}
 	posts, err := scanPosts(ctx, u.db, rows, nil)
-	if err != nil {
+	if err != nil && err != errPostNotFound {
 		return err
 	}
 
@@ -762,7 +762,7 @@ func (u *User) DeleteContent(ctx context.Context, n int, admin uid.ID) error {
 		return err
 	}
 	comments, err := scanComments(ctx, u.db, rows, nil)
-	if err != nil {
+	if err != nil && err != errCommentNotFound {
 		return err
 	}
 
