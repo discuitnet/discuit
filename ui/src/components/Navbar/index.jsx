@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import Link from '../../components/Link';
@@ -108,7 +108,7 @@ const Navbar = ({ offline = false }) => {
             style={{ fontSize: '1.65rem' }}
             onClick={handleLogoClick}
           >
-            {import.meta.env.VITE_SITENAME}
+            {`${import.meta.env.VITE_SITENAME} NEW!`}
           </Link>
           <Search />
         </div>
