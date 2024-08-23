@@ -12,9 +12,11 @@ const LoginForm = ({ isModal = false }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState(null);
+
   useEffect(() => {
     setLoginError(null);
   }, [username, password]);
+
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     if (username === '' && password === '') {

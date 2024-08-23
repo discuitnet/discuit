@@ -50,7 +50,7 @@
         display: flex;
         align-items: center;
         > * {
-            margin-left: calc(0.5 * var(--gap));
+            margin-left: calc(1.5 * var(--gap));
             &:first-child {
                 margin-left: 0;
             }
@@ -91,17 +91,17 @@
     .navbar-profile {
         cursor: pointer;
         .navbar-profile-target {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
             span.navbar-name {
-            }
-            span.navbar-points {
-                color: var(--color-gray);
-                margin-right: 5px;
-                font-size: var(--fs-xs);
             }
         }
     }
     .notifications-button {
         position: relative;
+
         .notifications-count {
             --size: 20px;
             min-width: var(--size);

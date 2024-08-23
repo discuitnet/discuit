@@ -4,6 +4,7 @@ import { useDispatch } from 'react-redux';
 import { createCommunityModalOpened, signupModalOpened } from '../slices/mainSlice';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { SvgLogo } from '../components/svg/logo';
 
 const WelcomeBanner = ({ className, children, hideIfMember = false, ...props }) => {
   const dispatch = useDispatch();
@@ -29,15 +30,16 @@ const WelcomeBanner = ({ className, children, hideIfMember = false, ...props }) 
       {...props}
     >
       <div className="home-welcome-text">
-        <div className="home-welcome-join">Join the discussion</div>
+        <div className="home-welcome-join">
+          <span>Join the</span> <SvgLogo />
+        </div>
         <div className="home-welcome-subtext">
-          Discuit is a place where <span>{usersCount}</span> people get together to find cool stuff
-          and discuss things.
+          Discover the best place to find cool stuff and discuss things..
         </div>
       </div>
       <div className="home-welcome-buttons">
         {loggedIn && (
-          <Link to="/new" className={'button' + (loggedIn ? ' button-main' : '')}>
+          <Link to="/new" className="button button-main">
             Create post
           </Link>
         )}

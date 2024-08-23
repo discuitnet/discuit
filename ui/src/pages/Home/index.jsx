@@ -18,7 +18,7 @@ const Home = () => {
   const user = useSelector((state) => state.main.user);
   const loggedIn = user !== null;
   const canCreateForum = loggedIn && (user.isAdmin || !CONFIG.disableForumCreation);
-  
+
   const location = useLocation();
   const feedType = (() => {
     let f = 'all';

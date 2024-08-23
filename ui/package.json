@@ -50,6 +50,7 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.20.0",
+    "clsx": "^2.1.1",
     "cross-env": "^7.0.3",
     "node-polyfill-webpack-plugin": "^1.1.4",
     "prop-types": "^15.8.1",

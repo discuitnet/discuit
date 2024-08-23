@@ -66,17 +66,17 @@ const Search = ({ autoFocus = false }) => {
         </div>
       </Modal>
       <div className="input-search">
+        <ButtonSearch onClick={handleSearch} />
         <input
           autoFocus={autoFocus}
           ref={inputRef}
           type="text"
-          placeholder="Search"
+          placeholder="Type here to search..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={(e) => onKeyEnter(e, handleSearch)}
           onSubmit={handleSearch}
         />
-        <ButtonSearch onClick={handleSearch} />
       </div>
     </>
   );

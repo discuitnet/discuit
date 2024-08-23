@@ -155,6 +155,16 @@
     --icon-color: var(--color-text);
 
     color-scheme: light;
+
+    /* ---------------------------------- Black --------------------------------- */
+    --black-500: #121212;
+
+    /* ---------------------------------- Cyan ---------------------------------- */
+    --cyan-500: #33f7ca;
+
+    /* ---------------------------------- Neutral ---------------------------------- */
+    --grey: #e4e4e4;
+    --neutral-600: #23292f;
 }
 
 html.theme-dark {
@@ -173,7 +183,9 @@ html.theme-dark {
     --color-button: rgba(var(--base-4), 0.7);
     --color-button-text: var(--color-white);
     --color-button-hover: rgba(var(--base-4), 1);
-    --color-button-main: rgb(80, 72, 238);
+    // --color-button-main: rgb(80, 72, 238);
+    --color-button-main: var(--cyan-500);
+
     --color-button-main-hover: rgb(62, 52, 238);
 
     --color-input: rgba(var(--base-4), 0.25);
@@ -204,6 +216,8 @@ html.theme-dark {
     --card-border-top: var(--card-border);
     --card-border-left: var(--card-border);
     --card-shadow: none;
+
+    --color-brand: var(--cyan-500);
 
     // Shadows don't work well, of course, for dark backgrounds
     --box-shadow-navbar: none;
@@ -1137,20 +1151,23 @@ html.theme-dark select {
 .input-search {
     position: relative;
     width: 300px;
+
+    display: flex;
+    align-items: center;
+
     input {
         width: 100%;
-        padding-left: 33px;
+        height: 38px;
+        padding-left: 32px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+
+        border-radius: 16px;
     }
     button {
-        transform: translateY(-50%);
         position: absolute;
-        top: 50%;
-        left: 8px;
-        opacity: 0.8;
-        svg {
-            width: 100%;
-            height: 100%;
-        }
+        left: 12px;
+        opacity: 0.6;
     }
 }
 

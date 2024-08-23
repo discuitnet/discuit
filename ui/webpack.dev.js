@@ -21,7 +21,7 @@ module.exports = (env, argv) => {
     devServer: {
       // contentBase: './dist',
       historyApiFallback: true,
-      proxy: !!proxyHost ? proxy : undefined,
+      proxy: proxyHost ? proxy : undefined,
     },
   });
 };
