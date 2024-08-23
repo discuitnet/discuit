@@ -1,5 +1,5 @@
-import React, { useLayoutEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import React, { useLayoutEffect, useState } from 'react';
 import { getImageContainSize } from '../../helper';
 import ServerImage from '../ServerImage';
 
@@ -46,7 +46,7 @@ const Image = ({ image, to, target, isMobile, loading = 'lazy' }) => {
 };
 
 Image.propTypes = {
-  post: PropTypes.object.isRequired,
+  image: PropTypes.object.isRequired,
   to: PropTypes.string.isRequired,
   target: PropTypes.string.isRequired,
   isMobile: PropTypes.bool.isRequired,

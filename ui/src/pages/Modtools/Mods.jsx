@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import Modal from '../../components/Modal';
+import { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { ButtonClose } from '../../components/Button';
+import { FormField } from '../../components/Form';
 import Input from '../../components/Input';
-import { useSelector } from 'react-redux';
+import Modal from '../../components/Modal';
 import { mfetch } from '../../helper';
-import { useDispatch } from 'react-redux';
 import { snackAlertError } from '../../slices/mainSlice';
 
 const Mods = ({ community }) => {
@@ -80,13 +80,9 @@ const Mods = ({ community }) => {
             <ButtonClose onClick={handleAddModClose} />
           </div>
           <form className="modal-card-content" onSubmit={handleAddMod}>
-            <Input
-              label="Username"
-              value={newModName}
-              errors={null}
-              onChange={(e) => setNewModName(e.target.value)}
-              autoFocus
-            />
+            <FormField label="Username" errors={null}>
+              <Input value={newModName} onChange={(e) => setNewModName(e.target.value)} autoFocus />
+            </FormField>
           </form>
           <div className="modal-card-actions">
             <button className="button-main" disabled={newModName === ''} onClick={handleAddMod}>

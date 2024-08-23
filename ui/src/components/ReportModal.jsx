@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { APIError, mfetch } from '../helper';
+import { snackAlert, snackAlertError } from '../slices/mainSlice';
 import { ButtonClose } from './Button';
 import Modal from './Modal';
-import { snackAlert, snackAlertError } from '../slices/mainSlice';
-import { APIError, mfetch } from '../helper';
 
 const ReportModal = ({
   target,

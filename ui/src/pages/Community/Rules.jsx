@@ -1,5 +1,5 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 import MarkdownBody from '../../components/MarkdownBody';
 
 export const RulesItems = ({ rules, unordered = false }) => {

@@ -1,19 +1,17 @@
-/* eslint-disable jsx-a11y/click-events-have-key-events */
-/* eslint-disable jsx-a11y/no-static-element-interactions */
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import Link from '../Link';
 import { omitWWWFromHostname, stringCount } from '../../helper';
+import { useIsMobile } from '../../hooks';
+import Link from '../Link';
 import MarkdownBody from '../MarkdownBody';
+import PostImageGallery from '../PostImageGallery';
 import ShowMoreBox from '../ShowMoreBox';
-import PostVotes from './PostVotes';
-import PostCardHeadingDetails from './PostCardHeadingDetails';
+import getEmbedComponent from './embed';
 import Image from './Image';
 import LinkImage from './LinkImage';
-import { useIsMobile } from '../../hooks';
-import getEmbedComponent from './embed';
-import PostImageGallery from '../PostImageGallery';
+import PostCardHeadingDetails from './PostCardHeadingDetails';
+import PostVotes from './PostVotes';
 
 const PostCard = ({
   index = 100, // index in feed

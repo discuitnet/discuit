@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import Modal from '../../components/Modal';
-import { ButtonClose } from '../../components/Button';
-import Input from '../../components/Input';
+import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { snackAlertError } from '../../slices/mainSlice';
+import { ButtonClose } from '../../components/Button';
+import { FormField } from '../../components/Form';
+import Input, { Checkbox } from '../../components/Input';
+import Modal from '../../components/Modal';
 import { mfetch } from '../../helper';
+import { snackAlertError } from '../../slices/mainSlice';
 
 const BanUserButton = ({ user }) => {
   const [open, setOpen] = useState();
@@ -76,23 +77,29 @@ const BanUserButton = ({ user }) => {
   const renderModalContent = () => {
     if (page === 1) {
       return (
-        <div className="modal-card-content">
-          <div className="checkbox">
-            <input
-              id="c1"
-              type="checkbox"
+        <div className="form modal-card-content">
+          <FormField>
+            <Checkbox
+              label="Delete all of the user's posts and comments"
               checked={deleteContentChecked}
               onChange={(e) => setDeleteContentChecked(e.target.checked)}
             />
-            <label htmlFor="c1">Delete all of the user's posts and comments</label>
-          </div>
+          </FormField>
         </div>
       );
     } else {
       return (
-        <div className="modal-card-content">
-          <p>Enter the username of the user to be banned: </p>
-          <Input type="text" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} />
+        <div className="form modal-card-content">
+          <div className="form-field">
+            <p>Enter the username of the user to be banned: </p>
+          </div>
+          <FormField>
+            <Input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+            />
+          </FormField>
         </div>
       );
     }

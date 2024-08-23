@@ -1,24 +1,23 @@
-import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { createCommunityModalOpened, signupModalOpened } from '../../slices/mainSlice';
+import { useLocation } from 'react-router-dom';
+import { ButtonClose } from '../../components/Button';
 import Link from '../../components/Link';
 import MiniFooter from '../../components/MiniFooter';
-import Sidebar from '../../components/Sidebar';
-import PostsFeed from '../../views/PostsFeed';
-import LoginForm from '../../views/LoginForm';
-import WelcomeBanner from '../../views/WelcomeBanner';
-import { ButtonClose } from '../../components/Button';
-import { isDeviceIos, isDeviceStandalone } from '../../helper';
-import { showAppInstallButton } from '../../slices/mainSlice';
 import Modal from '../../components/Modal';
+import Sidebar from '../../components/Sidebar';
+import { isDeviceIos, isDeviceStandalone } from '../../helper';
+import { createCommunityModalOpened, showAppInstallButton } from '../../slices/mainSlice';
+import LoginForm from '../../views/LoginForm';
+import PostsFeed from '../../views/PostsFeed';
+import WelcomeBanner from '../../views/WelcomeBanner';
 
 const Home = () => {
   const user = useSelector((state) => state.main.user);
   const loggedIn = user !== null;
-  const canCreateForum = loggedIn && (user.isAdmin || !CONFIG.disableForumCreation);
-  
+  const canCreateForum = loggedIn && (user.isAdmin || !import.meta.env.VITE_DISABLEFORUMCREATION);
+
   const location = useLocation();
   const feedType = (() => {
     let f = 'all';
@@ -134,8 +133,8 @@ export const ButtonAppInstall = ({ deferredPrompt, children, ...props }) => {
             <div className="modal-ios-install-steps">
               <ol>
                 <li>1. Tap on the Safari share button.</li>
-                <li>2. Tap on "Add to Home Screen."</li>
-                <li>3. Tap on "Add."</li>
+                <li>{`2. Tap on "Add to Home Screen."`}</li>
+                <li>{`3. Tap on "Add."`}</li>
               </ol>
               <p>Note that web apps on iOS can only be installed using Safari.</p>
             </div>

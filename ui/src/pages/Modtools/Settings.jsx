@@ -1,11 +1,12 @@
-import React, { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
+import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { InputWithCount, useInputMaxLength } from '../../components/Input';
-import { mfetch, mfetchjson } from '../../helper';
-import { snackAlert, snackAlertError } from '../../slices/mainSlice';
-import { communityAdded } from '../../slices/communitiesSlice';
 import CommunityProPic from '../../components/CommunityProPic';
+import { FormField } from '../../components/Form';
+import Input, { Checkbox, InputWithCount, useInputMaxLength } from '../../components/Input';
+import { mfetch, mfetchjson } from '../../helper';
+import { communityAdded } from '../../slices/communitiesSlice';
+import { snackAlert, snackAlertError } from '../../slices/mainSlice';
 import Banner from '../Community/Banner';
 
 const descriptionMaxLength = 2000;
@@ -138,33 +139,32 @@ const Settings = ({ community }) => {
       <div className="modtools-content-head">
         <div className="modtools-title">Community settings</div>
       </div>
-      <div className="flex-column inner-gap-1">
-        <div className="input-with-label width-50">
-          <div className="input-label-box">
-            <div className="label">Community name</div>
-            <input type="text" value={community.name} disabled />
+      {/*<div className="flex-column inner-gap-1">*/}
+      <div className="form">
+        <FormField label="Community name">
+          <Input value={community.name} disabled />
+        </FormField>
+        <FormField label="Profile picture">
+          <div className=" modtools-change-propic">
+            <div className="flex">
+              <CommunityProPic name={community.name} proPic={community.proPic} size="standard" />
+              <button onClick={() => proPicFileInputRef.current.click()} disabled={isUploading}>
+                Change
+              </button>
+              <button onClick={handleDeleteProPic} disabled={isUploading}>
+                Delete
+              </button>
+              <input
+                ref={proPicFileInputRef}
+                type="file"
+                name="image"
+                style={{ visibility: 'hidden', width: 0, height: 0 }}
+                onChange={handleProPicFileChange}
+              />
+            </div>
           </div>
-        </div>
-        <div className="modtools-change-propic">
-          <div className="label">Profile picture</div>
-          <div className="flex">
-            <CommunityProPic name={community.name} proPic={community.proPic} size="standard" />
-            <button onClick={() => proPicFileInputRef.current.click()} disabled={isUploading}>
-              Change
-            </button>
-            <button onClick={handleDeleteProPic} disabled={isUploading}>
-              Delete
-            </button>
-            <input
-              ref={proPicFileInputRef}
-              type="file"
-              name="image"
-              style={{ visibility: 'hidden', width: 0, height: 0 }}
-              onChange={handleProPicFileChange}
-            />
-          </div>
-        </div>
-        <div className="modtools-change-banner">
+        </FormField>
+        <div className="form-field modtools-change-banner">
           <div className="label">Banner image</div>
           <div className="flex flex-column">
             <Banner className="modtools-banner" community={community} />
@@ -185,43 +185,44 @@ const Settings = ({ community }) => {
             />
           </div>
         </div>
-        <InputWithCount
-          textarea
-          rows="5"
+        <FormField
           label="Description"
           description="A short description to quickly let people know what it's all about."
-          maxLength={descriptionMaxLength}
-          value={description}
-          onChange={setDescription}
-        />
-        <div className="input-with-label">
-          <div className="input-label-box">
-            <div className="label">NSFW</div>
-          </div>
-          <div className="checkbox is-check-last">
-            <label htmlFor="c1" style={{ width: 'calc(100% - 25px)' }}>
-              Tick this box if the community may contain 18+ or material otherwise unsuitable for
-              viewing in a professional environment.
-            </label>
-            <input
-              className="switch"
-              id="c1"
-              type="checkbox"
-              checked={nsfw}
-              onChange={(e) => setNSFW(e.target.checked)}
-            />
-          </div>
-        </div>
+        >
+          <InputWithCount
+            textarea
+            rows="5"
+            maxLength={descriptionMaxLength}
+            value={description}
+            onChange={setDescription}
+          />
+        </FormField>
+        <FormField label="NSFW">
+          <Checkbox
+            variant="switch"
+            label=" Tick this box if the community may contain 18+ or material otherwise unsuitable for viewing in a professional environment."
+            checked={nsfw}
+            onChange={(e) => setNSFW(e.target.checked)}
+            spaceBetween
+          />
+        </FormField>
         {user.isAdmin && (
-          <button onClick={handleChangeDefault}>
-            {community.isDefault ? 'Remove as default community' : 'Set as default community'}
-          </button>
+          <FormField>
+            <button onClick={handleChangeDefault}>
+              {community.isDefault ? 'Remove as default community' : 'Set as default community'}
+            </button>
+          </FormField>
         )}
-      </div>
-      <div className="flex-column modtools-settings-save-container">
-        <button className="button-main" onClick={handleSave} disabled={!changed}>
-          Save {changed}
-        </button>
+        <FormField>
+          <button
+            className="button-main"
+            onClick={handleSave}
+            disabled={!changed}
+            style={{ width: '100%' }}
+          >
+            Save {changed}
+          </button>
+        </FormField>
       </div>
     </div>
   );

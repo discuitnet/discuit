@@ -1,10 +1,9 @@
-/* eslint-disable jsx-a11y/click-events-have-key-events */
-import React, { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
-import { useDelayedEffect, useQuery } from '../../hooks';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { snackAlertError } from '../../slices/mainSlice';
 import { kRound, mfetchjson, selectImageCopyURL } from '../../helper';
+import { useDelayedEffect, useQuery } from '../../hooks';
+import { snackAlertError } from '../../slices/mainSlice';
 
 const SelectCommunity = ({ initial = '', onFocus, onChange, disabled = false }) => {
   const dispatch = useDispatch();
@@ -39,7 +38,7 @@ const SelectCommunity = ({ initial = '', onFocus, onChange, disabled = false }) 
 
   const handleChange = (e) => setValue(e.target.value);
   useDelayedEffect(
-    () => {
+    useCallback(() => {
       (async function () {
         try {
           const communities = await mfetchjson(`/api/communities?q=${value}&limit=10`);
@@ -48,8 +47,7 @@ const SelectCommunity = ({ initial = '', onFocus, onChange, disabled = false }) 
           console.error(error);
         }
       })();
-    },
-    [value],
+    }, [value]),
     200
   );
 

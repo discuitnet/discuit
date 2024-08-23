@@ -1,15 +1,13 @@
-/* eslint-disable jsx-a11y/no-static-element-interactions */
-/* eslint-disable jsx-a11y/click-events-have-key-events */
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useLocation } from 'react-router-dom';
 import Link from '../components/Link';
 import { sidebarScrollYUpdated, toggleSidebarOpen } from '../slices/mainSlice';
+import WelcomeBanner from '../views/WelcomeBanner';
 import { ButtonClose } from './Button';
 import CommunityProPic from './CommunityProPic';
 import Search from './Navbar/Search';
-import WelcomeBanner from '../views/WelcomeBanner';
-import { useLocation } from 'react-router-dom';
 
 const Sidebar = ({ isMobile = false }) => {
   const dispatch = useDispatch();
@@ -118,7 +116,7 @@ const Sidebar = ({ isMobile = false }) => {
       }
     >
       <div className="sidebar-top-m">
-        <h2>{CONFIG.siteName}</h2>
+        <h2>{import.meta.env.VITE_SITENAME}</h2>
         <ButtonClose onClick={() => dispatch(toggleSidebarOpen())} />
       </div>
       <div className="sidebar-content">
@@ -222,7 +220,7 @@ const Sidebar = ({ isMobile = false }) => {
             <span>Privacy</span>
           </Link>
           <a
-            href={`mailto:${CONFIG.emailContact}`}
+            href={`mailto:${import.meta.env.VITE_EMAILCONTACT}`}
             className="sidebar-item with-image is-m"
             onClick={handleClose}
           >
@@ -372,9 +370,9 @@ const Sidebar = ({ isMobile = false }) => {
           </a>
           */}
           <div className="social-links">
-            {CONFIG.facebookURL && (
+            {import.meta.env.VITE_FACEBOOKURL && (
               <a
-                href={CONFIG.facebookURL}
+                href={import.meta.env.VITE_FACEBOOKURL}
                 target="_blank"
                 rel="noreferrer"
                 className="button social-link"
@@ -387,9 +385,9 @@ const Sidebar = ({ isMobile = false }) => {
                 </svg>
               </a>
             )}
-            {CONFIG.twitterURL && (
+            {import.meta.env.VITE_TWITTERURL && (
               <a
-                href={CONFIG.twitterURL}
+                href={import.meta.env.VITE_TWITTERURL}
                 target="_blank"
                 rel="noreferrer"
                 className="button social-link"
@@ -408,9 +406,9 @@ const Sidebar = ({ isMobile = false }) => {
                 </svg>
               </a>
             )}
-            {CONFIG.instagramURL && (
+            {import.meta.env.VITE_INSTAGRAMURL && (
               <a
-                href={CONFIG.instagramURL}
+                href={import.meta.env.VITE_INSTAGRAMURL}
                 target="_blank"
                 rel="noreferrer"
                 className="button social-link"
@@ -423,9 +421,9 @@ const Sidebar = ({ isMobile = false }) => {
                 </svg>
               </a>
             )}
-            {CONFIG.discordURL && (
+            {import.meta.env.VITE_DISCORDURL && (
               <a
-                href={CONFIG.discordURL}
+                href={import.meta.env.VITE_DISCORDURL}
                 target="_blank"
                 rel="noreferrer"
                 className="button social-link"
@@ -444,9 +442,9 @@ const Sidebar = ({ isMobile = false }) => {
                 </svg>
               </a>
             )}
-            {CONFIG.githubURL && (
+            {import.meta.env.VITE_GITHUBURL && (
               <a
-                href={CONFIG.githubURL}
+                href={import.meta.env.VITE_GITHUBURL}
                 target="_blank"
                 rel="noreferrer"
                 className="button social-link"
@@ -461,9 +459,9 @@ const Sidebar = ({ isMobile = false }) => {
                 </svg>
               </a>
             )}
-            {CONFIG.substackURL && (
+            {import.meta.env.VITE_SUBSTACKURL && (
               <a
-                href={CONFIG.substackURL}
+                href={import.meta.env.VITE_SUBSTACKURL}
                 target="_blank"
                 rel="noreferrer"
                 className="button social-link"

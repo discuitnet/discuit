@@ -1,15 +1,20 @@
-import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import MiniFooter from '../../components/MiniFooter';
-import Sidebar from '../../components/Sidebar';
-import { APIError, dateString1, mfetch, mfetchjson, stringCount } from '../../helper';
-import { useDispatch } from 'react-redux';
-import { snackAlertError } from '../../slices/mainSlice';
-import { MemorizedComment } from './Comment';
-import { MemorizedPostCard } from '../../components/PostCard/PostCard';
+import React, { useEffect, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
+import { useDispatch, useSelector } from 'react-redux';
+import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
+import Feed from '../../components/Feed';
 import MarkdownBody from '../../components/MarkdownBody';
+import MiniFooter from '../../components/MiniFooter';
+import PageLoading from '../../components/PageLoading';
+import CommunityLink from '../../components/PostCard/CommunityLink';
+import { MemorizedPostCard } from '../../components/PostCard/PostCard';
+import SelectBar from '../../components/SelectBar';
 import ShowMoreBox from '../../components/ShowMoreBox';
-import { useSelector } from 'react-redux';
+import Sidebar from '../../components/Sidebar';
+import UserProPic from '../../components/UserProPic';
+import { APIError, dateString1, mfetch, mfetchjson, stringCount } from '../../helper';
+import { useFetchUsersLists, useMuteUser } from '../../hooks';
 import {
   feedInViewItemsUpdated,
   FeedItem,
@@ -18,18 +23,12 @@ import {
   selectFeed,
   selectFeedInViewItems,
 } from '../../slices/feedsSlice';
+import { snackAlertError } from '../../slices/mainSlice';
 import { selectUser, userAdded } from '../../slices/usersSlice';
-import PageLoading from '../../components/PageLoading';
-import Feed from '../../components/Feed';
 import NotFound from '../NotFound';
-import { Helmet } from 'react-helmet-async';
-import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
-import CommunityLink from '../../components/PostCard/CommunityLink';
-import { useFetchUsersLists, useMuteUser } from '../../hooks';
-import UserProPic from '../../components/UserProPic';
 import BadgesList from './BadgesList';
-import SelectBar from '../../components/SelectBar';
 import BanUserButton from './BanUserButton';
+import { MemorizedComment } from './Comment';
 
 function formatFilterText(filter = '') {
   filter.toLowerCase();

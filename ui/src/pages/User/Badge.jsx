@@ -1,6 +1,6 @@
-import React from 'react';
 import PropTypes from 'prop-types';
-import BadgeSupporter from '../../assets/imgs/badge-supporter.png';
+import React from 'react';
+import { badgeImage } from './badgeImage';
 
 function Badge({ className = '', badge, ...props }) {
   const renderImage = () => {
@@ -20,20 +20,3 @@ Badge.propTypes = {
 };
 
 export default Badge;
-
-export function badgeImage(type) {
-  let src = '',
-    alt = '';
-  switch (type) {
-    case 'supporter':
-      src = BadgeSupporter;
-      alt = 'supporter badge';
-      break;
-    default:
-      throw new Error(`unknown badge type '${type}'`);
-  }
-  return {
-    src,
-    alt,
-  };
-}

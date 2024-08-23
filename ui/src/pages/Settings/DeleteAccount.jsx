@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
 import PropTypes from 'prop-types';
+import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { ButtonClose } from '../../components/Button';
+import { FormField } from '../../components/Form';
 import Input, { InputPassword } from '../../components/Input';
 import Modal from '../../components/Modal';
 import { APIError, mfetch } from '../../helper';
@@ -52,20 +53,16 @@ const DeleteAccount = ({ user }) => {
             <div className="modal-card-title">Delete account</div>
             <ButtonClose onClick={handleClose} />
           </div>
-          <div className="modal-card-content">
-            <p>Proceed with caution: deleted accounts cannot be restored.</p>
-            <InputPassword
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              label="Password:"
-              error={passwordError ? 'Invalid password' : undefined}
-            />
-            <Input
-              type="text"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              label="Type YES to continue:"
-            />
+          <div className="form modal-card-content">
+            <div className="form-field">
+              <p>Proceed with caution: deleted accounts cannot be restored.</p>
+            </div>
+            <FormField label="Password:" error={passwordError ? 'Invalid password' : undefined}>
+              <InputPassword value={password} onChange={(e) => setPassword(e.target.value)} />
+            </FormField>
+            <FormField label="Type YES to continue:">
+              <Input type="text" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+            </FormField>
           </div>
           <div className="modal-card-actions">
             <button className="button-red" onClick={handleOnDelete} disabled={confirm !== 'YES'}>

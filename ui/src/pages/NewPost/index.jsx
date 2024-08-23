@@ -1,23 +1,23 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router';
+import { useLocation } from 'react-router-dom/cjs/react-router-dom.min';
+import { ButtonClose } from '../../components/Button';
+import Link from '../../components/Link';
+import PageLoading from '../../components/PageLoading';
+import Spinner from '../../components/Spinner';
+import Textarea from '../../components/Textarea';
 import { APIError, isValidHttpUrl, mfetch, mfetchjson } from '../../helper';
 import { useLoading, useQuery } from '../../hooks';
 import { snackAlert, snackAlertError } from '../../slices/mainSlice';
-import SelectCommunity from './SelectCommunity';
-import { ButtonClose } from '../../components/Button';
-import { Helmet } from 'react-helmet-async';
-import Rules from '../Community/Rules';
-import PageLoading from '../../components/PageLoading';
-import Link from '../../components/Link';
-import AsUser from '../Post/AsUser';
-import Textarea from '../../components/Textarea';
-import Image from './Image';
-import Spinner from '../../components/Spinner';
 import { postAdded } from '../../slices/postsSlice';
-import { useLocation } from 'react-router-dom/cjs/react-router-dom.min';
+import Rules from '../Community/Rules';
+import AsUser from '../Post/AsUser';
 import CommunityCard from '../Post/CommunityCard';
+import Image from './Image';
+import SelectCommunity from './SelectCommunity';
 
 const NewPost = () => {
   const dispatch = useDispatch();
@@ -74,7 +74,7 @@ const NewPost = () => {
   const [body, setBody] = useState('');
   const [link, setLink] = useState('');
   const [images, SetImages] = useState([]);
-  const maxNumOfImages = CONFIG.maxImagesPerPost;
+  const maxNumOfImages = import.meta.env.VITE_MAXIMAGESPERPOST;
 
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useLoading();
@@ -327,7 +327,7 @@ const NewPost = () => {
     );
   }
 
-  const isImagePostsDisabled = CONFIG.disableImagePosts === true;
+  const isImagePostsDisabled = import.meta.env.VITE_DISABLEIMAGEPOSTS === true;
 
   return (
     <div className="page-new">

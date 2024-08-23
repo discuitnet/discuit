@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { mfetchjson } from '../helper';
-import { useDispatch } from 'react-redux';
-import { snackAlertError } from '../slices/mainSlice';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useLocation } from 'react-router';
+import { useHistory } from 'react-router-dom/cjs/react-router-dom.min';
+import Feed from '../components/Feed';
 import { MemorizedPostCard } from '../components/PostCard/PostCard';
-import { useSelector } from 'react-redux';
+import SelectBar from '../components/SelectBar';
+import { mfetchjson } from '../helper';
+import { useCanonicalTag } from '../hooks';
 import {
   feedInViewItemsUpdated,
   FeedItem,
@@ -15,11 +17,8 @@ import {
   selectFeed,
   selectFeedInViewItems,
 } from '../slices/feedsSlice';
-import Feed from '../components/Feed';
-import SelectBar from '../components/SelectBar';
-import { useCanonicalTag } from '../hooks';
+import { snackAlertError } from '../slices/mainSlice';
 import WelcomeBanner from '../views/WelcomeBanner';
-import { useHistory } from 'react-router-dom/cjs/react-router-dom.min';
 
 const sortOptions = [
   { text: 'Hot', id: 'hot' },
@@ -31,7 +30,7 @@ const sortOptions = [
   { text: 'Year', id: 'year' },
   // { text: 'All', id: 'all' },
 ];
-const sortDefault = CONFIG.defaultFeedSort;
+const sortDefault = import.meta.env.VITE_DEFAULTFEEDSORT;
 const baseURL = '/api/posts';
 
 export const homeReloaded = (homeFeed = 'all', rememberFeedSort = false) => {

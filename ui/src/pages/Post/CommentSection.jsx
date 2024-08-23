@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
-import { MemorizedComment } from './Comment';
-import { commentsTree, countChildrenReplies } from '../../slices/commentsTree';
+import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { mfetchjson } from '../../helper';
-import { snackAlertError } from '../../slices/mainSlice';
 import { defaultCommentZIndex, moreCommentsAdded } from '../../slices/commentsSlice';
+import { commentsTree, countChildrenReplies } from '../../slices/commentsTree';
+import { snackAlertError } from '../../slices/mainSlice';
+import { MemorizedComment } from './Comment';
 
 const CommentSection = ({
   post,

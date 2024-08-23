@@ -72,7 +72,7 @@ sudo apt install libvips-dev
 1.  Run migrations:
 
     ```shell
-    ./discuit migrate
+    ./discuit migrate run
     ```
 
 1.  Start the server:

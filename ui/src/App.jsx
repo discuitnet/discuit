@@ -1,25 +1,43 @@
-/* eslint-disable jsx-a11y/click-events-have-key-events */
-/* eslint-disable jsx-a11y/no-static-element-interactions */
-import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { Redirect, Route, Switch, useHistory, useLocation } from 'react-router-dom';
+import AppUpdate from './AppUpdate';
+import { ButtonClose } from './components/Button';
 import Chat from './components/Chat';
+import CreateCommunity from './components/CreateCommunity';
 import LoginPrompt from './components/LoginPrompt';
+import Modal from './components/Modal';
 import Navbar from './components/Navbar';
+import NotificationsView from './components/Navbar/NotificationsView';
+import SaveToListModal from './components/SaveToListModal';
+import Sidebar from './components/Sidebar';
+import Signup from './components/Signup';
 import Snacks from './components/Snacks';
 import Elements from './Elements';
 import { isDeviceStandalone, mfetchjson } from './helper';
 import { useCanonicalTag, useLoading, useWindowWidth } from './hooks';
+import About from './pages/About';
+import AllCommunities from './pages/AllCommunities';
 import AppLoading from './pages/AppLoading';
 import Community from './pages/Community';
+import Guidelines from './pages/Guidelines';
 import Home from './pages/Home';
+import { List, Lists } from './pages/Lists';
+import Login from './pages/Login';
+import MarkdownGuide from './pages/MarkdownGuide';
 import Modtools from './pages/Modtools';
 import NewPost from './pages/NewPost';
 import NotFound from './pages/NotFound';
+import Offline from './pages/Offline';
 import Post from './pages/Post';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import Settings from './pages/Settings';
+import { getDevicePreference } from './pages/Settings/devicePrefs';
+import Terms from './pages/Terms';
 import User from './pages/User';
+import PushNotifications from './PushNotifications';
 import {
   bannedFromUpdated,
   createCommunityModalOpened,
@@ -35,28 +53,7 @@ import {
   toggleSidebarOpen,
   userLoggedIn,
 } from './slices/mainSlice';
-import About from './pages/About';
-import Guidelines from './pages/Guidelines';
-import Sidebar from './components/Sidebar';
-import Signup from './components/Signup';
-import Modal from './components/Modal';
-import { ButtonClose } from './components/Button';
 import LoginForm from './views/LoginForm';
-import MarkdownGuide from './pages/MarkdownGuide';
-import Terms from './pages/Terms';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import { Helmet } from 'react-helmet-async';
-import NotificationsView from './components/Navbar/NotificationsView';
-import Login from './pages/Login';
-import { useCallback } from 'react';
-import CreateCommunity from './components/CreateCommunity';
-import AllCommunities from './pages/AllCommunities';
-import Offline from './pages/Offline';
-import AppUpdate from './AppUpdate';
-import PushNotifications from './PushNotifications';
-import { List, Lists } from './pages/Lists';
-import SaveToListModal from './components/SaveToListModal';
-import { getDevicePreference } from './pages/Settings/devicePrefs';
 
 // Value taken from _mixins.scss file.
 const tabletBreakpoint = 1170;
@@ -190,7 +187,7 @@ const App = () => {
 
   const notifsNewCount = useSelector((state) => state.main.notifications.newCount);
   const notifsNewCountStr = notifsNewCount > 0 ? `(${notifsNewCount}) ` : '';
-  const titleTemplate = `${notifsNewCountStr} %s - ${CONFIG.siteName}`;
+  const titleTemplate = `${notifsNewCountStr} %s - ${import.meta.env.VITE_SITENAME}`;
 
   const loginModalOpen = useSelector((state) => state.main.loginModalOpen);
   const signupModalOpen = useSelector((state) => state.main.signupModalOpen);
@@ -232,10 +229,10 @@ const App = () => {
   return (
     <>
       <Helmet
-        defaultTitle={`${notifsNewCountStr} ${CONFIG.siteName}`}
+        defaultTitle={`${notifsNewCountStr} ${import.meta.env.VITE_SITENAME}`}
         titleTemplate={titleTemplate}
       >
-        <meta property="og:site_name" content={CONFIG.siteName} />
+        <meta property="og:site_name" content={import.meta.env.VITE_SITENAME} />
       </Helmet>
       <ScrollToTop />
       <CanonicalTag />
@@ -252,7 +249,7 @@ const App = () => {
       )}
       <AppSwitch />
       <Snacks />
-      {process.env.NODE_ENV !== 'production' && chatOpen && <Chat />}
+      {import.meta.env.MODE !== 'production' && chatOpen && <Chat />}
       <SaveToListModal />
       <LoginPrompt />
       <Signup open={signupModalOpen} onClose={() => dispatch(signupModalOpened(false))} />
@@ -283,7 +280,7 @@ const AppSwitch = () => {
   return (
     <>
       <Switch>
-        {process.env.NODE_ENV !== 'production' && <Route path="/elements" component={Elements} />}
+        {import.meta.env.MODE !== 'production' && <Route path="/elements" component={Elements} />}
         {/*
         <Route exact path="/search">
           <Search />

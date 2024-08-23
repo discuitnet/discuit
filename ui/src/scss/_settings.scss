@@ -11,26 +11,59 @@
                 margin-bottom: 0;
             }
         }
-        .input-desc {
-            margin-top: 5px;
+    }
+    .form-field.is-preference {
+        display: grid;
+        grid-template-columns: 1fr max-content;
+        align-items: center;
+        .form-control {
+            margin: 0;
         }
-        .button-red {
-            align-self: flex-start;
+        .form-label {
+            font-weight: normal;
+        }
+        &.is-switch {
+            grid-template-columns: 1fr;
+            .checkbox {
+                display: grid;
+                grid-template-columns: 1fr max-content;
+                align-items: center;
+                order: 1;
+                label {
+                    grid-row: 1 /2;
+                    grid-column: 1 / 2;
+                    margin: 0;
+                }
+                input {
+                    grid-row: 1 /2;
+                    grid-column: 2 / 3;
+                }
+            }
         }
     }
-    .settings-list {
+    .mutes-list {
         display: flex;
         flex-direction: column;
         > * {
-            display: grid;
-            grid-template-columns: 1fr max-content;
-            align-items: center;
-            margin-bottom: var(--gap);
+            margin-bottom: 12px;
             &:last-child {
                 margin-bottom: 0;
             }
         }
+        .mute-list-item {
+            display: grid;
+            grid-template-columns: 1fr max-content;
+            align-items: center;
+        }
     }
+    .mute-list,
+    .form-field.is-preference {
+        margin-bottom: var(--gap);
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
     .settings-propic {
         display: flex;
         align-items: center;

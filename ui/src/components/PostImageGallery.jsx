@@ -1,9 +1,9 @@
-import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
-import ImageGallery from './ImageGallery';
-import ServerImage from './ServerImage';
+import React from 'react';
 import { useDispatch } from 'react-redux';
 import { postImageGalleryIndexUpdated } from '../slices/postsSlice';
+import ImageGallery from './ImageGallery';
+import ServerImage from './ServerImage';
 
 const PostImageGallery = ({ post, isMobile, keyboardControlsOn = false }) => {
   const { images } = post;

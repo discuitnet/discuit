@@ -1,5 +1,5 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 import Link from '../../components/Link';
 import CommunityProPic from '../CommunityProPic';
 
@@ -11,7 +11,10 @@ const CommunityLink = ({ className, target = '_self', name, proPic, noLink = fal
     props.target = target;
     props.to = `/${name}`;
   }
-  const children = [<CommunityProPic proPic={proPic} name={name} />, <span>{name}</span>];
+  const children = [
+    <CommunityProPic proPic={proPic} name={name} key="1" />,
+    <span key="2">{name}</span>,
+  ];
   return React.createElement(noLink ? 'div' : Link, props, ...children);
 };
 

@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 
@@ -68,6 +69,10 @@ const YoutubeEmbed = ({ url }) => {
       </div>
     </div>
   );
+};
+
+YoutubeEmbed.propTypes = {
+  url: PropTypes.string.isRequired,
 };
 
 export default function getEmbedComponent(link) {

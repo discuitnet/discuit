@@ -1,5 +1,5 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 import BannerImg from '../../assets/imgs/community-banner-2.jpg';
 import Image from '../../components/Image';
 import { selectImageCopyURL } from '../../helper';

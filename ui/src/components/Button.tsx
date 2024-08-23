@@ -1,10 +1,77 @@
+import clsx from 'clsx';
 import React, { useRef } from 'react';
-import PropTypes from 'prop-types';
+import Spinner from './Spinner';
 
-export const ButtonClose = ({ className, style = {}, ...props }) => {
+type ButtonVariant = 'normal' | 'text';
+type ButtonColor = 'main' | 'gray' | 'red';
+
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant;
+  color?: ButtonColor;
+  icon?: React.ReactElement;
+  loading?: boolean;
+}
+
+const defaultButtonVariant: ButtonVariant = 'normal';
+const defaultButtonColor: ButtonColor = 'gray';
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      className,
+      variant = defaultButtonVariant,
+      color = defaultButtonColor,
+      icon,
+      loading = false,
+      children,
+      disabled,
+      ...props
+    }: ButtonProps,
+    ref
+  ) => {
+    const variantClsName = variant === 'text' ? 'is-text' : '';
+    let colorClsName = '';
+    if (color === 'main') {
+      colorClsName = 'is-main';
+    } else if (color === 'red') {
+      colorClsName = 'is-red';
+    }
+    const cls = clsx(className, variantClsName, colorClsName, icon && !children ? 'is-icon' : null);
+
+    return (
+      <button className={cls ? cls : undefined} ref={ref} {...props} disabled={loading || disabled}>
+        {loading && (
+          <span className="button-icon">
+            <Spinner color="currentColor" />
+          </span>
+        )}
+        {icon ? (
+          <>
+            {!loading && <span className="button-icon">{icon}</span>}
+            <span>{children}</span>
+          </>
+        ) : (
+          children
+        )}
+      </button>
+    );
+  }
+);
+Button.displayName = 'Button';
+
+export default Button;
+
+export const ButtonClose = ({
+  className,
+  style = {},
+  ...props
+}: {
+  className?: string;
+  style?: React.CSSProperties;
+}) => {
   const cls = 'button-icon' + (className ? ` ${className}` : '');
   return (
-    <button className={cls} style={{ padding: '9px', ...style }} {...props}>
+    <Button className={cls} style={{ padding: '9px', ...style }} {...props}>
       <svg
         version="1.1"
         xmlns="http://www.w3.org/2000/svg"
@@ -20,17 +87,23 @@ export const ButtonClose = ({ className, style = {}, ...props }) => {
           strokeWidth={2}
         />
       </svg>
-    </button>
+    </Button>
   );
 };
 
-ButtonClose.propTypes = {
-  className: PropTypes.string,
-  style: PropTypes.object,
-};
-
-export const ButtonMore = ({ vertical = false, outlined = false, className, ...props }) => {
-  const style = { transform: vertical ? 'rotate(90deg)' : 'initial' };
+export const ButtonMore = ({
+  vertical = false,
+  outlined = false,
+  className,
+  ...props
+}: {
+  vertical?: boolean;
+  outlined?: boolean;
+  className?: string;
+}) => {
+  const style: React.CSSProperties = {
+    transform: vertical ? 'rotate(90deg)' : 'initial',
+  };
   const cls = 'button-icon' + (className ? ` ${className}` : '');
   const svg = outlined ? (
     <svg
@@ -81,36 +154,33 @@ export const ButtonMore = ({ vertical = false, outlined = false, className, ...p
     </svg>
   );
   return (
-    <button className={cls} {...props}>
+    <Button className={cls} {...props}>
       {svg}
-    </button>
+    </Button>
   );
 };
 
-ButtonMore.propTypes = {
-  vertical: PropTypes.bool,
-  outlined: PropTypes.bool,
-  className: PropTypes.string,
-};
-
-export const ButtonHamburger = ({ className, ...props }) => {
+export const ButtonHamburger = ({ className, ...props }: { className?: string }) => {
   const cls = 'button-hamburger' + (className ? ` ${className}` : '');
   return (
-    <button className={cls} {...props}>
+    <Button className={cls} {...props}>
       <div className="hamburger-lines">
         <div></div>
         <div></div>
         <div></div>
       </div>
-    </button>
+    </Button>
   );
 };
 
-ButtonHamburger.propTypes = {
-  className: PropTypes.string,
-};
-
-export const ButtonSearch = ({ className, noBackground = true, ...props }) => {
+export const ButtonSearch = ({
+  className,
+  noBackground = true,
+  ...props
+}: {
+  className?: string;
+  noBackground?: boolean;
+}) => {
   const cls =
     (noBackground ? 'button-clear' : 'button-icon') +
     ' button-search' +
@@ -134,14 +204,9 @@ export const ButtonSearch = ({ className, noBackground = true, ...props }) => {
   );
 };
 
-ButtonSearch.propTypes = {
-  className: PropTypes.string,
-  noBackground: PropTypes.bool,
-};
-
-export const ButtonNotifications = ({ count = 0, ...props }) => {
+export const ButtonNotifications = ({ count = 0, ...props }: { count?: number }) => {
   return (
-    <button className="notifications-button button-icon-simple" {...props}>
+    <Button className="notifications-button button-icon-simple" {...props}>
       {count > 0 && <div className="notifications-count">{count}</div>}
       <svg
         width="24"
@@ -173,25 +238,28 @@ export const ButtonNotifications = ({ count = 0, ...props }) => {
           strokeMiterlimit="10"
         />
       </svg>
-    </button>
+    </Button>
   );
 };
 
-ButtonNotifications.propTypes = {
-  count: PropTypes.number,
-};
-
-export const ButtonUpload = ({ children, onChange, ...rest }) => {
-  const inputRef = useRef(null);
+export const ButtonUpload = ({
+  children,
+  onChange,
+  ...rest
+}: {
+  children?: React.ReactNode;
+  onChange?: (files: FileList | null) => void;
+}) => {
+  const inputRef = useRef<HTMLInputElement>(null);
   const handleInputChange = () => {
-    if (!onChange) {
+    if (!(onChange && inputRef.current)) {
       return;
     }
     onChange(inputRef.current.files);
   };
   return (
     <div className="button-upload">
-      <button onClick={() => inputRef.current.click()} {...rest}>
+      <button onClick={() => inputRef.current && inputRef.current.click()} {...rest}>
         {children}
       </button>
       <input
@@ -203,8 +271,4 @@ export const ButtonUpload = ({ children, onChange, ...rest }) => {
       />
     </div>
   );
-};
-
-ButtonUpload.propTypes = {
-  onChange: PropTypes.func.isRequired,
 };

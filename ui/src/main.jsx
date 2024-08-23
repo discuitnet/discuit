@@ -1,18 +1,15 @@
+import PullToRefresh from 'pulltorefreshjs';
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter as Router } from 'react-router-dom';
-import { Provider } from 'react-redux';
-import { HelmetProvider } from 'react-helmet-async';
 import { ErrorBoundary } from 'react-error-boundary';
+import { HelmetProvider } from 'react-helmet-async';
+import { Provider } from 'react-redux';
+import { BrowserRouter as Router } from 'react-router-dom';
 import App from './App';
-import store from './store';
-import PullToRefresh from 'pulltorefreshjs';
-import './scss/styles.scss';
-import '../manifest.json';
-import './assets/imgs/logo-manifest-512.png';
-import './assets/imgs/discuit-logo-pwa-badge.png';
-import { isDeviceIos, mfetchjson } from './helper';
 import { forceSwUpdate } from './AppUpdate';
+import { isDeviceIos } from './helper';
+import './scss/styles.scss';
+import store from './store';
 
 const Fallback = ({ error, resetErrorBoundary }) => {
   useEffect(() => {
@@ -51,15 +48,17 @@ const container = document.getElementById('root');
 const root = createRoot(container);
 
 root.render(
-  <Provider store={store}>
-    <HelmetProvider>
-      <ErrorBoundary FallbackComponent={Fallback} onError={logAppError}>
-        <Router>
-          <App />
-        </Router>
-      </ErrorBoundary>
-    </HelmetProvider>
-  </Provider>
+  <React.StrictMode>
+    <Provider store={store}>
+      <HelmetProvider>
+        <ErrorBoundary FallbackComponent={Fallback} onError={logAppError}>
+          <Router>
+            <App />
+          </Router>
+        </ErrorBoundary>
+      </HelmetProvider>
+    </Provider>
+  </React.StrictMode>
 );
 
 if (isDeviceIos()) {
