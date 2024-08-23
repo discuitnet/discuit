@@ -205,21 +205,25 @@ const getNotificationInfo = (notification, csrfToken) => {
       }
       break;
     case 'deleted_post':
-      const by =
-        notif.deletedAs === 'mods' ? `moderators of ${notif.post.communityName}` : 'admins';
-      ret.title = `Your post '${notif.post.title}' has been removed by the ${by}`;
-      setToURL(`/${notif.post.communityName}/post/${notif.post.publicId}`);
+      {
+        const by =
+          notif.deletedAs === 'mods' ? `moderators of ${notif.post.communityName}` : 'admins';
+        ret.title = `Your post '${notif.post.title}' has been removed by the ${by}`;
+        setToURL(`/${notif.post.communityName}/post/${notif.post.publicId}`);
+      }
       break;
     case 'mod_add':
       ret.title = `You are added as a moderator of /${notif.communityName} by @${notif.addedBy}`;
-      setToURL(`/${notif.post.communityName}/post/${notif.post.publicId}`);
+      setToURL(`/${notif.communityName}`);
       break;
     case 'new_badge':
-      ret.title =
-        "You are awarded the 'supporter' badge for your contribution to Discuit and for sheer awesomeness!";
-      setToURL(`/@${notif.user.username}`);
-      const { src } = badgeImage(notif.badgeType);
-      setImage(src);
+      {
+        ret.title =
+          "You are awarded the 'supporter' badge for your contribution to Discuit and for sheer awesomeness!";
+        setToURL(`/@${notif.user.username}`);
+        const { src } = badgeImage(notif.badgeType);
+        setImage(src);
+      }
       break;
     default: {
       throw new Error('Unkown notification type');
