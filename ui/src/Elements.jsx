@@ -4,7 +4,7 @@ import { useDispatch } from 'react-redux';
 import Button, { ButtonClose, ButtonMore } from './components/Button';
 import Dropdown from './components/Dropdown';
 import { Form, FormField, FormSection } from './components/Form';
-import Input, { Checkbox, InputWithCount, Radio, useInputMaxLength } from './components/Input';
+import Input, { Checkbox, InputPassword, Radio, useInputMaxLength } from './components/Input';
 import Modal from './components/Modal';
 import ModalConfirm from './components/Modal/ModalConfirm';
 import PostCardSkeleton from './components/PostCard/PostCardSkeleton';
@@ -173,39 +173,17 @@ function Elements() {
         </Section>
       </Section>
 
-      <Section title="Input" bodyStyle={{ width: '50%' }}>
-        <Input />
-        <Input label="Username" />
-        <Input
-          label="Username"
-          description="This is a description. It should appear underneath the label."
-        />
-        <Input
-          label="Username"
-          description="This is a description. It should appear underneath the label."
-          error="Username cannot be empty."
-        />
-        <div className="form-field">
-          <div className="form-label">Username</div>
-          <div className="form-description">
-            Lorem ipsum dolor, sit amet consectetur adipisicing elit. Quisquam porro laborum quas
-            natus iste illum a, repellat perspiciatis soluta facilis!
-          </div>
-          <div className="form-control">
-            <input className="is-error" type="text" />
-          </div>
-          <div className="form-error">Lorem ipsum dolor sit amet consectetur.</div>
-        </div>
-      </Section>
-
       <Section title="Forms" bodyStyle={{ width: '50%' }}>
         <Form>
           <FormSection heading="General">
             <FormField label="Username" description="Enter a unique username for your account.">
-              <input type="text" />
+              <Input
+                label="Username"
+                description="This is a description. It should appear underneath the label."
+              />
             </FormField>
             <FormField label="Password" error="Password cannot be empty.">
-              <input type="password" />
+              <InputPassword />
             </FormField>
             <FormField label="About" description="Tell us something about yourself.">
               <textarea name="" id="" rows={5}></textarea>
@@ -226,6 +204,17 @@ function Elements() {
               <Checkbox label="This is a switch" variant="switch" />
             </FormField>
           </FormSection>
+          <FormSection heading="A list of switches">
+            <FormField>
+              <Checkbox variant="switch" label="Option" spaceBetween />
+            </FormField>
+            <FormField>
+              <Checkbox variant="switch" label="Option" spaceBetween />
+            </FormField>
+            <FormField>
+              <Checkbox variant="switch" label="Option" spaceBetween />
+            </FormField>
+          </FormSection>
           <FormField>
             <Button color="main">Submit</Button>
           </FormField>
@@ -241,17 +230,18 @@ function Elements() {
             <div className="dropdown-item">Item four</div>
           </div>
         </Dropdown>
+        <Dropdown target="Dropdown with the default target">
+          <div className="dropdown-list">
+            <div className="dropdown-item">Item one</div>
+            <div className="dropdown-item">Item two</div>
+            <div className="dropdown-item">Item three</div>
+            <div className="dropdown-item">Item four</div>
+          </div>
+        </Dropdown>
       </Section>
 
       {/** Delete later */}
-      <Dropdown target="Dropdown with the default target">
-        <div className="dropdown-list">
-          <div className="dropdown-item">Item one</div>
-          <div className="dropdown-item">Item two</div>
-          <div className="dropdown-item">Item three</div>
-          <div className="dropdown-item">Item four</div>
-        </div>
-      </Dropdown>
+
       <p>
         Lorem ipsum dolor sit amet consectetur adipisicing elit. Natus facere cupiditate,
         asperiores, quam, ullam id nobis est incidunt dolores velit cum saepe quia voluptatem.
@@ -293,19 +283,6 @@ function Elements() {
         </div>
       </Dropdown>
       <button onClick={() => dispatch(snackAlert('same thing'))}>Snack Alert</button>
-      <div className="checkbox">
-        <input id="c1" type="checkbox" />
-        <label htmlFor="c1">Checkbox</label>
-      </div>
-      <div className="radio">
-        <input id="r1" type="radio" name="radio" value="1" />
-        <label htmlFor="r1">Radio</label>
-      </div>
-      <div className="checkbox">
-        <input id="s1" type="checkbox" className="switch" />
-        <label htmlFor="s1">Switch</label>
-      </div>
-      <input type="checkbox" className="switch" />
       <button onClick={() => setConfirmOpen(true)}>Open confirm modal</button>
       <ModalConfirm
         open={confirmOpen}
@@ -341,14 +318,6 @@ function Elements() {
           <div className="table-column">Germans</div>
         </div>
       </div>
-      <InputWithCount
-        textarea={true}
-        label="Couting"
-        description="Has a max-length."
-        maxLength={1000}
-        value={iwcValue}
-        onChange={iwcHandleChange}
-      />
       <div className="pagination">
         <div className="left">
           <button className="pagination-item is-selected">1</button>
