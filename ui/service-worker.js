@@ -211,7 +211,7 @@ const getNotificationInfo = (notification, csrfToken) => {
     }
     case 'mod_add':
       ret.title = `You are added as a moderator of /${notif.communityName} by @${notif.addedBy}`;
-      setToURL(`/${notif.post.communityName}/post/${notif.post.publicId}`);
+      setToURL(`/${notif.communityName}`);
       break;
     case 'new_badge': {
       ret.title =
