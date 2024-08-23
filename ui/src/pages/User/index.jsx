@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
@@ -117,13 +117,13 @@ const User = () => {
         const user = await res.json();
         dispatch(userAdded(user));
         setUserLoading('loaded');
-        if (isUserFeedAvailable(user, viewer)) {
+        if (username !== user.username && username.toLowerCase() === user.username.toLowerCase()) {
+          // Username case mismatch.
+          history.replace(`/@${user.username}`);
+        } else if (isUserFeedAvailable(user, viewer)) {
           const feed = await mfetchjson(feedUrl);
           setFeed(feed);
           setFeedLoading('loaded');
-        }
-        if (username !== user.username && username.toLowerCase() === user.username.toLowerCase()) {
-          history.replace(`/@${user.username}`);
         }
       } catch (error) {
         dispatch(snackAlertError(error));
