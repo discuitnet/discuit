@@ -1,14 +1,25 @@
-const initialState = {
+import { Community } from '../serverTypes';
+import { AppDispatch, RootState } from '../store';
+
+export interface CommunitiesState {
+  names: string[];
+  items: { [name: string]: Community };
+}
+
+const initialState: CommunitiesState = {
   names: [],
   items: {},
 };
 
 const typeCommunityAdded = 'communities/communityAdded';
 
-export default function communitiesReducer(state = initialState, action) {
+export default function communitiesReducer(
+  state: CommunitiesState = initialState,
+  action: { type: string; payload: unknown }
+): CommunitiesState {
   switch (action.type) {
     case typeCommunityAdded: {
-      const community = action.payload;
+      const community = action.payload as Community;
       const exists = new Boolean(state.items[community.name]);
       return {
         ...state,
@@ -24,14 +35,15 @@ export default function communitiesReducer(state = initialState, action) {
   }
 }
 
-export const selectCommunity = (name) => (state) => state.communities.items[name];
+export const selectCommunity = (name: string) => (state: RootState) =>
+  state.communities.items[name];
 
-export const communityAdded = (community) => {
+export const communityAdded = (community: Community) => {
   return { type: typeCommunityAdded, payload: community };
 };
 
 export const communitiesAdded =
-  (list = []) =>
-  (dispatch) => {
+  (list: Community[] = []) =>
+  (dispatch: AppDispatch) => {
     list.forEach((item) => dispatch(communityAdded(item)));
   };
