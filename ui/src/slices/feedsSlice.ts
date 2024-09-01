@@ -1,5 +1,5 @@
 import { Post } from '../serverTypes';
-import { AppDispatch, RootState } from '../store';
+import { AppDispatch, RootState, UnknownAction } from '../store';
 import { multiplePostsAdded } from './postsSlice';
 
 export interface Feed {
@@ -45,7 +45,7 @@ export const typeFeedItemsInViewUpdated = 'feeds/feedItemsInViewUpdated';
 
 export default function feedsReducer(
   state: FeedsState = initialState,
-  action: { type: string; payload: unknown }
+  action: UnknownAction
 ): FeedsState {
   switch (action.type) {
     case typeFeedUpdated: {

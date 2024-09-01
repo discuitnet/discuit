@@ -25,7 +25,7 @@ export interface User {
   moddingList: Community[] | null;
 }
 
-type UserGroup = 'normal' | 'admins' | 'mods';
+export type UserGroup = 'normal' | 'admins' | 'mods';
 
 export interface Image {
   id: string;
@@ -172,6 +172,8 @@ export interface Comment {
   postDeletedAs?: UserGroup;
 }
 
+export type ListSort = 'addedDsc' | 'addedAsc' | 'createdDsc' | 'createdAsc';
+
 export interface List {
   id: number;
   userId: string;
@@ -181,12 +183,12 @@ export interface List {
   description: string | null;
   public: boolean;
   numItems: number;
-  sort: 'addedDsc' | 'addedAsc' | 'createdDsc' | 'createdAsc';
+  sort: ListSort;
   createdAt: string; // A datetime.
   lastUpdatedAt: string; // A datetime.
 }
 
-type NotificationType =
+export type NotificationType =
   | 'new_comment'
   | 'comment_reply'
   | 'new_votes'

@@ -1,7 +1,22 @@
-import { addComment, commentsTree, searchTree } from './commentsTree';
+import { Comment } from '../serverTypes';
+import { AppDispatch, UnknownAction } from '../store';
+import { addComment, commentsTree, Node, searchTree } from './commentsTree';
 import { commentsCountIncremented } from './postsSlice';
 
-const initialState = {
+export interface CommentsState {
+  ids: string[];
+  items: {
+    [postId: string]: {
+      comments: Node;
+      next: string | null;
+      zIndexTop: number;
+      fetchedAt: number;
+      lastFetchedAt: number;
+    };
+  };
+}
+
+const initialState: CommentsState = {
   ids: [],
   items: {
     /*
@@ -23,10 +38,17 @@ const typeNewCommentAdded = 'comments/newCommentAdded';
 const typeReplyCommentsAdded = 'comments/replyCommentsAdded';
 const typeMoreCommentsAdded = 'comments/moreCommentsAdded';
 
-export default function commentsReducer(state = initialState, action) {
+export default function commentsReducer(
+  state: CommentsState = initialState,
+  action: UnknownAction
+): CommentsState {
   switch (action.type) {
     case typeCommentsAdded: {
-      const { postId, comments: commentsList, next } = action.payload;
+      const {
+        postId,
+        comments: commentsList,
+        next,
+      } = action.payload as { postId: string; comments: Comment[]; next: string | null };
       if (state.ids.includes(postId)) return state;
       return {
         ...state,
@@ -43,7 +65,11 @@ export default function commentsReducer(state = initialState, action) {
       };
     }
     case typeMoreCommentsAdded: {
-      const { postId, comments, next } = action.payload;
+      const { postId, comments, next } = action.payload as {
+        postId: string;
+        comments: Node;
+        next: string | null;
+      };
       return {
         ...state,
         items: {
@@ -57,19 +83,19 @@ export default function commentsReducer(state = initialState, action) {
       };
     }
     case typeNewCommentAdded: {
-      const { comment, postId } = action.payload;
+      const { comment, postId } = action.payload as { comment: Comment; postId: string };
       let updateZIndex = false;
       const root = state.items[postId].comments;
       const node = addComment(root, comment);
-      if (node.parent.parent !== null && root.children) {
+      if (node.parent!.parent !== null && root.children) {
         let rootNode = node;
-        while (rootNode.parent.parent) {
-          rootNode = rootNode.parent;
+        while (rootNode.parent!.parent) {
+          rootNode = rootNode.parent!;
         }
         const children = root.children;
         const newChildren = [];
         for (let i = 0; i < children.length; i++) {
-          if (children[i].comment.id === rootNode.comment.id) {
+          if (children[i].comment!.id === rootNode.comment!.id) {
             newChildren.push({ ...rootNode });
           } else {
             newChildren.push(children[i]);
@@ -94,8 +120,8 @@ export default function commentsReducer(state = initialState, action) {
       };
     }
     case typeReplyCommentsAdded: {
-      const { postId, comments } = action.payload;
-      const newComments = [];
+      const { postId, comments } = action.payload as { postId: string; comments: Comment[] };
+      const newComments: Comment[] = [];
       const root = state.items[postId].comments;
       comments.forEach((comment) => {
         if (searchTree(root, comment.id) === null) newComments.push(comment);
@@ -117,7 +143,7 @@ export default function commentsReducer(state = initialState, action) {
   }
 }
 
-export const commentsAdded = (postId, comments, next) => {
+export const commentsAdded = (postId: string, comments: Comment[], next: string | null) => {
   return {
     type: typeCommentsAdded,
     payload: {
@@ -128,16 +154,16 @@ export const commentsAdded = (postId, comments, next) => {
   };
 };
 
-export const newCommentAdded = (postId, comment) => (dispatch) => {
+export const newCommentAdded = (postId: string, comment: Comment) => (dispatch: AppDispatch) => {
   dispatch({ type: typeNewCommentAdded, payload: { postId, comment } });
   dispatch(commentsCountIncremented(postId));
 };
 
-export const replyCommentsAdded = (postId, comments) => {
+export const replyCommentsAdded = (postId: string, comments: Comment[]) => {
   return { type: typeReplyCommentsAdded, payload: { postId, comments } };
 };
 
-export const moreCommentsAdded = (postId, comments, next) => {
+export const moreCommentsAdded = (postId: string, comments: Node, next: string | null) => {
   return {
     type: typeMoreCommentsAdded,
     payload: {

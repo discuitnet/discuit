@@ -1,4 +1,5 @@
 import { Community, Post as ServerPost } from '../serverTypes';
+import { UnknownAction } from '../store';
 
 export interface Post extends ServerPost {
   community?: Community;
@@ -22,10 +23,7 @@ const typePostsAdded = 'posts/typePostsAdded';
 const typeCommentsCountIncremented = 'posts/commentsCountIncremented';
 const typeImageGalleryIndexUpdated = 'posts/imageGalleryIndexUpdated';
 
-export default function postsReducer(
-  state = initialState,
-  action: { type: string; payload: unknown }
-) {
+export default function postsReducer(state = initialState, action: UnknownAction) {
   switch (action.type) {
     case typePostsAdded: {
       const posts = action.payload as ServerPost[];

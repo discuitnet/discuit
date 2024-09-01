@@ -1,5 +1,5 @@
 import { List } from '../serverTypes';
-import { RootState } from '../store';
+import { RootState, UnknownAction } from '../store';
 
 export type ListsFilter = 'all' | 'public' | 'private';
 export type ListsOrder = 'lastAdded' | 'name';
@@ -39,7 +39,7 @@ const typeListAdded = `lists/listAdded`;
 
 export default function listsReducer(
   state: ListsState = initialState,
-  action: { type: string; payload: unknown }
+  action: UnknownAction
 ): ListsState {
   switch (action.type) {
     case typeUsersListsAdded: {

@@ -1,5 +1,5 @@
 import { Community } from '../serverTypes';
-import { AppDispatch, RootState } from '../store';
+import { AppDispatch, RootState, UnknownAction } from '../store';
 
 export interface CommunitiesState {
   names: string[];
@@ -15,7 +15,7 @@ const typeCommunityAdded = 'communities/communityAdded';
 
 export default function communitiesReducer(
   state: CommunitiesState = initialState,
-  action: { type: string; payload: unknown }
+  action: UnknownAction
 ): CommunitiesState {
   switch (action.type) {
     case typeCommunityAdded: {

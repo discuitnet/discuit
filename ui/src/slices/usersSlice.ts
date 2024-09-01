@@ -1,5 +1,5 @@
 import { User } from '../serverTypes';
-import { RootState } from '../store';
+import { RootState, UnknownAction } from '../store';
 
 export interface UsersState {
   usernames: string[];
@@ -15,7 +15,7 @@ const typeUserAdded = 'users/userAdded';
 
 export default function usersReducer(
   state: UsersState = initialState,
-  action: { type: string; payload: unknown }
+  action: UnknownAction
 ): UsersState {
   switch (action.type) {
     case typeUserAdded: {

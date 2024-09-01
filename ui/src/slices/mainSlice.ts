@@ -1,6 +1,7 @@
+import { ThunkDispatch } from 'redux-thunk';
 import { APIError, mfetch, mfetchjson } from '../helper';
 import { Community, List, Mute, Mutes, Notification, User } from '../serverTypes';
-import { AppDispatch, RootState } from '../store';
+import { AppDispatch, RootState, UnknownAction } from '../store';
 import { communitiesAdded } from './communitiesSlice';
 
 export interface Alert {
@@ -105,7 +106,7 @@ const initialState: MainState = {
 
 export default function mainReducer(
   state: MainState = initialState,
-  action: { type: string; payload: unknown }
+  action: UnknownAction
 ): MainState {
   switch (action.type) {
     case 'main/initialValuesAdded': {
@@ -459,7 +460,7 @@ export const sidebarCommunitiesUpdated = (communities?: Community[] | null) => {
 
 export const allCommunitiesUpdated =
   (communities: Community[] = []) =>
-  (dispatch: AppDispatch) => {
+  (dispatch: ThunkDispatch<RootState, unknown, UnknownAction>) => {
     communities = communities || [];
     const names = communities.map((item) => item.name);
     dispatch({
@@ -592,45 +593,50 @@ export const showAppInstallButton = (show: boolean, deferredPrompt: unknown) => 
   };
 };
 
-export const muteUser = (userId: string, username: string) => async (dispatch: AppDispatch) => {
-  try {
-    const mutes = await mfetchjson('/api/mutes', {
-      method: 'POST',
-      body: JSON.stringify({
-        userId: userId,
-      }),
-    });
-    dispatch(mutesAdded(mutes));
-    dispatch(
-      snackAlert(
-        `Posts from @${username} won't appear on any of your feeds from now on.`,
-        null,
-        5000
-      )
-    );
-  } catch (error) {
-    dispatch(snackAlertError(error));
-  }
-};
-
-export const unmuteUser = (userId: string, username: string) => async (dispatch: AppDispatch) => {
-  try {
-    const res = await mfetch(`/api/mutes/users/${userId}`, {
-      method: 'DELETE',
-    });
-    if (res.ok) {
-      dispatch(muteRemoved('user', userId));
-      dispatch(snackAlert(`Unmuted @${username}`, null));
-    } else {
-      throw new Error('Failed unmuting user: ' + (await res.text()));
+export const muteUser =
+  (userId: string, username: string) =>
+  async (dispatch: ThunkDispatch<RootState, unknown, UnknownAction>) => {
+    try {
+      const mutes = await mfetchjson('/api/mutes', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: userId,
+        }),
+      });
+      dispatch(mutesAdded(mutes));
+      dispatch(
+        snackAlert(
+          `Posts from @${username} won't appear on any of your feeds from now on.`,
+          null,
+          5000
+        )
+      );
+    } catch (error) {
+      dispatch(snackAlertError(error));
     }
-  } catch (error) {
-    dispatch(snackAlertError(error));
-  }
-};
+  };
+
+export const unmuteUser =
+  (userId: string, username: string) =>
+  async (dispatch: ThunkDispatch<RootState, unknown, UnknownAction>) => {
+    try {
+      const res = await mfetch(`/api/mutes/users/${userId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        dispatch(muteRemoved('user', userId));
+        dispatch(snackAlert(`Unmuted @${username}`, null));
+      } else {
+        throw new Error('Failed unmuting user: ' + (await res.text()));
+      }
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    }
+  };
 
 export const muteCommunity =
-  (communityId: string, communityName: string) => async (dispatch: AppDispatch) => {
+  (communityId: string, communityName: string) =>
+  async (dispatch: ThunkDispatch<RootState, unknown, UnknownAction>) => {
     try {
       const mutes = await mfetchjson('/api/mutes', {
         method: 'POST',
@@ -646,7 +652,8 @@ export const muteCommunity =
   };
 
 export const unmuteCommunity =
-  (communityId: string, communityName: string) => async (dispatch: AppDispatch) => {
+  (communityId: string, communityName: string) =>
+  async (dispatch: ThunkDispatch<RootState, unknown, UnknownAction>) => {
     try {
       const res = await mfetch(`/api/mutes/communities/${communityId}`, {
         method: 'DELETE',
