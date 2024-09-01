@@ -1,5 +1,58 @@
 import { APIError, mfetch, mfetchjson } from '../helper';
+import { Community, List, Mute, Mutes, Notification, User } from '../serverTypes';
+import { AppDispatch, RootState } from '../store';
 import { communitiesAdded } from './communitiesSlice';
+
+export interface Alert {
+  id: string | number | null;
+  text: string;
+  timer?: number;
+}
+
+export interface NotificationsResponse {
+  count: number;
+  newCount: number;
+  items: Notification[] | null;
+  next: string;
+}
+
+export interface MainState {
+  user: User | null; // If null, user is not logged in.
+  vapidPublicKey: string | null; // The applicationServerKey for the Web Push API.
+  appInstallButton: {
+    show: boolean;
+    deferredPrompt: unknown;
+  };
+  notifications: NotificationsResponse & { loaded: boolean };
+  chatOpen: boolean;
+  sidebarCommunities: Community[];
+  allCommunities: {
+    items: string[];
+    loading: boolean;
+  };
+  alerts: Alert[]; // An array of { timestamp: 032948023, text: 'message' }.
+  loginPromptOpen: boolean;
+  reportReasons: unknown;
+  sidebarOpen: boolean;
+  sidebarCommunitiesExpanded: boolean;
+  sidebarScrollY: number;
+  noUsers: number;
+  bannedFrom: string[]; // List of community ids.
+  loginModalOpen: boolean;
+  signupModalOpen: boolean;
+  createCommunityModalOpen: boolean;
+  mutes: Mutes;
+  lists: {
+    loading: boolean;
+    lists: List[];
+  };
+  saveToListModal: {
+    open: boolean;
+    toSaveItemId: string | null;
+    toSaveItemType: string | null;
+  };
+  settingsChanged: number; // A counter to serve as a signal for when user settings change.
+}
 
 const initialNotifications = {
   loaded: false,
@@ -9,9 +62,9 @@ const initialNotifications = {
   newCount: 0,
 };
 
-const initialState = {
-  user: null, // Meaning not logged in.
-  vapidPublicKey: null, // applicationServerKey for the Web Push API.
+const initialState: MainState = {
+  user: null,
+  vapidPublicKey: null,
   appInstallButton: {
     show: false,
     deferredPrompt: undefined,
@@ -23,7 +76,7 @@ const initialState = {
     items: [],
     loading: true,
   },
-  alerts: [], // An array of { timestamp: 032948023, text: 'message' }.
+  alerts: [],
   loginPromptOpen: false,
   reportReasons: [],
   sidebarOpen: false,
@@ -38,8 +91,6 @@ const initialState = {
     userMutes: [],
     communityMutes: [],
   },
-  // listsLoading: true,
-  // lists: [],
   lists: {
     loading: true,
     lists: [],
@@ -49,15 +100,18 @@ const initialState = {
     toSaveItemId: null,
     toSaveItemType: null,
   },
-  settingsChanged: 0, // A counter to serve as a signal for when user settings change.
+  settingsChanged: 0,
 };
 
-export default function mainReducer(state = initialState, action) {
+export default function mainReducer(
+  state: MainState = initialState,
+  action: { type: string; payload: unknown }
+): MainState {
   switch (action.type) {
     case 'main/initialValuesAdded': {
       return {
         ...state,
-        ...action.payload,
+        ...(action.payload as { vapidPublicKey: string }),
       };
     }
     case 'main/chatOpenToggled': {
@@ -67,7 +121,7 @@ export default function mainReducer(state = initialState, action) {
       };
     }
     case 'main/userLoggedIn': {
-      const user = action.payload;
+      const user = action.payload as User;
       return {
         ...state,
         user,
@@ -86,31 +140,32 @@ export default function mainReducer(state = initialState, action) {
     case 'main/sidebarCommunitiesUpdated': {
       return {
         ...state,
-        sidebarCommunities: action.payload,
+        sidebarCommunities: action.payload as Community[],
       };
     }
     case 'main/allCommunitiesUpdated': {
       return {
         ...state,
-        allCommunities: action.payload,
+        allCommunities: action.payload as { items: string[]; loading: boolean },
       };
     }
     case 'main/noUsersUpdated': {
       return {
         ...state,
-        noUsers: action.payload,
+        noUsers: action.payload as number,
       };
     }
     case 'main/alertAdded': {
-      const alerts = [];
+      const alerts: Alert[] = [];
+      const payloadAlert = action.payload as Alert;
       state.alerts.forEach((alert) => {
-        if (alert.id === action.payload.id) {
+        if (alert.id === alert.id) {
           clearTimeout(alert.timer);
           return;
         }
         alerts.push(alert);
       });
-      alerts.push(action.payload);
+      alerts.push(payloadAlert);
       return {
         ...state,
         alerts: alerts,
@@ -129,7 +184,7 @@ export default function mainReducer(state = initialState, action) {
       };
     }
     case 'main/notificationsLoaded': {
-      const obj = action.payload;
+      const obj = action.payload as NotificationsResponse;
       return {
         ...state,
         notifications: {
@@ -143,15 +198,16 @@ export default function mainReducer(state = initialState, action) {
       };
     }
     case 'main/notificationsUpdated': {
+      const payload = action.payload as NotificationsResponse;
       return {
         ...state,
         notifications: {
           ...state.notifications,
           loaded: true,
-          items: [...state.notifications.items, ...(action.payload.items || [])],
-          next: action.payload.next,
-          count: action.payload.count,
-          newCount: action.payload.newCount,
+          items: [...state.notifications.items!, ...(payload.items || [])],
+          next: payload.next,
+          count: payload.count,
+          newCount: payload.newCount,
         },
       };
     }
@@ -170,7 +226,7 @@ export default function mainReducer(state = initialState, action) {
         ...state,
         notifications: {
           ...state.notifications,
-          items: state.notifications.items.map((item) => {
+          items: state.notifications.items!.map((item) => {
             return { ...item, seen: type === '' ? true : item.type === type ? true : item.seen };
           }),
         },
@@ -183,19 +239,20 @@ export default function mainReducer(state = initialState, action) {
       };
     }
     case 'main/notificationsDeleted': {
+      const payload = action.payload as Notification;
       return {
         ...state,
         notifications: {
           ...state.notifications,
           count: state.notifications.count--,
-          items: state.notifications.items.filter((item) => item.id !== action.payload.id),
+          items: state.notifications.items!.filter((item) => item.id !== payload.id),
         },
       };
     }
     case 'main/notificationSeen': {
-      const { notifId, seen } = action.payload;
-      const newItems = [];
-      state.notifications.items.forEach((item) => {
+      const { notifId, seen } = action.payload as { notifId: number; seen: boolean };
+      const newItems: Notification[] = [];
+      state.notifications.items!.forEach((item) => {
         if (item.id === notifId) {
           newItems.push({
             ...item,
@@ -209,7 +266,7 @@ export default function mainReducer(state = initialState, action) {
       return {
         ...state,
         user: {
-          ...state.user,
+          ...state.user!,
           notificationsNewCount: 0,
         },
         notifications: {
@@ -242,37 +299,37 @@ export default function mainReducer(state = initialState, action) {
     case 'main/bannedFromUpdated': {
       return {
         ...state,
-        bannedFrom: action.payload,
+        bannedFrom: action.payload as string[],
       };
     }
     case 'main/bannedFromAdded': {
       return {
         ...state,
-        bannedFrom: [...state.bannedFrom, action.payload],
+        bannedFrom: [...state.bannedFrom, action.payload as string],
       };
     }
     case 'main/signupModalOpened': {
       return {
         ...state,
-        signupModalOpen: action.payload,
+        signupModalOpen: action.payload as boolean,
       };
     }
     case 'main/loginModalOpened': {
       return {
         ...state,
-        loginModalOpen: action.payload,
+        loginModalOpen: action.payload as boolean,
       };
     }
     case 'main/createCommunityModalOpened': {
       return {
         ...state,
-        createCommunityModalOpen: action.payload,
+        createCommunityModalOpen: action.payload as boolean,
       };
     }
     case 'main/appInstallButtonUpdate': {
       return {
         ...state,
-        appInstallButton: action.payload,
+        appInstallButton: action.payload as { show: boolean; deferredPrompt: unknown },
       };
     }
     case 'main/mutesAdded': {
@@ -280,14 +337,14 @@ export default function mainReducer(state = initialState, action) {
         ...state,
         mutes: {
           ...state.mutes,
-          ...action.payload,
+          ...(action.payload as Mutes),
         },
       };
     }
     case 'main/muteAdded': {
-      const mute = action.payload;
-      let communityMutes = [...state.mutes.communityMutes];
-      let userMutes = [...state.mutes.userMutes];
+      const mute = action.payload as Mute;
+      const communityMutes = [...(state.mutes.communityMutes || [])];
+      const userMutes = [...(state.mutes.userMutes || [])];
       if (mute.type === 'community') {
         communityMutes.push(mute);
       } else {
@@ -302,8 +359,8 @@ export default function mainReducer(state = initialState, action) {
       };
     }
     case 'main/muteRemoved': {
-      const { type, objectId } = action.payload;
-      const filter = (mutes) => {
+      const { type, objectId } = action.payload as { type: string; objectId: string };
+      const filter = (mutes: Mute[]) => {
         return mutes.filter((mute) => {
           if (type === 'community') {
             return mute.mutedCommunityId !== objectId;
@@ -315,8 +372,8 @@ export default function mainReducer(state = initialState, action) {
       return {
         ...state,
         mutes: {
-          communityMutes: filter(state.mutes.communityMutes),
-          userMutes: filter(state.mutes.userMutes),
+          communityMutes: filter(state.mutes.communityMutes || []),
+          userMutes: filter(state.mutes.userMutes || []),
         },
       };
     }
@@ -329,7 +386,7 @@ export default function mainReducer(state = initialState, action) {
     case 'main/sidebarScrollYUpdated': {
       return {
         ...state,
-        sidebarScrollY: action.payload,
+        sidebarScrollY: action.payload as number,
       };
     }
     case 'main/listsAdded': {
@@ -337,12 +394,15 @@ export default function mainReducer(state = initialState, action) {
         ...state,
         lists: {
           loading: false,
-          lists: action.payload,
+          lists: action.payload as List[],
         },
       };
     }
     case 'main/saveToListModalOpened': {
-      const { toSaveItemId, toSaveItemType } = action.payload;
+      const { toSaveItemId, toSaveItemType } = action.payload as {
+        toSaveItemId: string;
+        toSaveItemType: string;
+      };
       return {
         ...state,
         saveToListModal: {
@@ -374,7 +434,7 @@ export default function mainReducer(state = initialState, action) {
   }
 }
 
-export const initialValuesAdded = (initial) => {
+export const initialValuesAdded = (initial: { vapidPublicKey: string }) => {
   const payload = {
     vapidPublicKey: initial.vapidPublicKey,
   };
@@ -385,7 +445,7 @@ export const chatOpenToggled = () => {
   return { type: 'main/chatOpenToggled' };
 };
 
-export const userLoggedIn = (user) => {
+export const userLoggedIn = (user: User) => {
   return { type: 'main/userLoggedIn', payload: user };
 };
 
@@ -393,13 +453,13 @@ export const userLoggedOut = () => {
   return { type: 'main/userLoggedOut' };
 };
 
-export const sidebarCommunitiesUpdated = (communities) => {
+export const sidebarCommunitiesUpdated = (communities?: Community[] | null) => {
   return { type: 'main/sidebarCommunitiesUpdated', payload: communities || [] };
 };
 
 export const allCommunitiesUpdated =
-  (communities = []) =>
-  (dispatch) => {
+  (communities: Community[] = []) =>
+  (dispatch: AppDispatch) => {
     communities = communities || [];
     const names = communities.map((item) => item.name);
     dispatch({
@@ -413,16 +473,16 @@ export const allCommunitiesUpdated =
   };
 
 export const snackAlert =
-  (text, id, timeout = 3000) =>
-  (dispatch) => {
-    const alert = { id: id || Date.now(), text: text };
+  (text: string, id: string | number | null, timeout = 3000) =>
+  (dispatch: AppDispatch) => {
+    const alert: Alert = { id: id || Date.now(), text: text };
     dispatch({ type: 'main/alertAdded', payload: alert });
-    alert.timer = setTimeout(() => {
+    alert.timer = window.setTimeout(() => {
       dispatch({ type: 'main/alertRemoved', payload: alert.id });
     }, timeout);
   };
 
-export const snackAlertError = (error) => {
+export const snackAlertError = (error: unknown) => {
   console.error(error);
   if (error instanceof APIError) {
     if (error.status === 429) {
@@ -439,7 +499,7 @@ export const loginPromptToggled = () => {
   return { type: 'main/loginPromptToggled' };
 };
 
-export const reportReasonsUpdated = (reasons) => {
+export const reportReasonsUpdated = (reasons: unknown) => {
   return { type: 'main/reportReasonsUpdated', payload: reasons || [] };
 };
 
@@ -447,26 +507,26 @@ export const toggleSidebarOpen = () => {
   return { type: 'main/toggleSidebarOpen' };
 };
 
-export const noUsersUpdated = (noUsers) => {
+export const noUsersUpdated = (noUsers: number) => {
   return { type: 'main/noUsersUpdated', payload: noUsers };
 };
 
-export const bannedFromUpdated = (communities) => {
+export const bannedFromUpdated = (communities: string[]) => {
   return { type: 'main/bannedFromUpdated', payload: communities };
 };
 
-export const bannedFromAdded = (community) => {
+export const bannedFromAdded = (community: string) => {
   return { type: 'main/bannedFromAdded', payload: community };
 };
 
-export const notificationsLoaded = (notifications) => {
+export const notificationsLoaded = (notifications: NotificationsResponse) => {
   return {
     type: 'main/notificationsLoaded',
     payload: notifications,
   };
 };
 
-export const notificationsUpdated = (notification) => {
+export const notificationsUpdated = (notification: NotificationsResponse) => {
   return {
     type: 'main/notificationsUpdated',
     payload: notification,
@@ -474,8 +534,8 @@ export const notificationsUpdated = (notification) => {
 };
 
 export const markNotificationAsSeen =
-  (notif, seen = true) =>
-  async (dispatch) => {
+  (notif: Notification, seen = true) =>
+  async (dispatch: AppDispatch) => {
     const errMsg = 'Error marking notification as seen: ';
     try {
       await mfetchjson(
@@ -502,7 +562,7 @@ export const notificationsAllDeleted = () => {
   return { type: 'main/notificationsAllDeleted' };
 };
 
-export const notificationsDeleted = (notification) => {
+export const notificationsDeleted = (notification: Notification) => {
   return { type: 'main/notificationsDeleted', payload: notification };
 };
 
@@ -522,7 +582,7 @@ export const createCommunityModalOpened = (open = true) => {
   return { type: 'main/createCommunityModalOpened', payload: open };
 };
 
-export const showAppInstallButton = (show, deferredPrompt) => {
+export const showAppInstallButton = (show: boolean, deferredPrompt: unknown) => {
   return {
     type: 'main/appInstallButtonUpdate',
     payload: {
@@ -532,7 +592,7 @@ export const showAppInstallButton = (show, deferredPrompt) => {
   };
 };
 
-export const muteUser = (userId, username) => async (dispatch) => {
+export const muteUser = (userId: string, username: string) => async (dispatch: AppDispatch) => {
   try {
     const mutes = await mfetchjson('/api/mutes', {
       method: 'POST',
@@ -553,14 +613,14 @@ export const muteUser = (userId, username) => async (dispatch) => {
   }
 };
 
-export const unmuteUser = (userId, username) => async (dispatch) => {
+export const unmuteUser = (userId: string, username: string) => async (dispatch: AppDispatch) => {
   try {
     const res = await mfetch(`/api/mutes/users/${userId}`, {
       method: 'DELETE',
     });
     if (res.ok) {
       dispatch(muteRemoved('user', userId));
-      dispatch(snackAlert(`Unmuted @${username}`));
+      dispatch(snackAlert(`Unmuted @${username}`, null));
     } else {
       throw new Error('Failed unmuting user: ' + (await res.text()));
     }
@@ -569,42 +629,44 @@ export const unmuteUser = (userId, username) => async (dispatch) => {
   }
 };
 
-export const muteCommunity = (communityId, communityName) => async (dispatch) => {
-  try {
-    const mutes = await mfetchjson('/api/mutes', {
-      method: 'POST',
-      body: JSON.stringify({
-        communityId: communityId,
-      }),
-    });
-    dispatch(mutesAdded(mutes));
-    dispatch(snackAlert(`Posts from /${communityName} won't appear on All anymore.`, null, 5000));
-  } catch (error) {
-    dispatch(snackAlertError(error));
-  }
-};
-
-export const unmuteCommunity = (communityId, communityName) => async (dispatch) => {
-  try {
-    const res = await mfetch(`/api/mutes/communities/${communityId}`, {
-      method: 'DELETE',
-    });
-    if (res.ok) {
-      dispatch(muteRemoved('community', communityId));
-      dispatch(snackAlert(`Unmuted /${communityName}`));
-    } else {
-      throw new Error('Failed unmuting user: ' + (await res.text()));
+export const muteCommunity =
+  (communityId: string, communityName: string) => async (dispatch: AppDispatch) => {
+    try {
+      const mutes = await mfetchjson('/api/mutes', {
+        method: 'POST',
+        body: JSON.stringify({
+          communityId: communityId,
+        }),
+      });
+      dispatch(mutesAdded(mutes));
+      dispatch(snackAlert(`Posts from /${communityName} won't appear on All anymore.`, null, 5000));
+    } catch (error) {
+      dispatch(snackAlertError(error));
     }
-  } catch (error) {
-    dispatch(snackAlertError(error));
-  }
-};
+  };
 
-export const mutesAdded = (mutes = {}) => {
+export const unmuteCommunity =
+  (communityId: string, communityName: string) => async (dispatch: AppDispatch) => {
+    try {
+      const res = await mfetch(`/api/mutes/communities/${communityId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        dispatch(muteRemoved('community', communityId));
+        dispatch(snackAlert(`Unmuted /${communityName}`, null));
+      } else {
+        throw new Error('Failed unmuting user: ' + (await res.text()));
+      }
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    }
+  };
+
+export const mutesAdded = (mutes: Mutes) => {
   return { type: 'main/mutesAdded', payload: mutes };
 };
 
-export const muteAdded = (mute) => {
+export const muteAdded = (mute: Mute) => {
   return { type: 'main/muteAdded', payload: mute };
 };
 
@@ -612,8 +674,8 @@ export const muteRemoved = (type = '', objectId = '') => {
   return { type: 'main/muteRemoved', payload: { type, objectId } };
 };
 
-export const selectIsUserMuted = (userId) => (state) => {
-  const userMutes = state.main.mutes.userMutes;
+export const selectIsUserMuted = (userId: string) => (state: RootState) => {
+  const userMutes = state.main.mutes.userMutes || [];
   let authorMuted = false;
   for (let i = 0; i < userMutes.length; i++) {
     const mute = userMutes[i];
@@ -625,8 +687,8 @@ export const selectIsUserMuted = (userId) => (state) => {
   return authorMuted;
 };
 
-export const selectIsCommunityMuted = (communityId) => (state) => {
-  const communityMutes = state.main.mutes.communityMutes;
+export const selectIsCommunityMuted = (communityId: string) => (state: RootState) => {
+  const communityMutes = state.main.mutes.communityMutes || [];
   let muted = false;
   for (let i = 0; i < communityMutes.length; i++) {
     const mute = communityMutes[i];
@@ -638,15 +700,15 @@ export const selectIsCommunityMuted = (communityId) => (state) => {
   return muted;
 };
 
-export const sidebarScrollYUpdated = (scrollY) => {
+export const sidebarScrollYUpdated = (scrollY: number) => {
   return { type: 'main/sidebarScrollYUpdated', payload: scrollY };
 };
 
-export const listsAdded = (lists) => {
+export const listsAdded = (lists: List[]) => {
   return { type: 'main/listsAdded', payload: lists };
 };
 
-export const saveToListModalOpened = (toSaveItemId, toSaveItemType) => {
+export const saveToListModalOpened = (toSaveItemId: string, toSaveItemType: string) => {
   return { type: 'main/saveToListModalOpened', payload: { toSaveItemId, toSaveItemType } };
 };
 

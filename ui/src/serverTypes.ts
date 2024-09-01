@@ -1,31 +1,31 @@
 export interface User {
   id: string;
   username: string;
-  email?: string;
-
-  emailConfirmedAt?: string; // A datetime.
-
-  aboutMe?: string;
+  email: string | null;
+  emailConfirmedAt: string | null; // A datetime.
+  aboutMe: string | null;
   points: number;
   isAdmin: boolean;
-  proPic?: Image;
-  badges?: Badge[];
+  proPic: Image | null;
+  badges: Badge[] | null;
   noPosts: number;
   noComments: number;
   createdAt: string; // A datetime.
   deleted: boolean;
-  deletedAt?: string; // A datetime.
+  deletedAt: string | null; // A datetime.
   upvoteNotificationsOff: boolean;
   replyNotificationsOff: boolean;
   homeFeed: 'all' | 'subscriptions';
   rememberFeedSort: boolean;
   embedsOff: boolean;
   hideUserProfilePictures: boolean;
-  bannedAt?: string; // A datetime.
+  bannedAt: string | null; // A datetime.
   isBanned: boolean;
   notificationsNewCount: number;
-  moddingList?: Community[];
+  moddingList: Community[] | null;
 }
+
+type UserGroup = 'normal' | 'admins' | 'mods';
 
 export interface Image {
   id: string;
@@ -36,7 +36,7 @@ export interface Image {
   size: number;
   averageColor: string;
   url: string;
-  copies?: ImageCopy[];
+  copies: ImageCopy[] | null;
 }
 
 export interface ImageCopy {
@@ -56,5 +56,164 @@ export interface Badge {
 }
 
 export interface Community {
-  temp: unknown; // Gets rid of linter error
+  id: string;
+  userId: string;
+  name: string;
+  nsfw: boolean;
+  about: string | null;
+  noMembers: number;
+  proPic: Image | null;
+  bannerImage: Image | null;
+  createdAt: string; // A datetime.
+  isDefault?: boolean;
+  userJoined: boolean | null;
+  userMod: boolean | null;
+  isMuted: boolean;
+  mods: User[] | null;
+  rules: CommunityRule[] | null;
+  ReportsDetails: {
+    noReports: number;
+    noPostReports: number;
+    noCommentReports: number;
+  };
+}
+
+export interface CommunityRule {
+  id: number;
+  rule: string;
+  description: string | null;
+  communityId: string;
+  zIndex: number;
+  createdBy: string;
+  createdA: string; // A datetime.
+}
+
+export interface Post {
+  id: string;
+  type: 'text' | 'image' | 'link';
+  publicId: string;
+  userId: string;
+  username: string;
+  userGhostId?: string;
+  userGroup: UserGroup;
+  userDeleted: boolean;
+  isPinned: boolean;
+  isPinnedSite: boolean;
+  communityId: string;
+  communityName: string;
+  communityProPic?: Image;
+  communityBannerImage?: Image;
+  title: string;
+  body: string | null;
+  image?: Image;
+  images?: Image[];
+  link?: {
+    url: string;
+    hostname: string;
+    image?: Image;
+  };
+  locked: boolean;
+  lockedBy: string | null;
+  lockedAs?: UserGroup;
+  lockedAt: string | null; // A datetime.
+  upvotes: number;
+  downvotes: number;
+  hotness: number;
+  createdAt: string; // A datetime.
+  editedAt: string | null; // A datetime.
+  lastActivityAt: string; // A datetime.
+  deleted: boolean;
+  deletedAt?: string; // A datetime.
+  deletedAs?: UserGroup;
+  deletedContent: boolean;
+  deletedContentAs?: UserGroup;
+  noComments: number;
+  comments?: Comment[] | null;
+  commentsNext?: string | null;
+  userVoted: boolean | null;
+  userVotedUp: boolean | null;
+  isAuthorMuted: boolean;
+  isCommunityMuted: boolean;
+  community?: Community;
+  author?: User;
+}
+
+export interface Comment {
+  id: string;
+  postId: string;
+  postPublicId: string;
+  communityId: string;
+  communityName: string;
+  userId?: string;
+  username: string;
+  userGhostId?: string;
+  userGroup: UserGroup;
+  userDeleted: boolean;
+  parentId: string | null;
+  depth: number;
+  noReplies: number;
+  noRepliesDirect: number;
+  ancestors: string[]; // From root to parent.
+  body: string;
+  upvotes: number;
+  downvotes: number;
+  createdAt: string; // A datetime.
+  editedAt: string | null; // A datetime.
+  contentStripped?: boolean;
+  deleted: boolean;
+  deletedAt: string | null; // A datetime.
+  deletedAs?: UserGroup;
+  author?: User;
+  isAuthorMuted?: boolean;
+  userVoted: boolean | null;
+  userVotedUp: boolean | null;
+  postTitle?: string;
+  postDeleted: boolean;
+  postDeletedAs?: UserGroup;
+}
+
+export interface List {
+  id: number;
+  userId: string;
+  username: string;
+  name: string;
+  displayName: string;
+  description: string | null;
+  public: boolean;
+  numItems: number;
+  sort: 'addedDsc' | 'addedAsc' | 'createdDsc' | 'createdAsc';
+  createdAt: string; // A datetime.
+  lastUpdatedAt: string; // A datetime.
+}
+
+type NotificationType =
+  | 'new_comment'
+  | 'comment_reply'
+  | 'new_votes'
+  | 'deleted_post'
+  | 'mod_add'
+  | 'new_badge';
+
+export interface Notification {
+  id: number;
+  type: NotificationType;
+  notif: unknown;
+  seen: boolean;
+  seenAt: string | null; // A datetime.
+  createdAt: string; // A datetime.
+}
+
+export interface Mute {
+  id: string;
+  type: 'user' | 'community';
+  mutedUserId?: string;
+  mutedCommunityId?: string;
+  createdAt: string; // A datetime.
+  mutedUser?: User;
+  mutedCommunity?: Community;
+}
+
+export interface Mutes {
+  userMutes: Mute[] | null;
+  communityMutes: Mute[] | null;
 }

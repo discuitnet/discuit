@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { Route, Switch, useRouteMatch } from 'react-router-dom';
 import { ButtonHamburger } from '../../components/Button';
 import { useIsMobile } from '../../hooks';
+import { RootState } from '../../store';
 import Forbidden from '../Forbidden';
 import Comments from './Comments';
 import Communities from './Communities';
@@ -37,7 +38,7 @@ function AdminDashboard() {
 
   const { path } = useRouteMatch();
 
-  const user = useSelector((state) => state.main.user); // user is never not null at this point
+  const user = useSelector((state: RootState) => state.main.user)!; // user is never not null at this point
   if (!user.isAdmin) {
     return <Forbidden />;
   }
