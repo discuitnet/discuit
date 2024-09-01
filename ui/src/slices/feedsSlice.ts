@@ -1,25 +1,41 @@
+import { Post } from '../serverTypes';
+import { AppDispatch, RootState } from '../store';
 import { multiplePostsAdded } from './postsSlice';
 
-const initialState = {
-  urls: [],
+export interface Feed {
+  keys: string[];
+  next: string | null;
+  inView: string[];
+  loading: boolean;
+}
+
+export interface FeedsState {
+  urls: string[];
   feeds: {
-    /*
-    "url": {
-      keys: [], // each key points to feedItems entry
-      next: '', // pagination cursor
-      inView: [], // list of keys of nodes in view
-      loading: true,
-    }
-    */
-  },
-  feedItems: {}, // [key] => item
+    [url: string]: Feed;
+  };
+  feedItems: {
+    [key: string]: FeedItem;
+  };
+}
+
+const initialState: FeedsState = {
+  urls: [],
+  feeds: {},
+  feedItems: {},
 };
 
-export function FeedItem(item, type, key) {
-  this.item = item; // depends on type
-  this.type = type;
-  this.key = key;
-  this.height = null;
+export class FeedItem {
+  item: unknown;
+  type: string;
+  key: string;
+  height: number | null;
+  constructor(item: unknown, type: string, key: string) {
+    this.item = item;
+    this.type = type;
+    this.key = key;
+    this.height = null;
+  }
 }
 
 export const typeFeedUpdated = 'feeds/feedUpdated';
@@ -27,14 +43,21 @@ export const typeFeedReloaded = 'feeds/feedReloaded';
 export const typeFeedItemHeightChanged = 'feeds/feedItemHeightChanged';
 export const typeFeedItemsInViewUpdated = 'feeds/feedItemsInViewUpdated';
 
-export default function feedsReducer(state = initialState, action) {
+export default function feedsReducer(
+  state: FeedsState = initialState,
+  action: { type: string; payload: unknown }
+): FeedsState {
   switch (action.type) {
     case typeFeedUpdated: {
-      const { url, items, next } = action.payload;
+      const { url, items, next } = action.payload as {
+        url: string;
+        items: FeedItem[];
+        next: string | null;
+      };
       const keys = items.map((item) => item.key);
       const feedExists = Boolean(state.feeds[url]);
       const loading = feedExists && state.feeds[url].loading; // a reload
-      let feed = { inView: [], loading: false };
+      let feed: Feed = { keys: [], next: '', inView: [], loading: false };
       if (feedExists && !loading) {
         feed = {
           ...feed,
@@ -44,7 +67,7 @@ export default function feedsReducer(state = initialState, action) {
       } else {
         feed = { ...feed, keys, next };
       }
-      const feedItems = {};
+      const feedItems: { [key: string]: FeedItem } = {};
       items.forEach((item) => {
         // Preserve height, etc of existing items.
         if (state.feedItems[item.key]) {
@@ -68,7 +91,7 @@ export default function feedsReducer(state = initialState, action) {
       };
     }
     case typeFeedReloaded: {
-      const url = action.payload;
+      const url = action.payload as string;
       return {
         ...state,
         feeds: {
@@ -81,7 +104,7 @@ export default function feedsReducer(state = initialState, action) {
       };
     }
     case typeFeedItemHeightChanged: {
-      const { key, height } = action.payload;
+      const { key, height } = action.payload as { key: string; height: number | null };
       return {
         ...state,
         feedItems: {
@@ -94,7 +117,7 @@ export default function feedsReducer(state = initialState, action) {
       };
     }
     case typeFeedItemsInViewUpdated: {
-      const { url, keys } = action.payload;
+      const { url, keys } = action.payload as { url: string; keys: string[] };
       return {
         ...state,
         feeds: {
@@ -116,46 +139,47 @@ export default function feedsReducer(state = initialState, action) {
 //     items: [], // an array of FeedItems
 //     next: '', // next cursor
 //   }
-export const selectFeed = (url) => (state) => {
+export const selectFeed = (url: string) => (state: RootState) => {
   if (!state.feeds.feeds[url]) return undefined;
   if (state.feeds.feeds[url].loading) {
     return { loading: true, items: [], next: undefined };
   }
   const { keys, next, loading } = state.feeds.feeds[url];
-  let items = keys
+  const items = keys
     .map((key) => state.feeds.feedItems[key])
     .map((item) => {
       return {
         ...item,
-        item: item.type === 'post' ? state.posts.items[item.item] : item.item,
+        item: item.type === 'post' ? state.posts.items[item.item as string] : item.item,
       };
     });
   return { items, next, loading };
 };
 
-export const selectFeedInViewItems = (url) => (state) => {
+export const selectFeedInViewItems = (url: string) => (state: RootState) => {
   if (!state.feeds.feeds[url]) return [];
   return state.feeds.feeds[url].inView;
 };
 
-export const feedUpdated = (url, items, next) => (dispatch) => {
-  const posts = items.filter((item) => item.type === 'post').map((item) => item.item);
-  items = items.map((item) => {
-    if (item.type === 'post') item.item = item.item.publicId;
-    return item;
-  });
-  dispatch(multiplePostsAdded(posts));
-  dispatch({ type: typeFeedUpdated, payload: { url, items, next } });
-};
+export const feedUpdated =
+  (url: string, items: FeedItem[], next: string | null) => (dispatch: AppDispatch) => {
+    const posts = items.filter((item) => item.type === 'post').map((item) => item.item) as Post[];
+    items = items.map((item) => {
+      if (item.type === 'post') item.item = (item.item as Post).publicId;
+      return item;
+    });
+    dispatch(multiplePostsAdded(posts));
+    dispatch({ type: typeFeedUpdated, payload: { url, items, next } });
+  };
 
-export const feedReloaded = (url) => {
+export const feedReloaded = (url: string) => {
   return { type: typeFeedReloaded, payload: url };
 };
 
-export const feedItemHeightChanged = (key, height) => {
+export const feedItemHeightChanged = (key: string, height: number | null) => {
   return { type: typeFeedItemHeightChanged, payload: { key, height } };
 };
 
-export const feedInViewItemsUpdated = (url, keys) => {
+export const feedInViewItemsUpdated = (url: string, keys: string[]) => {
   return { type: typeFeedItemsInViewUpdated, payload: { url, keys } };
 };
