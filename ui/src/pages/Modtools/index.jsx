@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -14,6 +14,7 @@ import Sidebar from '../../components/Sidebar';
 import { APIError, mfetch } from '../../helper';
 import { communityAdded, selectCommunity } from '../../slices/communitiesSlice';
 import { snackAlertError } from '../../slices/mainSlice';
+import Forbidden from '../Forbidden';
 import PageNotLoaded from '../PageNotLoaded';
 import Banned from './Banned';
 import Mods from './Mods';
@@ -65,14 +66,7 @@ const Modtools = () => {
   }
 
   if (!(community.userMod || (user && user.isAdmin))) {
-    return (
-      <div className="page-content page-full">
-        <h1>Forbidden!</h1>
-        <div>
-          <Link to="/">Go home</Link>.
-        </div>
-      </div>
-    );
+    return <Forbidden />;
   }
 
   return (

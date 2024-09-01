@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { Redirect, Route, Switch, useHistory, useLocation } from 'react-router-dom';
@@ -19,6 +19,7 @@ import Elements from './Elements';
 import { isDeviceStandalone, mfetchjson } from './helper';
 import { useCanonicalTag, useLoading, useWindowWidth } from './hooks';
 import About from './pages/About';
+import AdminDashboard from './pages/AdminDashboard';
 import AllCommunities from './pages/AllCommunities';
 import AppLoading from './pages/AppLoading';
 import Community from './pages/Community';
@@ -306,6 +307,9 @@ const AppSwitch = () => {
         <Route exact path="/communities">
           <AllCommunities />
         </Route>
+        <ProtectedRoute path="/admin">
+          <AdminDashboard />
+        </ProtectedRoute>
         <Route exact path="/about">
           <About />
         </Route>

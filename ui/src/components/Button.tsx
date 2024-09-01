@@ -69,7 +69,7 @@ export const ButtonClose = ({
 }: {
   className?: string;
   style?: React.CSSProperties;
-}) => {
+} & ButtonProps) => {
   const cls = 'button-icon' + (className ? ` ${className}` : '');
   return (
     <Button className={cls} style={{ padding: '9px', ...style }} {...props}>
@@ -87,7 +87,7 @@ export const ButtonMore = ({
   vertical?: boolean;
   outlined?: boolean;
   className?: string;
-}) => {
+} & ButtonProps) => {
   const style: React.CSSProperties = {
     transform: vertical ? 'rotate(90deg)' : 'initial',
   };
@@ -147,7 +147,7 @@ export const ButtonMore = ({
   );
 };
 
-export const ButtonHamburger = ({ className, ...props }: { className?: string }) => {
+export const ButtonHamburger = ({ className, ...props }: { className?: string } & ButtonProps) => {
   const cls = 'button-hamburger' + (className ? ` ${className}` : '');
   return (
     <Button className={cls} {...props}>
@@ -167,13 +167,13 @@ export const ButtonSearch = ({
 }: {
   className?: string;
   noBackground?: boolean;
-}) => {
+} & ButtonProps) => {
   const cls =
     (noBackground ? 'button-clear' : 'button-icon') +
     ' button-search' +
     (className ? ` ${className}` : '');
   return (
-    <button className={cls} {...props}>
+    <Button className={cls} {...props}>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="20"
@@ -187,11 +187,11 @@ export const ButtonSearch = ({
       >
         <path d="M21 21l-4.486-4.494M19 10.5a8.5 8.5 0 1 1-17 0 8.5 8.5 0 0 1 17 0z" />
       </svg>
-    </button>
+    </Button>
   );
 };
 
-export const ButtonNotifications = ({ count = 0, ...props }: { count?: number }) => {
+export const ButtonNotifications = ({ count = 0, ...props }: { count?: number } & ButtonProps) => {
   return (
     <Button className="notifications-button button-icon-simple" {...props}>
       {count > 0 && <div className="notifications-count">{count}</div>}
