@@ -1,10 +1,24 @@
-import PropTypes from 'prop-types';
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useWindowWidth } from '../../hooks';
+import { FeedItem } from '../../slices/feedsSlice';
 import PostCardSkeleton from '../PostCard/PostCardSkeleton';
 import Spinner from '../Spinner';
-import FeedItem from './FeedItem';
+import FeedItemComponent from './FeedItem';
+
+export interface FeedProps {
+  loading: boolean;
+  items: FeedItem[];
+  itemsInitiallyInView: string[] | null;
+  onSaveVisibleItems: (items: string[]) => void;
+  hasMore: boolean;
+  onNext: () => void;
+  onRenderItem: (item: FeedItem, index: number) => React.ReactNode;
+  onItemHeightChange: (height: number, item: FeedItem) => void;
+  emptyItemsText: string;
+  banner: React.ReactNode;
+  // onRemoveFromList?: () => void;
+}
 
 const Feed = ({
   loading,
@@ -17,8 +31,8 @@ const Feed = ({
   onItemHeightChange,
   emptyItemsText = 'Nothing to show',
   banner,
-  onRemoveFromList = null,
-}) => {
+  // onRemoveFromList,
+}: FeedProps) => {
   const windowHeight = document.documentElement.clientHeight;
   const rootMargin = Math.round(Math.max(windowHeight * 0.35, 200));
   const [spinnerRef, inView] = useInView({
@@ -29,33 +43,35 @@ const Feed = ({
     if (!loading && hasMore && inView) {
       onNext();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, hasMore, inView]);
   const windowWidth = useWindowWidth();
   const isDesktop = windowWidth >= 1280;
 
-  const itemsInView = useRef([]);
+  const itemsInView = useRef<string[]>([]);
   useEffect(() => {
     if (!loading) {
       return () => {
         if (onSaveVisibleItems) onSaveVisibleItems([...itemsInView.current]);
       };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
-  const handleItemViewChange = (key, inView) => {
+  const handleItemViewChange = (itemKey: string, inView: boolean) => {
     let list = itemsInView.current;
     if (inView) {
-      if (!list.includes(key)) list.push(key);
+      if (!list.includes(itemKey)) list.push(itemKey);
     } else {
-      list = list.filter((k) => k !== key);
+      list = list.filter((k) => k !== itemKey);
     }
     itemsInView.current = list;
   };
 
   const onRenderItems = () => {
-    const nodes = [];
+    const nodes: React.ReactNode[] = [];
     items.forEach((item, index) => {
       nodes.push(
-        <FeedItem
+        <FeedItemComponent
           index={index}
           itemKey={item.key}
           key={item.key}
@@ -63,11 +79,10 @@ const Feed = ({
           onHeightChange={(height) => onItemHeightChange(height, item)}
           keepRenderedHtml={isDesktop}
           onViewChange={handleItemViewChange}
-          initiallyInView={itemsInitiallyInView.includes(item.key)}
-          onRemoveFromList={onRemoveFromList}
+          initiallyInView={(itemsInitiallyInView || []).includes(item.key)}
         >
           {onRenderItem(item, index)}
-        </FeedItem>
+        </FeedItemComponent>
       );
       if (banner && index === 1) {
         nodes.push(
@@ -108,6 +123,7 @@ const Feed = ({
   );
 };
 
+/*
 Feed.propTypes = {
   loading: PropTypes.bool.isRequired,
   items: PropTypes.arrayOf(PropTypes.object).isRequired,
@@ -122,5 +138,6 @@ Feed.propTypes = {
   banner: PropTypes.element,
   onRemoveFromList: PropTypes.func,
 };
+*/
 
 export default Feed;

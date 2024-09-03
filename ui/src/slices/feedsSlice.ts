@@ -25,12 +25,12 @@ const initialState: FeedsState = {
   feedItems: {},
 };
 
-export class FeedItem {
-  item: unknown;
+export class FeedItem<T = unknown> {
+  item: T;
   type: string;
   key: string;
   height: number | null;
-  constructor(item: unknown, type: string, key: string) {
+  constructor(item: T, type: string, key: string) {
     this.item = item;
     this.type = type;
     this.key = key;
@@ -134,11 +134,6 @@ export default function feedsReducer(
   }
 }
 
-// Return an object with the following signature:
-//   {
-//     items: [], // an array of FeedItems
-//     next: '', // next cursor
-//   }
 export const selectFeed = (url: string) => (state: RootState) => {
   if (!state.feeds.feeds[url]) return undefined;
   if (state.feeds.feeds[url].loading) {
