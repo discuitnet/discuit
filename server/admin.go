@@ -133,5 +133,25 @@ func (s *Server) getComments(w *responseWriter, r *request) error {
 }
 
 func (s *Server) getUsers(w *responseWriter, r *request) error {
-	return nil
+	_, err := getLoggedInAdmin(s.db, r)
+	if err != nil {
+		return err
+	}
+
+	var nextPtr *string
+	if next := r.urlQueryParamsValue("next"); next != "" {
+		nextPtr = &next
+	}
+
+	users, nextNext, err := core.GetUsers(r.ctx, s.db, 100, nextPtr)
+	if err != nil {
+		return err
+	}
+
+	res := struct {
+		Users []*core.User `json:"users"`
+		Next  *string      `json:"next"`
+	}{users, nextNext}
+
+	return w.writeJSON(res)
 }

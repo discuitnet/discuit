@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
+import Button from '../../components/Button';
 import PageLoading from '../../components/PageLoading';
 import SimpleFeed, { SimpleFeedItem } from '../../components/SimpleFeed';
 import { mfetchjson } from '../../helper';
@@ -22,6 +23,7 @@ export default function Comments() {
 
   const dispatch = useDispatch();
   useEffect(() => {
+    console.log('Running ');
     const f = async () => {
       try {
         const res = await fetchSiteComments();
@@ -44,7 +46,7 @@ export default function Comments() {
       const res = await fetchSiteComments(commentsState.next);
       setCommentsState((prev) => {
         return {
-          comments: [...prev.comments!, ...res.comments],
+          comments: [...prev.comments!, ...(res.comments || [])],
           next: res.next,
         };
       });
@@ -71,16 +73,14 @@ export default function Comments() {
       <div className="dashboard-page-title">Comments</div>
       <div className="dashboard-page-content">
         <SimpleFeed items={feedItems} onRenderItem={handleRenderItem} />
-        <button className="is-more-button" disabled={!commentsState.next} onClick={fetchNextItems}>
+        <Button className="is-more-button" loading={feedReloading} onClick={fetchNextItems}>
           More
-        </button>
+        </Button>
       </div>
     </div>
   );
 }
 
-async function fetchSiteComments(
-  next?: string
-): Promise<{ comments: Comment[]; next: string | null }> {
+async function fetchSiteComments(next?: string): Promise<SiteCommentsState> {
   return mfetchjson(`/api/comments` + (next !== undefined ? `?next=${next}` : ''));
 }

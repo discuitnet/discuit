@@ -48,6 +48,12 @@
     }
 }
 
+@mixin not-tablet {
+    @media screen and (min-width: 1170px) {
+        @content;
+    }
+}
+
 @mixin button-clear {
     all: inherit;
     cursor: pointer;

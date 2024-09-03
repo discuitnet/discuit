@@ -1274,3 +1274,37 @@ func UserMuted(ctx context.Context, db *sql.DB, muter, muted uid.ID) (bool, erro
 	}
 	return true, nil
 }
+
+func GetUsers(ctx context.Context, db *sql.DB, limit int, next *string) ([]*User, *string, error) {
+	where, args := "", []any{}
+	if next != nil {
+		nextID, err := uid.FromString(*next)
+		if err != nil {
+			return nil, nil, errors.New("invalid next for site comments")
+		}
+		where = "WHERE users.id <= ? "
+		args = append(args, nextID)
+	}
+
+	where += "ORDER BY users.id DESC LIMIT ?"
+	args = append(args, limit+1)
+
+	rows, err := db.QueryContext(ctx, buildSelectUserQuery(where), args...)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	users, err := scanUsers(ctx, db, rows, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var nextNext *string
+	if len(users) >= limit+1 {
+		nextNext = new(string)
+		*nextNext = users[limit].ID.String()
+		users = users[:limit]
+	}
+
+	return users, nextNext, nil
+}

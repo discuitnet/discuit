@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import clsx from 'clsx';
+import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Route, Switch, useRouteMatch } from 'react-router-dom';
 import { ButtonHamburger } from '../../components/Button';
-import { useIsMobile } from '../../hooks';
 import { RootState } from '../../store';
 import Forbidden from '../Forbidden';
 import Comments from './Comments';
@@ -13,8 +13,10 @@ import Sidebar from './Sidebar';
 import Users from './Users';
 
 function AdminDashboard() {
-  const [menuVisible, setMenuVisible] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(true);
   const toggleMenuVisible = () => setMenuVisible((v) => !v);
+
+  /*
 
   const pageRef = useRef<HTMLDivElement>(null);
   const [pageHeight, setPageHeight] = useState('0px');
@@ -34,6 +36,7 @@ function AdminDashboard() {
       window.removeEventListener('resize', calculatePageHeight);
     };
   }, [calculatePageHeight]);
+  */
 
   useEffect(() => {
     const before = document.body.style.backgroundColor;
@@ -57,13 +60,16 @@ function AdminDashboard() {
           <div className="left">
             <h1>Admin dashboard</h1>
           </div>
-          <div className="right is-m">
-            <ButtonHamburger />
+          <div className="right is-t">
+            <ButtonHamburger onClick={toggleMenuVisible} />
           </div>
         </div>
       </div>
       <div className="page-dashboard-wrap">
-        <Sidebar onMenuItemClick={toggleMenuVisible} />
+        <Sidebar
+          onMenuItemClick={toggleMenuVisible}
+          className={clsx(menuVisible && 'is-menu-visible')}
+        />
         <div className="page-dashboard-content">
           <Switch>
             <Route exact path={path}>

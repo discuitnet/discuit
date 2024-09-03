@@ -164,11 +164,11 @@ export const selectUsersLists = (username: string) => (state: RootState) => {
   }
   const listsState = state.lists.usersLists[username];
   const ids = listsState.listIds;
-  let items = null;
+  let items: List[] | null = null;
   if (ids) {
     items = [];
     ids.forEach((id) => {
-      items.push(state.lists.items[id]);
+      items!.push(state.lists.items[id]);
     });
   }
   return {

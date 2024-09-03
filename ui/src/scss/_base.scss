@@ -1299,6 +1299,18 @@ table {
     }
 }
 
+.is-t {
+    @include mixins.not-tablet() {
+        display: none !important;
+    }
+}
+
+.is-no-t {
+    @include mixins.tablet() {
+        display: none !important;
+    }
+}
+
 select {
     @include mixins.card-sub;
     & {
