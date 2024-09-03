@@ -10,7 +10,7 @@ import (
 )
 
 // /api/posts/:postID/comments [GET]
-func (s *Server) getComments(w *responseWriter, r *request) error {
+func (s *Server) getPostComments(w *responseWriter, r *request) error {
 	post, err := core.GetPost(r.ctx, s.db, nil, r.muxVar("postID"), r.viewer, true)
 	if err != nil {
 		return err
