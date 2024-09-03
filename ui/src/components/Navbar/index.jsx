@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import Link from '../../components/Link';
@@ -177,6 +177,11 @@ const Navbar = ({ offline = false }) => {
                 <Link className="link-reset dropdown-item" to={`/@${user.username}`}>
                   Profile
                 </Link>
+                {user.isAdmin && (
+                  <Link className="link-reset dropdown-item" to={`/admin`}>
+                    Admin dashboard
+                  </Link>
+                )}
                 {/*<div className="dropdown-item">Darkmode</div>*/}
                 <div className="dropdown-item is-non-reactive">
                   <div className="checkbox">

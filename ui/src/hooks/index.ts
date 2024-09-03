@@ -95,7 +95,10 @@ export function useIsMobile(breakpoint = mobileBreakpointWidth) {
 
 export type LoadingState = 'initial' | 'loading' | 'loaded' | 'error';
 
-export function useLoading(initialState: LoadingState = 'initial', timeout = 80) {
+export function useLoading(
+  initialState: LoadingState = 'initial',
+  timeout = 80
+): [LoadingState, (loading: LoadingState) => void] {
   const [loading, setLoading] = useState<LoadingState>(initialState);
   useEffect(() => {
     if (loading === initialState) {
