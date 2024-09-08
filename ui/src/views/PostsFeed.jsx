@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation } from 'react-router';
 import { useHistory } from 'react-router-dom/cjs/react-router-dom.min';
-import NewFeed from '../components/Feed/NewFeed';
+import Feed from '../components/Feed';
 import { MemorizedPostCard } from '../components/PostCard/PostCard';
 import SelectBar from '../components/SelectBar';
 import { mfetchjson } from '../helper';
@@ -158,7 +158,7 @@ const PostsFeed = ({ feedType = 'all', communityId = null }) => {
     <div className="posts-feed">
       {/*<PostsFilterBar name={name} sort={sort} onChange={handleSortChange} />*/}
       <SelectBar name={name} options={sortOptions} value={sort} onChange={handleSortChange} />
-      <NewFeed
+      <Feed
         feedId={feedId}
         onFetch={handleFetch}
         onRenderItem={handleRenderItem}
