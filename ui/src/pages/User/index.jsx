@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
@@ -569,10 +568,6 @@ const User = () => {
       </aside>
     </div>
   );
-};
-
-User.propTypes = {
-  username: PropTypes.string.isRequired,
 };
 
 export default User;
