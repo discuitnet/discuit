@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
+/* eslint-disable react-hooks/exhaustive-deps */
+import React, { useEffect, useRef, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 
 export interface FeedItemProps {
@@ -30,23 +31,19 @@ const FeedItem = ({
 
   const [renderedOnce, setRenderedOnce] = useState(inView);
   useEffect(() => {
-    if (inView) setRenderedOnce(true);
+    if (inView) {
+      setRenderedOnce(true);
+    }
     onViewChange(itemKey, inView);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inView]);
 
-  const innerRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (node !== null && inView) {
-        const { height: h } = (node as Element).getBoundingClientRect();
-        if (height !== h) onHeightChange(h);
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
-  );
-
-  console.log('Rendering feed item');
+  const innerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (inView && innerRef.current) {
+      const { height: h } = innerRef.current.getBoundingClientRect();
+      if (height !== h) onHeightChange(h);
+    }
+  }, [inView, innerRef.current]);
 
   return (
     <div className="feed-item" ref={ref} style={{ minHeight: height ?? '0px' }}>
@@ -58,18 +55,5 @@ const FeedItem = ({
     </div>
   );
 };
-
-/*
-FeedItem.propTypes = {
-  itemKey: PropTypes.string.isRequired,
-  index: PropTypes.number.isRequired,
-  children: PropTypes.node.isRequired,
-  height: PropTypes.number,
-  onHeightChange: PropTypes.func.isRequired,
-  keepRenderedHtml: PropTypes.bool,
-  initiallyInView: PropTypes.bool.isRequired,
-  onViewChange: PropTypes.func.isRequired,
-};
-*/
 
 export default FeedItem;

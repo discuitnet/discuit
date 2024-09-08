@@ -145,7 +145,8 @@ const PostsFeed = ({ feedType = 'all', communityId = null }) => {
     if (next) {
       params.set('next', next);
     }
-    const res = await mfetchjson(`${baseURL}?${params.toString()}`);
+    const url = `${baseURL}?${params.toString()}`;
+    const res = await mfetchjson(url);
     const feedItems = (res.posts ?? []).map((post) => new FeedItem(post, 'post', post.publicId));
     return {
       items: feedItems,
