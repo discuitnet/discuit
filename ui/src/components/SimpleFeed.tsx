@@ -8,7 +8,7 @@ function SimpleFeed<T>({
   onRenderItem,
 }: {
   items: SimpleFeedItem<T>[] | null;
-  onRenderItem: (item: T) => React.ReactElement;
+  onRenderItem: (item: T) => React.ReactNode;
 }) {
   const renderItems = () => {
     const rendered = [];
