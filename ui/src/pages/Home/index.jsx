@@ -71,7 +71,7 @@ const Home = () => {
               <ButtonAppInstall className="banner-install-button" deferredPrompt={deferredPrompt}>
                 Install
               </ButtonAppInstall>
-              <ButtonClose onClick={handleNeverShowBanner}/>
+              <ButtonClose onClick={handleNeverShowBanner} style={{ color: "inherit" }} />
             </div>
           </div>
         )}
