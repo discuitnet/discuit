@@ -32,9 +32,12 @@ const Home = () => {
   );
 
   const dispatch = useDispatch();
+  const [neverShowBanner, setNeverShowBanner] = useState(
+    localStorage.getItem('neverShowInstallBanner') === 'true'
+  );
 
   useEffect(() => {
-    if (!isDeviceStandalone()) {
+    if (!isDeviceStandalone() || !neverShowBanner) {
       if ('onbeforeinstallprompt' in window) {
         window.addEventListener('beforeinstallprompt', (e) => {
           e.preventDefault();
@@ -50,19 +53,26 @@ const Home = () => {
         }
       }
     }
-  }, []);
+  }, [dispatch, neverShowBanner]);
+
+  const handleNeverShowBanner = () => {
+    localStorage.setItem('neverShowInstallBanner', 'true');
+    setNeverShowBanner(true);
+  };
 
   return (
     <div className="page-content page-home wrap page-grid">
       <Sidebar />
       <main className="posts">
-        {showInstallPrompt && (
+        {showInstallPrompt && !neverShowBanner && (
           <div className="banner-install is-m">
-            {/*<ButtonClose className="banner-button-close" />*/}
             <div className="banner-install-text">Get the app for a better experience.</div>
-            <ButtonAppInstall className="banner-install-button" deferredPrompt={deferredPrompt}>
-              Install
-            </ButtonAppInstall>
+            <div className="banner-install-actions">
+              <ButtonAppInstall className="banner-install-button" deferredPrompt={deferredPrompt}>
+                Install
+              </ButtonAppInstall>
+              <ButtonClose onClick={handleNeverShowBanner} style={{ color: "inherit" }} />
+            </div>
           </div>
         )}
         {loggedIn && (
