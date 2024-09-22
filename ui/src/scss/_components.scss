@@ -1147,6 +1147,7 @@
             --size: 28px;
             width: var(--size);
             height: var(--size);
+            filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
         }
     }
     .image-gallery-images {
