@@ -204,6 +204,16 @@ func Parse(path string) (*Config, error) {
 	return c, nil
 }
 
+// Hostname returns the hostname part of c.Addr. If there's no hostname part, it
+// returns an empty string.
+func (c *Config) Hostname() string {
+	addr := strings.TrimSpace(c.Addr)
+	if n := strings.Index(addr, ":"); n != -1 {
+		return addr[:n]
+	}
+	return addr
+}
+
 // AddressValid reports whether addr is of the form "host:port". If host is
 // missing, it might return true, but if ":port" is missing it will return
 // false.
