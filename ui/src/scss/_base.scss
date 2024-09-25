@@ -309,7 +309,7 @@ body {
 #root {
     position: relative;
     z-index: 1;
-    min-height: calc(100vh - var(--navbar-height) - var(--page-top-margin));
+    min-height: calc(100vh - var(--navbar-height));
     // overflow-x: auto; // is-sticky doesn't work with this
     @include mixins.mobile() {
         overflow-x: auto;
@@ -961,7 +961,7 @@ a,
 
 .page-content {
     padding-top: var(--page-top-margin);
-    min-height: calc(100vh - var(--navbar-height) - var(--page-top-margin));
+    min-height: calc(100vh - var(--navbar-height));
     &.page-grid {
         display: grid;
         grid-template-columns: var(--grid-home);

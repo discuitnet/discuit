@@ -84,17 +84,17 @@ const Footer = () => {
         </div>
         <div className="footer-col">
           <div className="footer-title">Policies</div>
-          <Link className="footer-item" to="/terms">
-            Terms
-          </Link>
-          <Link className="footer-item" to="/privacy-policy">
-            Privacy
-          </Link>
           <Link className="footer-item" to="/guidelines">
             Site guidelines
           </Link>
           <Link className="footer-item" to="/moderator-guidelines">
             Moderator guidelines
+          </Link>
+          <Link className="footer-item" to="/terms">
+            Terms
+          </Link>
+          <Link className="footer-item" to="/privacy-policy">
+            Privacy
           </Link>
           <a
             className="footer-item"
