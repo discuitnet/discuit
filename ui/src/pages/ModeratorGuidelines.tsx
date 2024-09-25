@@ -31,7 +31,7 @@ const ModeratorGuidelines = () => {
         </p>
         <h2>Be active and engaged</h2>
         <p>
-          Moderators are responsible for actively moderating their communities and not leave then
+          Moderators are responsible for actively moderating their communities and not leave them
           unattended. Reports should be handled in a timely manner. This doesn’t, of course, mean
           moderators must be constantly online—real life should always come first. Depending on the
           size and engagement of the community, there should be enough moderators to help resolve
