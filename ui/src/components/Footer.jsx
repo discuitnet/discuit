@@ -1,4 +1,3 @@
-import React from 'react';
 import Link from '../components/Link';
 
 const Footer = () => {
@@ -91,8 +90,11 @@ const Footer = () => {
           <Link className="footer-item" to="/privacy-policy">
             Privacy
           </Link>
-          <Link className="footer-item" to="guidelines">
-            Guidelines
+          <Link className="footer-item" to="/guidelines">
+            Site guidelines
+          </Link>
+          <Link className="footer-item" to="/moderator-guidelines">
+            Moderator guidelines
           </Link>
           <a
             className="footer-item"

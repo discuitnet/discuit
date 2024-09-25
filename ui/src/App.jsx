@@ -28,6 +28,7 @@ import Home from './pages/Home';
 import { List, Lists } from './pages/Lists';
 import Login from './pages/Login';
 import MarkdownGuide from './pages/MarkdownGuide';
+import ModeratorGuidelines from './pages/ModeratorGuidelines';
 import Modtools from './pages/Modtools';
 import NewPost from './pages/NewPost';
 import NotFound from './pages/NotFound';
@@ -315,6 +316,9 @@ const AppSwitch = () => {
         </Route>
         <Route exact path="/guidelines">
           <Guidelines />
+        </Route>
+        <Route exact path="/moderator-guidelines">
+          <ModeratorGuidelines />
         </Route>
         <Route exact path="/terms">
           <Terms />
