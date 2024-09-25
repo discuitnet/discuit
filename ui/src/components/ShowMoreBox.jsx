@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 const ShowMoreBox = ({ maxHeight = '300px', children, showButton = false, ...props }) => {
   const [overflowing, setOverflowing] = useState(false);
