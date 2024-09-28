@@ -119,7 +119,7 @@ func (s *Server) getComments(w *responseWriter, r *request) error {
 		nextPtr = &next
 	}
 
-	comments, nextNext, err := core.GetSiteComments(r.ctx, s.db, 100, nextPtr)
+	comments, nextNext, err := core.GetSiteComments(r.ctx, s.db, 100, nextPtr, r.viewer)
 	if err != nil {
 		return err
 	}
@@ -143,7 +143,7 @@ func (s *Server) getUsers(w *responseWriter, r *request) error {
 		nextPtr = &next
 	}
 
-	users, nextNext, err := core.GetUsers(r.ctx, s.db, 100, nextPtr)
+	users, nextNext, err := core.GetUsers(r.ctx, s.db, 100, nextPtr, r.viewer)
 	if err != nil {
 		return err
 	}

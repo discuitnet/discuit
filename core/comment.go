@@ -868,7 +868,7 @@ func populateCommentAuthors(ctx context.Context, db *sql.DB, comments []*Comment
 }
 
 // GetSiteComments returns a cursor-paginated response of all comments of the site.
-func GetSiteComments(ctx context.Context, db *sql.DB, limit int, next *string) ([]*Comment, *string, error) {
+func GetSiteComments(ctx context.Context, db *sql.DB, limit int, next *string, viewer *uid.ID) ([]*Comment, *string, error) {
 	where, args := "", []any{}
 	if next != nil {
 		nextID, err := uid.FromString(*next)
@@ -882,7 +882,7 @@ func GetSiteComments(ctx context.Context, db *sql.DB, limit int, next *string) (
 	where += "ORDER BY id DESC LIMIT ? "
 	args = append(args, limit+1)
 
-	comments, err := getComments(ctx, db, nil, where, args...)
+	comments, err := getComments(ctx, db, viewer, where, args...)
 	if err != nil {
 		return nil, nil, err
 	}

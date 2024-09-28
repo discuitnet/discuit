@@ -1275,7 +1275,7 @@ func UserMuted(ctx context.Context, db *sql.DB, muter, muted uid.ID) (bool, erro
 	return true, nil
 }
 
-func GetUsers(ctx context.Context, db *sql.DB, limit int, next *string) ([]*User, *string, error) {
+func GetUsers(ctx context.Context, db *sql.DB, limit int, next *string, viewer *uid.ID) ([]*User, *string, error) {
 	where, args := "", []any{}
 	if next != nil {
 		nextID, err := uid.FromString(*next)
@@ -1294,7 +1294,7 @@ func GetUsers(ctx context.Context, db *sql.DB, limit int, next *string) ([]*User
 		return nil, nil, err
 	}
 
-	users, err := scanUsers(ctx, db, rows, nil)
+	users, err := scanUsers(ctx, db, rows, viewer)
 	if err != nil {
 		return nil, nil, err
 	}
