@@ -1,17 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useEffect, useRef, useState } from 'react';
+import PropTypes from 'prop-types';
+import { useCallback, useEffect, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
-
-export interface FeedItemProps {
-  itemKey: string;
-  index: number;
-  children: React.ReactNode;
-  height: number | null;
-  onHeightChange: (height: number) => void;
-  keepRenderedHtml?: boolean;
-  initiallyInView: boolean;
-  onViewChange: (itemKey: string, inView: boolean) => void;
-}
 
 const FeedItem = ({
   itemKey,
@@ -22,7 +12,7 @@ const FeedItem = ({
   keepRenderedHtml = false,
   initiallyInView,
   onViewChange,
-}: FeedItemProps) => {
+}) => {
   const [ref, inView] = useInView({
     rootMargin: '200px 0px',
     threshold: 0,
@@ -31,19 +21,16 @@ const FeedItem = ({
 
   const [renderedOnce, setRenderedOnce] = useState(inView);
   useEffect(() => {
-    if (inView) {
-      setRenderedOnce(true);
-    }
+    if (inView) setRenderedOnce(true);
     onViewChange(itemKey, inView);
   }, [inView]);
 
-  const innerRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (inView && innerRef.current) {
-      const { height: h } = innerRef.current.getBoundingClientRect();
+  const innerRef = useCallback((node) => {
+    if (node !== null && inView) {
+      const { height: h } = node.getBoundingClientRect();
       if (height !== h) onHeightChange(h);
     }
-  }, [inView, innerRef.current]);
+  });
 
   return (
     <div className="feed-item" ref={ref} style={{ minHeight: height ?? '0px' }}>
@@ -54,6 +41,17 @@ const FeedItem = ({
       )}
     </div>
   );
+};
+
+FeedItem.propTypes = {
+  itemKey: PropTypes.string.isRequired,
+  index: PropTypes.number.isRequired,
+  children: PropTypes.node,
+  height: PropTypes.number,
+  onHeightChange: PropTypes.func.isRequired,
+  keepRenderedHtml: PropTypes.bool,
+  initiallyInView: PropTypes.bool.isRequired,
+  onViewChange: PropTypes.func.isRequired,
 };
 
 export default FeedItem;

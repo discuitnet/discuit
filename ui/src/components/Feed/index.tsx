@@ -119,7 +119,7 @@ function Feed<FeedItemType>({
           itemKey={item.key}
           key={item.key}
           height={item.height}
-          onHeightChange={(height) => handleItemHeightChange(height, item)}
+          onHeightChange={(height: number) => handleItemHeightChange(height, item)}
           keepRenderedHtml={isDesktop}
           onViewChange={handleItemViewChange}
           initiallyInView={(itemsInitiallyInView || []).includes(item.key)}
