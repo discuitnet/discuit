@@ -44,8 +44,13 @@ function Feed<FeedItemType>({
   const hasMore = feed ? Boolean(feed.next) : false;
   const [, /*error*/ setError] = useState<unknown>(null);
 
+  const loadingRef = useRef(false);
   const fetchFeedAndDispatch = async (next: string | null) => {
+    if (loadingRef.current) {
+      return;
+    }
     try {
+      loadingRef.current = true;
       const res = await onFetch(next);
       if (res) {
         dispatch(feedUpdated(feedId, res.items, res.next));
@@ -55,6 +60,8 @@ function Feed<FeedItemType>({
     } catch (error: unknown) {
       setError(error);
       dispatch(snackAlertError(error));
+    } finally {
+      loadingRef.current = false;
     }
   };
 
