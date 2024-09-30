@@ -138,9 +138,11 @@ function Feed<FeedItemType>({
     return nodes;
   };
 
+  const className = 'feed is-compact';
+
   if (loading) {
     return (
-      <div className="feed">
+      <div className={className}>
         <PostCardSkeleton />
         <PostCardSkeleton />
         <PostCardSkeleton />
@@ -153,7 +155,7 @@ function Feed<FeedItemType>({
   }
 
   return (
-    <div className="feed">
+    <div className={className}>
       {onRenderItems()}
       {hasMore && (
         <div className="feed-spinner" ref={spinnerRef}>

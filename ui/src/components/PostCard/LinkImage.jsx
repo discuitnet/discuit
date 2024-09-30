@@ -1,10 +1,7 @@
 import PropTypes from 'prop-types';
-import React from 'react';
 import { useImageLoaded } from '../../hooks';
 
-const LinkImage = ({ link, loading = 'lazy' }) => {
-  const { image } = link;
-
+const LinkImage = ({ image, loading = 'lazy', isImagePost = false }) => {
   // let size;
   // if (window.innerWidth > 768) {
   //   size = { width: 325, height: 250 }; // desktop
@@ -14,7 +11,7 @@ const LinkImage = ({ link, loading = 'lazy' }) => {
   // const src = image.url + `?size=${size.width}x${size.height}&fit=cover`; // desktop
 
   const { src, size } = (() => {
-    const imageCopyName = window.innerWidth > 768 ? 'desktop' : 'mobile';
+    const imageCopyName = isImagePost ? 'tiny' : window.innerWidth > 768 ? 'desktop' : 'mobile';
     const matches = image.copies.filter((copy) => copy.name === imageCopyName);
     let copy;
     if (matches.length === 0) {
@@ -55,8 +52,9 @@ const LinkImage = ({ link, loading = 'lazy' }) => {
 };
 
 LinkImage.propTypes = {
-  link: PropTypes.object.isRequired,
+  image: PropTypes.object.isRequired,
   loading: PropTypes.string,
+  isImagePost: PropTypes.bool,
 };
 
 export default LinkImage;

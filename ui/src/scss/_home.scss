@@ -282,7 +282,7 @@ a {
         display: flex;
         flex-direction: column;
         cursor: pointer;
-        overflow: hidden;
+        // overflow: hidden;
     }
     &.no-voting .post-card-card {
         margin-left: 0;
@@ -368,8 +368,12 @@ a {
                 color: var(--color-link);
             }
         }
-        .post-card-link-image {
+        .post-card-link-image,
+        .post-card-link-image-text {
             margin-left: 8px;
+            --border-radius: 12px;
+        }
+        .post-card-link-image {
             width: 210px;
             min-width: 210px;
             height: 135px;
@@ -378,17 +382,30 @@ a {
                 position: relative;
                 width: 100%;
                 height: 100%;
-                border-radius: 12px;
+                border-radius: var(--border-radius);
                 border: 1px solid var(--color-gray);
                 background-size: cover;
                 img {
                     opacity: 0;
                     position: relative;
-                    border-radius: 12px;
+                    border-radius: var(--border-radius);
                     border: 1px solid var(--color-gray);
                     object-fit: cover;
                 }
             }
+        }
+        .post-card-link-image-text {
+            border-radius: var(--border-radius);
+            border: 1px solid var(--color-gray);
+            background-color: rgba(var(--base-fg), 0.1);
+            svg {
+                width: 100%;
+                height: 100%;
+                color: var(--color-fg);
+                opacity: 0.5;
+            }
+        }
+        .post-card-link-image-text {
         }
         @include mixins.mobile() {
             flex-direction: column;
@@ -538,23 +555,67 @@ a {
             background-color: #000;
         }
     }
-
     &.is-compact {
-        @include mixins.card;
-        & {
-            --post-card-margin-left: 0;
-            --margin-bottom: 0;
-            padding: 12px;
-            .post-card-card {
-                @include mixins.undo-card;
+        .post-card-card {
+            @include mixins.mobile {
+                padding-bottom: 4px;
+                box-shadow: none;
+                border-bottom: none;
             }
-            .post-votes .post-votes-no {
-                @include mixins.undo-card;
-                & {
-                    width: auto;
-                    height: auto;
+        }
+        .post-card-heading-details {
+        }
+        .post-card-link-image,
+        .post-card-link-image-text {
+            width: 102px;
+            min-width: 102px;
+            height: 76px;
+            --border-radius: 7px;
+            @include mixins.mobile {
+                width: 84px;
+                min-width: 84px;
+                height: 64px;
+                margin-left: 0;
+                margin-right: 8px;
+            }
+        }
+        .post-card-link-image {
+            position: relative;
+            .is-link-svg {
+                position: absolute;
+                width: 24px;
+                height: 24px;
+                bottom: 4px;
+                right: 4px;
+                color: #fff;
+            }
+            .post-card-link-image-img {
+                &::after {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    bottom: -1px;
+                    right: 0;
+                    background-color: rgba(var(--base-0), 0.1);
+                    border-radius: var(--border-radius);
+                    border: 1px solid transparent;
                 }
             }
+        }
+        .post-card-title {
+            @include mixins.mobile {
+                margin-top: 6px;
+                flex-direction: row;
+                justify-content: space-between;
+            }
+        }
+        .profile-picture {
+            width: 18px;
+            height: 18px;
+        }
+        .community-link span {
+            margin-left: 2px;
         }
     }
     &.is-in-modtools {
@@ -691,6 +752,13 @@ a {
         margin-left: var(--post-card-votes-margin);
         @include mixins.tablet() {
             margin-left: 0;
+        }
+    }
+    &.is-compact {
+        @include mixins.mobile {
+            > * {
+                margin-bottom: 0;
+            }
         }
     }
 }
