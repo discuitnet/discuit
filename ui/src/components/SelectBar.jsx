@@ -9,6 +9,12 @@ const SelectBar = ({ name, options, value, onChange }) => {
       onChange(value);
     }
   };
+  const handleMouseUp = (event, value) => {
+    if (event.button === 1) {
+      // Third mouse button click
+      window.open(`/?sort=${value}`, '_blank');
+    }
+  };
 
   const text = options.filter((opt) => opt.id === value)[0].text;
   return (
@@ -20,7 +26,12 @@ const SelectBar = ({ name, options, value, onChange }) => {
         <Dropdown target={<button className="select-bar-dp-target">{text}</button>} aligned="right">
           <div className="dropdown-list">
             {options.map((option) => (
-              <div className="dropdown-item" key={option.id} onClick={() => handleClick(option.id)}>
+              <div
+                className="dropdown-item"
+                key={option.id}
+                onClick={() => handleClick(option.id)}
+                onMouseUp={(event) => handleMouseUp(event, option.id)}
+              >
                 {option.text}
               </div>
             ))}
