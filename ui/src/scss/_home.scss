@@ -794,7 +794,8 @@ html.theme-dark {
     &.is-compact {
         @include mixins.mobile {
             > * {
-                margin-bottom: 0;
+                // margin-bottom: 0;
+                margin-bottom: calc(var(--gap) / 2);
             }
         }
     }
