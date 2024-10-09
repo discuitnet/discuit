@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const localStorageKey = 'preferences';
 
+let cache: { [key: string]: any } | null = null;
+
 function parseStoredPrefs(): { [key: string]: any } {
   const prefStr = localStorage.getItem(localStorageKey);
   let json = {};
@@ -20,11 +22,19 @@ function parseStoredPrefs(): { [key: string]: any } {
  *
  */
 export function getDevicePreference(name: string): any {
-  return parseStoredPrefs()[name]; // if doesn't exist, will be undefined
+  if (cache !== null) {
+    return cache[name];
+  }
+  const json = parseStoredPrefs();
+  cache = {
+    ...json,
+  };
+  return json[name];
 }
 
 export function setDevicePreference(name: string, value: any) {
   const prefs = parseStoredPrefs();
   prefs[name] = value;
   localStorage.setItem(localStorageKey, JSON.stringify(prefs));
+  cache = null;
 }

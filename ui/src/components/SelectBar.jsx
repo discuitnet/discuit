@@ -1,7 +1,14 @@
 import PropTypes from 'prop-types';
+import { useDispatch } from 'react-redux';
+import { feedLayoutChanged } from '../slices/mainSlice';
 import { SVGSettings } from '../SVGs';
 import Button from './Button';
 import Dropdown from './Dropdown';
+
+const layoutOptions = [
+  { text: 'Card', id: 'card' },
+  { text: 'Compact', id: 'compact' },
+];
 
 const SelectBar = ({ name, options, value, onChange }) => {
   const handleClick = (value) => {
@@ -14,6 +21,11 @@ const SelectBar = ({ name, options, value, onChange }) => {
       // Third mouse button click
       window.open(`/?sort=${value}`, '_blank');
     }
+  };
+
+  const dispatch = useDispatch();
+  const handleLayoutClick = (value) => {
+    dispatch(feedLayoutChanged(value));
   };
 
   const text = options.filter((opt) => opt.id === value)[0].text;
@@ -39,8 +51,15 @@ const SelectBar = ({ name, options, value, onChange }) => {
         </Dropdown>
         <Dropdown target={<Button icon={<SVGSettings />}></Button>} aligned="right">
           <div className="dropdown-list">
-            <div className="dropdown-item">Card</div>
-            <div className="dropdown-item">Compact</div>
+            {layoutOptions.map((option) => (
+              <div
+                className="dropdown-item"
+                key={option.id}
+                onClick={() => handleLayoutClick(option.id)}
+              >
+                {option.text}
+              </div>
+            ))}
           </div>
         </Dropdown>
       </div>

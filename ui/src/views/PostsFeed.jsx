@@ -24,6 +24,11 @@ const sortOptions = [
 const sortDefault = import.meta.env.VITE_DEFAULTFEEDSORT;
 const baseURL = '/api/posts';
 
+const layoutOptions = [
+  { text: 'Card', id: 'card' },
+  { text: 'Compact', id: 'compact' },
+];
+
 export const homeReloaded = (homeFeed = 'all', rememberFeedSort = false) => {
   const params = new URLSearchParams();
   let sort = sortDefault;
@@ -112,12 +117,15 @@ const PostsFeed = ({ feedType = 'all', communityId = null }) => {
     dispatch(feedReloaded(feedId));
   };
 
+  const layout = useSelector((state) => state.main.feedLayout);
+
   const handleRenderItem = (item, index) => {
     return (
       <MemorizedPostCard
         initialPost={item.item}
         index={index}
         disableEmbeds={user && user.embedsOff}
+        compact={layout === 'compact'}
       />
     );
   };
