@@ -15,11 +15,11 @@ const sortOptions = [
   { text: 'Hot', id: 'hot' },
   { text: 'Activity', id: 'activity' },
   { text: 'New', id: 'latest' },
-  { text: 'Day', id: 'day' },
-  { text: 'Week', id: 'week' },
-  { text: 'Month', id: 'month' },
-  { text: 'Year', id: 'year' },
-  // { text: 'All', id: 'all' },
+  { text: 'Top Day', id: 'day' },
+  { text: 'Top Week', id: 'week' },
+  { text: 'Top Month', id: 'month' },
+  { text: 'Top Year', id: 'year' },
+  { text: 'Top All', id: 'all' },
 ];
 const sortDefault = import.meta.env.VITE_DEFAULTFEEDSORT;
 const baseURL = '/api/posts';
