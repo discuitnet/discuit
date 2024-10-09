@@ -251,7 +251,10 @@ a {
     display: none;
     align-items: center;
     .post-votes-arrow {
+        padding: 0;
         &.arrow-up {
+        }
+        &.arrow-down {
             transform: rotate(180deg);
         }
         &.arrow-voted {
@@ -536,7 +539,7 @@ a {
             flex-direction: row-reverse;
             button,
             .button {
-                padding: 8px;
+                padding: 7px;
             }
         }
     }

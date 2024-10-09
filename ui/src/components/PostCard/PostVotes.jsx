@@ -1,5 +1,4 @@
 import PropTypes from 'prop-types';
-import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { kRound, mfetchjson } from '../../helper';
 import { useVoting } from '../../hooks';
@@ -39,7 +38,7 @@ const PostVotes = ({ className = '', post, sticky = false, disabled = false, mob
 
   const points = upvotes - downvotes;
   const upCls = 'arrow-up' + (vote === true ? ' arrow-voted' : '');
-  const downCls = vote === false ? ' arrow-voted' : '';
+  const downCls = 'arrow-down' + (vote === false ? ' arrow-voted' : '');
 
   if (mobile) {
     return (
@@ -49,20 +48,11 @@ const PostVotes = ({ className = '', post, sticky = false, disabled = false, mob
           onClick={() => handleVote()}
           disabled={disabled}
         >
-          <svg
-            version="1.1"
-            xmlns="http://www.w3.org/2000/svg"
-            x="0px"
-            y="0px"
-            viewBox="0 0 512.171 512.171"
-            xmlSpace="preserve"
-          >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
             <path
+              d="m19.707 9.293-7-7a1 1 0 0 0-1.414 0l-7 7A1 1 0 0 0 5 11h3v10a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V11h3a1 1 0 0 0 .707-1.707z"
               fill="currentColor"
-              d="M479.046,283.925c-1.664-3.989-5.547-6.592-9.856-6.592H352.305V10.667C352.305,4.779,347.526,0,341.638,0H170.971
-			c-5.888,0-10.667,4.779-10.667,10.667v266.667H42.971c-4.309,0-8.192,2.603-9.856,6.571c-1.643,3.989-0.747,8.576,2.304,11.627
-			l212.8,213.504c2.005,2.005,4.715,3.136,7.552,3.136s5.547-1.131,7.552-3.115l213.419-213.504
-			C479.793,292.501,480.71,287.915,479.046,283.925z"
+              data-name="Up"
             />
           </svg>
         </button>
@@ -77,20 +67,11 @@ const PostVotes = ({ className = '', post, sticky = false, disabled = false, mob
           onClick={() => handleVote(false)}
           disabled={disabled}
         >
-          <svg
-            version="1.1"
-            xmlns="http://www.w3.org/2000/svg"
-            x="0px"
-            y="0px"
-            viewBox="0 0 512.171 512.171"
-            xmlSpace="preserve"
-          >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
             <path
+              d="m19.707 9.293-7-7a1 1 0 0 0-1.414 0l-7 7A1 1 0 0 0 5 11h3v10a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V11h3a1 1 0 0 0 .707-1.707z"
               fill="currentColor"
-              d="M479.046,283.925c-1.664-3.989-5.547-6.592-9.856-6.592H352.305V10.667C352.305,4.779,347.526,0,341.638,0H170.971
-			c-5.888,0-10.667,4.779-10.667,10.667v266.667H42.971c-4.309,0-8.192,2.603-9.856,6.571c-1.643,3.989-0.747,8.576,2.304,11.627
-			l212.8,213.504c2.005,2.005,4.715,3.136,7.552,3.136s5.547-1.131,7.552-3.115l213.419-213.504
-			C479.793,292.501,480.71,287.915,479.046,283.925z"
+              data-name="Up"
             />
           </svg>
         </button>
