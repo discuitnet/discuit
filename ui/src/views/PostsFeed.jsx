@@ -24,11 +24,6 @@ const sortOptions = [
 const sortDefault = import.meta.env.VITE_DEFAULTFEEDSORT;
 const baseURL = '/api/posts';
 
-const layoutOptions = [
-  { text: 'Card', id: 'card' },
-  { text: 'Compact', id: 'compact' },
-];
-
 export const homeReloaded = (homeFeed = 'all', rememberFeedSort = false) => {
   const params = new URLSearchParams();
   let sort = sortDefault;
@@ -118,6 +113,7 @@ const PostsFeed = ({ feedType = 'all', communityId = null }) => {
   };
 
   const layout = useSelector((state) => state.main.feedLayout);
+  const compact = layout === 'compact';
 
   const handleRenderItem = (item, index) => {
     return (
@@ -125,7 +121,7 @@ const PostsFeed = ({ feedType = 'all', communityId = null }) => {
         initialPost={item.item}
         index={index}
         disableEmbeds={user && user.embedsOff}
-        compact={layout === 'compact'}
+        compact={compact}
       />
     );
   };
@@ -168,6 +164,7 @@ const PostsFeed = ({ feedType = 'all', communityId = null }) => {
       <SelectBar name={name} options={sortOptions} value={sort} onChange={handleSortChange} />
       <Feed
         feedId={feedId}
+        compact={compact}
         onFetch={handleFetch}
         onRenderItem={handleRenderItem}
         banner={!loggedIn ? <WelcomeBanner className="is-m is-in-feed" /> : null}

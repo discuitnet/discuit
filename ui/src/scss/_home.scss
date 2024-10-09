@@ -559,11 +559,7 @@ a {
         .post-card-card {
             @include mixins.mobile {
                 padding-bottom: 4px;
-                box-shadow: none;
-                border-bottom: none;
             }
-        }
-        .post-card-heading-details {
         }
         .post-card-link-image,
         .post-card-link-image-text {
@@ -581,6 +577,7 @@ a {
         }
         .post-card-link-image {
             position: relative;
+            margin-left: 4px;
             .is-link-svg {
                 position: absolute;
                 width: 24px;
@@ -603,11 +600,41 @@ a {
                 }
             }
         }
-        .post-card-title {
-            @include mixins.mobile {
+        @include mixins.mobile {
+            .post-card-heading {
                 margin-top: 6px;
+            }
+            .post-card-bottom {
+                padding-top: 2px;
+                padding-bottom: 6px;
+                .left {
+                    .button,
+                    button {
+                        svg {
+                            --button-icon-size: 16px;
+                        }
+                        span {
+                            margin-left: 6px;
+                            margin-right: 6px;
+                        }
+                    }
+                }
+            }
+            .post-card-title {
+                margin-top: 0;
                 flex-direction: row;
                 justify-content: space-between;
+                .post-card-title-main {
+                    font-size: var(--fs);
+                }
+            }
+            .post-card-heading-details {
+                > * {
+                    font-size: 12.5px;
+                }
+            }
+            .post-card-bottom {
+                font-size: 12.5px;
             }
         }
         .profile-picture {
@@ -629,6 +656,16 @@ a {
         }
         .post-card-card {
             margin-left: 0;
+        }
+    }
+}
+
+html.theme-dark {
+    .post-card.is-compact {
+        .post-card-card {
+            @include mixins.mobile {
+                border-bottom: none;
+            }
         }
     }
 }
