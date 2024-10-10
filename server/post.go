@@ -89,6 +89,7 @@ func (s *Server) addPost(w *responseWriter, r *request) error {
 
 	// +1 your own post.
 	post.Vote(r.ctx, *r.viewer, true)
+	s.searchEngine.PostUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, post)
 	return w.writeJSON(post)
 }
 
@@ -199,6 +200,7 @@ func (s *Server) updatePost(w *responseWriter, r *request) error {
 		}
 	}
 
+	s.searchEngine.PostUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, post)
 	return w.writeJSON(post)
 }
 
@@ -235,6 +237,7 @@ func (s *Server) deletePost(w *responseWriter, r *request) error {
 		return err
 	}
 
+	s.searchEngine.PostDeleteDocumentIfEnabled(r.ctx, s.config, post.ID.String())
 	return w.writeJSON(post)
 }
 

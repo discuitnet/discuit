@@ -28,7 +28,7 @@ var Command = &cli.Command{
 		conf := ctx.Context.Value("config").(*config.Config)
 		username := ctx.String("user")
 
-		site, err := server.New(db, conf)
+		site, err := server.New(db, conf, nil)
 		if err != nil {
 			log.Fatal("Error creating server: ", err)
 		}
