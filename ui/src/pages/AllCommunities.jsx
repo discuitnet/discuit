@@ -99,7 +99,7 @@ const AllCommunities = () => {
       <main>
         <div className="page-comms-header card card-padding">
           <h1>All communities</h1>
-          {CONFIG.searchEnabled && (
+          {import.meta.env.VITE_SEARCHENABLED && (
             <input
               type="text"
               placeholder="Search communities..."

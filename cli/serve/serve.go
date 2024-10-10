@@ -65,7 +65,12 @@ func serve(ctx *cli.Context) error {
 		log.Fatalf("Error creating 'supporter' user badge: %v\n", err)
 	}
 
-	site, err := server.New(db, conf, ctx.Value("searchEngine").(search.SearchEngine))
+	se := search.SearchEngine(nil)
+	if conf.SearchEnabled {
+		se = ctx.Context.Value("searchEngine").(search.SearchEngine)
+	}
+
+	site, err := server.New(db, conf, se)
 	if err != nil {
 		log.Fatal("Error creating server: ", err)
 	}
