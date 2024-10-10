@@ -1,14 +1,14 @@
-import React, { useCallback, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
-import { adjustTextareaHeight, APIError, mfetch } from '../../helper';
+import React, { useCallback, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
+import { Link } from 'react-router-dom';
+import { adjustTextareaHeight, APIError, mfetch } from '../../helper';
 import {
   bannedFromAdded,
   loginPromptToggled,
   snackAlert,
   snackAlertError,
 } from '../../slices/mainSlice';
-import { Link } from 'react-router-dom';
 import AsUser from './AsUser';
 
 const AddComment = ({

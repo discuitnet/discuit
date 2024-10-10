@@ -1,13 +1,28 @@
-import React from 'react';
+import { useEffect } from 'react';
 import Link from '../components/Link';
 
 const Footer = () => {
+  const className = 'footer';
+
+  // For some reason, on Firefox desktop, there's a small (2 pixels perhaps)
+  // white bar on the bottom of the page. This useEffect hook gets rid of that
+  // by making it the background color of the footer.
+  useEffect(() => {
+    const background = document.documentElement.style.background;
+    document.documentElement.style.background = window.getComputedStyle(
+      document.querySelector(className)
+    ).background;
+    return () => {
+      document.documentElement.style.background = background;
+    };
+  }, []);
+
   return (
-    <footer className="footer">
+    <footer className={className}>
       <div className="wrap">
         <div className="footer-col footer-show">
           <Link to="/" className="footer-logo">
-            {CONFIG.siteName}
+            {import.meta.env.VITE_SITENAME}
           </Link>
           <div className="footer-description">Better discussions on the internet.</div>
         </div>
@@ -16,55 +31,93 @@ const Footer = () => {
           <Link to="/about" className="footer-item">
             About
           </Link>
-          <a href={`mailto:${CONFIG.emailContact}`} className="footer-item">
+          <a href={`mailto:${import.meta.env.VITE_EMAILCONTACT}`} className="footer-item">
             Contact
           </a>
         </div>
         <div className="footer-col">
           <div className="footer-title">Social</div>
-          {CONFIG.twitterURL && (
-            <a href={CONFIG.twitterURL} className="footer-item" target="_blank" re="noopener">
+          {import.meta.env.VITE_TWITTERURL && (
+            <a
+              href={import.meta.env.VITE_TWITTERURL}
+              className="footer-item"
+              target="_blank"
+              rel="noopener"
+            >
               Twitter / X
             </a>
           )}
-          {CONFIG.substackURL && (
-            <a href={CONFIG.substackURL} className="footer-item" target="_blank" re="noopener">
+          {import.meta.env.VITE_SUBSTACKURL && (
+            <a
+              href={import.meta.env.VITE_SUBSTACKURL}
+              className="footer-item"
+              target="_blank"
+              rel="noopener"
+            >
               Blog
             </a>
           )}
-          {CONFIG.facebookURL && (
-            <a href={CONFIG.facebookURL} className="footer-item" target="_blank" re="noopener">
+          {import.meta.env.VITE_FACEBOOKURL && (
+            <a
+              href={import.meta.env.VITE_FACEBOOKURL}
+              className="footer-item"
+              target="_blank"
+              rel="noopener"
+            >
               Facebook
             </a>
           )}
-          {CONFIG.instagramURL && (
-            <a href={CONFIG.instagramURL} className="footer-item" target="_blank" re="noopener">
+          {import.meta.env.VITE_INSTAGRAMURL && (
+            <a
+              href={import.meta.env.VITE_INSTAGRAMURL}
+              className="footer-item"
+              target="_blank"
+              rel="noopener"
+            >
               Instagram
             </a>
           )}
-          {CONFIG.discordURL && (
-            <a href={CONFIG.discordURL} className="footer-item" target="_blank" re="noopener">
+          {import.meta.env.VITE_DISCORDURL && (
+            <a
+              href={import.meta.env.VITE_DISCORDURL}
+              className="footer-item"
+              target="_blank"
+              rel="noopener"
+            >
               Discord
             </a>
           )}
-          {CONFIG.githubURL && (
-            <a href={CONFIG.githubURL} className="footer-item" target="_blank" re="noopener">
+          {import.meta.env.VITE_GITHUBURL && (
+            <a
+              href={import.meta.env.VITE_GITHUBURL}
+              className="footer-item"
+              target="_blank"
+              rel="noopener"
+            >
               Github
             </a>
           )}
         </div>
         <div className="footer-col">
           <div className="footer-title">Policies</div>
+          <Link className="footer-item" to="/guidelines">
+            Site guidelines
+          </Link>
+          <Link className="footer-item" to="/moderator-guidelines">
+            Moderator guidelines
+          </Link>
           <Link className="footer-item" to="/terms">
             Terms
           </Link>
           <Link className="footer-item" to="/privacy-policy">
             Privacy
           </Link>
-          <Link className="footer-item" to="guidelines">
-            Guidelines
-          </Link>
-          <a className="footer-item" href="https://docs.discuit.net/" target="_blank" re="noopener">
+          <a
+            className="footer-item"
+            href="https://docs.discuit.net/"
+            target="_blank"
+            rel="noopener"
+          >
             Documentation
           </a>
         </div>

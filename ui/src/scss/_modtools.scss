@@ -30,6 +30,8 @@
     }
     .modtools-content {
         @include mixins.card;
+    }
+    .modtools-content {
         padding: var(--card-padding);
         &.is-mod-none {
             display: flex;
@@ -43,13 +45,13 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: var(--seperator);
+            padding-bottom: calc(0.8 * var(--gap));
+            margin-bottom: var(--gap);
             .modtools-title {
                 font-size: 1.4em;
                 font-weight: 600;
             }
-            border-bottom: var(--seperator);
-            padding-bottom: calc(0.8 * var(--gap));
-            margin-bottom: var(--gap);
         }
         .label {
             font-size: var(--fs-normal);
@@ -63,9 +65,6 @@
             margin-top: var(--gap);
         }
         .modtools-change-propic {
-            .label {
-                margin-bottom: 5px;
-            }
             img {
                 width: 120px;
                 height: 120px;

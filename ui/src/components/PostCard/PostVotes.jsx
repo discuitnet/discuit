@@ -1,10 +1,10 @@
-import React from 'react';
 import PropTypes from 'prop-types';
-import { kRound, mfetchjson } from '../../helper';
+import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { kRound, mfetchjson } from '../../helper';
+import { useVoting } from '../../hooks';
 import { loginPromptToggled, snackAlertError } from '../../slices/mainSlice';
 import { postAdded } from '../../slices/postsSlice';
-import { useVoting } from '../../hooks';
 
 const PostVotes = ({ className = '', post, sticky = false, disabled = false, mobile = false }) => {
   const loggedIn = useSelector((state) => state.main.user) !== null;

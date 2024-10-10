@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { onKeyEnter } from '../../helper';
 import { ButtonClose, ButtonSearch } from '../Button';
 import Modal from '../Modal';

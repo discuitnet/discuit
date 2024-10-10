@@ -1,5 +1,5 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 import Image from './Image';
 
 const ServerImage = ({ onLoad, image, sizes, style = {}, ...props }) => {

@@ -87,18 +87,16 @@ a {
         }
     }
 }
-.page-content {
-    .login-box {
+.login-box {
+    display: flex;
+    flex-direction: column;
+    .form-field.is-submit .form-control {
         display: flex;
         flex-direction: column;
-        > * {
-            margin-bottom: 8px;
-            &:last-child {
-                margin-bottom: 0;
-            }
-        }
-        .modal-alt-link {
+        button {
+            margin-top: calc(var(--gap) / 2);
             text-align: center;
+            align-self: center;
         }
     }
 }
@@ -228,6 +226,8 @@ a {
     }
     .post-votes-no {
         @include mixins.card;
+    }
+    .post-votes-no {
         width: var(--post-votes-size);
         height: var(--post-votes-size);
         display: flex;
@@ -538,18 +538,23 @@ a {
             background-color: #000;
         }
     }
+
     &.is-compact {
         @include mixins.card;
-        --post-card-margin-left: 0;
-        --margin-bottom: 0;
-        padding: 12px;
-        .post-card-card {
-            @include mixins.undo-card;
-        }
-        .post-votes .post-votes-no {
-            @include mixins.undo-card;
-            width: auto;
-            height: auto;
+        & {
+            --post-card-margin-left: 0;
+            --margin-bottom: 0;
+            padding: 12px;
+            .post-card-card {
+                @include mixins.undo-card;
+            }
+            .post-votes .post-votes-no {
+                @include mixins.undo-card;
+                & {
+                    width: auto;
+                    height: auto;
+                }
+            }
         }
     }
     &.is-in-modtools {
@@ -612,13 +617,18 @@ a {
 
 .post-card-compact-list {
     @include mixins.card;
+}
+
+.post-card-compact-list {
     .post-card {
         @include mixins.undo-card;
-        border-bottom: none;
-        border-radius: 0;
-        border-bottom: var(--card-border);
-        &:last-child {
+        & {
             border-bottom: none;
+            border-radius: 0;
+            border-bottom: var(--card-border);
+            &:last-child {
+                border-bottom: none;
+            }
         }
     }
 }
@@ -697,39 +707,25 @@ a {
 .modal {
     .modal-signup {
         transition: max-height 1s;
-        .modal-card-content {
-            display: flex;
-            flex-direction: column;
-            > * {
-                margin: 10px 0;
-            }
-            .input-with-label {
-                margin: 0;
-                margin-bottom: var(--gap);
-            }
-            .modal-signup-terms {
-                margin-bottom: 0;
-                text-align: center;
-                font-size: 1.4rem;
-                &.is-captcha {
-                    margin-top: 5px;
-                    font-size: 1.2rem;
-                }
-                &:not(.is-captcha) {
-                    margin-top: var(--gap);
-                }
-            }
-            .modal-alt-link {
-                margin-top: 0;
-                text-align: center;
-                align-self: center;
+        .modal-signup-terms {
+            margin-bottom: 0;
+            text-align: center;
+            font-size: 1.4rem;
+            &.is-captcha {
+                margin-top: 5px;
+                font-size: 1.2rem;
             }
         }
-        .modal-card-actions {
+        .form-field.is-username {
+            margin-bottom: 5px;
+        }
+        .form-field.is-submit .form-control {
             display: flex;
             flex-direction: column;
             button {
-                margin: 0;
+                margin-top: calc(var(--gap) / 2);
+                text-align: center;
+                align-self: center;
             }
         }
     }
@@ -758,6 +754,12 @@ a {
         &:active {
             color: #000;
         }
+    }
+    .banner-install-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.5rem;
     }
 }
 

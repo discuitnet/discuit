@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import ReportsView from './ReportsView';
-import { useLoading, usePagination } from '../../hooks';
-import { mfetchjson, timeAgo } from '../../helper';
-import PostCard from '../../components/PostCard';
+import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { snackAlertError } from '../../slices/mainSlice';
 import Pagination from '../../components/Pagination';
+import PostCard from '../../components/PostCard';
+import { mfetchjson, timeAgo } from '../../helper';
+import { useLoading, usePagination } from '../../hooks';
+import { snackAlertError } from '../../slices/mainSlice';
+import ReportsView from './ReportsView';
 
 const Removed = ({ community, filter, title }) => {
   const dispatch = useDispatch();

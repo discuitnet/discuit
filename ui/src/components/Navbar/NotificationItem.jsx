@@ -1,19 +1,19 @@
-import React, { useRef, useState } from 'react';
 import PropTypes from 'prop-types';
+import React, { useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useHistory } from 'react-router';
+import Favicon from '../../assets/imgs/favicon.png';
+import { mfetchjson, selectImageCopyURL, stringCount } from '../../helper';
+import { badgeImage } from '../../pages/User/badgeImage';
 import {
   markNotificationAsSeen,
   notificationsDeleted,
   snackAlertError,
 } from '../../slices/mainSlice';
-import { mfetchjson, selectImageCopyURL, stringCount } from '../../helper';
-import { useHistory } from 'react-router';
-import TimeAgo from '../TimeAgo';
-import Dropdown from '../Dropdown';
 import { ButtonMore } from '../Button';
+import Dropdown from '../Dropdown';
 import Image from '../Image';
-import Favicon from '../../assets/imgs/favicon.png';
-import { badgeImage } from '../../pages/User/Badge';
+import TimeAgo from '../TimeAgo';
 
 const NotificationItem = ({ notification, ...rest }) => {
   const { type, seen, createdAt, notif } = notification;
@@ -180,7 +180,7 @@ const NotificationItem = ({ notification, ...rest }) => {
       to = `/${notif.communityName}`;
       image = getNotifImage(notif);
       break;
-    case 'new_badge':
+    case 'new_badge': {
       to = `/@${viewer.username}`;
       const { src } = badgeImage(notif.badgeType);
       image = {
@@ -188,6 +188,7 @@ const NotificationItem = ({ notification, ...rest }) => {
         backgroundColor: 'transparent',
       };
       break;
+    }
   }
 
   const actionsRef = useRef();

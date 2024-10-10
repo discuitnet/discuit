@@ -95,18 +95,21 @@ func serve(ctx *cli.Context) error {
 	server := &http.Server{
 		Addr: conf.Addr,
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// If the domain name contains www. redirect to one without.
-			host := r.Host
-			if strings.HasPrefix(host, "www.") {
-				url := *r.URL
-				url.Host = host[4:]
-				if https {
-					url.Scheme = "https"
-				} else {
-					url.Scheme = "http"
+			if hostname := conf.Hostname(); hostname != "" {
+				// Redirect all requests to any subdomains of conf.Addr to
+				// conf.Addr. No redirecting is done is the hostname provided in
+				// config is empty.
+				if _, subdomain := strings.CutSuffix(r.Host, "."+conf.Hostname()); subdomain {
+					url := *r.URL
+					url.Host = hostname
+					if https {
+						url.Scheme = "https"
+					} else {
+						url.Scheme = "http"
+					}
+					http.Redirect(w, r, url.String(), http.StatusMovedPermanently)
+					return
 				}
-				http.Redirect(w, r, url.String(), http.StatusMovedPermanently)
-				return
 			}
 			site.ServeHTTP(w, r)
 		}),

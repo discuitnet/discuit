@@ -1,9 +1,8 @@
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { loginPromptToggled, signupModalOpened } from '../slices/mainSlice';
+import { loginModalOpened, loginPromptToggled, signupModalOpened } from '../slices/mainSlice';
 import { ButtonClose } from './Button';
 import Modal from './Modal';
-import { loginModalOpened } from '../slices/mainSlice';
 
 const LoginPrompt = () => {
   const loginPromptOpen = useSelector((state) => state.main.loginPromptOpen);

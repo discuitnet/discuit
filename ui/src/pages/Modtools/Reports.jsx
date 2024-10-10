@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import React, { useEffect, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import Link from '../../components/Link';
+import Pagination from '../../components/Pagination';
 import PostCard from '../../components/PostCard';
 import { mfetchjson, timeAgo, userGroupSingular } from '../../helper';
 import { useLoading, usePagination } from '../../hooks';
-import { useDispatch } from 'react-redux';
 import { snackAlert, snackAlertError } from '../../slices/mainSlice';
 import ReportsView from './ReportsView';
-import Pagination from '../../components/Pagination';
 
 const Reports = ({ community }) => {
   const dispatch = useDispatch();

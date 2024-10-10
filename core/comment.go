@@ -866,3 +866,37 @@ func populateCommentAuthors(ctx context.Context, db *sql.DB, comments []*Comment
 
 	return nil
 }
+
+// GetSiteComments returns a cursor-paginated response of all comments of the site.
+func GetSiteComments(ctx context.Context, db *sql.DB, limit int, next *string, viewer *uid.ID) ([]*Comment, *string, error) {
+	where, args := "", []any{}
+	if next != nil {
+		nextID, err := uid.FromString(*next)
+		if err != nil {
+			return nil, nil, errors.New("invalid next for site comments")
+		}
+		where = "WHERE id <= ? "
+		args = append(args, nextID)
+	}
+
+	where += "ORDER BY id DESC LIMIT ? "
+	args = append(args, limit+1)
+
+	comments, err := getComments(ctx, db, viewer, where, args...)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var nextNext *string
+	if len(comments) >= limit+1 {
+		nextNext = new(string)
+		*nextNext = comments[limit].ID.String()
+		comments = comments[:limit]
+	}
+
+	if err := getCommentsPostTitles(ctx, db, comments, nil); err != nil {
+		return nil, nil, err
+	}
+
+	return comments, nextNext, nil
+}

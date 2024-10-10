@@ -52,9 +52,7 @@ To setup a development environment of Discuit on your local computer:
 
 1.  Discuit uses `libvips` for fast image transformations. Make sure it's
     installed on your computer. On Ubuntu you can install it with:
-    `shell
-sudo apt install libvips-dev
-`
+    `sudo apt install libvips-dev`.
 1.  Clone this repository:
 
     ```shell
@@ -73,7 +71,7 @@ sudo apt install libvips-dev
 1.  Run migrations:
 
     ```shell
-    ./discuit migrate
+    ./discuit migrate run
     ```
 
 1.  Start the server:
@@ -85,25 +83,25 @@ sudo apt install libvips-dev
 After creating an account, you can run `./discuit admin make username` to make
 a user an admin of the site.
 
-Note: Do not install the discuit binary using go install or move it somewhere else. It uses files in this repository at runtime and so it should only be run from the root of this repository.
+Note: Do not install the discuit binary using `go install` or move it somewhere else. It uses files in this repository at runtime and so it should only be run from the root of this repository.
 
 ### Running with Docker
 
 1. **Build the Docker Image**
 
-    > **Note**: If you need to run discuit on a different architecture, simply change the Dockerfile in the `-f` flag to the appropriate Dockerfile for your architecture, currently we support `linux/amd64` (docker/Dockerfile.amd64), and `linux/arm64` (docker/Dockerfile.arm64).
+   > **Note**: If you need to run discuit on a different architecture, simply change the Dockerfile in the `-f` flag to the appropriate Dockerfile for your architecture, currently we support `linux/amd64` (docker/Dockerfile.amd64), and `linux/arm64` (docker/Dockerfile.arm64).
 
-    ```shell
-    docker build -t discuit -f docker/Dockerfile.amd64 .
-    ```
+   ```shell
+   docker build -t discuit -f docker/Dockerfile.amd64 .
+   ```
 
 2. **Run the Docker Container**
 
-    > **Note**: The following command while having a persistent database, the included config.yaml file is not. You will need to mount the file to the container if you want to persist the configuration.
+   > **Note**: The following command while having a persistent database, the included config.yaml file is not. You will need to mount the file to the container if you want to persist the configuration.
 
-    ```shell
-    docker run -d --name discuit -v discuit-db:/var/lib/mysql -v discuit-redis:/var/lib/redis -v discuit-images:/app/images -p 8080:80 discuit
-    ```
+   ```shell
+   docker run -d --name discuit -v discuit-db:/var/lib/mysql -v discuit-redis:/var/lib/redis -v discuit-images:/app/images -p 8080:80 discuit
+   ```
 
 3. **Accessing Discuit**: After the container starts, you can access Discuit by navigating to `http://localhost:8080` on your web browser, or to the specific port if you customized the port mapping.
 
@@ -129,6 +127,45 @@ In the root directory are these directories:
 - `migrations`: Contains the SQL migration files.
 - `server`: Contains the REST API backend.
 - `ui` - Contains the React frontend.
+
+## Roadmap
+
+- [x] Dark mode.
+- [x] User created communities.
+- UI preferences:
+  - [ ] Compact mode.
+  - [ ] Enable or disable infinite scroll.
+  - [x] Choose which notifications to get.
+  - [x] Change default feed sort.
+- Filtering:
+  - [x] Mute communities.
+  - [x] Mute users.
+  - [ ] Filter posts by topic.
+  - [ ] An explore page (modeled after Youtube's home page).
+  - [ ] Filter link-posts by URL or domain.
+- Moderation:
+  - [x] Pinned posts and comments.
+  - [ ] Lock individual comments (so they cannot be replied to).
+  - [ ] A single page for handling reports for users who moderate multiple communities.
+  - [ ] Temporary bans.
+- [ ] User and community mentions (@user and +community).
+- [x] Image posts.
+- [ ] Poll posts.
+- [x] Video embeds (Youtube, Vimeo, etc).
+- [x] Image galleries.
+- [ ] Server side rendering (for better SEO).
+- [ ] Direct messages.
+- [x] Saved posts and comments (modeled after Youtube playlists).
+- [ ] Multiple feeds (modeled after Twitter Lists).
+- [ ] Search.
+- [ ] Moderation log.
+- [ ] RSS feeds.
+- [ ] Wiki pages for communities.
+- [x] User profile pictures.
+- [x] User badges (displayed on profile page).
+- [ ] Post drafts.
+- [ ] History (viewed posts).
+- [ ] Something like Reddit's flairs to group posts within a community.
 
 ## Contributing
 

@@ -1,31 +1,29 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
-import Sidebar from '../components/Sidebar';
-import WelcomeBanner from '../views/WelcomeBanner';
-import MiniFooter from '../components/MiniFooter';
-import CommunityProPic from '../components/CommunityProPic';
-import PageLoading from '../components/PageLoading';
-import { mfetch, mfetchjson } from '../helper';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useInView } from 'react-intersection-observer';
 import { useDispatch, useSelector } from 'react-redux';
+import { useHistory } from 'react-router-dom';
+import { ButtonClose } from '../components/Button';
+import CommunityProPic from '../components/CommunityProPic';
+import { FormField } from '../components/Form';
+import { InputWithCount, useInputMaxLength } from '../components/Input';
+import MarkdownBody from '../components/MarkdownBody';
+import MiniFooter from '../components/MiniFooter';
+import Modal from '../components/Modal';
+import PageLoading from '../components/PageLoading';
+import ShowMoreBox from '../components/ShowMoreBox';
+import Sidebar from '../components/Sidebar';
+import { communityNameMaxLength } from '../config';
+import { mfetch, mfetchjson } from '../helper';
+import { useInputUsername } from '../hooks';
 import {
   allCommunitiesUpdated,
   loginPromptToggled,
   snackAlert,
   snackAlertError,
 } from '../slices/mainSlice';
-import ShowMoreBox from '../components/ShowMoreBox';
-import MarkdownBody from '../components/MarkdownBody';
-import Link from '../components/Link';
 import LoginForm from '../views/LoginForm';
-import Modal from '../components/Modal';
-import { ButtonClose } from '../components/Button';
-import { InputWithCount, useInputMaxLength } from '../components/Input';
-import { communityNameMaxLength } from '../config';
-import { useInputUsername } from '../hooks';
 import JoinButton from './Community/JoinButton';
-import { useHistory, useLocation } from 'react-router-dom';
-import Feed from '../components/Feed';
-import { useInView } from 'react-intersection-observer';
 import { onKeyEnter } from '../helper';
 
 const prepareText = (isMobile = false) => {
@@ -249,29 +247,31 @@ const RequestCommunityButton = ({ children, isMobile = false, ...props }) => {
             <div className="modal-card-title">Request community</div>
             <ButtonClose onClick={handleClose} />
           </div>
-          <div className="modal-card-content flex-column inner-gap-1">
-            {isMobile && <p>{prepareText(true)}</p>}
-            <InputWithCount
-              value={name}
-              onChange={handleNameChange}
-              label="Community name"
-              description="Community name cannot be changed."
-              maxLength={communityNameMaxLength}
-              style={{ marginBottom: '0' }}
-              autoFocus
-            />
-            <InputWithCount
-              value={note}
-              onChange={handleNoteChange}
-              label="Note"
-              description="An optional message for the admins."
-              textarea
-              rows="4"
-              maxLength={noteLength}
-            />
-            <button className="button-main" onClick={handleSubmit}>
-              Request community
-            </button>
+          <div className="form modal-card-content flex-column inner-gap-1">
+            <div className="form-field">{isMobile && <p>{prepareText(true)}</p>}</div>
+            <FormField label="Community name" description="Community name cannot be changed.">
+              <InputWithCount
+                value={name}
+                onChange={handleNameChange}
+                maxLength={communityNameMaxLength}
+                style={{ marginBottom: '0' }}
+                autoFocus
+              />
+            </FormField>
+            <FormField label="Note" description="An optional message for the admins.">
+              <InputWithCount
+                value={note}
+                onChange={handleNoteChange}
+                textarea
+                rows="4"
+                maxLength={noteLength}
+              />
+            </FormField>
+            <FormField>
+              <button className="button-main" onClick={handleSubmit} style={{ width: '100%' }}>
+                Request community
+              </button>
+            </FormField>
           </div>
         </div>
       </Modal>

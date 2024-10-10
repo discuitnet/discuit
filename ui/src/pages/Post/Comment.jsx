@@ -1,32 +1,30 @@
 /* eslint-disable react/display-name */
-/* eslint-disable jsx-a11y/click-events-have-key-events */
-/* eslint-disable jsx-a11y/no-static-element-interactions */
-import React, { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
-import AddComment from './AddComment';
+import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { kRound, mfetchjson, stringCount, toTitleCase, userGroupSingular } from '../../helper';
 import Dropdown from '../../components/Dropdown';
+import MarkdownBody from '../../components/MarkdownBody';
+import ModalConfirm from '../../components/Modal/ModalConfirm';
+import ReportModal from '../../components/ReportModal';
+import ShowMoreBox from '../../components/ShowMoreBox';
+import TimeAgo from '../../components/TimeAgo';
+import UserProPic, { GhostUserProPic, UserLink } from '../../components/UserProPic';
+import { LinkOrDiv } from '../../components/Utils';
+import { kRound, mfetchjson, stringCount, toTitleCase, userGroupSingular } from '../../helper';
+import { useVoting } from '../../hooks';
+import { newCommentAdded, replyCommentsAdded } from '../../slices/commentsSlice';
+import { countChildrenReplies } from '../../slices/commentsTree';
 import {
   loginPromptToggled,
   saveToListModalOpened,
   snackAlert,
   snackAlertError,
 } from '../../slices/mainSlice';
-import TimeAgo from '../../components/TimeAgo';
-import ModalConfirm from '../../components/Modal/ModalConfirm';
-import ReportModal from '../../components/ReportModal';
-import { countChildrenReplies } from '../../slices/commentsTree';
-import MarkdownBody from '../../components/MarkdownBody';
-import ShowMoreBox from '../../components/ShowMoreBox';
-import { newCommentAdded, replyCommentsAdded } from '../../slices/commentsSlice';
-import { useVoting } from '../../hooks';
-import UserProPic, { GhostUserProPic, UserLink } from '../../components/UserProPic';
-import { LinkOrDiv } from '../../components/Utils';
 import { userHasSupporterBadge } from '../User';
+import AddComment from './AddComment';
 import CommentShareButton, { CommentShareDropdownItems } from './CommentShareButton';
 
-const Diagnostics = false; // process.env.NODE_ENV !== 'production';
+const Diagnostics = false; // import.meta.env.MODE !== 'production';
 const MaxCommentDepth = 15;
 
 const Comment = ({

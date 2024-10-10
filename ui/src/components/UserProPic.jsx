@@ -1,7 +1,7 @@
-import React from 'react';
 import PropTypes from 'prop-types';
-import { useImageLoaded } from '../hooks';
+import React from 'react';
 import { selectImageCopyURL } from '../helper';
+import { useImageLoaded } from '../hooks';
 import Link from './Link';
 
 const ProfilePicture = ({ name, proPic, size = 'small', ...rest }) => {

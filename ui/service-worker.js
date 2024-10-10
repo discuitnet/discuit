@@ -1,15 +1,17 @@
 import { selectImageCopyURL, stringCount } from './src/helper';
-import { badgeImage } from './src/pages/User/Badge';
+import { badgeImage } from './src/pages/User/badgeImage';
 
-const CACHE_VERSION = CONFIG.cacheStorageVersion;
+const SW_BUILD_ID = import.meta.env.VITE_SW_BUILD_ID;
+
+console.log(`Service worker version: ${SW_BUILD_ID}`);
 
 const cacheEndpoints = async (urls = []) => {
-  const cache = await caches.open(CACHE_VERSION);
+  const cache = await caches.open(SW_BUILD_ID);
   await cache.addAll(urls);
 };
 
 const putInCache = async (request, response) => {
-  const cache = await caches.open(CACHE_VERSION);
+  const cache = await caches.open(SW_BUILD_ID);
   await cache.put(request, response);
 };
 
@@ -30,7 +32,7 @@ const deleteCache = async (key) => {
 };
 
 const deleteOldCaches = async () => {
-  const cacheKeepList = [CACHE_VERSION];
+  const cacheKeepList = [SW_BUILD_ID];
   const keyList = await caches.keys();
   const cachesToDelete = keyList.filter((key) => !cacheKeepList.includes(key));
   await Promise.all(cachesToDelete.map(deleteCache));
@@ -104,7 +106,7 @@ const cacheFirst = async ({ request, preloadResponsePromise }) => {
     return networkRes;
   } catch (error) {
     if (request.method === 'GET' && request.headers.get('accept').includes('text/html')) {
-      const cache = await caches.open(CACHE_VERSION);
+      const cache = await caches.open(SW_BUILD_ID);
       const fallbackRes = await cache.match('/');
       if (fallbackRes) return fallbackRes;
     }
@@ -203,21 +205,25 @@ const getNotificationInfo = (notification, csrfToken) => {
       }
       break;
     case 'deleted_post':
-      const by =
-        notif.deletedAs === 'mods' ? `moderators of ${notif.post.communityName}` : 'admins';
-      ret.title = `Your post '${notif.post.title}' has been removed by the ${by}`;
-      setToURL(`/${notif.post.communityName}/post/${notif.post.publicId}`);
+      {
+        const by =
+          notif.deletedAs === 'mods' ? `moderators of ${notif.post.communityName}` : 'admins';
+        ret.title = `Your post '${notif.post.title}' has been removed by the ${by}`;
+        setToURL(`/${notif.post.communityName}/post/${notif.post.publicId}`);
+      }
       break;
     case 'mod_add':
       ret.title = `You are added as a moderator of /${notif.communityName} by @${notif.addedBy}`;
-      setToURL(`/${notif.post.communityName}/post/${notif.post.publicId}`);
+      setToURL(`/${notif.communityName}`);
       break;
     case 'new_badge':
-      ret.title =
-        "You are awarded the 'supporter' badge for your contribution to Discuit and for sheer awesomeness!";
-      setToURL(`/@${notif.user.username}`);
-      const { src } = badgeImage(notif.badgeType);
-      setImage(src);
+      {
+        ret.title =
+          "You are awarded the 'supporter' badge for your contribution to Discuit and for sheer awesomeness!";
+        setToURL(`/@${notif.user.username}`);
+        const { src } = badgeImage(notif.badgeType);
+        setImage(src);
+      }
       break;
     default: {
       throw new Error('Unkown notification type');

@@ -136,6 +136,9 @@
 
 .comment {
     @include mixins.card;
+}
+
+.comment {
     padding: var(--card-padding);
     text-decoration: none;
     color: var(--color-text);

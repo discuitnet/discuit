@@ -1,5 +1,5 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 import Link from '../components/Link';
 
 const LinkOrDiv = ({
@@ -52,4 +52,4 @@ ExternalLink.propTypes = {
   children: PropTypes.node,
 };
 
-export { LinkOrDiv, ExternalLink };
+export { ExternalLink, LinkOrDiv };

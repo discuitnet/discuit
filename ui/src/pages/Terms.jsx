@@ -3,7 +3,7 @@ import Link from '../components/Link';
 import StaticPage from '../components/StaticPage';
 
 const Terms = () => {
-  const description = `Terms of service for ${CONFIG.siteName}.`;
+  const description = `Terms of service for ${import.meta.env.VITE_SITENAME}.`;
   return (
     <StaticPage className="" title="Terms of Service" description={description}>
       <main className="document">
@@ -42,7 +42,7 @@ const Terms = () => {
         <p>
           If you believe that your Content has been copied in a way that constitutes copyright
           infringement, please send us an email at{' '}
-          <a href={CONFIG.emailContact}>{CONFIG.emailContact}</a>.
+          <a href={import.meta.env.VITE_EMAILCONTACT}>{import.meta.env.VITE_EMAILCONTACT}</a>.
         </p>
         <p>
           You retain your rights to any Content you submit, post or display on or through the
@@ -57,7 +57,7 @@ const Terms = () => {
           Content that you submit, post or display on or through the Services. You agree that such
           Content will not contain material subject to copyright or other proprietary rights, unless
           you have necessary permission or are otherwise legally entitled to post the material and
-          to grant {CONFIG.siteName} the license described above.
+          to grant {import.meta.env.VITE_SITENAME} the license described above.
         </p>
         <h2>Limitations of liability</h2>
         <p>

@@ -1,17 +1,11 @@
-import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import Modal from './Modal';
-import { ButtonClose } from './Button';
-import Input from './Input';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  listsAdded,
-  saveToListModalClosed,
-  snackAlert,
-  snackAlertError,
-} from '../slices/mainSlice';
 import { mfetchjson } from '../helper';
 import { EditListForm } from '../pages/Lists/List';
+import { saveToListModalClosed, snackAlert, snackAlertError } from '../slices/mainSlice';
+import { ButtonClose } from './Button';
+import Modal from './Modal';
 
 const SaveToListModal = () => {
   const dispatch = useDispatch();

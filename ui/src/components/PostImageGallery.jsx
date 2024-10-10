@@ -1,11 +1,10 @@
-import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
-import ImageGallery from './ImageGallery';
-import ServerImage from './ServerImage';
 import { useDispatch } from 'react-redux';
 import { postImageGalleryIndexUpdated } from '../slices/postsSlice';
+import ImageGallery from './ImageGallery';
+import ServerImage from './ServerImage';
 
-const PostImageGallery = ({ post, isMobile, keyboardControlsOn = false }) => {
+const PostImageGallery = ({ post, keyboardControlsOn = false }) => {
   const { images } = post;
 
   const dispatch = useDispatch();
@@ -21,15 +20,14 @@ const PostImageGallery = ({ post, isMobile, keyboardControlsOn = false }) => {
       keyboardControlsOn={keyboardControlsOn}
     >
       {images.map((image) => (
-        <Image image={image} />
+        <Image image={image} key={image.id} />
       ))}
     </ImageGallery>
   );
 };
 
 PostImageGallery.propTypes = {
-  images: PropTypes.array.isRequired,
-  isMobile: PropTypes.bool.isRequired,
+  post: PropTypes.object.isRequired,
   keyboardControlsOn: PropTypes.bool,
 };
 

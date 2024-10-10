@@ -56,8 +56,10 @@ const About = () => {
       answer: (
         <>
           You can send an email to{' '}
-          <a href={`mailto:${CONFIG.emailContact}`}>{CONFIG.emailContact}</a>, or join our{' '}
-          <a href={CONFIG.discordURL}>Discord server </a>
+          <a href={`mailto:${import.meta.env.VITE_EMAILCONTACT}`}>
+            {import.meta.env.VITE_EMAILCONTACT}
+          </a>
+          , or join our <a href={import.meta.env.VITE_DISCORDURL}>Discord server </a>
           (after you join, create a ticket to contact an admin).
         </>
       ),
@@ -72,7 +74,7 @@ const About = () => {
           {` community. If you have feedback or would like to report a bug, you can create a post in the `}
           <Link to="/DiscuitSuggestions">DiscuitSuggestions</Link>
           {` community (if you have a GitHub account, however, the best place to report a bug would be on `}
-          <a href={`${CONFIG.githubURL}/issues`}>GitHub</a>
+          <a href={`${import.meta.env.VITE_GITHUBURL}/issues`}>GitHub</a>
           {`)`}.
         </>
       ),

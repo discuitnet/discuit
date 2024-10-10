@@ -1,11 +1,10 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 import Link from '../../components/Link';
-import TimeAgo from '../../components/TimeAgo';
-import { kRound, stringCount } from '../../helper';
 import MarkdownBody from '../../components/MarkdownBody';
 import ShowMoreBox from '../../components/ShowMoreBox';
-import CommunityLink from '../../components/PostCard/CommunityLink';
+import TimeAgo from '../../components/TimeAgo';
+import { kRound, stringCount } from '../../helper';
 
 const Comment = ({ comment, onRemoveFromList = null }) => {
   return (

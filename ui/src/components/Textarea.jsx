@@ -1,5 +1,5 @@
-import React, { useCallback } from 'react';
 import PropTypes from 'prop-types';
+import React, { useCallback } from 'react';
 import { adjustTextareaHeight } from '../helper';
 
 const Textarea = ({ adjustable = false, onInput, ...props }) => {

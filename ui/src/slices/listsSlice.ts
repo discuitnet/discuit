@@ -1,27 +1,35 @@
-const initialState = {
-  ids: [], // Array of list ids.
+import { List } from '../serverTypes';
+import { RootState, UnknownAction } from '../store';
+
+export type ListsFilter = 'all' | 'public' | 'private';
+export type ListsOrder = 'lastAdded' | 'name';
+
+type ListsStateItems = {
+  [key: string]: List; // key is a list id
+};
+
+interface ListsState {
+  ids: number[]; // list ids
   usersLists: {
-    /*
-    ["username"]:  {
-      listIds: [], 
-      order: "name",  // one of: name, lastAdded.
-      filter: "all", // one of: all, public, private.
-    }
-    */
-  },
-  items: {
-    /*
-    ["list_id"]: {
-        ... list object fields,
-    }
-    */
-  },
+    // key is a username
+    [key: string]: {
+      listIds: number[];
+      order: ListsOrder;
+      filter: ListsFilter;
+    };
+  };
+  items: ListsStateItems;
   nameToId: {
-    /*
-    ["username_listname"]: list_id,
-    */
-  },
+    [key: string]: number; // key is of the format username_listname;
+  };
   /* The feed of each list is stored in the feedsSlice. */
+}
+
+const initialState: ListsState = {
+  ids: [],
+  usersLists: {},
+  items: {},
+  nameToId: {},
 };
 
 const typeUsersListsAdded = 'lists/usersListsAdded';
@@ -29,13 +37,21 @@ const typeListsOrderChanged = 'lists/orderChanged';
 const typeListsFilterChanged = 'lists/filterChanged';
 const typeListAdded = `lists/listAdded`;
 
-export default function listsReducer(state = initialState, action) {
+export default function listsReducer(
+  state: ListsState = initialState,
+  action: UnknownAction
+): ListsState {
   switch (action.type) {
     case typeUsersListsAdded: {
-      const { username, lists, order, filter } = action.payload;
-      let newItems = {};
-      const newNameToIds = {};
-      let newIds = [];
+      const { username, lists, order, filter } = action.payload as {
+        username: string;
+        lists: List[];
+        order: ListsOrder;
+        filter: ListsFilter;
+      };
+      const newItems: ListsStateItems = {};
+      const newNameToIds: { [key: string]: number } = {};
+      const newIds: number[] = [];
       lists.forEach((list) => {
         if (!state.items[list.id]) {
           newIds.push(list.id);
@@ -68,35 +84,35 @@ export default function listsReducer(state = initialState, action) {
       };
     }
     case typeListsOrderChanged: {
-      const { username, order } = action.payload;
+      const { username, order } = action.payload as { username: string; order: ListsOrder };
       return {
         ...state,
         usersLists: {
           ...state.usersLists,
           [username]: {
             ...state.usersLists[username],
-            listIds: null,
+            // listIds: null,
             order,
           },
         },
       };
     }
     case typeListsFilterChanged: {
-      const { username, filter } = action.payload;
+      const { username, filter } = action.payload as { username: string; filter: ListsFilter };
       return {
         ...state,
         usersLists: {
           ...state.usersLists,
           [username]: {
             ...state.usersLists[username],
-            listIds: null,
+            // listIds: null,
             filter,
           },
         },
       };
     }
     case typeListAdded: {
-      const { username, list } = action.payload;
+      const { username, list } = action.payload as { username: string; list: List };
       return {
         ...state,
         items: {
@@ -114,45 +130,45 @@ export default function listsReducer(state = initialState, action) {
   }
 }
 
-const defaultOrder = 'lastAdded';
-const defaultFilter = 'all';
+const defaultOrder: ListsOrder = 'lastAdded';
+const defaultFilter: ListsFilter = 'all';
 
 /** Actions:  */
 
 export const usersListsAdded = (
-  username,
-  lists = [],
-  order = defaultOrder,
-  filter = defaultFilter
+  username: string,
+  lists: List[] = [],
+  order: ListsOrder = defaultOrder,
+  filter: ListsFilter = defaultFilter
 ) => {
   return { type: typeUsersListsAdded, payload: { username, lists, order, filter } };
 };
 
-export const listsOrderChanged = (username, order) => {
+export const listsOrderChanged = (username: string, order: ListsOrder) => {
   return { type: typeListsOrderChanged, payload: { username, order } };
 };
 
-export const listsFilterChanged = (username, filter) => {
+export const listsFilterChanged = (username: string, filter: ListsFilter) => {
   return { type: typeListsFilterChanged, payload: { username, filter } };
 };
 
-export const listAdded = (username, list) => {
+export const listAdded = (username: string, list: List) => {
   return { type: typeListAdded, payload: { username, list } };
 };
 
 /** Selectors:  */
 
-export const selectUsersLists = (username) => (state) => {
+export const selectUsersLists = (username: string) => (state: RootState) => {
   if (!state.lists.usersLists[username]) {
     return { lists: null, order: defaultOrder, filter: defaultFilter };
   }
   const listsState = state.lists.usersLists[username];
   const ids = listsState.listIds;
-  let items = null;
+  let items: List[] | null = null;
   if (ids) {
     items = [];
     ids.forEach((id) => {
-      items.push(state.lists.items[id]);
+      items!.push(state.lists.items[id]);
     });
   }
   return {
@@ -162,7 +178,7 @@ export const selectUsersLists = (username) => (state) => {
   };
 };
 
-export const selectList = (username, listname) => (state) => {
+export const selectList = (username: string, listname: string) => (state: RootState) => {
   const listId = state.lists.nameToId[nameToIdKey(username, listname)];
   if (!listId) {
     return null;
@@ -170,6 +186,6 @@ export const selectList = (username, listname) => (state) => {
   return state.lists.items[listId];
 };
 
-const nameToIdKey = (username, listname) => {
+const nameToIdKey = (username: string, listname: string): string => {
   return `${username}_${listname}`;
 };

@@ -1,10 +1,8 @@
-/* eslint-disable jsx-a11y/click-events-have-key-events */
-/* eslint-disable jsx-a11y/no-static-element-interactions */
-import React, { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
-import { useEscapeKeydown, useIsMobile } from '../hooks';
-import Modal from './Modal';
+import React, { useEffect, useRef, useState } from 'react';
 import { onEscapeKey } from '../helper';
+import { useIsMobile } from '../hooks';
+import Modal from './Modal';
 
 const Dropdown = ({
   className = '',

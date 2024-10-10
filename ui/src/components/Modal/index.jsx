@@ -1,10 +1,8 @@
-/* eslint-disable jsx-a11y/click-events-have-key-events */
-/* eslint-disable jsx-a11y/no-static-element-interactions */
-import React, { useEffect, useLayoutEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { getScrollbarWidth } from '../../helper';
 import { useHistory } from 'react-router-dom';
+import { getScrollbarWidth } from '../../helper';
 
 const Modal = ({
   open,

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import { useEffect, useState } from 'react';
 
 const ImageGallery = ({
   className,
@@ -25,6 +25,7 @@ const ImageGallery = ({
     if (onIndexChange) {
       onIndexChange(currentImageIndex);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentImageIndex]);
 
   const renderImages = () => {

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import React, { useEffect, useState } from 'react';
 import { timeAgo } from '../helper';
 
 const TimeAgo = ({ time, inline = true, prefix = '', suffix = ' ago', short = false, ...rest }) => {

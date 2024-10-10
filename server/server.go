@@ -137,7 +137,7 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/_postVote", s.withHandler(s.postVote)).Methods("POST")
 	r.Handle("/api/_uploads", s.withHandler(s.imageUpload)).Methods("POST")
 
-	r.Handle("/api/posts/{postID}/comments", s.withHandler(s.getComments)).Methods("GET")
+	r.Handle("/api/posts/{postID}/comments", s.withHandler(s.getPostComments)).Methods("GET")
 	r.Handle("/api/posts/{postID}/comments", s.withHandler(s.addComment)).Methods("POST")
 	r.Handle("/api/posts/{postID}/comments/{commentID}", s.withHandler(s.updateComment)).Methods("PUT")
 	r.Handle("/api/posts/{postID}/comments/{commentID}", s.withHandler(s.deleteComment)).Methods("DELETE")
@@ -183,6 +183,8 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/_settings", s.withHandler(s.updateUserSettings)).Methods("POST")
 
 	r.Handle("/api/_admin", s.withHandler(s.adminActions)).Methods("POST")
+	r.Handle("/api/users", s.withHandler(s.getUsers)).Methods("GET")
+	r.Handle("/api/comments", s.withHandler(s.getComments)).Methods("GET")
 
 	r.Handle("/api/_link_info", s.withHandler(s.getLinkInfo)).Methods("GET")
 

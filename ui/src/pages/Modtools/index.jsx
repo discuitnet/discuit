@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -12,16 +12,16 @@ import {
 } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar';
 import { APIError, mfetch } from '../../helper';
-import { useLoading } from '../../hooks';
 import { communityAdded, selectCommunity } from '../../slices/communitiesSlice';
 import { snackAlertError } from '../../slices/mainSlice';
+import Forbidden from '../Forbidden';
 import PageNotLoaded from '../PageNotLoaded';
 import Banned from './Banned';
+import Mods from './Mods';
 import Removed from './Removed';
 import Reports from './Reports';
 import Rules from './Rules';
 import Settings from './Settings';
-import Mods from './Mods';
 
 function isActiveCls(className, isActive, activeClass = 'is-active') {
   return className + (isActive ? ` ${activeClass}` : '');
@@ -66,14 +66,7 @@ const Modtools = () => {
   }
 
   if (!(community.userMod || (user && user.isAdmin))) {
-    return (
-      <div className="page-content page-full">
-        <h1>Forbidden!</h1>
-        <div>
-          <Link to="/">Go home</Link>.
-        </div>
-      </div>
-    );
+    return <Forbidden />;
   }
 
   return (

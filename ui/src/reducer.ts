@@ -2,10 +2,10 @@ import { combineReducers } from 'redux';
 import commentsReducer from './slices/commentsSlice';
 import communitiesReducer from './slices/communitiesSlice';
 import feedsReducer from './slices/feedsSlice';
+import listsReducer from './slices/listsSlice';
 import mainReducer from './slices/mainSlice';
 import postsReducer from './slices/postsSlice';
 import usersReducer from './slices/usersSlice';
-import listsReducer from './slices/listsSlice';
 
 const rootReducer = combineReducers({
   main: mainReducer,

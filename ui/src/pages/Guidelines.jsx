@@ -1,11 +1,10 @@
-import React from 'react';
 import StaticPage from '../components/StaticPage';
 
 const Guidelines = () => {
   return (
     <StaticPage className="page-guidelines" title="Guidelines">
       <main className="document">
-        <h1>Community guidelines</h1>
+        <h1>Discuit site guidelines</h1>
         <p>
           For the purpose of keeping this place civil and friendly, Discuit will have certain
           restrictions on what is and isn't allowed on this platform. But these restrictions will
