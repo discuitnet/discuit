@@ -84,7 +84,7 @@ func NewSearchClient(host, key string) *MeiliSearch {
 	}
 }
 
-func (c *MeiliSearch) index(indexName string, documents []map[string]interface{}) error {
+func (c *MeiliSearch) index(indexName string, documents []map[string]interface{}, primaryKey ...string) error {
 	index := c.client.Index(indexName)
 	var objects []map[string]interface{}
 	batchSize := 50 * 1024 * 1024 // 50MiB
@@ -125,7 +125,7 @@ func (c *MeiliSearch) index(indexName string, documents []map[string]interface{}
 
 		if currentBatchSize+objSize > batchSize {
 			// Batch is full, send it
-			if err := sendBatch(index, objects); err != nil {
+			if err := sendBatch(index, objects, primaryKey...); err != nil {
 				return err
 			}
 			objects = make([]map[string]interface{}, 0, expectedNumOfObjectsPerBatch)
@@ -139,7 +139,7 @@ func (c *MeiliSearch) index(indexName string, documents []map[string]interface{}
 
 	// Send any remaining objects
 	if len(objects) > 0 {
-		if err := sendBatch(index, objects); err != nil {
+		if err := sendBatch(index, objects, primaryKey...); err != nil {
 			return err
 		}
 	}
@@ -353,7 +353,7 @@ func (c *MeiliSearch) IndexAllPostsInMeiliSearch(ctx context.Context, db *sql.DB
 		}
 
 		// An index is where the documents are stored.
-		err = c.index("posts", documents)
+		err = c.index("posts", documents, "id")
 		if err != nil {
 			return err
 		}
@@ -514,12 +514,12 @@ func PostDeleteDocumentIfEnabled(ctx context.Context, config *config.Config, pos
 	}
 }
 
-func sendBatch(indexObj *meilisearch.Index, objects []map[string]interface{}) error {
+func sendBatch(indexObj *meilisearch.Index, objects []map[string]interface{}, primaryKey ...string) error {
 	data, err := json.Marshal(objects)
 	if err != nil {
 		return err
 	}
-	if _, err := indexObj.UpdateDocuments(data); err != nil {
+	if _, err := indexObj.UpdateDocuments(data, primaryKey...); err != nil {
 		return err
 	}
 	return nil
