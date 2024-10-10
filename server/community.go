@@ -11,7 +11,6 @@ import (
 
 	"github.com/discuitnet/discuit/core"
 	"github.com/discuitnet/discuit/internal/httperr"
-	"github.com/discuitnet/discuit/internal/meilisearch"
 	msql "github.com/discuitnet/discuit/internal/sql"
 	"github.com/discuitnet/discuit/internal/uid"
 	"github.com/gorilla/mux"
@@ -53,7 +52,7 @@ func (s *Server) createCommunity(w *responseWriter, r *request) error {
 		return err
 	}
 
-	meilisearch.CommunityUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, comm)
+	s.searchEngine.CommunityUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, comm)
 
 	return w.writeJSON(comm)
 }
@@ -205,7 +204,7 @@ func (s *Server) updateCommunity(w *responseWriter, r *request) error {
 		return err
 	}
 
-	meilisearch.CommunityUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, comm)
+	s.searchEngine.CommunityUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, comm)
 
 	return w.writeJSON(comm)
 }
@@ -250,7 +249,7 @@ func (s *Server) joinCommunity(w *responseWriter, r *request) error {
 		return err
 	}
 
-	meilisearch.CommunityUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, community)
+	s.searchEngine.CommunityUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, community)
 
 	community.ViewerJoined = msql.NewNullBool(!req.Leave)
 	community.ViewerMod = msql.NewNullBool(false)

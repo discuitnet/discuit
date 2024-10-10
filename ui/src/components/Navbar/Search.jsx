@@ -33,7 +33,7 @@ const Search = ({ autoFocus = false }) => {
 
   // Fallback on Google search until search is implemented.
   const handleSearch = async () => {
-    if (!CONFIG.meiliEnabled) {
+    if (!CONFIG.searchEnabled) {
       const win = window.open(getGoogleURL(searchQuery), '_blank');
       if (!win || win.closed || typeof win.closed === 'undefined') {
         // poppup was blocked
@@ -68,7 +68,7 @@ const Search = ({ autoFocus = false }) => {
             <ButtonClose onClick={() => setSearchModalOpen(false)} />
           </div>
 
-          {!CONFIG.meiliEnabled && (
+          {!CONFIG.searchEnabled && (
             <div className="modal-card-content">
               <p style={{ marginBottom: 'var(--gap)' }}>
                 {`Searching is not enabled on this site. You can click the button below to search on Google. It'll show only results from this website.`}
@@ -86,7 +86,7 @@ const Search = ({ autoFocus = false }) => {
             </div>
           )}
 
-          {CONFIG.meiliEnabled && (
+          {CONFIG.searchEnabled && (
             <div className="modal-card-content">
               <p
                 style={{ marginBottom: 'var(--gap)' }}

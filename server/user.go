@@ -13,7 +13,6 @@ import (
 	"github.com/discuitnet/discuit/internal/hcaptcha"
 	"github.com/discuitnet/discuit/internal/httperr"
 	"github.com/discuitnet/discuit/internal/httputil"
-	"github.com/discuitnet/discuit/internal/meilisearch"
 	"github.com/discuitnet/discuit/internal/uid"
 	"github.com/gorilla/mux"
 )
@@ -103,7 +102,7 @@ func (s *Server) deleteUser(w *responseWriter, r *request) error {
 		return err
 	}
 
-	meilisearch.UserDeleteDocumentIfEnabled(r.ctx, s.config, toDelete.ID.String())
+	s.searchEngine.UserDeleteDocumentIfEnabled(r.ctx, s.config, toDelete.ID.String())
 
 	w.writeString(`{"success": true}`)
 	return nil
@@ -276,7 +275,7 @@ func (s *Server) signup(w *responseWriter, r *request) error {
 	// Try logging in user.
 	s.loginUser(user, r.ses, w, r.req)
 
-	meilisearch.UserUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, user)
+	s.searchEngine.UserUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, user)
 
 	w.WriteHeader(http.StatusCreated)
 	return w.writeJSON(user)
@@ -494,7 +493,7 @@ func (s *Server) updateUserSettings(w *responseWriter, r *request) error {
 		return httperr.NewBadRequest("invalid_action", "Unsupported action.")
 	}
 
-	meilisearch.UserUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, user)
+	s.searchEngine.UserUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, user)
 
 	return w.writeJSON(user)
 }

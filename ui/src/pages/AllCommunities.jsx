@@ -55,7 +55,7 @@ const AllCommunities = () => {
   const handleCommunitiesSearch = async () => {
     const getApiUrl = (query) => `/api/search?q=${encodeURIComponent(query)}&index=communities`;
 
-    if (!CONFIG.meiliEnabled) {
+    if (!import.meta.env.VITE_SEARCHENABLED) {
       return;
     }
 
@@ -99,7 +99,7 @@ const AllCommunities = () => {
       <main>
         <div className="page-comms-header card card-padding">
           <h1>All communities</h1>
-          {CONFIG.meiliEnabled && (
+          {CONFIG.searchEnabled && (
             <input
               type="text"
               placeholder="Search communities..."

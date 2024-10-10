@@ -4,13 +4,13 @@ import (
 	"slices"
 
 	"github.com/discuitnet/discuit/internal/httperr"
-	"github.com/discuitnet/discuit/internal/meilisearch"
+	"github.com/discuitnet/discuit/internal/search"
 )
 
 // /api/search [GET]
 func (s *Server) search(w *responseWriter, r *request) error {
-	if !s.config.MeiliEnabled {
-		return httperr.NewBadRequest("meili_disabled", "MeiliSearch is disabled.")
+	if !s.config.SearchEnabled {
+		return httperr.NewBadRequest("search_disabled", "Search is disabled.")
 	}
 
 	query := r.urlQueryParams()
@@ -28,13 +28,11 @@ func (s *Server) search(w *responseWriter, r *request) error {
 		return httperr.NewBadRequest("missing_index", "Missing index.")
 	}
 
-	searchClient := meilisearch.NewSearchClient(s.config.MeiliHost, s.config.MeiliKey)
-
-	if !slices.Contains(meilisearch.ValidIndexes, index) {
+	if !slices.Contains(search.ValidIndexes, index) {
 		return httperr.NewBadRequest("invalid_index", "Invalid index.")
 	}
 
-	results, err := searchClient.Search(index, q, sort)
+	results, err := s.searchEngine.Search(index, q, sort)
 	if err != nil {
 		return httperr.NewBadRequest("bad_request", err.Error())
 	}

@@ -11,7 +11,7 @@ import (
 
 	"github.com/discuitnet/discuit/cli/migrate"
 	"github.com/discuitnet/discuit/config"
-	"github.com/discuitnet/discuit/internal/meilisearch"
+	"github.com/discuitnet/discuit/internal/search"
 	"github.com/joho/godotenv"
 	"github.com/urfave/cli/v2"
 )
@@ -32,12 +32,15 @@ func Before(c *cli.Context) error {
 	}
 
 	// Connect to MeiliSearch.
-	searchClient := &meilisearch.MeiliSearch{}
-	if conf.MeiliEnabled {
-		searchClient = meilisearch.NewSearchClient(conf.MeiliHost, conf.MeiliKey)
+	searchEngine := search.SearchEngine(nil)
+	if conf.SearchEnabled {
+		searchEngine, err = search.InitializeSearchEngine(conf)
+		if err != nil {
+			log.Fatalf("Failed to initialize search engine: %v", err)
+		}
 	}
 
-	c.Context = context.WithValue(c.Context, "searchClient", searchClient)
+	c.Context = context.WithValue(c.Context, "searchEngine", searchEngine)
 	c.Context = context.WithValue(c.Context, "config", conf)
 	return nil
 }

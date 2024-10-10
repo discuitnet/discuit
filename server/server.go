@@ -24,6 +24,7 @@ import (
 	"github.com/discuitnet/discuit/internal/httputil"
 	"github.com/discuitnet/discuit/internal/images"
 	"github.com/discuitnet/discuit/internal/ratelimits"
+	"github.com/discuitnet/discuit/internal/search"
 	"github.com/discuitnet/discuit/internal/sessions"
 	"github.com/discuitnet/discuit/internal/uid"
 	"github.com/discuitnet/discuit/internal/utils"
@@ -67,9 +68,11 @@ type Server struct {
 	http500LoggerFile *os.File
 
 	webPushVAPIDKeys core.VAPIDKeys
+
+	searchEngine search.SearchEngine
 }
 
-func New(db *sql.DB, conf *config.Config) (*Server, error) {
+func New(db *sql.DB, conf *config.Config, searchEngine search.SearchEngine) (*Server, error) {
 	r := mux.NewRouter()
 
 	redisStore, err := sessions.NewRedisStore("tcp", conf.RedisAddress, conf.SessionCookieName)
@@ -90,6 +93,8 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 		config:       conf,
 		reactPath:    "./ui/dist/",
 		reactIndex:   "index.html",
+
+		searchEngine: searchEngine,
 	}
 
 	if keys, err := core.GetApplicationVAPIDKeys(context.Background(), db); err != nil {

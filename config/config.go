@@ -27,9 +27,10 @@ type Config struct {
 	DBName     string `yaml:"dbName"`
 
 	// MeiliSearch credentials.
-	MeiliEnabled bool   `yaml:"meiliEnabled"`
-	MeiliHost    string `yaml:"meiliHost"`
-	MeiliKey     string `yaml:"meiliKey"`
+	SearchEnabled bool   `yaml:"searchEnabled"`
+	SearchEngine  string `yaml:"searchEngine"`
+	MeiliHost     string `yaml:"meiliHost"`
+	MeiliKey      string `yaml:"meiliKey"`
 
 	SessionCookieName string `yaml:"sessionCookieName"`
 
@@ -92,7 +93,8 @@ func Parse(path string) (*Config, error) {
 		PaginationLimitMax: 50,
 		DefaultFeedSort:    core.FeedSortHot,
 		MaxImageSize:       25 * (1 << 20),
-		MeiliEnabled:       false,
+		SearchEngine:       "meilisearch",
+		SearchEnabled:      false,
 		MaxImagesPerPost:   10,
 
 		// Required fields:
@@ -114,6 +116,12 @@ func Parse(path string) (*Config, error) {
 		"DISCUIT_DB_USER":     &c.DBUser,
 		"DISCUIT_DB_PASSWORD": &c.DBPassword,
 		"DISCUIT_DB_NAME":     &c.DBName,
+
+		// Search engine.
+		"DISCUIT_SEARCH_ENABLED": &c.SearchEnabled,
+		"DISCUIT_SEARCH_ENGINE":  &c.SearchEngine,
+		"DISCUIT_MEILI_HOST":     &c.MeiliHost,
+		"DISCUIT_MEILI_KEY":      &c.MeiliKey,
 
 		"DISCUIT_SESSION_COOKIE_NAME": &c.SessionCookieName,
 

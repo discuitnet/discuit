@@ -1,4 +1,4 @@
-package meilisearch
+package search
 
 import (
 	"context"
@@ -13,8 +13,6 @@ import (
 	"github.com/discuitnet/discuit/internal/utils"
 	"github.com/meilisearch/meilisearch-go"
 )
-
-var ValidIndexes = []string{"communities", "users", "posts"}
 
 var CommunityFilterableAttributes = []string{"nsfw", "no_members", "created_at"}
 var UsersFilterableAttributes = []string{"created_at"}
@@ -75,7 +73,7 @@ type Post struct {
 	CreatedAt int64 `json:"created_at"`
 }
 
-func NewSearchClient(host, key string) *MeiliSearch {
+func NewMeiliSearch(host, key string) *MeiliSearch {
 	return &MeiliSearch{
 		client: meilisearch.NewClient(meilisearch.ClientConfig{
 			Host:   host,
@@ -147,7 +145,7 @@ func (c *MeiliSearch) index(indexName string, documents []map[string]interface{}
 	return nil
 }
 
-func (c *MeiliSearch) IndexAllCommunitiesInMeiliSearch(ctx context.Context, db *sql.DB) error {
+func (c *MeiliSearch) IndexAllCommunities(ctx context.Context, db *sql.DB) error {
 	batchSize := 5000 // Define the batch size
 	offset := 0       // Start with an offset of 0
 
@@ -215,7 +213,7 @@ func (c *MeiliSearch) IndexAllCommunitiesInMeiliSearch(ctx context.Context, db *
 	return nil
 }
 
-func (c *MeiliSearch) IndexAllUsersInMeiliSearch(ctx context.Context, db *sql.DB) error {
+func (c *MeiliSearch) IndexAllUsers(ctx context.Context, db *sql.DB) error {
 	batchSize := 5000 // Define the batch size
 	offset := 0       // Start with an offset of 0
 
@@ -288,7 +286,7 @@ func (c *MeiliSearch) IndexAllUsersInMeiliSearch(ctx context.Context, db *sql.DB
 	return nil
 }
 
-func (c *MeiliSearch) IndexAllPostsInMeiliSearch(ctx context.Context, db *sql.DB) error {
+func (c *MeiliSearch) IndexAllPosts(ctx context.Context, db *sql.DB) error {
 	batchSize := 5000 // Define the batch size
 	offset := 0       // Start with an offset of 0
 
@@ -365,7 +363,7 @@ func (c *MeiliSearch) IndexAllPostsInMeiliSearch(ctx context.Context, db *sql.DB
 	return nil
 }
 
-func (c *MeiliSearch) Search(index string, query string, sort []string) (*meilisearch.SearchResponse, error) {
+func (c *MeiliSearch) Search(index string, query string, sort []string) (*SearchResults, error) {
 	searchResponse, err := c.client.Index(index).Search(query, &meilisearch.SearchRequest{
 		Limit: 10,
 		Sort:  sort,
@@ -373,7 +371,20 @@ func (c *MeiliSearch) Search(index string, query string, sort []string) (*meilis
 	if err != nil {
 		return nil, err
 	}
-	return searchResponse, nil
+
+	sr := SearchResults{
+		Hits:               searchResponse.Hits,
+		EstimatedTotalHits: searchResponse.EstimatedTotalHits,
+		Offset:             searchResponse.Offset,
+		Limit:              searchResponse.Limit,
+		ProcessingTimeMs:   searchResponse.ProcessingTimeMs,
+		TotalHits:          searchResponse.TotalHits,
+		HitsPerPage:        searchResponse.HitsPerPage,
+		Page:               searchResponse.Page,
+		TotalPages:         searchResponse.TotalPages,
+	}
+
+	return &sr, nil
 }
 
 func (c *MeiliSearch) ResetIndex(ctx context.Context, indexName string) error {
@@ -411,13 +422,12 @@ func (c *MeiliSearch) GarbageCollect(ctx context.Context) error {
 	return nil
 }
 
-func CommunityUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *config.Config, comm *core.Community) {
-	if !config.MeiliEnabled {
+func (c *MeiliSearch) CommunityUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *config.Config, comm *core.Community) {
+	if !config.SearchEnabled {
 		return
 	}
 
-	client := NewSearchClient(config.MeiliHost, config.MeiliKey)
-	err := client.UpdateOrCreateDocument(ctx, "communities", Community{
+	err := c.UpdateOrCreateDocument(ctx, "communities", Community{
 		ID:         comm.ID,
 		Name:       comm.Name,
 		ParsedName: utils.BreakUpOnCapitals(comm.Name),
@@ -431,12 +441,12 @@ func CommunityUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *confi
 	}
 }
 
-func UserUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *config.Config, user *core.User) {
-	if !config.MeiliEnabled {
+func (c *MeiliSearch) UserUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *config.Config, user *core.User) {
+	if !config.SearchEnabled {
 		return
 	}
 
-	client := NewSearchClient(config.MeiliHost, config.MeiliKey)
+	client := c
 	err := client.UpdateOrCreateDocument(ctx, "users", User{
 		ID:                user.ID,
 		Username:          user.Username,
@@ -450,12 +460,12 @@ func UserUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *config.Con
 	}
 }
 
-func PostUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *config.Config, post *core.Post) {
-	if !config.MeiliEnabled {
+func (c *MeiliSearch) PostUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *config.Config, post *core.Post) {
+	if !config.SearchEnabled {
 		return
 	}
 
-	client := NewSearchClient(config.MeiliHost, config.MeiliKey)
+	client := c
 	err := client.UpdateOrCreateDocument(ctx, "posts", Post{
 		ID:   post.ID,
 		Type: post.Type,
@@ -478,36 +488,36 @@ func PostUpdateOrCreateDocumentIfEnabled(ctx context.Context, config *config.Con
 	}
 }
 
-func CommunityDeleteDocumentIfEnabled(ctx context.Context, config *config.Config, commID string) {
-	if !config.MeiliEnabled {
+func (c *MeiliSearch) CommunityDeleteDocumentIfEnabled(ctx context.Context, config *config.Config, commID string) {
+	if !config.SearchEnabled {
 		return
 	}
 
-	client := NewSearchClient(config.MeiliHost, config.MeiliKey)
+	client := c
 	err := client.DeleteDocument(ctx, "communities", commID)
 	if err != nil {
 		log.Printf("Error deleting document in MeiliSearch: %v", err)
 	}
 }
 
-func UserDeleteDocumentIfEnabled(ctx context.Context, config *config.Config, userID string) {
-	if !config.MeiliEnabled {
+func (c *MeiliSearch) UserDeleteDocumentIfEnabled(ctx context.Context, config *config.Config, userID string) {
+	if !config.SearchEnabled {
 		return
 	}
 
-	client := NewSearchClient(config.MeiliHost, config.MeiliKey)
+	client := c
 	err := client.DeleteDocument(ctx, "users", userID)
 	if err != nil {
 		log.Printf("Error deleting document in MeiliSearch: %v", err)
 	}
 }
 
-func PostDeleteDocumentIfEnabled(ctx context.Context, config *config.Config, postID string) {
-	if !config.MeiliEnabled {
+func (c *MeiliSearch) PostDeleteDocumentIfEnabled(ctx context.Context, config *config.Config, postID string) {
+	if !config.SearchEnabled {
 		return
 	}
 
-	client := NewSearchClient(config.MeiliHost, config.MeiliKey)
+	client := c
 	err := client.DeleteDocument(ctx, "posts", postID)
 	if err != nil {
 		log.Printf("Error deleting document in MeiliSearch: %v", err)
