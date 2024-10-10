@@ -26,7 +26,7 @@ func Before(c *cli.Context) error {
 		log.Fatal("Error parsing config file: ", err)
 	}
 
-	if os.Args[1] != "inject-config" {
+	if len(os.Args) > 1 && os.Args[1] != "inject-config" {
 		db := openDatabase(conf.DBAddr, conf.DBUser, conf.DBPassword, conf.DBName)
 		c.Context = context.WithValue(c.Context, "db", db)
 	}
