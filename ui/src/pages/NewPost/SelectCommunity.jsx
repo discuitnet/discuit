@@ -41,7 +41,7 @@ const SelectCommunity = ({ initial = '', onFocus, onChange, disabled = false }) 
     useCallback(() => {
       (async function () {
         try {
-          if (value !== '') {
+          if (value !== '' && import.meta.env.VITE_SEARCHENABLED) {
             const communities = await mfetchjson(`/api/search?q=${value}&index=communities`);
             const mapped = communities.hits.map((c) => {
               if (c.no_members) c.noMembers = c.no_members;
