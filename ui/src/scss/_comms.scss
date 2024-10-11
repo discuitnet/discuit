@@ -23,9 +23,12 @@
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
+        margin-bottom: var(--gap);
         @include mixins.mobile() {
             padding: var(--gap);
             background-color: transparent;
+            box-shadow: none;
+            border: none;
         }
     }
     .home-welcome {
@@ -55,7 +58,6 @@
             border-bottom: var(--seperator);
             color: inherit;
             text-decoration: unset;
-            margin-top: var(--gap);
             @include mixins.mobile() {
                 margin: 0;
                 padding: 18px 20px;
