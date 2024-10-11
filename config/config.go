@@ -62,6 +62,9 @@ type Config struct {
 	// The location where images are saved on disk.
 	ImagesFolderPath string `yaml:"imagesFolderPath"`
 
+	// Password requirements.
+	RequireMinEntropy bool    `yaml:"requireMinEntropy"`
+	MinEntropy        float64 `yaml:"minEntropy"`
 	MaxImagesPerPost int `yaml:"maxImagesPerPost"`
 
 	// For the front-end:
@@ -87,6 +90,8 @@ func Parse(path string) (*Config, error) {
 		PaginationLimitMax: 50,
 		DefaultFeedSort:    core.FeedSortHot,
 		MaxImageSize:       25 * (1 << 20),
+		RequireMinEntropy:  false,
+		MinEntropy:         60,
 		MaxImagesPerPost:   10,
 
 		// Required fields:
