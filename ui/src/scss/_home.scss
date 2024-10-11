@@ -734,29 +734,8 @@ html.theme-dark {
     }
 }
 
-.post-skeleton {
+.feed-skeleton {
     display: flex;
-    .post-votes-skeleton {
-        .post-votes-arrow {
-            color: rgba(var(--base-fg), 0.08);
-            cursor: unset;
-            &:hover {
-                color: rgba(var(--base-fg), 0.08);
-            }
-        }
-    }
-    .skeleton {
-        // margin-left: var(--post-card-margin-left);
-        margin-left: var(--post-card-votes-margin);
-    }
-    @include mixins.tablet {
-        .post-votes-skeleton {
-            display: none;
-        }
-        .skeleton {
-            margin-left: 0;
-        }
-    }
 }
 
 .feed {
@@ -805,6 +784,16 @@ html.theme-dark {
 }
 
 .posts-feed {
+    .feed-skeleton {
+        .skeleton {
+            margin-left: var(--post-card-votes-margin);
+        }
+        @include mixins.tablet {
+            .skeleton {
+                margin-left: 0;
+            }
+        }
+    }
     .select-bar {
         margin-left: var(--post-card-votes-margin);
         @include mixins.tablet {

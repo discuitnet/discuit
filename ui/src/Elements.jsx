@@ -3,11 +3,11 @@ import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Button, { ButtonClose, ButtonMore } from './components/Button';
 import Dropdown from './components/Dropdown';
+import FeedSkeleton from './components/Feed/FeedSkeleton';
 import { Form, FormField, FormSection } from './components/Form';
 import Input, { Checkbox, InputPassword, Radio, useInputMaxLength } from './components/Input';
 import Modal from './components/Modal';
 import ModalConfirm from './components/Modal/ModalConfirm';
-import PostCardSkeleton from './components/PostCard/PostCardSkeleton';
 import Spinner from './components/Spinner';
 import { snackAlert } from './slices/mainSlice';
 import { SVGSettings } from './SVGs';
@@ -347,7 +347,7 @@ function Elements() {
         culpa? Pariatur, harum!
       </p>
       <div style={{ width: '100%' }}>
-        <PostCardSkeleton />
+        <FeedSkeleton />
       </div>
     </div>
   );

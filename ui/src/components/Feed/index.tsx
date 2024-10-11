@@ -12,9 +12,9 @@ import {
   selectFeedInViewItems,
 } from '../../slices/feedsSlice';
 import { snackAlertError } from '../../slices/mainSlice';
-import PostCardSkeleton from '../PostCard/PostCardSkeleton';
 import Spinner from '../Spinner';
 import FeedItemComponent from './FeedItem';
+import FeedSkeleton from './FeedSkeleton';
 
 export interface FeedProps<FeedItemType> {
   className?: string;
@@ -26,6 +26,7 @@ export interface FeedProps<FeedItemType> {
   onRenderItem: (item: FeedItem, index: number) => React.ReactNode;
   banner?: React.ReactNode;
   emptyItemsText?: string;
+  skeletons?: React.ReactNode;
 }
 
 function Feed<FeedItemType>({
@@ -36,6 +37,7 @@ function Feed<FeedItemType>({
   onRenderItem,
   banner,
   emptyItemsText = 'Nothing to show',
+  skeletons,
 }: FeedProps<FeedItemType>) {
   const windowHeight = document.documentElement.clientHeight;
   const rootMargin = Math.round(Math.max(windowHeight * 0.35, 200));
@@ -148,13 +150,19 @@ function Feed<FeedItemType>({
   if (loading) {
     return (
       <div className={_className}>
-        <PostCardSkeleton />
-        <PostCardSkeleton />
-        <PostCardSkeleton />
-        <PostCardSkeleton />
-        <PostCardSkeleton />
-        <PostCardSkeleton />
-        <PostCardSkeleton />
+        {skeletons ? (
+          skeletons
+        ) : (
+          <>
+            <FeedSkeleton compact={compact} />
+            <FeedSkeleton compact={compact} />
+            <FeedSkeleton compact={compact} />
+            <FeedSkeleton compact={compact} />
+            <FeedSkeleton compact={compact} />
+            <FeedSkeleton compact={compact} />
+            <FeedSkeleton compact={compact} />
+          </>
+        )}
       </div>
     );
   }
