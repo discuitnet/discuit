@@ -22,6 +22,7 @@ import { listAdded, selectList } from '../../slices/listsSlice';
 import { listsAdded, snackAlertError } from '../../slices/mainSlice';
 import { selectUser } from '../../slices/usersSlice';
 import NotFound from '../NotFound';
+import { isInfiniteScrollingDisabled } from '../Settings/devicePrefs';
 import { MemorizedComment } from '../User/Comment';
 
 const List = () => {
@@ -187,7 +188,12 @@ const List = () => {
         <div className="lists-feed">
           {/*<PostsFeed feedType="all" />*/}
 
-          <Feed feedId={feedEndpoint} onFetch={handleFeedFetch} onRenderItem={handleRenderItem} />
+          <Feed
+            feedId={feedEndpoint}
+            onFetch={handleFeedFetch}
+            onRenderItem={handleRenderItem}
+            infiniteScrollingDisabled={isInfiniteScrollingDisabled()}
+          />
         </div>
       </main>
       <aside className="sidebar-right">

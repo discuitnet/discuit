@@ -18,6 +18,7 @@ import { FeedItem } from '../../slices/feedsSlice';
 import { snackAlertError } from '../../slices/mainSlice';
 import { selectUser, userAdded } from '../../slices/usersSlice';
 import NotFound from '../NotFound';
+import { isInfiniteScrollingDisabled } from '../Settings/devicePrefs';
 import BadgesList from './BadgesList';
 import BanUserButton from './BanUserButton';
 import { MemorizedComment } from './Comment';
@@ -503,9 +504,11 @@ const User = () => {
           )}
           {tab === 'content' && (
             <Feed
+              className="posts-feed"
               feedId={feedId}
               onFetch={handleFeedFetch}
               onRenderItem={handleRenderItem}
+              infiniteScrollingDisabled={isInfiniteScrollingDisabled()}
               compact={compact}
             />
           )}

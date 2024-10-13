@@ -19,6 +19,7 @@ import { FeedItem } from '../slices/feedsSlice';
 import { loginPromptToggled, snackAlert, snackAlertError } from '../slices/mainSlice';
 import LoginForm from '../views/LoginForm';
 import JoinButton from './Community/JoinButton';
+import { isInfiniteScrollingDisabled } from './Settings/devicePrefs';
 
 const prepareText = (isMobile = false) => {
   const x = isMobile ? 'by filling out the form below' : 'by clicking on the button below';
@@ -71,6 +72,7 @@ const AllCommunities = () => {
             feedId="all-communities"
             onFetch={fetchCommunities}
             onRenderItem={handleRenderItem}
+            infiniteScrollingDisabled={isInfiniteScrollingDisabled()}
           />
         </div>
       </main>
