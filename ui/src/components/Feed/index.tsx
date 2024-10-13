@@ -190,7 +190,7 @@ function Feed<FeedItemType>({
       )}
       {infiniteScrollingDisabled && hasMore && (
         <div className="feed-load-more">
-          <Button loading={fetching} onClick={handleLoadMoreClick}>
+          <Button disabled={fetching} onClick={handleLoadMoreClick}>
             More
           </Button>
         </div>

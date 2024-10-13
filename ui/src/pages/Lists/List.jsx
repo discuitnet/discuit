@@ -189,6 +189,7 @@ const List = () => {
           {/*<PostsFeed feedType="all" />*/}
 
           <Feed
+            className="posts-feed"
             feedId={feedEndpoint}
             onFetch={handleFeedFetch}
             onRenderItem={handleRenderItem}
