@@ -168,6 +168,9 @@ const User = () => {
 
   const { lists, error: listsError } = useFetchUsersLists(username, false);
 
+  const layout = useSelector((state) => state.main.feedLayout);
+  const compact = layout === 'compact';
+
   if (userLoading === 'notfound') {
     return <NotFound />;
   }
@@ -204,7 +207,13 @@ const User = () => {
 
   const handleRenderItem = (item) => {
     if (item.type === 'post') {
-      return <MemorizedPostCard initialPost={item.item} disableEmbeds={user && user.embedsOff} />;
+      return (
+        <MemorizedPostCard
+          initialPost={item.item}
+          disableEmbeds={user && user.embedsOff}
+          compact={compact}
+        />
+      );
     }
     if (item.type === 'comment') {
       return <MemorizedComment comment={item.item} />;
@@ -493,7 +502,12 @@ const User = () => {
             />
           )}
           {tab === 'content' && (
-            <Feed feedId={feedId} onFetch={handleFeedFetch} onRenderItem={handleRenderItem} />
+            <Feed
+              feedId={feedId}
+              onFetch={handleFeedFetch}
+              onRenderItem={handleRenderItem}
+              compact={compact}
+            />
           )}
           {tab === 'about' && (
             <>

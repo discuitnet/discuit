@@ -10,6 +10,7 @@ import ModalConfirm from './components/Modal/ModalConfirm';
 import PostCardSkeleton from './components/PostCard/PostCardSkeleton';
 import Spinner from './components/Spinner';
 import { snackAlert } from './slices/mainSlice';
+import { SVGSettings } from './SVGs';
 
 function Elements() {
   const dispatch = useDispatch();
@@ -159,6 +160,7 @@ function Elements() {
         <Section title="Icon buttons">
           <Button icon={icons.help} />
           <Button icon={icons.trash} />
+          <Button icon={<SVGSettings />} />
         </Section>
         <Section title="Button loading state">
           <Button color="main" loading>

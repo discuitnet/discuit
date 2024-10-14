@@ -611,8 +611,8 @@
                 padding: 0 4px;
                 font-weight: 600;
                 svg {
-                    width: 15px;
-                    height: 15px;
+                    width: 18px;
+                    height: 18px;
                 }
             }
             .post-comment-buttons-vote {
@@ -621,7 +621,7 @@
                 &:first-child {
                     margin-left: 0;
                 }
-                &.is-up {
+                &.is-down {
                     svg {
                         transform: rotate(180deg);
                     }

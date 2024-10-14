@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { useEffect, useRef, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useDispatch, useSelector } from 'react-redux';
@@ -16,6 +17,8 @@ import Spinner from '../Spinner';
 import FeedItemComponent from './FeedItem';
 
 export interface FeedProps<FeedItemType> {
+  className?: string;
+  compact?: boolean;
   feedId: string;
   onFetch: (
     next?: string | null
@@ -26,6 +29,8 @@ export interface FeedProps<FeedItemType> {
 }
 
 function Feed<FeedItemType>({
+  className,
+  compact = false,
   feedId,
   onFetch,
   onRenderItem,
@@ -138,9 +143,11 @@ function Feed<FeedItemType>({
     return nodes;
   };
 
+  const _className = clsx('feed', compact && 'is-compact', className);
+
   if (loading) {
     return (
-      <div className="feed">
+      <div className={_className}>
         <PostCardSkeleton />
         <PostCardSkeleton />
         <PostCardSkeleton />
@@ -153,7 +160,7 @@ function Feed<FeedItemType>({
   }
 
   return (
-    <div className="feed">
+    <div className={_className}>
       {onRenderItems()}
       {hasMore && (
         <div className="feed-spinner" ref={spinnerRef}>

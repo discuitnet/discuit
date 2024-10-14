@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { omitWWWFromHostname, stringCount } from '../../helper';
 import { useIsMobile } from '../../hooks';
+import { SVGExternalLink } from '../../SVGs';
 import Link from '../Link';
 import MarkdownBody from '../MarkdownBody';
 import PostImageGallery from '../PostImageGallery';
@@ -18,7 +19,7 @@ const PostCard = ({
   initialPost,
   hideVoting = false,
   openInTab = false,
-  compact = false,
+  compact = true,
   inModTools = false,
   disableEmbeds = false,
   onRemoveFromList = null,
@@ -70,8 +71,61 @@ const PostCard = ({
   const { isEmbed: _isEmbed, render: Embed, url: embedURL } = getEmbedComponent(post.link);
   const isEmbed = !disableEmbeds && _isEmbed;
 
-  const showImage = !post.deletedContent && post.type === 'image' && post.image;
+  const showImage = !compact && !post.deletedContent && post.type === 'image' && post.image;
   const imageLoadingStyle = index < 3 ? 'eager' : 'lazy';
+
+  const renderThumbnail = () => {
+    if (!(compact || (post.type === 'link' && !isEmbed))) {
+      return null;
+    }
+    /*
+    if (post.type === 'text') {
+      return (
+        <div className="post-card-link-image-text">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M21 7.75H3C2.59 7.75 2.25 7.41 2.25 7C2.25 6.59 2.59 6.25 3 6.25H21C21.41 6.25 21.75 6.59 21.75 7C21.75 7.41 21.41 7.75 21 7.75Z"
+              fill="currentColor"
+            />
+            <path
+              d="M21 12.75H3C2.59 12.75 2.25 12.41 2.25 12C2.25 11.59 2.59 11.25 3 11.25H21C21.41 11.25 21.75 11.59 21.75 12C21.75 12.41 21.41 12.75 21 12.75Z"
+              fill="currentColor"
+            />
+            <path
+              d="M21 17.75H3C2.59 17.75 2.25 17.41 2.25 17C2.25 16.59 2.59 16.25 3 16.25H21C21.41 16.25 21.75 16.59 21.75 17C21.75 17.41 21.41 17.75 21 17.75Z"
+              fill="currentColor"
+            />
+          </svg>
+        </div>
+      );
+    }
+    */
+    let image;
+    if (post.type === 'link') {
+      if (post.link && post.link.image) {
+        image = post.link.image;
+      }
+    } else if (post.type === 'image') {
+      image = post.image;
+    } else if (post.type === 'images') {
+      image = post.images[0];
+    }
+    if (!image) {
+      return null;
+    }
+    return (
+      <Link className="post-card-link-image" to={postURL} target={target}>
+        <LinkImage image={image} loading={imageLoadingStyle} isImagePost={post.type !== 'link'} />
+        {compact && post.type === 'link' && <SVGExternalLink className="is-link-svg" />}
+      </Link>
+    );
+  };
 
   return (
     <div
@@ -90,7 +144,12 @@ const PostCard = ({
         onAuxClick={handleAuxClick}
       >
         <div className="post-card-heading">
-          <PostCardHeadingDetails post={post} target={target} onRemoveFromList={onRemoveFromList} />
+          <PostCardHeadingDetails
+            post={post}
+            target={target}
+            onRemoveFromList={onRemoveFromList}
+            compact={compact}
+          />
         </div>
         <div className={'post-card-body' + (isDomainHovering ? ' is-domain-hover' : '')}>
           <div className="post-card-title">
@@ -120,14 +179,10 @@ const PostCard = ({
                 </a>
               )}
             </div>
-            {showLink && !isEmbed && post.link.image && (
-              <Link className="post-card-link-image" to={postURL} target={target}>
-                <LinkImage link={post.link} loading={imageLoadingStyle} />
-              </Link>
-            )}
+            {renderThumbnail()}
           </div>
-          {isEmbed && <Embed url={embedURL} />}
-          {post.type === 'text' && (
+          {!compact && isEmbed && <Embed url={embedURL} />}
+          {!compact && post.type === 'text' && (
             <div className="post-card-text">
               <ShowMoreBox maxHeight="200px">
                 <MarkdownBody noLinks>{post.body}</MarkdownBody>

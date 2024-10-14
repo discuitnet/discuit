@@ -1,5 +1,6 @@
 import { ThunkDispatch } from 'redux-thunk';
 import { APIError, mfetch, mfetchjson } from '../helper';
+import { getDevicePreference, setDevicePreference } from '../pages/Settings/devicePrefs';
 import { Community, List, Mute, Mutes, Notification, User } from '../serverTypes';
 import { AppDispatch, RootState, UnknownAction } from '../store';
 import { communitiesAdded } from './communitiesSlice';
@@ -53,6 +54,7 @@ export interface MainState {
     toSaveItemType: string | null;
   };
   settingsChanged: number; // A counter to serve as a signal for when user settings change.
+  feedLayout: string;
 }
 
 const initialNotifications = {
@@ -102,6 +104,7 @@ const initialState: MainState = {
     toSaveItemType: null,
   },
   settingsChanged: 0,
+  feedLayout: (getDevicePreference('feed_layout') ?? 'card') as string,
 };
 
 export default function mainReducer(
@@ -430,6 +433,13 @@ export default function mainReducer(
         settingsChanged: state.settingsChanged + 1,
       };
     }
+    case 'main/feedLayoutChanged': {
+      setDevicePreference('feed_layout', action.payload);
+      return {
+        ...state,
+        feedLayout: action.payload as string,
+      };
+    }
     default:
       return state;
   }
@@ -725,4 +735,8 @@ export const saveToListModalClosed = () => {
 
 export const settingsChanged = () => {
   return { type: 'main/settingsChanged' };
+};
+
+export const feedLayoutChanged = (newLayout: string) => {
+  return { type: 'main/feedLayoutChanged', payload: newLayout };
 };

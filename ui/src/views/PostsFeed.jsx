@@ -15,11 +15,11 @@ const sortOptions = [
   { text: 'Hot', id: 'hot' },
   { text: 'Activity', id: 'activity' },
   { text: 'New', id: 'latest' },
-  { text: 'Day', id: 'day' },
-  { text: 'Week', id: 'week' },
-  { text: 'Month', id: 'month' },
-  { text: 'Year', id: 'year' },
-  // { text: 'All', id: 'all' },
+  { text: 'Top Day', id: 'day' },
+  { text: 'Top Week', id: 'week' },
+  { text: 'Top Month', id: 'month' },
+  { text: 'Top Year', id: 'year' },
+  { text: 'Top All', id: 'all' },
 ];
 const sortDefault = import.meta.env.VITE_DEFAULTFEEDSORT;
 const baseURL = '/api/posts';
@@ -112,12 +112,16 @@ const PostsFeed = ({ feedType = 'all', communityId = null }) => {
     dispatch(feedReloaded(feedId));
   };
 
+  const layout = useSelector((state) => state.main.feedLayout);
+  const compact = layout === 'compact';
+
   const handleRenderItem = (item, index) => {
     return (
       <MemorizedPostCard
         initialPost={item.item}
         index={index}
         disableEmbeds={user && user.embedsOff}
+        compact={compact}
       />
     );
   };
@@ -160,6 +164,7 @@ const PostsFeed = ({ feedType = 'all', communityId = null }) => {
       <SelectBar name={name} options={sortOptions} value={sort} onChange={handleSortChange} />
       <Feed
         feedId={feedId}
+        compact={compact}
         onFetch={handleFetch}
         onRenderItem={handleRenderItem}
         banner={!loggedIn ? <WelcomeBanner className="is-m is-in-feed" /> : null}
