@@ -100,6 +100,7 @@ const List = () => {
           initialPost={item.item}
           disableEmbeds={user && user.embedsOff}
           onRemoveFromList={viewerListOwner ? () => handleRemoveFromList(item.item, 'post') : null}
+          compact={compact}
         />
       );
     }
@@ -141,6 +142,9 @@ const List = () => {
       dispatch(snackAlertError(error));
     }
   };
+
+  const layout = useSelector((state) => state.main.feedLayout);
+  const compact = layout === 'compact';
 
   if (listLoading !== 'loaded' || !list) {
     if (listLoading === 'notfound') {
@@ -187,7 +191,13 @@ const List = () => {
         <div className="lists-feed">
           {/*<PostsFeed feedType="all" />*/}
 
-          <Feed feedId={feedEndpoint} onFetch={handleFeedFetch} onRenderItem={handleRenderItem} />
+          <Feed
+            className="posts-feed"
+            feedId={feedEndpoint}
+            onFetch={handleFeedFetch}
+            onRenderItem={handleRenderItem}
+            compact={compact}
+          />
         </div>
       </main>
       <aside className="sidebar-right">

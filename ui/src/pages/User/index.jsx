@@ -503,6 +503,7 @@ const User = () => {
           )}
           {tab === 'content' && (
             <Feed
+              className="posts-feed"
               feedId={feedId}
               onFetch={handleFeedFetch}
               onRenderItem={handleRenderItem}
