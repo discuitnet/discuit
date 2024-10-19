@@ -54,7 +54,7 @@ const Rules = ({ community }) => {
     setRuleEditing(rule);
     setIsEditRule(true);
     setRule(rule.rule);
-    setDescription(rule.description);
+    setDescription(rule.description || '');
     setEditOpen(true);
   };
 
