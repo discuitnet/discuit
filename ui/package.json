@@ -12,7 +12,8 @@
     "preview": "vite preview",
     "format": "prettier . --write",
     "generate-yaml": "node scripts/generate-yaml.js",
-    "copy-sw": "node scripts/copy-sw.js"
+    "copy-sw": "node scripts/copy-sw.js",
+    "clean": "rm -rf dist/*"
   },
   "dependencies": {
     "clsx": "^2.1.1",

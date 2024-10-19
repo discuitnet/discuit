@@ -67,7 +67,7 @@ const shouldCache = (request) => {
   const url = new URL(request.url, `${self.location.protocol}//${self.location.host}`);
   const { pathname } = url;
 
-  if (pathname.startsWith('/app.') && endsWithOneOf(pathname, ['.js', '.css'])) {
+  if (pathname.startsWith('/assets/') && endsWithOneOf(pathname, ['.js', '.css'])) {
     return true;
   }
 
