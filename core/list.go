@@ -310,8 +310,14 @@ func (l *List) AddItem(ctx context.Context, db *sql.DB, targetType ContentType, 
 
 func (l *List) DeleteItem(ctx context.Context, db *sql.DB, targetType ContentType, targetID uid.ID) error {
 	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
-		_, err := tx.ExecContext(ctx, "DELETE FROM list_items WHERE list_id = ? AND target_id = ? AND target_type = ?", l.ID, targetID, targetType)
-		if err != nil {
+		var itemID int
+		if err := tx.QueryRow("SELECT id FROM list_items WHERE list_id = ? AND target_id = ? AND target_type = ?", l.ID, targetID, targetType).Scan(&itemID); err != nil {
+			if err == sql.ErrNoRows {
+				return nil
+			}
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, "DELETE FROM list_items WHERE id = ?", itemID); err != nil {
 			return err
 		}
 		if _, err := tx.ExecContext(ctx, "UPDATE lists SET num_items = num_items - 1 WHERE id = ?", l.ID); err != nil {
@@ -493,7 +499,7 @@ func GetListItems(ctx context.Context, db *sql.DB, listID, limit int, sort ListI
 
 func (li *ListItem) Delete(ctx context.Context, db *sql.DB) error {
 	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(ctx, "UPDATE lists SET num_items = num_items - 1 WHERE id = ?", li.ListID); err != nil {
+		if _, err := tx.ExecContext(ctx, "UPDATE lists SET num_items = num_items - (SELECT COUNT(*) FROM list_items WHERE id = ?) WHERE id = ?", li.ID, li.ListID); err != nil {
 			return err
 		}
 		if _, err := tx.ExecContext(ctx, "DELETE FROM list_items WHERE id = ?", li.ID); err != nil {
