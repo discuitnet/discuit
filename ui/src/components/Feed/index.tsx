@@ -12,6 +12,7 @@ import {
   selectFeedInViewItems,
 } from '../../slices/feedsSlice';
 import { snackAlertError } from '../../slices/mainSlice';
+import Button from '../Button';
 import Spinner from '../Spinner';
 import FeedItemComponent from './FeedItem';
 import FeedSkeleton from './FeedSkeleton';
@@ -27,6 +28,7 @@ export interface FeedProps<FeedItemType> {
   banner?: React.ReactNode;
   emptyItemsText?: string;
   skeletons?: React.ReactNode;
+  infiniteScrollingDisabled?: boolean;
 }
 
 function Feed<FeedItemType>({
@@ -38,6 +40,7 @@ function Feed<FeedItemType>({
   banner,
   emptyItemsText = 'Nothing to show',
   skeletons,
+  infiniteScrollingDisabled = false,
 }: FeedProps<FeedItemType>) {
   const windowHeight = document.documentElement.clientHeight;
   const rootMargin = Math.round(Math.max(windowHeight * 0.35, 200));
@@ -51,13 +54,15 @@ function Feed<FeedItemType>({
   const hasMore = feed ? Boolean(feed.next) : false;
   const [, /*error*/ setError] = useState<unknown>(null);
 
-  const loadingRef = useRef(false);
+  const [fetching, setFetching] = useState(false);
+  const fetchingRef = useRef(false);
   const fetchFeedAndDispatch = async (next: string | null) => {
-    if (loadingRef.current) {
+    if (fetchingRef.current) {
       return;
     }
     try {
-      loadingRef.current = true;
+      setFetching(true);
+      fetchingRef.current = true;
       const res = await onFetch(next);
       if (res) {
         dispatch(feedUpdated(feedId, res.items, res.next));
@@ -68,7 +73,8 @@ function Feed<FeedItemType>({
       setError(error);
       dispatch(snackAlertError(error));
     } finally {
-      loadingRef.current = false;
+      fetchingRef.current = false;
+      setFetching(false);
     }
   };
 
@@ -78,11 +84,18 @@ function Feed<FeedItemType>({
     }
   }, [feedId, loading]);
 
+  const handleLoadMoreClick = () => {
+    if (feed && feed.next) {
+      fetchFeedAndDispatch(feed.next);
+    }
+  };
+
   useEffect(() => {
+    if (infiniteScrollingDisabled) {
+      return;
+    }
     if (!loading && hasMore && spinnerInView) {
-      if (feed && feed.next) {
-        fetchFeedAndDispatch(feed.next);
-      }
+      handleLoadMoreClick();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, hasMore, spinnerInView]);
@@ -170,9 +183,16 @@ function Feed<FeedItemType>({
   return (
     <div className={_className}>
       {onRenderItems()}
-      {hasMore && (
+      {!infiniteScrollingDisabled && hasMore && (
         <div className="feed-spinner" ref={spinnerRef}>
           <Spinner />
+        </div>
+      )}
+      {infiniteScrollingDisabled && hasMore && (
+        <div className="feed-load-more">
+          <Button disabled={fetching} onClick={handleLoadMoreClick}>
+            More
+          </Button>
         </div>
       )}
       {items.length > 0 && !hasMore && <div className="feed-no-more">No more posts</div>}

@@ -765,6 +765,12 @@ html.theme-dark {
         align-items: center;
         justify-content: center;
     }
+    .feed-load-more {
+        margin-left: var(--post-card-votes-margin);
+        button {
+            width: 100%;
+        }
+    }
     .feed-no-more,
     .feed-none,
     .feed-spinner {

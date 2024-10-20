@@ -38,3 +38,7 @@ export function setDevicePreference(name: string, value: any) {
   localStorage.setItem(localStorageKey, JSON.stringify(prefs));
   cache = null;
 }
+
+export function isInfiniteScrollingDisabled() {
+  return getDevicePreference('infinite_scrolling_disabled') === 'true';
+}

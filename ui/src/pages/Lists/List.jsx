@@ -22,6 +22,7 @@ import { listAdded, selectList } from '../../slices/listsSlice';
 import { listsAdded, snackAlertError } from '../../slices/mainSlice';
 import { selectUser } from '../../slices/usersSlice';
 import NotFound from '../NotFound';
+import { isInfiniteScrollingDisabled } from '../Settings/devicePrefs';
 import { MemorizedComment } from '../User/Comment';
 
 const List = () => {
@@ -196,6 +197,7 @@ const List = () => {
             feedId={feedEndpoint}
             onFetch={handleFeedFetch}
             onRenderItem={handleRenderItem}
+            infiniteScrollingDisabled={isInfiniteScrollingDisabled()}
             compact={compact}
           />
         </div>

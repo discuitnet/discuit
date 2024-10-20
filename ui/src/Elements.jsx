@@ -19,12 +19,10 @@ function Elements() {
 
   const [iwcValue, iwcHandleChange] = useInputMaxLength(1000);
 
-  const [background, setBackground] = useState('#fff');
-  const handleToggleBackground = () => {
-    setBackground((b) => (b === '#fff' ? 'transparent' : '#fff'));
-  };
+  const [transparentBackground, setTransparentBackground] = useState(false);
+  const handleToggleBackground = () => setTransparentBackground((b) => !b);
   const style = {
-    background,
+    background: transparentBackground ? 'transparent' : 'var(--color-bg)',
   };
 
   const icons = {

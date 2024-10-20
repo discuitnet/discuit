@@ -67,6 +67,9 @@ const Settings = () => {
     custom: 'Custom', // value -> display name
     system: 'System',
   };
+  const [infiniteScrollingDisabed, setInfinitedScrollingDisabled] = useState(
+    getDevicePreference('infinite_scrolling_disabled') === 'true'
+  );
 
   const [changed, resetChanged] = useIsChanged([
     aboutMe /*, email*/,
@@ -77,6 +80,7 @@ const Settings = () => {
     email,
     showUserProfilePictures,
     font,
+    infiniteScrollingDisabed,
   ]);
 
   const applicationServerKey = useSelector((state) => state.main.vapidPublicKey);
@@ -126,6 +130,7 @@ const Settings = () => {
     }
     // Save device preferences first:
     setDevicePreference('font', font);
+    setDevicePreference('infinite_scrolling_disabled', infiniteScrollingDisabed ? 'true' : 'false');
     try {
       const ruser = await mfetchjson(`/api/_settings?action=updateProfile`, {
         method: 'POST',
@@ -370,6 +375,14 @@ const Settings = () => {
                 ))}
               </div>
             </Dropdown>
+          </FormField>
+          <FormField className="is-preference is-switch">
+            <Checkbox
+              variant="switch"
+              label="Enable infinite scrolling"
+              checked={!infiniteScrollingDisabed}
+              onChange={(e) => setInfinitedScrollingDisabled(!e.target.checked)}
+            />
           </FormField>
         </FormSection>
         <FormSection heading="Notifications">
