@@ -849,6 +849,8 @@ func (s *Server) serveSPA(w http.ResponseWriter, r *http.Request) {
 	if path == "/" {
 		serveIndexFile()
 		return
+	} else if path == "/service-worker.js" {
+		w.Header().Add("Cache-Control", "private, max-age=0")
 	}
 
 	fpath := filepath.Join(s.reactPath, path)
