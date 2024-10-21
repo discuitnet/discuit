@@ -63,6 +63,7 @@ const AllCommunities = () => {
       <main>
         <div className="page-comms-header card card-padding">
           <h1>All communities</h1>
+          {/* {import.meta.env.VITE_SEARCHENABLED} */}
           <RequestCommunityButton className="button-main is-m" isMobile>
             New
           </RequestCommunityButton>
