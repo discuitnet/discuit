@@ -770,6 +770,9 @@ html.theme-dark {
         button {
             width: 100%;
         }
+        @include mixins.tablet {
+            margin-left: 0;
+        }
     }
     .feed-no-more,
     .feed-none,
