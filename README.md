@@ -9,6 +9,7 @@ Built with:
 - [React](https://react.dev/): The frontend.
 - [MariaDB](https://en.wikipedia.org/wiki/MariaDB): The main datastore.
 - [Redis](https://redis.io/): For transient data.
+- [Meilisearch](https://meilisearch.com/): For searching and indexing.
 
 ## Getting started
 

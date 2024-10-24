@@ -15,6 +15,7 @@ import (
 	"github.com/discuitnet/discuit/config"
 	"github.com/discuitnet/discuit/core"
 	"github.com/discuitnet/discuit/internal/images"
+	"github.com/discuitnet/discuit/internal/search"
 	"github.com/discuitnet/discuit/internal/uid"
 	"github.com/discuitnet/discuit/server"
 	"github.com/urfave/cli/v2"
@@ -64,7 +65,12 @@ func serve(ctx *cli.Context) error {
 		log.Fatalf("Error creating 'supporter' user badge: %v\n", err)
 	}
 
-	site, err := server.New(db, conf)
+	se := search.SearchEngine(nil)
+	if conf.SearchEnabled {
+		se = ctx.Context.Value("searchEngine").(search.SearchEngine)
+	}
+
+	site, err := server.New(db, conf, se)
 	if err != nil {
 		log.Fatal("Error creating server: ", err)
 	}

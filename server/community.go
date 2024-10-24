@@ -52,6 +52,8 @@ func (s *Server) createCommunity(w *responseWriter, r *request) error {
 		return err
 	}
 
+	s.searchEngine.CommunityUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, comm)
+
 	return w.writeJSON(comm)
 }
 
@@ -202,6 +204,8 @@ func (s *Server) updateCommunity(w *responseWriter, r *request) error {
 		return err
 	}
 
+	s.searchEngine.CommunityUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, comm)
+
 	return w.writeJSON(comm)
 }
 
@@ -244,6 +248,8 @@ func (s *Server) joinCommunity(w *responseWriter, r *request) error {
 	if err != nil {
 		return err
 	}
+
+	s.searchEngine.CommunityUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, community)
 
 	community.ViewerJoined = msql.NewNullBool(!req.Leave)
 	community.ViewerMod = msql.NewNullBool(false)
