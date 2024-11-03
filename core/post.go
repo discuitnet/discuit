@@ -702,6 +702,11 @@ func createPost(ctx context.Context, db *sql.DB, opts *createPostOpts) (*Post, e
 		return nil, err
 	}
 
+	if _, err := tx.ExecContext(ctx, "UPDATE communities SET posts_count = posts_count + 1 WHERE id = ?", opts.community); err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
 	if err = tx.Commit(); err != nil {
 		return nil, err
 	}

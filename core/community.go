@@ -31,6 +31,7 @@ type Community struct {
 	NSFW          bool            `json:"nsfw"`
 	About         msql.NullString `json:"about"`
 	NumMembers    int             `json:"noMembers"`
+	PostsCount    int             `json:"-"` // Including deleted posts
 	ProPic        *images.Image   `json:"proPic"`
 	BannerImage   *images.Image   `json:"bannerImage"`
 	CreatedAt     time.Time       `json:"createdAt"`
@@ -58,6 +59,7 @@ func buildSelectCommunityQuery(where string) string {
 		"communities.nsfw",
 		"communities.about",
 		"communities.no_members",
+		"communities.posts_count",
 		"communities.created_at",
 		"communities.deleted_at",
 	}
@@ -165,6 +167,7 @@ func scanCommunities(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *ui
 			&c.NSFW,
 			&c.About,
 			&c.NumMembers,
+			&c.PostsCount,
 			&c.CreatedAt,
 			&c.DeletedAt,
 		}
@@ -1303,4 +1306,46 @@ func GetCommunityRequests(ctx context.Context, db *sql.DB) ([]*CommunityRequest,
 func DeleteCommunityRequest(ctx context.Context, db *sql.DB, id int) error {
 	_, err := db.ExecContext(ctx, "UPDATE community_requests SET deleted_at = ? WHERE id = ?", time.Now(), id)
 	return err
+}
+
+// DeleteUnusedCommunities deletes communities older than n days with 0 posts in them.
+func DeleteUnusedCommunities(ctx context.Context, db *sql.DB, n uint) error {
+	return msql.Transact(ctx, db, func(tx *sql.Tx) error {
+		where := "WHERE posts_count = 0 AND created_at < ?"
+		args := []any{time.Now().Add(time.Duration(n) * 24 * -1)}
+
+		rows, err := tx.QueryContext(ctx, fmt.Sprintf("SELECT name_lc FROM communities %s", where), args...)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		communities := []string{}
+		for rows.Next() {
+			var name string
+			if err := rows.Scan(&name); err != nil {
+				return err
+			}
+			communities = append(communities, name)
+		}
+
+		var b strings.Builder
+		for i, name := range communities {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			b.WriteString(name)
+		}
+		log.Printf("Deleting communities in progress (deleting %s)\n", b.String())
+
+		if err := rows.Err(); err != nil {
+			return err
+		}
+
+		if _, err := tx.ExecContext(ctx, fmt.Sprintf("DELETE FROM communities %s", where), args...); err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
