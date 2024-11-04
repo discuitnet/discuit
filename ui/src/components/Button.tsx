@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import React, { useRef } from 'react';
-import { SVGClose } from '../SVGs';
+import { SVGClose, SVGSearch } from '../SVGs';
 import Spinner from './Spinner';
 
 type ButtonVariant = 'normal' | 'text';
@@ -174,19 +174,7 @@ export const ButtonSearch = ({
     (className ? ` ${className}` : '');
   return (
     <Button className={cls} {...props}>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M21 21l-4.486-4.494M19 10.5a8.5 8.5 0 1 1-17 0 8.5 8.5 0 0 1 17 0z" />
-      </svg>
+      <SVGSearch />
     </Button>
   );
 };

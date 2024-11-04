@@ -26,6 +26,7 @@ export interface FeedProps<FeedItemType> {
   ) => Promise<{ items: FeedItem<FeedItemType>[]; next: string | null } | null>;
   onRenderItem: (item: FeedItem, index: number) => React.ReactNode;
   banner?: React.ReactNode;
+  noMoreItemsText?: string;
   emptyItemsText?: string;
   skeletons?: React.ReactNode;
   infiniteScrollingDisabled?: boolean;
@@ -38,6 +39,7 @@ function Feed<FeedItemType>({
   onFetch,
   onRenderItem,
   banner,
+  noMoreItemsText = 'No more posts',
   emptyItemsText = 'Nothing to show',
   skeletons,
   infiniteScrollingDisabled = false,
@@ -133,20 +135,23 @@ function Feed<FeedItemType>({
   const onRenderItems = () => {
     const nodes: React.ReactNode[] = [];
     items.forEach((item, index) => {
-      nodes.push(
-        <FeedItemComponent
-          index={index}
-          itemKey={item.key}
-          key={item.key}
-          height={item.height}
-          onHeightChange={(height: number) => handleItemHeightChange(height, item)}
-          keepRenderedHtml={isDesktop}
-          onViewChange={handleItemViewChange}
-          initiallyInView={(itemsInitiallyInView || []).includes(item.key)}
-        >
-          {onRenderItem(item, index)}
-        </FeedItemComponent>
-      );
+      const renderedItem = onRenderItem(item, index);
+      if (renderedItem !== null) {
+        nodes.push(
+          <FeedItemComponent
+            index={index}
+            itemKey={item.key}
+            key={item.key}
+            height={item.height}
+            onHeightChange={(height: number) => handleItemHeightChange(height, item)}
+            keepRenderedHtml={isDesktop}
+            onViewChange={handleItemViewChange}
+            initiallyInView={(itemsInitiallyInView || []).includes(item.key)}
+          >
+            {renderedItem}
+          </FeedItemComponent>
+        );
+      }
       if (banner && index === 1) {
         nodes.push(
           <div key="banner" className="feed-banner is-m">
@@ -195,7 +200,7 @@ function Feed<FeedItemType>({
           </Button>
         </div>
       )}
-      {items.length > 0 && !hasMore && <div className="feed-no-more">No more posts</div>}
+      {items.length > 0 && !hasMore && <div className="feed-no-more">{noMoreItemsText}</div>}
       {items.length === 0 && <div className="card card-padding feed-none">{emptyItemsText}</div>}
     </div>
   );
