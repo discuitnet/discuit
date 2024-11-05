@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import CommunityProPic from '../../components/CommunityProPic';
 import { FormField } from '../../components/Form';
 import Input, { Checkbox, InputWithCount, useInputMaxLength } from '../../components/Input';
-import { mfetch, mfetchjson } from '../../helper';
+import { APIError, mfetch, mfetchjson } from '../../helper';
 import { communityAdded } from '../../slices/communitiesSlice';
 import { snackAlert, snackAlertError } from '../../slices/mainSlice';
 import Banner from '../Community/Banner';
@@ -23,7 +23,7 @@ const Settings = ({ community }) => {
     descriptionMaxLength,
     community.about || ''
   );
-  const [nsfw, setNSFW] = useState(community.nsfw);
+  const [postingRestricted, setPostingRestricted] = useState(community.postingRestricted);
 
   const handleSave = async () => {
     try {
@@ -31,7 +31,7 @@ const Settings = ({ community }) => {
         method: 'PUT',
         body: JSON.stringify({
           ...community,
-          nsfw,
+          postingRestricted,
           about: description,
         }),
       });
@@ -46,7 +46,7 @@ const Settings = ({ community }) => {
   const changed = _changed > 0;
   useEffect(() => {
     setChanged((c) => c + 1);
-  }, [description, nsfw]);
+  }, [description, postingRestricted]);
 
   const proPicFileInputRef = useRef(null);
   const bannerFileInputRef = useRef(null);
@@ -197,12 +197,12 @@ const Settings = ({ community }) => {
             onChange={setDescription}
           />
         </FormField>
-        <FormField label="NSFW">
+        <FormField label="Posting restricted">
           <Checkbox
             variant="switch"
-            label=" Tick this box if the community may contain 18+ or material otherwise unsuitable for viewing in a professional environment."
-            checked={nsfw}
-            onChange={(e) => setNSFW(e.target.checked)}
+            label="Only moderators of this community are allowed to post."
+            checked={postingRestricted}
+            onChange={(e) => setPostingRestricted(e.target.checked)}
             spaceBetween
           />
         </FormField>

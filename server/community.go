@@ -197,6 +197,7 @@ func (s *Server) updateCommunity(w *responseWriter, r *request) error {
 	}
 	comm.NSFW = rcomm.NSFW
 	comm.About = rcomm.About
+	comm.PostingRestricted = rcomm.PostingRestricted
 
 	if err = comm.Update(r.ctx, *r.viewer); err != nil {
 		return err

@@ -589,11 +589,25 @@ func createPost(ctx context.Context, db *sql.DB, opts *createPostOpts) (*Post, e
 		return nil, err
 	}
 
+	community, err := GetCommunityByID(ctx, db, opts.community, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	// Check if the author is banned from community.
-	if is, err := IsUserBannedFromCommunity(ctx, db, opts.community, opts.author); err != nil {
+	if is, err := community.UserBanned(ctx, opts.author); err != nil {
 		return nil, err
 	} else if is {
 		return nil, errUserBannedFromCommunity
+	}
+
+	// Check if posting in the community is restricted, and if so, if the user has permission.
+	if community.PostingRestricted {
+		if is, err := community.UserModOrAdmin(ctx, opts.author); err != nil {
+			return nil, err
+		} else if !is {
+			return nil, httperr.NewForbidden("posting-restricted", "Posting in this community is restricted.")
+		}
 	}
 
 	// Truncate title and body if max lengths are exceeded.

@@ -24,19 +24,20 @@ const maxCommunityAboutLength = 2000 // in runes
 type Community struct {
 	db *sql.DB
 
-	ID            uid.ID          `json:"id"`
-	AuthorID      uid.ID          `json:"userId"`
-	Name          string          `json:"name"`
-	NameLowerCase string          `json:"-"` // TODO: Remove this field (only from this struct, not also from the database).
-	NSFW          bool            `json:"nsfw"`
-	About         msql.NullString `json:"about"`
-	NumMembers    int             `json:"noMembers"`
-	PostsCount    int             `json:"-"` // Including deleted posts
-	ProPic        *images.Image   `json:"proPic"`
-	BannerImage   *images.Image   `json:"bannerImage"`
-	CreatedAt     time.Time       `json:"createdAt"`
-	DeletedAt     msql.NullTime   `json:"deletedAt"`
-	DeletedBy     uid.NullID      `json:"-"`
+	ID                uid.ID          `json:"id"`
+	AuthorID          uid.ID          `json:"userId"`
+	Name              string          `json:"name"`
+	NameLowerCase     string          `json:"-"` // TODO: Remove this field (only from this struct, not also from the database).
+	NSFW              bool            `json:"nsfw"`
+	About             msql.NullString `json:"about"`
+	NumMembers        int             `json:"noMembers"`
+	PostsCount        int             `json:"-"` // Including deleted posts
+	ProPic            *images.Image   `json:"proPic"`
+	BannerImage       *images.Image   `json:"bannerImage"`
+	PostingRestricted bool            `json:"postingRestricted"` // If true only mods can post.
+	CreatedAt         time.Time       `json:"createdAt"`
+	DeletedAt         msql.NullTime   `json:"deletedAt"`
+	DeletedBy         uid.NullID      `json:"-"`
 
 	// IsDefault is nil until Default is called.
 	IsDefault *bool `json:"isDefault,omitempty"`
@@ -60,6 +61,7 @@ func buildSelectCommunityQuery(where string) string {
 		"communities.about",
 		"communities.no_members",
 		"communities.posts_count",
+		"communities.posting_restricted",
 		"communities.created_at",
 		"communities.deleted_at",
 	}
@@ -168,6 +170,7 @@ func scanCommunities(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *ui
 			&c.About,
 			&c.NumMembers,
 			&c.PostsCount,
+			&c.PostingRestricted,
 			&c.CreatedAt,
 			&c.DeletedAt,
 		}
@@ -414,7 +417,10 @@ func GetCommunitiesPrefix(ctx context.Context, db *sql.DB, s string) ([]*Communi
 	return deduped, nil
 }
 
-// Update updates c.About and c.NSFW.
+// Update updates the updatable fields of the community. These are:
+//   - NSFW
+//   - About
+//   - PostingRestricted
 func (c *Community) Update(ctx context.Context, mod uid.ID) error {
 	if is, err := c.UserModOrAdmin(ctx, mod); err != nil {
 		return err
@@ -423,7 +429,7 @@ func (c *Community) Update(ctx context.Context, mod uid.ID) error {
 	}
 
 	c.About.String = utils.TruncateUnicodeString(c.About.String, maxCommunityAboutLength)
-	_, err := c.db.ExecContext(ctx, "UPDATE communities SET nsfw = ?, about = ? WHERE id = ?", c.NSFW, c.About, c.ID)
+	_, err := c.db.ExecContext(ctx, "UPDATE communities SET nsfw = ?, about = ?, posting_restricted = ? WHERE id = ?", c.NSFW, c.About, c.PostingRestricted, c.ID)
 	return err
 }
 
