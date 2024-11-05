@@ -1308,11 +1308,13 @@ func DeleteCommunityRequest(ctx context.Context, db *sql.DB, id int) error {
 	return err
 }
 
-// DeleteUnusedCommunities deletes communities older than n days with 0 posts in them.
-func DeleteUnusedCommunities(ctx context.Context, db *sql.DB, n uint) error {
-	return msql.Transact(ctx, db, func(tx *sql.Tx) error {
+// DeleteUnusedCommunities deletes communities older than n days with 0 posts in
+// them. It returns the names (all in lowercase) of the deleted communities.
+func DeleteUnusedCommunities(ctx context.Context, db *sql.DB, n uint) ([]string, error) {
+	var deleted []string
+	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
 		where := "WHERE posts_count = 0 AND created_at < ?"
-		args := []any{time.Now().Add(time.Duration(n) * 24 * -1)}
+		args := []any{time.Now().Add(time.Duration(n) * time.Hour * 24 * -1)}
 
 		rows, err := tx.QueryContext(ctx, fmt.Sprintf("SELECT name_lc FROM communities %s", where), args...)
 		if err != nil {
@@ -1336,7 +1338,6 @@ func DeleteUnusedCommunities(ctx context.Context, db *sql.DB, n uint) error {
 			}
 			b.WriteString(name)
 		}
-		log.Printf("Deleting communities in progress (deleting %s)\n", b.String())
 
 		if err := rows.Err(); err != nil {
 			return err
@@ -1346,6 +1347,11 @@ func DeleteUnusedCommunities(ctx context.Context, db *sql.DB, n uint) error {
 			return err
 		}
 
+		deleted = communities
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
+	return deleted, nil
 }
