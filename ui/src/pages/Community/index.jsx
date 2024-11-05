@@ -110,24 +110,13 @@ const Community = () => {
   };
 
   const renderActionButtons = () => {
-    const url = `/new?community=${community.name}`;
-    const handleClick = (e) => {
-      e.preventDefault();
-      if (!isBanned) {
-        history.push(url);
-      }
-    };
     return (
       <>
-        <a
-          className={'button button-main border-radius-0' + (isBanned ? ' is-disabled' : '')}
-          href={url}
-          onClick={handleClick}
-        >
+        <Link to={`/new?community=${community.name}`} className={'button button-main'}>
           Create post
-        </a>
+        </Link>
         {(community.userMod || (user && user.isAdmin)) && (
-          <Link className="button border-radius-0" to={`/${name}/modtools`}>
+          <Link className="button" to={`/${name}/modtools`}>
             {`MOD TOOLS` + (!community.userMod ? ' (ADMIN)' : '')}
           </Link>
         )}
