@@ -35,13 +35,13 @@ func (s *SiteSettings) Save(ctx context.Context, db *sql.DB) error {
 }
 
 type ssCache struct {
-	mu       sync.Mutex    // guards following
-	settings *SiteSettings // cache value
+	mu       sync.RWMutex
+	settings *SiteSettings
 }
 
 func (c *ssCache) get() *SiteSettings {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	if c.settings != nil {
 		cp := &SiteSettings{}
 		*cp = *c.settings // shallow copy
