@@ -220,3 +220,7 @@ export interface Mutes {
   userMutes: Mute[] | null;
   communityMutes: Mute[] | null;
 }
+
+export interface SiteSettings {
+  signupsDisabled: boolean;
+}

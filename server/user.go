@@ -10,6 +10,7 @@ import (
 
 	"github.com/SherClockHolmes/webpush-go"
 	"github.com/discuitnet/discuit/core"
+	"github.com/discuitnet/discuit/core/sitesettings"
 	"github.com/discuitnet/discuit/internal/hcaptcha"
 	"github.com/discuitnet/discuit/internal/httperr"
 	"github.com/discuitnet/discuit/internal/httputil"
@@ -110,14 +111,15 @@ func (s *Server) deleteUser(w *responseWriter, r *request) error {
 func (s *Server) initial(w *responseWriter, r *request) error {
 	var err error
 	response := struct {
-		ReportReasons  []core.ReportReason `json:"reportReasons"`
-		User           *core.User          `json:"user"`
-		Lists          []*core.List        `json:"lists"`
-		Communities    []*core.Community   `json:"communities"`
-		NoUsers        int                 `json:"noUsers"`
-		BannedFrom     []uid.ID            `json:"bannedFrom"`
-		VAPIDPublicKey string              `json:"vapidPublicKey"`
-		Mutes          struct {
+		SignupsDisabled bool                `json:"signupsDisabled"`
+		ReportReasons   []core.ReportReason `json:"reportReasons"`
+		User            *core.User          `json:"user"`
+		Lists           []*core.List        `json:"lists"`
+		Communities     []*core.Community   `json:"communities"`
+		NoUsers         int                 `json:"noUsers"`
+		BannedFrom      []uid.ID            `json:"bannedFrom"`
+		VAPIDPublicKey  string              `json:"vapidPublicKey"`
+		Mutes           struct {
 			CommunityMutes []*core.Mute `json:"communityMutes"`
 			UserMutes      []*core.Mute `json:"userMutes"`
 		} `json:"mutes"`
@@ -128,6 +130,12 @@ func (s *Server) initial(w *responseWriter, r *request) error {
 
 	response.Mutes.CommunityMutes = []*core.Mute{}
 	response.Mutes.UserMutes = []*core.Mute{}
+
+	siteSettings, err := sitesettings.GetSiteSettings(r.ctx, s.db)
+	if err != nil {
+		return err
+	}
+	response.SignupsDisabled = siteSettings.SignupsDisabled
 
 	if r.loggedIn {
 		if response.User, err = core.GetUser(r.ctx, s.db, *r.viewer, r.viewer); err != nil {
@@ -236,6 +244,13 @@ func (s *Server) login(w *responseWriter, r *request) error {
 func (s *Server) signup(w *responseWriter, r *request) error {
 	if r.loggedIn {
 		return httperr.NewBadRequest("already_logged_in", "You are already logged in")
+	}
+
+	// Verify that signups are not disabled.
+	if settings, err := sitesettings.GetSiteSettings(r.ctx, s.db); err != nil {
+		return err
+	} else if settings.SignupsDisabled {
+		return httperr.NewForbidden("signups-disabled", "Creating new accounts is disabled.")
 	}
 
 	values, err := r.unmarshalJSONBodyToStringsMap(true)

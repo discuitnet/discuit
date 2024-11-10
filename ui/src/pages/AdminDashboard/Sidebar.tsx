@@ -32,7 +32,7 @@ function Sidebar({
       <div className="sidebar-content">
         <div className="sidebar-list" onClick={handleListClick}>
           <Link className="sidebar-item" to={url}>
-            Home
+            Settings
           </Link>
           <Link className="sidebar-item" to={dashboardLink('users')}>
             Users

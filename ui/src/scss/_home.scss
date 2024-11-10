@@ -835,6 +835,28 @@ html.theme-dark {
                 align-self: center;
             }
         }
+        .modal-card-content {
+            position: relative;
+        }
+        .modal-signup-disabled {
+            position: absolute;
+            top: 0;
+            right: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 10;
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-weight: 600;
+            background: rgba(var(--base-bg), 0.85);
+            backdrop-filter: var(--modal-bg-blur);
+            padding: var(--gap);
+        }
+        &.is-disabled {
+        }
     }
     .modal-login {
         .form-error {
