@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"log"
 	"net/http"
@@ -821,16 +822,56 @@ func (s *Server) serveSPA(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	serveIndexFileNotFound := func(perr error) {
+		log.Printf("Error serving index.html file: %v\n", perr)
+
+		const tmplStr = `
+			<!DOCTYPE html>
+			<html lang="en">
+			<head>
+				<meta charset="UTF-8">
+				<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<title>{{.Title}}</title>
+			</head>
+			<body>
+				<p>{{.ErrorMessage}}</p>
+			</body>
+			</html>
+		`
+
+		tmpl, err := template.New("page").Parse(tmplStr)
+		if err != nil {
+			log.Fatalf("Error parsing index.html not found template: %v\n", err)
+		}
+
+		data := struct {
+			Title        string
+			ErrorMessage string
+		}{
+			Title:        s.config.SiteName,
+			ErrorMessage: fmt.Sprintf("Error %s", perr.Error()),
+		}
+
+		w.Header().Add("Cache-Control", "no-store")
+
+		if err := tmpl.Execute(w, data); err != nil {
+			log.Printf("Error writing index.html not found template: %v\n", err)
+		}
+
+	}
+
 	serveIndexFile := func() {
 		file, err := os.Open(filepath.Join(s.reactPath, s.reactIndex))
 		if err != nil {
-			log.Fatal(err)
+			serveIndexFileNotFound(fmt.Errorf("opening index.html file: %w", err))
+			return
 		}
 		defer file.Close()
 
 		doc, err := html.Parse(file)
 		if err != nil {
-			log.Fatal(err)
+			serveIndexFileNotFound(fmt.Errorf("parsing index.html file: %w", err))
+			return
 		}
 
 		s.insertMetaTags(doc, r)
