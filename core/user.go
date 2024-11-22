@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -114,7 +115,8 @@ type User struct {
 	Badges           Badges          `json:"badges"`
 	NumPosts         int             `json:"noPosts"`
 	NumComments      int             `json:"noComments"`
-	LastSeen         time.Time       `json:"-"` // accurate to within 5 minutes
+	LastSeen         time.Time       `json:"-"`             // accurate to within 5 minutes
+	LastSeenMonth    string          `json:"lastSeenMonth"` // of the form: November 2024
 	CreatedAt        time.Time       `json:"createdAt"`
 	Deleted          bool            `json:"deleted"`
 	DeletedAt        msql.NullTime   `json:"deletedAt,omitempty"`
@@ -412,6 +414,8 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 		if user.Deleted && !viewerAdmin {
 			user.SetToGhost()
 		}
+
+		user.LastSeenMonth = user.LastSeen.Month().String() + " " + strconv.Itoa(user.LastSeen.Year())
 	}
 
 	return users, nil

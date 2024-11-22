@@ -378,7 +378,16 @@ const User = () => {
 
   const getLastSeenMonthText = (text: string): string => {
     // text is of the form: 'November 2024'
-    return text;
+    const arr = text.split(' ');
+    if (arr.length !== 2) {
+      throw new Error('lastSeenMonth text split should return an array with 2 elements');
+    }
+    const now = new Date();
+    const currentMonth = now.toLocaleString('default', { month: 'long' });
+    if (currentMonth === arr[0] && arr[1] === `${now.getFullYear()}`) {
+      return 'last seen this month';
+    }
+    return `last seen ${text}`;
   };
 
   const renderLists = () => {
@@ -493,8 +502,9 @@ const User = () => {
             </div>
           )}
           <div className="user-card-badges is-m">{renderBadgesList()}</div>
-          <div className="user-card-joined">Joined on {dateString1(user.createdAt)}.</div>
-          <div className="user-card-joined">{getLastSeenMonthText(user.lastSeenMonth)}</div>
+          <div className="user-card-joined">
+            Joined on {dateString1(user.createdAt)} ({getLastSeenMonthText(user.lastSeenMonth)}).
+          </div>
           {user.deleted && (
             <div className="user-card-joined">Account deleted on {dateString1(user.deletedAt)}</div>
           )}
