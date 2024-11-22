@@ -98,6 +98,7 @@ type User struct {
 	db *sql.DB
 
 	ID                uid.ID `json:"id"`
+	UserIndex         int    `json:"-"`
 	Username          string `json:"username"`
 	UsernameLowerCase string `json:"-"`
 
@@ -215,6 +216,7 @@ func HashPassword(password []byte) ([]byte, error) {
 func buildSelectUserQuery(where string) string {
 	cols := []string{
 		"users.id",
+		"users.user_index",
 		"users.username",
 		"users.username_lc",
 		"users.email",
@@ -314,6 +316,7 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 		}
 		dests := []any{
 			&u.ID,
+			&u.UserIndex,
 			&u.Username,
 			&u.UsernameLowerCase,
 			&u.Email,
@@ -624,10 +627,12 @@ func (u *User) UnsetToGhost() {
 func (u *User) MarshalJSONForAdminViewer() ([]byte, error) {
 	user := &struct {
 		*User
-		LastSeen time.Time `json:"lastSeen"`
+		UserIndex int       `json:"userIndex"`
+		LastSeen  time.Time `json:"lastSeen"`
 	}{
-		User:     u,
-		LastSeen: u.LastSeen,
+		User:      u,
+		UserIndex: u.UserIndex,
+		LastSeen:  u.LastSeen,
 	}
 	return json.Marshal(user)
 }
