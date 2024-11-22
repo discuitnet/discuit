@@ -254,6 +254,7 @@ function Elements() {
       <a href="https://www.google.com/" target="_blank" rel="noreferrer">
         Go someplace else
       </a>
+      <Button onClick={() => setOpen(true)}>Open modal</Button>
       <Modal open={open} onClose={() => setOpen(false)}>
         <div className="modal-card">
           <div className="modal-card-head">

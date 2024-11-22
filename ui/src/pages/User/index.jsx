@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
+import { ButtonMore } from '../../components/Button';
+import Dropdown from '../../components/Dropdown';
 import Feed from '../../components/Feed';
 import MarkdownBody from '../../components/MarkdownBody';
 import MiniFooter from '../../components/MiniFooter';
@@ -22,6 +24,7 @@ import { isInfiniteScrollingDisabled } from '../Settings/devicePrefs';
 import BadgesList from './BadgesList';
 import BanUserButton from './BanUserButton';
 import { MemorizedComment } from './Comment';
+import UserAdminsViewModal from './UserAdminsViewModal';
 
 function formatFilterText(filter = '') {
   filter.toLowerCase();
@@ -141,6 +144,18 @@ const User = () => {
         });
       }
       await refetchUser();
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    }
+  };
+
+  const [userAdminsView, setUserAdminsView] = useState(null);
+  const [userAdminsViewModalOpen, setUserAdminsViewModalOpen] = useState(false);
+  const handleGetUserDetails = async () => {
+    try {
+      const userAdminsView = await mfetchjson(`/api/users/${user.username}?adminsView=true`);
+      setUserAdminsView(userAdminsView);
+      setUserAdminsViewModalOpen(true);
     } catch (error) {
       dispatch(snackAlertError(error));
     }
@@ -424,6 +439,11 @@ const User = () => {
         <title>{`@${user.username}`}</title>
       </Helmet>
       <Sidebar />
+      <UserAdminsViewModal
+        user={userAdminsView}
+        open={userAdminsViewModalOpen}
+        onClose={() => setUserAdminsViewModalOpen(false)}
+      />
       <main className="page-middle">
         <header className="user-card card card-padding">
           <div className="user-card-top">
@@ -469,6 +489,13 @@ const User = () => {
                   <button className="button-green" onClick={handleGiveSupporterBadge}>
                     {hasSupporterBadge ? 'Remove supporter badge' : 'Give supporter badge'}
                   </button>
+                  <Dropdown target={<ButtonMore />}>
+                    <div className="dropdown-list">
+                      <div className="dropdown-item" onClick={handleGetUserDetails}>
+                        User details
+                      </div>
+                    </div>
+                  </Dropdown>
                 </>
               )}
               {viewerAdmin && user.isBanned && (
