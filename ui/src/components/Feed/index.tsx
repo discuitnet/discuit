@@ -23,7 +23,7 @@ export interface FeedProps<FeedItemType> {
   feedId: string;
   onFetch: (
     next?: string | null
-  ) => Promise<{ items: FeedItem<FeedItemType>[]; next: string | null } | null>;
+  ) => Promise<{ items: FeedItem<FeedItemType | unknown>[]; next: string | null } | null>;
   onRenderItem: (item: FeedItem, index: number) => React.ReactNode;
   banner?: React.ReactNode;
   noMoreItemsText?: string;

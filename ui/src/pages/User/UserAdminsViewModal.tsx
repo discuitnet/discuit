@@ -1,14 +1,13 @@
 import Button, { ButtonClose } from '../../components/Button';
 import Modal from '../../components/Modal';
 import { dateString1, timeAgo } from '../../helper';
-import { User } from '../../serverTypes';
 
 export default function UserAdminsViewModal({
   user,
   open,
   onClose,
 }: {
-  user: User;
+  user: unknown;
   open: boolean;
   onClose: () => void;
 }) {
@@ -18,7 +17,7 @@ export default function UserAdminsViewModal({
     const skipFields = ['proPic', 'moddingList'];
     const rows: React.ReactNode[] = [];
 
-    for (const [key, value] of Object.entries(user)) {
+    for (const [key, value] of Object.entries(user as object)) {
       if (skipFields.includes(key)) {
         continue;
       }

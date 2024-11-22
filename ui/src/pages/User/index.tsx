@@ -16,15 +16,25 @@ import Sidebar from '../../components/Sidebar';
 import UserProPic from '../../components/UserProPic';
 import { APIError, dateString1, mfetch, mfetchjson, stringCount } from '../../helper';
 import { useFetchUsersLists, useMuteUser } from '../../hooks';
+import type { Comment, Post, User } from '../../serverTypes';
 import { FeedItem } from '../../slices/feedsSlice';
 import { snackAlertError } from '../../slices/mainSlice';
 import { selectUser, userAdded } from '../../slices/usersSlice';
+import { RootState } from '../../store';
 import NotFound from '../NotFound';
 import { isInfiniteScrollingDisabled } from '../Settings/devicePrefs';
 import BadgesList from './BadgesList';
 import BanUserButton from './BanUserButton';
 import { MemorizedComment } from './Comment';
 import UserAdminsViewModal from './UserAdminsViewModal';
+
+interface UserFeedAPIResponse {
+  items: {
+    type: string;
+    item: unknown;
+  }[];
+  next: string | null;
+}
 
 function formatFilterText(filter = '') {
   filter.toLowerCase();
@@ -35,12 +45,12 @@ function formatFilterText(filter = '') {
 }
 
 const User = () => {
-  const { username } = useParams();
+  const { username } = useParams<{ username: string }>();
 
   const dispatch = useDispatch();
   const history = useHistory();
 
-  const viewer = useSelector((state) => state.main.user);
+  const viewer = useSelector<RootState>((state) => state.main.user) as User | null;
   const viewerAdmin = viewer ? viewer.isAdmin : false;
   const loggedIn = viewer !== null;
 
@@ -48,9 +58,9 @@ const User = () => {
   const queryParams = new URLSearchParams(location.search);
   const feedFilter = formatFilterText(queryParams.get('filter') ?? '');
   const selectBarOptions = [
-    { text: 'Overview', id: 'overview', queryParam: '' },
-    { text: 'Posts', id: 'posts', queryParam: 'posts' },
-    { text: 'Comments', id: 'comments', queryParam: 'comments' },
+    { text: 'Overview', id: 'overview', queryParam: '', to: '' },
+    { text: 'Posts', id: 'posts', queryParam: 'posts', to: '' },
+    { text: 'Comments', id: 'comments', queryParam: 'comments', to: '' },
   ];
   for (let i = 0; i < selectBarOptions.length; i++) {
     const param = selectBarOptions[i].queryParam;
@@ -61,17 +71,17 @@ const User = () => {
     }
     selectBarOptions[i].to = `${location.pathname}?${search}`;
   }
-  const handleSelectBarChange = (id) => {
+  const handleSelectBarChange = (id: string) => {
     if (feedFilter !== id) {
       history.replace(selectBarOptions.filter((item) => item.id === id)[0].to);
     }
   };
 
-  const isUserFeedAvailable = (user, viewer) => {
+  const isUserFeedAvailable = (user: User, viewer: User | null) => {
     return !user.isBanned || (user.isBanned && viewer !== null && viewerAdmin);
   };
 
-  const user = useSelector(selectUser(username));
+  const user = useSelector(selectUser(username)) || null;
   const [userLoading, setUserLoading] = useState(user ? 'loaded' : 'loading');
 
   const url = `/api/users/${username}`;
@@ -105,17 +115,19 @@ const User = () => {
     })();
   }, [username, url, feedId]);
 
-  const handleFeedFetch = async (next = null) => {
+  const handleFeedFetch = async (next: string | null | undefined = null) => {
     const url = next === null ? feedId : `${feedId}&next=${next}`;
-    const res = await mfetchjson(url);
+    const res = (await mfetchjson(url)) as UserFeedAPIResponse;
     const items = (res.items || []).map((item) => {
       if (item.type === 'post') {
-        return new FeedItem(item.item, 'post', item.item.id);
+        const post = item.item as Post;
+        return new FeedItem(post, 'post', post.id);
       }
       if (item.type === 'comment') {
-        return new FeedItem(item.item, 'comment', item.item.id);
+        const comment = item.item as Comment;
+        return new FeedItem(comment, 'comment', comment.id);
       }
-      throw new Error('unkown user-feed item type');
+      throw new Error('unknown user-feed item type');
     });
     return {
       items,
@@ -130,6 +142,7 @@ const User = () => {
 
   const hasSupporterBadge = userHasSupporterBadge(user);
   const handleGiveSupporterBadge = async () => {
+    if (!user) return;
     try {
       if (hasSupporterBadge) {
         await mfetchjson(`/api/users/${user.username}/badges/supporter?byType=true`, {
@@ -152,6 +165,7 @@ const User = () => {
   const [userAdminsView, setUserAdminsView] = useState(null);
   const [userAdminsViewModalOpen, setUserAdminsViewModalOpen] = useState(false);
   const handleGetUserDetails = async () => {
+    if (!user) return;
     try {
       const userAdminsView = await mfetchjson(`/api/users/${user.username}?adminsView=true`);
       setUserAdminsView(userAdminsView);
@@ -179,12 +193,12 @@ const User = () => {
   }, [tab]);
 
   const { isMuted, toggleMute } = useMuteUser(
-    user ? { userId: user.id, username: user.username } : {}
+    user ? { userId: user.id, username: user.username } : { userId: '', username: '' }
   );
 
   const { lists, error: listsError } = useFetchUsersLists(username, false);
 
-  const layout = useSelector((state) => state.main.feedLayout);
+  const layout = useSelector<RootState>((state) => state.main.feedLayout) as string;
   const compact = layout === 'compact';
 
   if (userLoading === 'notfound') {
@@ -221,18 +235,18 @@ const User = () => {
     );
   }
 
-  const handleRenderItem = (item) => {
+  const handleRenderItem = (item: FeedItem) => {
     if (item.type === 'post') {
       return (
         <MemorizedPostCard
-          initialPost={item.item}
+          initialPost={item.item as Post}
           disableEmbeds={user && user.embedsOff}
           compact={compact}
         />
       );
     }
     if (item.type === 'comment') {
-      return <MemorizedComment comment={item.item} />;
+      return <MemorizedComment comment={item.item as Comment} />;
     }
   };
 
@@ -338,7 +352,7 @@ const User = () => {
   };
 
   const renderBadgesList = () => {
-    if (user.badges.length === 0) {
+    if (!user.badges || user.badges.length === 0) {
       return null;
     }
     return (
@@ -349,7 +363,7 @@ const User = () => {
   };
 
   const renderBadges = (hideInMobile = true) => {
-    if (user.badges.length === 0) {
+    if (!user.badges || user.badges.length === 0) {
       return null;
     }
     return (
@@ -360,6 +374,11 @@ const User = () => {
         <div className="card-content">{renderBadgesList()}</div>
       </div>
     );
+  };
+
+  const getLastSeenMonthText = (text: string): string => {
+    // text is of the form: 'November 2024'
+    return text;
   };
 
   const renderLists = () => {
@@ -475,6 +494,7 @@ const User = () => {
           )}
           <div className="user-card-badges is-m">{renderBadgesList()}</div>
           <div className="user-card-joined">Joined on {dateString1(user.createdAt)}.</div>
+          <div className="user-card-joined">{getLastSeenMonthText(user.lastSeenMonth)}</div>
           {user.deleted && (
             <div className="user-card-joined">Account deleted on {dateString1(user.deletedAt)}</div>
           )}
@@ -500,7 +520,7 @@ const User = () => {
               )}
               {viewerAdmin && user.isBanned && (
                 <div style={{ marginTop: '1rem' }}>
-                  User banned on: {new Date(user.bannedAt).toLocaleString()}
+                  User banned on: {new Date(user.bannedAt as string).toLocaleString()}
                 </div>
               )}
             </div>
@@ -570,6 +590,6 @@ const User = () => {
 
 export default User;
 
-export function userHasSupporterBadge(user) {
-  return user && user.badges.find((badge) => badge.type === 'supporter') !== undefined;
+export function userHasSupporterBadge(user: User | null) {
+  return user && (user.badges || []).find((badge) => badge.type === 'supporter') !== undefined;
 }

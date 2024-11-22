@@ -10,6 +10,7 @@ export interface User {
   badges: Badge[] | null;
   noPosts: number;
   noComments: number;
+  lastSeenMonth: string; // of the form: November 2024
   createdAt: string; // A datetime.
   deleted: boolean;
   deletedAt: string | null; // A datetime.
