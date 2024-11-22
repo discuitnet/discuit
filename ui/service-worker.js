@@ -11,8 +11,16 @@ const cacheEndpoints = async (urls = []) => {
 };
 
 const putInCache = async (request, response) => {
-  const cache = await caches.open(SW_BUILD_ID);
-  await cache.put(request, response);
+  // If the headers contain an x-service-worker-cache argument or if the
+  // response code isn't in the rane of 2xx, then the file is not cached, even
+  // if it meets prior criteria for caching.
+  if (response.ok && !response.headers.has('X-Service-Worker-Cache')) {
+    // Note that the argument to headers.has() in the above line is
+    // case-insensitive. In HTTP/2, in any case, all headers are lowercased
+    // before being transmitted.
+    const cache = await caches.open(SW_BUILD_ID);
+    await cache.put(request, response);
+  }
 };
 
 self.addEventListener('install', (e) => {

@@ -860,9 +860,14 @@ func (s *Server) serveSPA(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	serveIndexFile := func() {
+	skipServiceWorkerCache := func(header http.Header) {
+		header.Add("X-Service-Worker-Cache", "no-store")
+	}
+
+	serveIndexFile := func(fileNotFound bool) {
 		file, err := os.Open(filepath.Join(s.reactPath, s.reactIndex))
 		if err != nil {
+			skipServiceWorkerCache(w.Header())
 			serveIndexFileNotFound(fmt.Errorf("opening index.html file: %w", err))
 			return
 		}
@@ -875,7 +880,11 @@ func (s *Server) serveSPA(w http.ResponseWriter, r *http.Request) {
 		}
 
 		s.insertMetaTags(doc, r)
+
 		w.Header().Add("Cache-Control", "no-store")
+		if fileNotFound {
+			skipServiceWorkerCache(w.Header())
+		}
 
 		var writer io.Writer = w
 		if httputil.AcceptEncoding(r.Header, "gzip") {
@@ -889,7 +898,7 @@ func (s *Server) serveSPA(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if path == "/" {
-		serveIndexFile()
+		serveIndexFile(false)
 		return
 	} else if path == "/service-worker.js" {
 		w.Header().Add("Cache-Control", "private, max-age=0")
@@ -898,7 +907,7 @@ func (s *Server) serveSPA(w http.ResponseWriter, r *http.Request) {
 	fpath := filepath.Join(s.reactPath, path)
 	_, err = os.Stat(fpath)
 	if os.IsNotExist(err) {
-		serveIndexFile()
+		serveIndexFile(true)
 		return
 	} else if err != nil {
 		http.Error(w, "500: Internal server error", http.StatusInternalServerError)
