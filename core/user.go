@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -616,6 +617,19 @@ func (u *User) UnsetToGhost() {
 		u.DeletedAt = u.preGhostDeletedAt
 		u.Badges = u.preGhostBadges
 	}
+}
+
+// MarshalJSONForAdminViewer marshals the user with additional fields for admin
+// eyes only.
+func (u *User) MarshalJSONForAdminViewer() ([]byte, error) {
+	user := &struct {
+		*User
+		LastSeen time.Time `json:"lastSeen"`
+	}{
+		User:     u,
+		LastSeen: u.LastSeen,
+	}
+	return json.Marshal(user)
 }
 
 // Delete deletes a user. Make sure that the user is logged out on all sessions

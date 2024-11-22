@@ -38,6 +38,18 @@ func (s *Server) getUser(w *responseWriter, r *request) error {
 		return err
 	}
 
+	if r.urlQueryParamsValue("adminsView") == "true" {
+		if _, err = getLoggedInAdmin(s.db, r); err != nil {
+			return err
+		}
+		data, err := user.MarshalJSONForAdminViewer()
+		if err != nil {
+			return err
+		}
+		_, err = w.Write(data)
+		return err
+	}
+
 	return w.writeJSON(user)
 }
 
