@@ -395,9 +395,9 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 	}
 
 	for _, user := range users {
-		// Hide everything that only the user themself should see from public
-		// view.
-		if viewer != nil && *viewer == user.ID {
+		// Hide everything that only the user themself or an admin should see
+		// from public view.
+		if viewerAdmin || (viewer != nil && *viewer == user.ID) {
 			if user.Email.Valid {
 				user.EmailPublic = new(string)
 				*user.EmailPublic = user.Email.String
