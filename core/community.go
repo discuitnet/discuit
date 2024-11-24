@@ -1316,7 +1316,7 @@ func DeleteCommunityRequest(ctx context.Context, db *sql.DB, id int) error {
 
 // DeleteUnusedCommunities deletes communities older than n days with 0 posts in
 // them. It returns the names (all in lowercase) of the deleted communities.
-func DeleteUnusedCommunities(ctx context.Context, db *sql.DB, n uint) ([]string, error) {
+func DeleteUnusedCommunities(ctx context.Context, db *sql.DB, n uint, dryRun bool) ([]string, error) {
 	var deleted []string
 	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
 		where := "WHERE posts_count = 0 AND created_at < ?"
@@ -1349,8 +1349,10 @@ func DeleteUnusedCommunities(ctx context.Context, db *sql.DB, n uint) ([]string,
 			return err
 		}
 
-		if _, err := tx.ExecContext(ctx, fmt.Sprintf("DELETE FROM communities %s", where), args...); err != nil {
-			return err
+		if !dryRun {
+			if _, err := tx.ExecContext(ctx, fmt.Sprintf("DELETE FROM communities %s", where), args...); err != nil {
+				return err
+			}
 		}
 
 		deleted = communities
