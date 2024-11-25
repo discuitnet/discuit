@@ -402,6 +402,10 @@ func whereMuted(where, postsTable string, args []any, viewer uid.ID, muteCommuni
 	}
 	where += postsTable + ".user_id NOT IN (SELECT muted_user_id FROM muted_users WHERE user_id = ?)"
 	args = append(args, viewer)
+
+	where += " AND posts.id NOT IN (SELECT post_id FROM hidden_posts WHERE user_id = ?)"
+	args = append(args, viewer)
+
 	return where, args
 }
 

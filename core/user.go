@@ -33,6 +33,7 @@ const (
 	minPasswordLength = 8
 
 	maxUserProfileAboutLength = 10000
+	maxHiddenPosts            = 1000 // per user
 )
 
 // UserGroup represents who a user is.
@@ -1065,6 +1066,38 @@ func (u *User) RemoveBadge(id int) error {
 
 	_, err := u.db.Exec("DELTE FROM user_badges WHERE id = ? and user_id = ?", id, u.ID)
 	return err
+}
+
+func (u *User) HidePost(ctx context.Context, postID uid.ID) error {
+	return msql.Transact(ctx, u.db, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx, "INSERT INTO hidden_posts (user_id, post_id) VALUES (?, ?)", u.ID, postID); err != nil {
+			if msql.IsErrDuplicateErr(err) {
+				return nil
+			}
+			return err
+		}
+
+		count := 0
+		if err := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM hidden_posts WHERE user_id = ?", u.ID).Scan(&count); err != nil {
+			return err
+		}
+
+		// If there are more then maxHiddenPosts hidden posts, delete the excess
+		// rows, choosing the oldest ones.
+		if count > maxHiddenPosts {
+			_, err := tx.ExecContext(
+				ctx,
+				"DELETE FROM hidden_posts WHERE user_id = ? AND created_at <= (SELECT created_at FROM hidden_posts WHERE user_id = ? ORDER BY created_at DESC LIMIT 1 OFFSET ?)",
+				u.ID,
+				u.ID,
+				maxHiddenPosts,
+			)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 // NewBadgeType creates a new type of user badge. Calling this function more

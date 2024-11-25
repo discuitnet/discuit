@@ -638,3 +638,29 @@ func (s *Server) addBadge(w *responseWriter, r *request) error {
 
 	return w.writeJSON(user.Badges)
 }
+
+func (s *Server) handleHiddenPosts(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
+	}
+
+	user, err := core.GetUser(r.ctx, s.db, *r.viewer, nil)
+	if err != nil {
+		return err
+	}
+
+	// The body of the incoming request must be of the JSON form:
+	body := struct {
+		PostID uid.ID `json:"postId"`
+	}{}
+
+	if err := r.unmarshalJSONBody(&body); err != nil {
+		return err
+	}
+
+	if err := user.HidePost(r.ctx, body.PostID); err != nil {
+		return err
+	}
+
+	return w.writeString(`{"success":true}`)
+}

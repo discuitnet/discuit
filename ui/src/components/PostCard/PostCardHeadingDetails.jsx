@@ -1,9 +1,9 @@
 import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
-import { toTitleCase, userGroupSingular } from '../../helper';
+import { mfetchjson, toTitleCase, userGroupSingular } from '../../helper';
 import { useIsMobile, useMuteCommunity, useMuteUser } from '../../hooks';
 import { userHasSupporterBadge } from '../../pages/User';
-import { saveToListModalOpened } from '../../slices/mainSlice';
+import { saveToListModalOpened, snackAlertError } from '../../slices/mainSlice';
 import { ButtonMore } from '../Button';
 import Dropdown from '../Dropdown';
 import TimeAgo from '../TimeAgo';
@@ -54,6 +54,17 @@ const PostCardHeadingDetails = ({
     communityId: post.communityId,
     communityName: post.communityName,
   });
+
+  const handleHidePost = async () => {
+    try {
+      await mfetchjson('/api/hidden_posts', {
+        method: 'POST',
+        body: JSON.stringify({ postId: post.id }),
+      });
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    }
+  };
 
   const isAuthorSupporter = userHasSupporterBadge(post.author);
   const isUsernameGhost = post.userDeleted && !viewerAdmin;
@@ -117,6 +128,9 @@ const PostCardHeadingDetails = ({
                   Remove from list
                 </button>
               )}
+              <button className="button-clear dropdown-item" onClick={handleHidePost}>
+                Hide
+              </button>
             </div>
           </Dropdown>
         )}
