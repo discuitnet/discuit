@@ -4,6 +4,7 @@ import { mfetchjson, toTitleCase, userGroupSingular } from '../../helper';
 import { useIsMobile, useMuteCommunity, useMuteUser } from '../../hooks';
 import { userHasSupporterBadge } from '../../pages/User';
 import { saveToListModalOpened, snackAlertError } from '../../slices/mainSlice';
+import { postHidden } from '../../slices/postsSlice';
 import { ButtonMore } from '../Button';
 import Dropdown from '../Dropdown';
 import TimeAgo from '../TimeAgo';
@@ -17,6 +18,8 @@ const PostCardHeadingDetails = ({
   showAuthorProPic = false,
   onRemoveFromList = null,
   compact = false,
+  showHideButton = false,
+  feedItemKey,
 }) => {
   // const userURL = `/@${post.username}`;
   userGroup = userGroup ?? post.userGroup;
@@ -61,6 +64,7 @@ const PostCardHeadingDetails = ({
         method: 'POST',
         body: JSON.stringify({ postId: post.id }),
       });
+      dispatch(postHidden(post.publicId, true, feedItemKey));
     } catch (error) {
       dispatch(snackAlertError(error));
     }
@@ -128,9 +132,11 @@ const PostCardHeadingDetails = ({
                   Remove from list
                 </button>
               )}
-              <button className="button-clear dropdown-item" onClick={handleHidePost}>
-                Hide
-              </button>
+              {showHideButton && (
+                <button className="button-clear dropdown-item" onClick={handleHidePost}>
+                  Hide
+                </button>
+              )}
             </div>
           </Dropdown>
         )}
@@ -147,6 +153,8 @@ PostCardHeadingDetails.propTypes = {
   showAuthorProPic: PropTypes.bool,
   onRemoveFromList: PropTypes.func,
   compact: PropTypes.bool,
+  feedItemKey: PropTypes.string,
+  showHideButton: PropTypes.bool,
 };
 
 export default PostCardHeadingDetails;

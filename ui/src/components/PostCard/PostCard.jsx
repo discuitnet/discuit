@@ -4,6 +4,7 @@ import { useHistory } from 'react-router-dom';
 import { omitWWWFromHostname, stringCount } from '../../helper';
 import { useIsMobile } from '../../hooks';
 import { SVGExternalLink } from '../../SVGs';
+import Button from '../Button';
 import Link from '../Link';
 import MarkdownBody from '../MarkdownBody';
 import PostImageGallery from '../PostImageGallery';
@@ -23,6 +24,7 @@ const PostCard = ({
   inModTools = false,
   disableEmbeds = false,
   onRemoveFromList = null,
+  feedItemKey,
 }) => {
   const history = useHistory();
 
@@ -127,6 +129,14 @@ const PostCard = ({
     );
   };
 
+  if (post.hidden) {
+    return (
+      <div className="card post-card-hidden">
+        <div>Hidden post</div> <Button>Undo</Button>
+      </div>
+    );
+  }
+
   return (
     <div
       className={
@@ -149,6 +159,8 @@ const PostCard = ({
             target={target}
             onRemoveFromList={onRemoveFromList}
             compact={compact}
+            feedItemKey={feedItemKey}
+            showHideButton={!inModTools}
           />
         </div>
         <div className={'post-card-body' + (isDomainHovering ? ' is-domain-hover' : '')}>
@@ -246,6 +258,7 @@ PostCard.propTypes = {
   inModTools: PropTypes.bool,
   disableEmbeds: PropTypes.bool,
   onRemoveFromList: PropTypes.func,
+  feedItemKey: PropTypes.string,
 };
 
 export default PostCard;

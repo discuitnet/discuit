@@ -663,6 +663,18 @@ a {
     }
 }
 
+.post-card-hidden {
+    padding: var(--gap);
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgb(var(--color-fg), 0.01);
+    @include mixins.not-mobile {
+        margin-left: var(--post-card-votes-margin);
+    }
+}
+
 html.theme-dark {
     .post-card.is-compact {
         .post-card-card {

@@ -123,6 +123,7 @@ const PostsFeed = ({ feedType = 'all', communityId = null }) => {
         index={index}
         disableEmbeds={user && user.embedsOff}
         compact={compact}
+        feedItemKey={item.key}
       />
     );
   };

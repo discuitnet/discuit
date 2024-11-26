@@ -1,10 +1,12 @@
 import { Community, Post as ServerPost } from '../serverTypes';
-import { UnknownAction } from '../store';
+import { AppDispatch, UnknownAction } from '../store';
+import { feedItemHeightChanged } from './feedsSlice';
 
 export interface Post extends ServerPost {
   community?: Community;
   fetchedAt: number;
   imageGalleryIndex: number;
+  hidden: boolean;
 }
 
 export interface PostsState {
@@ -22,6 +24,7 @@ const initialState: PostsState = {
 const typePostsAdded = 'posts/typePostsAdded';
 const typeCommentsCountIncremented = 'posts/commentsCountIncremented';
 const typeImageGalleryIndexUpdated = 'posts/imageGalleryIndexUpdated';
+const typePostHidden = 'posts/hidden';
 
 export default function postsReducer(state = initialState, action: UnknownAction) {
   switch (action.type) {
@@ -77,6 +80,23 @@ export default function postsReducer(state = initialState, action: UnknownAction
         },
       };
     }
+    case typePostHidden: {
+      const { postId, hidden } = action.payload as { postId: string; hidden: boolean };
+      const post = state.items[postId];
+      if (!post) {
+        return state;
+      }
+      return {
+        ...state,
+        items: {
+          ...state.items,
+          [post.publicId]: {
+            ...post,
+            hidden: hidden,
+          },
+        },
+      };
+    }
     default:
       return state;
   }
@@ -90,6 +110,7 @@ function preparePost(post: ServerPost | Post): Post {
     commentsNext: undefined,
     fetchedAt: Date.now(),
     imageGalleryIndex: 0,
+    hidden: false,
   };
 }
 
@@ -108,3 +129,16 @@ export const commentsCountIncremented = (postId: string) => {
 export const postImageGalleryIndexUpdated = (postId: string, newIndex: number) => {
   return { type: typeImageGalleryIndexUpdated, payload: { postId, imageGalleryIndex: newIndex } };
 };
+
+// The postId is the public id of the post.
+export const postHidden =
+  (postId: string, hidden = true, feedItemKey?: string) =>
+  (dispatch: AppDispatch) => {
+    dispatch({ type: typePostHidden, payload: { postId, hidden } });
+    if (feedItemKey) {
+      console.log('Height changing: ', feedItemKey);
+      window.setTimeout(() => {
+        dispatch(feedItemHeightChanged(feedItemKey, null));
+      }, 10);
+    }
+  };
