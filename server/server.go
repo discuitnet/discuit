@@ -115,6 +115,7 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/users/{username}/badges", s.withHandler(s.addBadge)).Methods("POST")
 	r.Handle("/api/users/{username}/badges/{badgeId}", s.withHandler(s.deleteBadge)).Methods("DELETE")
 	r.Handle("/api/hidden_posts", s.withHandler(s.handleHiddenPosts)).Methods("POST")
+	r.Handle("/api/hidden_posts/{postId}", s.withHandler(s.unhidePost)).Methods("DELETE")
 
 	r.Handle("/api/users/{username}/lists", s.withHandler(s.handleLists)).Methods("GET", "POST")
 	r.Handle("/api/lists/_saved_to", s.withHandler(s.getSaveToLists)).Methods("GET")

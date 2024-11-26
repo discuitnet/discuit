@@ -1,8 +1,11 @@
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { useHistory } from 'react-router-dom';
-import { omitWWWFromHostname, stringCount } from '../../helper';
+import { mfetchjson, omitWWWFromHostname, stringCount } from '../../helper';
 import { useIsMobile } from '../../hooks';
+import { snackAlertError } from '../../slices/mainSlice';
+import { postHidden } from '../../slices/postsSlice';
 import { SVGExternalLink } from '../../SVGs';
 import Button from '../Button';
 import Link from '../Link';
@@ -61,6 +64,28 @@ const PostCard = ({
     // mouse middle button
     if (e.button === 1) {
       handlePostCardClick(e, '_blank');
+    }
+  };
+
+  const dispatch = useDispatch();
+  const handleHidePost = async () => {
+    try {
+      await mfetchjson('/api/hidden_posts', {
+        method: 'POST',
+        body: JSON.stringify({ postId: post.id }),
+      });
+      dispatch(postHidden(post.publicId, true, feedItemKey));
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    }
+  };
+
+  const handleUnHidePost = async () => {
+    try {
+      await mfetchjson(`/api/hidden_posts/${post.id}`, { method: 'DELETE' });
+      dispatch(postHidden(post.publicId, false, feedItemKey));
+    } catch (error) {
+      dispatch(snackAlertError(error));
     }
   };
 
@@ -132,7 +157,7 @@ const PostCard = ({
   if (post.hidden) {
     return (
       <div className="card post-card-hidden">
-        <div>Hidden post</div> <Button>Undo</Button>
+        <div>Hidden post</div> <Button onClick={handleUnHidePost}>Undo</Button>
       </div>
     );
   }
@@ -159,8 +184,7 @@ const PostCard = ({
             target={target}
             onRemoveFromList={onRemoveFromList}
             compact={compact}
-            feedItemKey={feedItemKey}
-            showHideButton={!inModTools}
+            onHidePost={handleHidePost}
           />
         </div>
         <div className={'post-card-body' + (isDomainHovering ? ' is-domain-hover' : '')}>

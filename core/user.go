@@ -1100,6 +1100,11 @@ func (u *User) HidePost(ctx context.Context, postID uid.ID) error {
 	})
 }
 
+func (u *User) UnhidePost(ctx context.Context, postID uid.ID) error {
+	_, err := u.db.ExecContext(ctx, "DELETE FROM hidden_posts WHERE user_id = ? AND post_id = ?", u.ID, postID)
+	return err
+}
+
 // NewBadgeType creates a new type of user badge. Calling this function more
 // than once with the same name will not result in an error.
 func NewBadgeType(db *sql.DB, name string) error {

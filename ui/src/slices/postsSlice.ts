@@ -136,7 +136,6 @@ export const postHidden =
   (dispatch: AppDispatch) => {
     dispatch({ type: typePostHidden, payload: { postId, hidden } });
     if (feedItemKey) {
-      console.log('Height changing: ', feedItemKey);
       window.setTimeout(() => {
         dispatch(feedItemHeightChanged(feedItemKey, null));
       }, 10);

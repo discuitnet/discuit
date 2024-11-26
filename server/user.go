@@ -664,3 +664,25 @@ func (s *Server) handleHiddenPosts(w *responseWriter, r *request) error {
 
 	return w.writeString(`{"success":true}`)
 }
+
+func (s *Server) unhidePost(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
+	}
+
+	user, err := core.GetUser(r.ctx, s.db, *r.viewer, nil)
+	if err != nil {
+		return err
+	}
+
+	postID, err := uid.FromString(r.muxVar("postId"))
+	if err != nil {
+		return httperr.NewBadRequest("invalid-post-id", "Invalid post id.")
+	}
+
+	if err := user.UnhidePost(r.ctx, postID); err != nil {
+		return err
+	}
+
+	return w.writeString(`{"success":true}`)
+}
