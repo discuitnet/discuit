@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useImperativeHandle, useRef } from 'react';
 import { adjustTextareaHeight, isValidHttpUrl } from '../helper';
 
 export interface MarkdownTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -56,9 +56,19 @@ const MarkdownTextarea = React.forwardRef<HTMLTextAreaElement, MarkdownTextareaP
       if (onKeyDown) onKeyDown(event);
     };
 
+    const innerRef = useRef<HTMLTextAreaElement | null>(null);
+    useImperativeHandle(ref, () => innerRef.current!, []);
+    useEffect(() => {
+      const node = innerRef.current;
+      if (node) {
+        adjustTextareaHeight({ target: node }, 4);
+        node.setSelectionRange(node.value.length, node.value.length);
+      }
+    }, []);
+
     return (
       <textarea
-        ref={ref}
+        ref={innerRef}
         value={value}
         onChange={onChange}
         onKeyDown={handleKeydown}

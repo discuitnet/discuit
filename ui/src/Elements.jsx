@@ -27,7 +27,7 @@ function Elements() {
   };
 
   const textareaRef = useRef();
-  const [textareaValue, setTextareaValue] = useState('');
+  const [textareaValue, setTextareaValue] = useState('blaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
 
   const icons = {
     trash: (
@@ -359,6 +359,7 @@ function Elements() {
           style={{ width: '100%' }}
           value={textareaValue}
           onChange={(e) => setTextareaValue(e.target.value)}
+          autoFocus
         />
         <Button onClick={null}>Clear text</Button>
       </div>

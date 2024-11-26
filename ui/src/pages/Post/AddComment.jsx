@@ -3,7 +3,7 @@ import { useCallback, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import MarkdownTextarea from '../../components/MarkdownTextarea';
-import { adjustTextareaHeight, APIError, mfetch } from '../../helper';
+import { APIError, mfetch } from '../../helper';
 import {
   bannedFromAdded,
   loginPromptToggled,
@@ -11,6 +11,13 @@ import {
   snackAlertError,
 } from '../../slices/mainSlice';
 import AsUser from './AsUser';
+
+function appendTextSelection(comment, textSelection) {
+  if (comment || !textSelection) {
+    return comment;
+  }
+  return `> ${textSelection}\n\n`;
+}
 
 const AddComment = ({
   isMod = false,
@@ -24,10 +31,11 @@ const AddComment = ({
   main = false,
   loggedIn = true,
   disabled = false,
+  textSelection = '',
 }) => {
   const dispatch = useDispatch();
 
-  const [body, setBody] = useState(commentBody);
+  const [body, setBody] = useState(appendTextSelection(commentBody, textSelection));
   const empty = body.length === 0;
 
   const postId = post.publicId;
@@ -100,7 +108,6 @@ const AddComment = ({
   const textareaCallbackRef = useCallback((node) => {
     if (node !== null) {
       if (!main) node.focus();
-      adjustTextareaHeight({ target: node }, 4);
       textareaNode.current = node;
       textareaRef.current = node;
     }
@@ -173,6 +180,7 @@ AddComment.propTypes = {
   loggedIn: PropTypes.bool,
   disabled: PropTypes.bool,
   isMod: PropTypes.bool,
+  textSelection: PropTypes.string,
 };
 
 export default AddComment;
