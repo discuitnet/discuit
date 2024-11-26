@@ -7,6 +7,7 @@ import { useHistory } from 'react-router';
 import { useLocation } from 'react-router-dom/cjs/react-router-dom.min';
 import { ButtonClose } from '../../components/Button';
 import Link from '../../components/Link';
+import MarkdownTextarea from '../../components/MarkdownTextarea';
 import PageLoading from '../../components/PageLoading';
 import Spinner from '../../components/Spinner';
 import Textarea from '../../components/Textarea';
@@ -444,13 +445,12 @@ const NewPost = () => {
               disabled={isPostingDisabled}
             />
             {postType === 'text' && (
-              <Textarea
+              <MarkdownTextarea
                 className="page-new-post-body"
                 placeholder="Post content goes here (optional)..."
                 value={body}
                 onChange={handleBodyChange}
                 onPaste={handleBodyPaste}
-                adjustable
                 disabled={isPostingDisabled || (isEditPost ? post.deletedContent : false)}
               />
             )}
