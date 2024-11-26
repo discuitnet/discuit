@@ -1,7 +1,8 @@
 import PropTypes from 'prop-types';
-import React, { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
+import MarkdownTextarea from '../../components/MarkdownTextarea';
 import { adjustTextareaHeight, APIError, mfetch } from '../../helper';
 import {
   bannedFromAdded,
@@ -95,14 +96,6 @@ const AddComment = ({
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.ctrlKey && e.key === 'Enter') {
-      handleSubmit();
-    } else if (onCancel && e.key === 'Escape' && body === '') {
-      onCancel();
-    }
-  };
-
   const textareaRef = useRef();
   const textareaCallbackRef = useCallback((node) => {
     if (node !== null) {
@@ -129,19 +122,20 @@ const AddComment = ({
 
   return (
     <div className={'post-comments-new' + (editing ? ' is-editing' : '')}>
-      <textarea
+      <MarkdownTextarea
         ref={textareaCallbackRef}
         name=""
         id=""
         rows="3"
         placeholder="Add a new comment"
         value={body}
-        onKeyDown={handleKeyDown}
         onClick={handleTextareaClick}
         disabled={disabled || sendingRequest}
-        onInput={(e) => adjustTextareaHeight(e, 4 /* border size */)}
         onChange={(e) => setBody(e.target.value)}
-      ></textarea>
+        onQuickSubmit={handleSubmit}
+        onCancel={onCancel}
+        onTextAmend={(value) => setBody(value)}
+      />
       {(!main || (main && clicked)) && (
         <div className="post-comments-new-buttons">
           <Link className="button button-icon-simple" to="/markdown_guide" target="_blank">

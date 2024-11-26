@@ -1,11 +1,12 @@
 import PropTypes from 'prop-types';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Button, { ButtonClose, ButtonMore } from './components/Button';
 import Dropdown from './components/Dropdown';
 import FeedSkeleton from './components/Feed/FeedSkeleton';
 import { Form, FormField, FormSection } from './components/Form';
 import Input, { Checkbox, InputPassword, Radio, useInputMaxLength } from './components/Input';
+import MarkdownTextarea from './components/MarkdownTextarea';
 import Modal from './components/Modal';
 import ModalConfirm from './components/Modal/ModalConfirm';
 import Spinner from './components/Spinner';
@@ -24,6 +25,9 @@ function Elements() {
   const style = {
     background: transparentBackground ? 'transparent' : 'var(--color-bg)',
   };
+
+  const textareaRef = useRef();
+  const [textareaValue, setTextareaValue] = useState('');
 
   const icons = {
     trash: (
@@ -347,6 +351,16 @@ function Elements() {
       </p>
       <div style={{ width: '100%' }}>
         <FeedSkeleton />
+      </div>
+      <div style={{ width: '50%' }}>
+        <MarkdownTextarea
+          ref={textareaRef}
+          rows={5}
+          style={{ width: '100%' }}
+          value={textareaValue}
+          onChange={(e) => setTextareaValue(e.target.value)}
+        />
+        <Button onClick={null}>Clear text</Button>
       </div>
     </div>
   );
