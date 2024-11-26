@@ -301,7 +301,7 @@ func getPostsLatest(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedRe
 		}
 	}
 	if loggedIn {
-		where, args = whereMuted(where, "posts", args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
+		where, args = whereMutedAndHidden(where, "posts", args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
 	}
 	if opts.Next != "" {
 		next, err := opts.nextID()
@@ -392,7 +392,7 @@ func mergePinnedPosts(ctx context.Context, db *sql.DB, viewer, community *uid.ID
 	return rs, nil
 }
 
-func whereMuted(where, postsTable string, args []any, viewer uid.ID, muteCommunities bool) (string, []any) {
+func whereMutedAndHidden(where, postsTable string, args []any, viewer uid.ID, muteCommunities bool) (string, []any) {
 	if !(where == "" || strings.TrimSpace(strings.ToUpper(where)) == "WHERE") {
 		where += "AND "
 	}
@@ -400,10 +400,14 @@ func whereMuted(where, postsTable string, args []any, viewer uid.ID, muteCommuni
 		where += "community_id NOT IN (SELECT community_id FROM muted_communities WHERE user_id = ?) AND "
 		args = append(args, viewer)
 	}
-	where += postsTable + ".user_id NOT IN (SELECT muted_user_id FROM muted_users WHERE user_id = ?)"
+	where += postsTable + ".user_id NOT IN (SELECT muted_user_id FROM muted_users WHERE user_id = ?) "
 	args = append(args, viewer)
 
-	where += " AND posts.id NOT IN (SELECT post_id FROM hidden_posts WHERE user_id = ?)"
+	colName := "id"
+	if postsTable != "posts" {
+		colName = "post_id"
+	}
+	where += fmt.Sprintf(" AND %s.%s NOT IN (SELECT post_id FROM hidden_posts WHERE user_id = ?) ", postsTable, colName)
 	args = append(args, viewer)
 
 	return where, args
@@ -432,7 +436,7 @@ func getPostsHot(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedResul
 		}
 	}
 	if loggedIn {
-		where, args = whereMuted(where, "posts", args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
+		where, args = whereMutedAndHidden(where, "posts", args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
 	}
 	if opts.Next != "" {
 		nextHotness, nextID, err := opts.nextPointsID()
@@ -487,7 +491,7 @@ func getPostsTopAll(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedRe
 		}
 	}
 	if loggedIn {
-		where, args = whereMuted(where, "posts", args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
+		where, args = whereMutedAndHidden(where, "posts", args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
 	}
 	if opts.Next != "" {
 		nextPoints, nextID, err := opts.nextPointsID()
@@ -542,7 +546,7 @@ func getPostsTop(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedResul
 		}
 	}
 	if opts.Viewer != nil {
-		where, args = whereMuted(where, table, args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
+		where, args = whereMutedAndHidden(where, table, args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
 	}
 	if opts.Next != "" {
 		nextPoints, nextID, err := opts.nextPointsID()
@@ -606,7 +610,7 @@ func getPostsActivity(ctx context.Context, db *sql.DB, opts *FeedOptions) (*Feed
 		}
 	}
 	if loggedIn {
-		where, args = whereMuted(where, "posts", args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
+		where, args = whereMutedAndHidden(where, "posts", args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
 	}
 	if opts.Next != "" {
 		next, err := opts.nextInt64()
