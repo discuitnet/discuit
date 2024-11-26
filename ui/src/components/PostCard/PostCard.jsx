@@ -28,6 +28,7 @@ const PostCard = ({
   disableEmbeds = false,
   onRemoveFromList = null,
   feedItemKey,
+  canHideFromFeed = false,
 }) => {
   const history = useHistory();
 
@@ -184,7 +185,7 @@ const PostCard = ({
             target={target}
             onRemoveFromList={onRemoveFromList}
             compact={compact}
-            onHidePost={handleHidePost}
+            onHidePost={canHideFromFeed ? handleHidePost : undefined}
           />
         </div>
         <div className={'post-card-body' + (isDomainHovering ? ' is-domain-hover' : '')}>
@@ -283,6 +284,7 @@ PostCard.propTypes = {
   disableEmbeds: PropTypes.bool,
   onRemoveFromList: PropTypes.func,
   feedItemKey: PropTypes.string,
+  canHideFromFeed: PropTypes.bool,
 };
 
 export default PostCard;

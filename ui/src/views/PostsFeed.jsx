@@ -124,6 +124,7 @@ const PostsFeed = ({ feedType = 'all', communityId = null }) => {
         disableEmbeds={user && user.embedsOff}
         compact={compact}
         feedItemKey={item.key}
+        canHideFromFeed
       />
     );
   };
