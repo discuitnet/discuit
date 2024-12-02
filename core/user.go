@@ -130,6 +130,8 @@ type User struct {
 	EmbedsOff               bool     `json:"embedsOff"`
 	HideUserProfilePictures bool     `json:"hideUserProfilePictures"`
 
+	WelcomeNotificationSent bool `json:"-"`
+
 	// No banned users are supposed to be logged in. Make sure to log them out
 	// before banning.
 	BannedAt msql.NullTime `json:"bannedAt"`
@@ -241,6 +243,7 @@ func buildSelectUserQuery(where string) string {
 		"users.remember_feed_sort",
 		"users.embeds_off",
 		"users.hide_user_profile_pictures",
+		"users.welcome_notification_sent",
 	}
 	cols = append(cols, images.ImageColumns("pro_pic")...)
 	joins := []string{
@@ -341,6 +344,7 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 			&u.RememberFeedSort,
 			&u.EmbedsOff,
 			&u.HideUserProfilePictures,
+			&u.WelcomeNotificationSent,
 		}
 
 		proPic := &images.Image{}
@@ -474,6 +478,10 @@ func RegisterUser(ctx context.Context, db *sql.DB, username, email, password str
 	if err := CreateList(ctx, db, id, "bookmarks", "Bookmarks", msql.NullString{}, false); err != nil {
 		log.Println("Failed to create the default community of user: ", username)
 		// Continue on failure.
+	}
+
+	if err := CreateWelcomeNotification(ctx, db, id); err != nil {
+		log.Println("Failed to send welcome notification: ", err)
 	}
 
 	return GetUser(ctx, db, id, nil)

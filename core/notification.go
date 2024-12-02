@@ -46,6 +46,7 @@ const (
 	NotificationTypeDeletePost   = NotificationType("deleted_post")
 	NotificationTypeModAdd       = NotificationType("mod_add")
 	NotificationTypeNewBadge     = NotificationType("new_badge")
+	NotificationTypeWelcome      = NotificationType("welcome")
 )
 
 func (t NotificationType) Valid() bool {
@@ -56,6 +57,7 @@ func (t NotificationType) Valid() bool {
 		NotificationTypeDeletePost,
 		NotificationTypeModAdd,
 		NotificationTypeNewBadge,
+		NotificationTypeWelcome,
 	}, t)
 }
 
@@ -173,6 +175,12 @@ func scanNotifications(db *sql.DB, rows *sql.Rows) ([]*Notification, error) {
 			notif.Notif = nc
 		case NotificationTypeNewBadge:
 			nc := &NotificationNewBadge{}
+			if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
+				return nil, err
+			}
+			notif.Notif = nc
+		case NotificationTypeWelcome:
+			nc := &NotificationWelcome{}
 			if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
 				return nil, err
 			}
@@ -943,4 +951,22 @@ func CreateNewBadgeNotification(ctx context.Context, db *sql.DB, user uid.ID, ba
 		UserID:    user,
 	}
 	return CreateNotification(ctx, db, user, NotificationTypeNewBadge, n)
+}
+
+type NotificationWelcome struct {
+	Title string `json:"title"`
+	Body  string `json:"body"`
+	URL   string `json:"url"`
+}
+
+func (n *NotificationWelcome) marshalJSONForAPI(ctx context.Context, db *sql.DB) ([]byte, error) {
+	return json.Marshal(n)
+}
+
+func CreateWelcomeNotification(ctx context.Context, db *sql.DB, user uid.ID) error {
+	return CreateNotification(ctx, db, user, NotificationTypeWelcome, &NotificationWelcome{
+		Title: "Welcome to Discuit",
+		Body:  "Make a post in our +Welcome community to say hello!",
+		URL:   "/Welcome",
+	})
 }

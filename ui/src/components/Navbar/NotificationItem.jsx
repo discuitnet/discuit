@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router';
 import Favicon from '../../assets/imgs/favicon.png';
@@ -114,6 +114,13 @@ const NotificationItem = ({ notification, ...rest }) => {
           </>
         );
       }
+      case 'welcome': {
+        return (
+          <>
+            <b>{notif.title}</b> {notif.body}
+          </>
+        );
+      }
       default: {
         return null; // unknown notification type
       }
@@ -189,6 +196,9 @@ const NotificationItem = ({ notification, ...rest }) => {
       };
       break;
     }
+    case 'welcome':
+      to = notif.url;
+      break;
   }
 
   const actionsRef = useRef();
