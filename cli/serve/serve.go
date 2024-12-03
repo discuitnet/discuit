@@ -86,6 +86,18 @@ func serve(ctx *cli.Context) error {
 		}
 	}()
 
+	go func() {
+		time.Sleep(time.Second * 5)
+		for {
+			if n, err := core.SendWelcomeNotifications(context.TODO(), db, time.Minute); err != nil {
+				log.Printf("Welcome notification sending daemon error: %v\n", err)
+			} else if n > 0 {
+				log.Printf("%d welcome notifications successfully sent\n", n)
+			}
+			time.Sleep(time.Second * 5)
+		}
+	}()
+
 	if !config.AddressValid(conf.Addr) {
 		log.Fatal("Address needs to be a valid address of the form 'host:port' (host can be empty)")
 	}

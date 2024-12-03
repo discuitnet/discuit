@@ -480,10 +480,6 @@ func RegisterUser(ctx context.Context, db *sql.DB, username, email, password str
 		// Continue on failure.
 	}
 
-	if err := CreateWelcomeNotification(ctx, db, id); err != nil {
-		log.Println("Failed to send welcome notification: ", err)
-	}
-
 	return GetUser(ctx, db, id, nil)
 }
 

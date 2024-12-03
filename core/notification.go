@@ -970,3 +970,41 @@ func CreateWelcomeNotification(ctx context.Context, db *sql.DB, user uid.ID) err
 		URL:   "/Welcome",
 	})
 }
+
+func SendWelcomeNotifications(ctx context.Context, db *sql.DB, delay time.Duration) (int, error) {
+	rows, err := db.QueryContext(ctx, "select id from users where welcome_notification_sent = false and created_at < ?", time.Now().Add(-1*delay))
+	if err != nil {
+		return 0, err
+	}
+
+	var users []uid.ID
+	for rows.Next() {
+		var id uid.ID
+		if err := rows.Scan(&id); err != nil {
+			return 0, err
+		}
+		users = append(users, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+
+	send := func(user uid.ID) error {
+		if err := CreateWelcomeNotification(ctx, db, user); err != nil {
+			return fmt.Errorf("failed to send welcome notification: %w", err)
+		}
+		_, err := db.ExecContext(ctx, "update users set welcome_notification_sent = true where id = ?", user)
+		return err
+	}
+
+	success := 0
+	for _, user := range users {
+		if err := send(user); err != nil {
+			log.Printf("Error sending welcome notification to user (id: %v): %v", user, err)
+		}
+		success++
+	}
+
+	return success, nil
+}
