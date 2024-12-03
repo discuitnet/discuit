@@ -21,6 +21,7 @@ import (
 	msql "github.com/discuitnet/discuit/internal/sql"
 	"github.com/discuitnet/discuit/internal/uid"
 	"github.com/discuitnet/discuit/internal/utils"
+	passwordvalidator "github.com/wagslane/go-password-validator"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -423,7 +424,7 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 }
 
 // RegisterUser creates a new user.
-func RegisterUser(ctx context.Context, db *sql.DB, username, email, password string) (*User, error) {
+func RegisterUser(ctx context.Context, db *sql.DB, username, email, password string, requireMinEntropy bool, minEntropy float64) (*User, error) {
 	// Check for duplicates.
 	if exists, _, err := usernameExists(ctx, db, username); err != nil {
 		return nil, err
@@ -438,6 +439,13 @@ func RegisterUser(ctx context.Context, db *sql.DB, username, email, password str
 	// Check if username is valid.
 	if err := IsUsernameValid(username); err != nil {
 		return nil, httperr.NewBadRequest("invalid-username", fmt.Sprintf("Username %v.", err))
+	}
+
+	if requireMinEntropy {
+		err := passwordvalidator.Validate(password, minEntropy)
+		if err != nil {
+			return nil, httperr.NewBadRequest("bad-password", err.Error())
+		}
 	}
 
 	hash, err := HashPassword([]byte(password))
@@ -1297,7 +1305,7 @@ func CreateGhostUser(db *sql.DB) (bool, error) {
 	if err := db.QueryRow("SELECT username_lc FROM users WHERE username_lc = ?", "ghost").Scan(&username); err != nil {
 		if err == sql.ErrNoRows {
 			// Ghost user not found; create one.
-			_, createErr := RegisterUser(context.Background(), db, "ghost", "", utils.GenerateStringID(48))
+			_, createErr := RegisterUser(context.Background(), db, "ghost", "", utils.GenerateStringID(48), false, 0)
 			return createErr == nil, createErr
 		}
 		return false, err
