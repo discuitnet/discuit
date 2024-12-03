@@ -24,18 +24,20 @@ const maxCommunityAboutLength = 2000 // in runes
 type Community struct {
 	db *sql.DB
 
-	ID            uid.ID          `json:"id"`
-	AuthorID      uid.ID          `json:"userId"`
-	Name          string          `json:"name"`
-	NameLowerCase string          `json:"-"` // TODO: Remove this field (only from this struct, not also from the database).
-	NSFW          bool            `json:"nsfw"`
-	About         msql.NullString `json:"about"`
-	NumMembers    int             `json:"noMembers"`
-	ProPic        *images.Image   `json:"proPic"`
-	BannerImage   *images.Image   `json:"bannerImage"`
-	CreatedAt     time.Time       `json:"createdAt"`
-	DeletedAt     msql.NullTime   `json:"deletedAt"`
-	DeletedBy     uid.NullID      `json:"-"`
+	ID                uid.ID          `json:"id"`
+	AuthorID          uid.ID          `json:"userId"`
+	Name              string          `json:"name"`
+	NameLowerCase     string          `json:"-"` // TODO: Remove this field (only from this struct, not also from the database).
+	NSFW              bool            `json:"nsfw"`
+	About             msql.NullString `json:"about"`
+	NumMembers        int             `json:"noMembers"`
+	PostsCount        int             `json:"-"` // Including deleted posts
+	ProPic            *images.Image   `json:"proPic"`
+	BannerImage       *images.Image   `json:"bannerImage"`
+	PostingRestricted bool            `json:"postingRestricted"` // If true only mods can post.
+	CreatedAt         time.Time       `json:"createdAt"`
+	DeletedAt         msql.NullTime   `json:"deletedAt"`
+	DeletedBy         uid.NullID      `json:"-"`
 
 	// IsDefault is nil until Default is called.
 	IsDefault *bool `json:"isDefault,omitempty"`
@@ -58,6 +60,8 @@ func buildSelectCommunityQuery(where string) string {
 		"communities.nsfw",
 		"communities.about",
 		"communities.no_members",
+		"communities.posts_count",
+		"communities.posting_restricted",
 		"communities.created_at",
 		"communities.deleted_at",
 	}
@@ -183,6 +187,8 @@ func scanCommunities(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *ui
 			&c.NSFW,
 			&c.About,
 			&c.NumMembers,
+			&c.PostsCount,
+			&c.PostingRestricted,
 			&c.CreatedAt,
 			&c.DeletedAt,
 		}
@@ -429,7 +435,10 @@ func GetCommunitiesPrefix(ctx context.Context, db *sql.DB, s string) ([]*Communi
 	return deduped, nil
 }
 
-// Update updates c.About and c.NSFW.
+// Update updates the updatable fields of the community. These are:
+//   - NSFW
+//   - About
+//   - PostingRestricted
 func (c *Community) Update(ctx context.Context, mod uid.ID) error {
 	if is, err := c.UserModOrAdmin(ctx, mod); err != nil {
 		return err
@@ -438,7 +447,7 @@ func (c *Community) Update(ctx context.Context, mod uid.ID) error {
 	}
 
 	c.About.String = utils.TruncateUnicodeString(c.About.String, maxCommunityAboutLength)
-	_, err := c.db.ExecContext(ctx, "UPDATE communities SET nsfw = ?, about = ? WHERE id = ?", c.NSFW, c.About, c.ID)
+	_, err := c.db.ExecContext(ctx, "UPDATE communities SET nsfw = ?, about = ?, posting_restricted = ? WHERE id = ?", c.NSFW, c.About, c.PostingRestricted, c.ID)
 	return err
 }
 
@@ -1321,4 +1330,54 @@ func GetCommunityRequests(ctx context.Context, db *sql.DB) ([]*CommunityRequest,
 func DeleteCommunityRequest(ctx context.Context, db *sql.DB, id int) error {
 	_, err := db.ExecContext(ctx, "UPDATE community_requests SET deleted_at = ? WHERE id = ?", time.Now(), id)
 	return err
+}
+
+// DeleteUnusedCommunities deletes communities older than n days with 0 posts in
+// them. It returns the names (all in lowercase) of the deleted communities.
+func DeleteUnusedCommunities(ctx context.Context, db *sql.DB, n uint, dryRun bool) ([]string, error) {
+	var deleted []string
+	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
+		where := "WHERE posts_count = 0 AND created_at < ?"
+		args := []any{time.Now().Add(time.Duration(n) * time.Hour * 24 * -1)}
+
+		rows, err := tx.QueryContext(ctx, fmt.Sprintf("SELECT name_lc FROM communities %s", where), args...)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		communities := []string{}
+		for rows.Next() {
+			var name string
+			if err := rows.Scan(&name); err != nil {
+				return err
+			}
+			communities = append(communities, name)
+		}
+
+		var b strings.Builder
+		for i, name := range communities {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			b.WriteString(name)
+		}
+
+		if err := rows.Err(); err != nil {
+			return err
+		}
+
+		if !dryRun {
+			if _, err := tx.ExecContext(ctx, fmt.Sprintf("DELETE FROM communities %s", where), args...); err != nil {
+				return err
+			}
+		}
+
+		deleted = communities
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return deleted, nil
 }

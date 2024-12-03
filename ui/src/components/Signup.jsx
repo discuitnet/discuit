@@ -1,8 +1,9 @@
+import clsx from 'clsx';
 import PropTypes from 'prop-types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { Helmet } from 'react-helmet-async';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { usernameMaxLength } from '../config';
 import { APIError, mfetch, validEmail } from '../helper';
 import { useDelayedEffect, useInputUsername } from '../hooks';
@@ -24,6 +25,8 @@ const errors = [
 
 const Signup = ({ open, onClose }) => {
   const dispatch = useDispatch();
+
+  const signupsDisabled = useSelector((state) => state.main.signupsDisabled);
 
   const [username, handleUsernameChange] = useInputUsername(usernameMaxLength);
   const [usernameError, setUsernameError] = useState(null);
@@ -147,12 +150,15 @@ const Signup = ({ open, onClose }) => {
         <style>{`.grecaptcha-badge { visibility: hidden; }`}</style>
       </Helmet>
       <Modal open={open} onClose={onClose} noOuterClickClose={false}>
-        <div className="modal-card modal-signup">
+        <div className={clsx('modal-card modal-signup', signupsDisabled && 'is-disabled')}>
           <div className="modal-card-head">
             <div className="modal-card-title">Signup</div>
             <ButtonClose onClick={onClose} />
           </div>
           <Form className="modal-card-content" onSubmit={handleSubmit}>
+            {signupsDisabled && (
+              <div className="modal-signup-disabled">{`We have temporarily disabled creating new accounts. Please check back again later.`}</div>
+            )}
             <FormField
               className="is-username"
               label="Username"
@@ -166,6 +172,7 @@ const Signup = ({ open, onClose }) => {
                 onBlur={() => checkUsernameExists()}
                 autoFocus
                 autoComplete="username"
+                disabled={signupsDisabled}
               />
             </FormField>
             <FormField
@@ -173,13 +180,19 @@ const Signup = ({ open, onClose }) => {
               description="Without an email address, there's no way to recover your account if you lose your password."
               error={emailError}
             >
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={signupsDisabled}
+              />
             </FormField>
             <FormField label="Password" error={passwordError}>
               <InputPassword
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
+                disabled={signupsDisabled}
               />
             </FormField>
             <FormField label="Repeat password" error={repeatPasswordError}>
@@ -189,6 +202,7 @@ const Signup = ({ open, onClose }) => {
                   setRepeatPassword(e.target.value);
                 }}
                 autoComplete="new-password"
+                disabled={signupsDisabled}
               />
             </FormField>
             {CAPTCHA_ENABLED && (
@@ -228,7 +242,7 @@ const Signup = ({ open, onClose }) => {
             </FormField>
             <FormField className="is-submit">
               <input type="submit" className="button button-main" value="Signup" />
-              <button className="button-link" onClick={handleOnLogin}>
+              <button className="button-link" onClick={handleOnLogin} disabled={signupsDisabled}>
                 Already have an account? Login
               </button>
             </FormField>

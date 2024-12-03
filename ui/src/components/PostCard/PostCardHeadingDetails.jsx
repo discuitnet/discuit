@@ -17,6 +17,7 @@ const PostCardHeadingDetails = ({
   showAuthorProPic = false,
   onRemoveFromList = null,
   compact = false,
+  onHidePost,
 }) => {
   // const userURL = `/@${post.username}`;
   userGroup = userGroup ?? post.userGroup;
@@ -117,6 +118,11 @@ const PostCardHeadingDetails = ({
                   Remove from list
                 </button>
               )}
+              {onHidePost && (
+                <button className="button-clear dropdown-item" onClick={onHidePost}>
+                  Hide
+                </button>
+              )}
             </div>
           </Dropdown>
         )}
@@ -133,6 +139,7 @@ PostCardHeadingDetails.propTypes = {
   showAuthorProPic: PropTypes.bool,
   onRemoveFromList: PropTypes.func,
   compact: PropTypes.bool,
+  onHidePost: PropTypes.func,
 };
 
 export default PostCardHeadingDetails;

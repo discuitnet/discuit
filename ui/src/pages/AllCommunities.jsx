@@ -1,12 +1,13 @@
+import clsx from 'clsx';
 import PropTypes from 'prop-types';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
-import { ButtonClose } from '../components/Button';
+import Button, { ButtonClose } from '../components/Button';
 import CommunityProPic from '../components/CommunityProPic';
 import Feed from '../components/Feed';
 import { FormField } from '../components/Form';
-import { InputWithCount, useInputMaxLength } from '../components/Input';
+import Input, { InputWithCount, useInputMaxLength } from '../components/Input';
 import MarkdownBody from '../components/MarkdownBody';
 import MiniFooter from '../components/MiniFooter';
 import Modal from '../components/Modal';
@@ -17,8 +18,10 @@ import { mfetch, mfetchjson } from '../helper';
 import { useInputUsername } from '../hooks';
 import { FeedItem } from '../slices/feedsSlice';
 import { loginPromptToggled, snackAlert, snackAlertError } from '../slices/mainSlice';
+import { SVGClose, SVGSearch } from '../SVGs';
 import LoginForm from '../views/LoginForm';
 import JoinButton from './Community/JoinButton';
+import { isInfiniteScrollingDisabled } from './Settings/devicePrefs';
 
 const prepareText = (isMobile = false) => {
   const x = isMobile ? 'by filling out the form below' : 'by clicking on the button below';
@@ -32,6 +35,12 @@ const AllCommunities = () => {
   const user = useSelector((state) => state.main.user);
   const loggedIn = user !== null;
 
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  useEffect(() => {
+    setSearchQuery('');
+  }, [isSearching]);
+
   // const { items: comms, loading } = useSelector((state) => {
   //   const names = state.main.allCommunities.items;
   //   const communities = state.communities.items;
@@ -44,7 +53,7 @@ const AllCommunities = () => {
   // });
 
   const fetchCommunities = async (next) => {
-    const res = await mfetchjson('/api/communities');
+    const res = await mfetchjson('/api/communities?sort=size');
     const items = res.map((community) => new FeedItem(community, 'community', community.id));
     return {
       items: items,
@@ -53,7 +62,30 @@ const AllCommunities = () => {
   };
 
   const handleRenderItem = (item, index) => {
+    if (
+      searchQuery !== '' &&
+      !item.item.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
+    ) {
+      return null;
+    }
     return <ListItem community={item.item} />;
+  };
+
+  const renderSearchBox = () => {
+    return (
+      <div className="communities-search">
+        <Input
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          autoFocus
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              setIsSearching(false);
+            }
+          }}
+        />
+      </div>
+    );
   };
 
   return (
@@ -61,17 +93,27 @@ const AllCommunities = () => {
       <Sidebar />
       <main>
         <div className="page-comms-header card card-padding">
-          <h1>All communities</h1>
-          {/* {import.meta.env.VITE_SEARCHENABLED} */}
-          <RequestCommunityButton className="button-main is-m" isMobile>
-            New
-          </RequestCommunityButton>
+          <div className="left">{isSearching ? renderSearchBox() : <h1>All communities</h1>}</div>
+          <div className="right">
+            <Button
+              className={clsx('comms-search-button', !isSearching && 'is-search-svg')}
+              icon={isSearching ? <SVGClose /> : <SVGSearch />}
+              onClick={() => setIsSearching((v) => !v)}
+            />
+            {!isSearching && (
+              <RequestCommunityButton className="button-main is-m comms-new-button" isMobile>
+                New
+              </RequestCommunityButton>
+            )}
+          </div>
         </div>
         <div className="comms-list">
           <Feed
             feedId="all-communities"
             onFetch={fetchCommunities}
             onRenderItem={handleRenderItem}
+            infiniteScrollingDisabled={isInfiniteScrollingDisabled()}
+            noMoreItemsText="Nothing to show"
           />
         </div>
       </main>

@@ -12,9 +12,10 @@ import {
   selectFeedInViewItems,
 } from '../../slices/feedsSlice';
 import { snackAlertError } from '../../slices/mainSlice';
-import PostCardSkeleton from '../PostCard/PostCardSkeleton';
+import Button from '../Button';
 import Spinner from '../Spinner';
 import FeedItemComponent from './FeedItem';
+import FeedSkeleton from './FeedSkeleton';
 
 export interface FeedProps<FeedItemType> {
   className?: string;
@@ -22,10 +23,13 @@ export interface FeedProps<FeedItemType> {
   feedId: string;
   onFetch: (
     next?: string | null
-  ) => Promise<{ items: FeedItem<FeedItemType>[]; next: string | null } | null>;
+  ) => Promise<{ items: FeedItem<FeedItemType | unknown>[]; next: string | null } | null>;
   onRenderItem: (item: FeedItem, index: number) => React.ReactNode;
   banner?: React.ReactNode;
+  noMoreItemsText?: string;
   emptyItemsText?: string;
+  skeletons?: React.ReactNode;
+  infiniteScrollingDisabled?: boolean;
 }
 
 function Feed<FeedItemType>({
@@ -35,7 +39,10 @@ function Feed<FeedItemType>({
   onFetch,
   onRenderItem,
   banner,
+  noMoreItemsText = 'No more posts',
   emptyItemsText = 'Nothing to show',
+  skeletons,
+  infiniteScrollingDisabled = false,
 }: FeedProps<FeedItemType>) {
   const windowHeight = document.documentElement.clientHeight;
   const rootMargin = Math.round(Math.max(windowHeight * 0.35, 200));
@@ -49,13 +56,15 @@ function Feed<FeedItemType>({
   const hasMore = feed ? Boolean(feed.next) : false;
   const [, /*error*/ setError] = useState<unknown>(null);
 
-  const loadingRef = useRef(false);
+  const [fetching, setFetching] = useState(false);
+  const fetchingRef = useRef(false);
   const fetchFeedAndDispatch = async (next: string | null) => {
-    if (loadingRef.current) {
+    if (fetchingRef.current) {
       return;
     }
     try {
-      loadingRef.current = true;
+      setFetching(true);
+      fetchingRef.current = true;
       const res = await onFetch(next);
       if (res) {
         dispatch(feedUpdated(feedId, res.items, res.next));
@@ -66,7 +75,8 @@ function Feed<FeedItemType>({
       setError(error);
       dispatch(snackAlertError(error));
     } finally {
-      loadingRef.current = false;
+      fetchingRef.current = false;
+      setFetching(false);
     }
   };
 
@@ -76,11 +86,18 @@ function Feed<FeedItemType>({
     }
   }, [feedId, loading]);
 
+  const handleLoadMoreClick = () => {
+    if (feed && feed.next) {
+      fetchFeedAndDispatch(feed.next);
+    }
+  };
+
   useEffect(() => {
+    if (infiniteScrollingDisabled) {
+      return;
+    }
     if (!loading && hasMore && spinnerInView) {
-      if (feed && feed.next) {
-        fetchFeedAndDispatch(feed.next);
-      }
+      handleLoadMoreClick();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, hasMore, spinnerInView]);
@@ -118,20 +135,23 @@ function Feed<FeedItemType>({
   const onRenderItems = () => {
     const nodes: React.ReactNode[] = [];
     items.forEach((item, index) => {
-      nodes.push(
-        <FeedItemComponent
-          index={index}
-          itemKey={item.key}
-          key={item.key}
-          height={item.height}
-          onHeightChange={(height: number) => handleItemHeightChange(height, item)}
-          keepRenderedHtml={isDesktop}
-          onViewChange={handleItemViewChange}
-          initiallyInView={(itemsInitiallyInView || []).includes(item.key)}
-        >
-          {onRenderItem(item, index)}
-        </FeedItemComponent>
-      );
+      const renderedItem = onRenderItem(item, index);
+      if (renderedItem !== null) {
+        nodes.push(
+          <FeedItemComponent
+            index={index}
+            itemKey={item.key}
+            key={item.key}
+            height={item.height}
+            onHeightChange={(height: number) => handleItemHeightChange(height, item)}
+            keepRenderedHtml={isDesktop}
+            onViewChange={handleItemViewChange}
+            initiallyInView={(itemsInitiallyInView || []).includes(item.key)}
+          >
+            {renderedItem}
+          </FeedItemComponent>
+        );
+      }
       if (banner && index === 1) {
         nodes.push(
           <div key="banner" className="feed-banner is-m">
@@ -148,13 +168,19 @@ function Feed<FeedItemType>({
   if (loading) {
     return (
       <div className={_className}>
-        <PostCardSkeleton />
-        <PostCardSkeleton />
-        <PostCardSkeleton />
-        <PostCardSkeleton />
-        <PostCardSkeleton />
-        <PostCardSkeleton />
-        <PostCardSkeleton />
+        {skeletons ? (
+          skeletons
+        ) : (
+          <>
+            <FeedSkeleton compact={compact} />
+            <FeedSkeleton compact={compact} />
+            <FeedSkeleton compact={compact} />
+            <FeedSkeleton compact={compact} />
+            <FeedSkeleton compact={compact} />
+            <FeedSkeleton compact={compact} />
+            <FeedSkeleton compact={compact} />
+          </>
+        )}
       </div>
     );
   }
@@ -162,12 +188,19 @@ function Feed<FeedItemType>({
   return (
     <div className={_className}>
       {onRenderItems()}
-      {hasMore && (
+      {!infiniteScrollingDisabled && hasMore && (
         <div className="feed-spinner" ref={spinnerRef}>
           <Spinner />
         </div>
       )}
-      {items.length > 0 && !hasMore && <div className="feed-no-more">No more posts</div>}
+      {infiniteScrollingDisabled && hasMore && (
+        <div className="feed-load-more">
+          <Button disabled={fetching} onClick={handleLoadMoreClick}>
+            More
+          </Button>
+        </div>
+      )}
+      {items.length > 0 && !hasMore && <div className="feed-no-more">{noMoreItemsText}</div>}
       {items.length === 0 && <div className="card card-padding feed-none">{emptyItemsText}</div>}
     </div>
   );

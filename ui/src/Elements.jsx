@@ -1,13 +1,14 @@
 import PropTypes from 'prop-types';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Button, { ButtonClose, ButtonMore } from './components/Button';
 import Dropdown from './components/Dropdown';
+import FeedSkeleton from './components/Feed/FeedSkeleton';
 import { Form, FormField, FormSection } from './components/Form';
 import Input, { Checkbox, InputPassword, Radio, useInputMaxLength } from './components/Input';
+import MarkdownTextarea from './components/MarkdownTextarea';
 import Modal from './components/Modal';
 import ModalConfirm from './components/Modal/ModalConfirm';
-import PostCardSkeleton from './components/PostCard/PostCardSkeleton';
 import Spinner from './components/Spinner';
 import { snackAlert } from './slices/mainSlice';
 import { SVGSettings } from './SVGs';
@@ -19,13 +20,14 @@ function Elements() {
 
   const [iwcValue, iwcHandleChange] = useInputMaxLength(1000);
 
-  const [background, setBackground] = useState('#fff');
-  const handleToggleBackground = () => {
-    setBackground((b) => (b === '#fff' ? 'transparent' : '#fff'));
-  };
+  const [transparentBackground, setTransparentBackground] = useState(false);
+  const handleToggleBackground = () => setTransparentBackground((b) => !b);
   const style = {
-    background,
+    background: transparentBackground ? 'transparent' : 'var(--color-bg)',
   };
+
+  const textareaRef = useRef();
+  const [textareaValue, setTextareaValue] = useState('blaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
 
   const icons = {
     trash: (
@@ -256,6 +258,7 @@ function Elements() {
       <a href="https://www.google.com/" target="_blank" rel="noreferrer">
         Go someplace else
       </a>
+      <Button onClick={() => setOpen(true)}>Open modal</Button>
       <Modal open={open} onClose={() => setOpen(false)}>
         <div className="modal-card">
           <div className="modal-card-head">
@@ -347,7 +350,18 @@ function Elements() {
         culpa? Pariatur, harum!
       </p>
       <div style={{ width: '100%' }}>
-        <PostCardSkeleton />
+        <FeedSkeleton />
+      </div>
+      <div style={{ width: '50%' }}>
+        <MarkdownTextarea
+          ref={textareaRef}
+          rows={5}
+          style={{ width: '100%' }}
+          value={textareaValue}
+          onChange={(e) => setTextareaValue(e.target.value)}
+          autoFocus
+        />
+        <Button onClick={null}>Clear text</Button>
       </div>
     </div>
   );

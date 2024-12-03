@@ -41,15 +41,9 @@ import Terms from './pages/Terms';
 import User from './pages/User';
 import PushNotifications from './PushNotifications';
 import {
-  bannedFromUpdated,
   createCommunityModalOpened,
-  initialValuesAdded,
-  listsAdded,
+  initialFieldsSet,
   loginModalOpened,
-  mutesAdded,
-  noUsersUpdated,
-  reportReasonsUpdated,
-  sidebarCommunitiesUpdated,
   signupModalOpened,
   snackAlert,
   toggleSidebarOpen,
@@ -111,16 +105,7 @@ const App = () => {
         // Cookies.
         window.localStorage.setItem('csrftoken', res.headers.get('Csrf-Token'));
 
-        if (initial.user) {
-          dispatch(userLoggedIn(initial.user));
-        }
-        dispatch(sidebarCommunitiesUpdated(initial.communities));
-        dispatch(reportReasonsUpdated(initial.reportReasons));
-        dispatch(noUsersUpdated(initial.noUsers));
-        dispatch(bannedFromUpdated(initial.bannedFrom || []));
-        dispatch(initialValuesAdded(initial)); // miscellaneous data
-        dispatch(mutesAdded(initial.mutes));
-        dispatch(listsAdded(initial.lists));
+        dispatch(initialFieldsSet(initial));
       } catch (err) {
         console.error(err);
         dispatch(snackAlert('Something went wrong.'));

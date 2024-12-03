@@ -1,5 +1,4 @@
 import PropTypes from 'prop-types';
-import React from 'react';
 import { selectImageCopyURL } from '../helper';
 import { useImageLoaded } from '../hooks';
 import Link from './Link';
@@ -89,7 +88,7 @@ DefaultProfilePicture.propTypes = {
   name: PropTypes.string.isRequired,
 };
 
-const UserProPic = ({ className, username, proPic, size = 'small', ...rest }) => {
+const UserProPic = ({ className = '', username, proPic, size = 'small', ...rest }) => {
   return (
     <div className={'user-propic' + (className ? ` ${className}` : '')}>
       {proPic ? (

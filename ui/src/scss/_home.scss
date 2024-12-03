@@ -663,6 +663,18 @@ a {
     }
 }
 
+.post-card-hidden {
+    padding: var(--gap);
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgb(var(--color-fg), 0.01);
+    @include mixins.not-mobile {
+        margin-left: var(--post-card-votes-margin);
+    }
+}
+
 html.theme-dark {
     .post-card.is-compact {
         .post-card-card {
@@ -734,29 +746,8 @@ html.theme-dark {
     }
 }
 
-.post-skeleton {
+.feed-skeleton {
     display: flex;
-    .post-votes-skeleton {
-        .post-votes-arrow {
-            color: rgba(var(--base-fg), 0.08);
-            cursor: unset;
-            &:hover {
-                color: rgba(var(--base-fg), 0.08);
-            }
-        }
-    }
-    .skeleton {
-        // margin-left: var(--post-card-margin-left);
-        margin-left: var(--post-card-votes-margin);
-    }
-    @include mixins.tablet {
-        .post-votes-skeleton {
-            display: none;
-        }
-        .skeleton {
-            margin-left: 0;
-        }
-    }
 }
 
 .feed {
@@ -786,6 +777,15 @@ html.theme-dark {
         align-items: center;
         justify-content: center;
     }
+    .feed-load-more {
+        margin-left: var(--post-card-votes-margin);
+        button {
+            width: 100%;
+        }
+        @include mixins.tablet {
+            margin-left: 0;
+        }
+    }
     .feed-no-more,
     .feed-none,
     .feed-spinner {
@@ -805,6 +805,16 @@ html.theme-dark {
 }
 
 .posts-feed {
+    .feed-skeleton {
+        .skeleton {
+            margin-left: var(--post-card-votes-margin);
+        }
+        @include mixins.tablet {
+            .skeleton {
+                margin-left: 0;
+            }
+        }
+    }
     .select-bar {
         margin-left: var(--post-card-votes-margin);
         @include mixins.tablet {
@@ -836,6 +846,28 @@ html.theme-dark {
                 text-align: center;
                 align-self: center;
             }
+        }
+        .modal-card-content {
+            position: relative;
+        }
+        .modal-signup-disabled {
+            position: absolute;
+            top: 0;
+            right: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 10;
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-weight: 600;
+            background: rgba(var(--base-bg), 0.85);
+            backdrop-filter: var(--modal-bg-blur);
+            padding: var(--gap);
+        }
+        &.is-disabled {
         }
     }
     .modal-login {

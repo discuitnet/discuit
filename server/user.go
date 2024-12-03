@@ -10,6 +10,7 @@ import (
 
 	"github.com/SherClockHolmes/webpush-go"
 	"github.com/discuitnet/discuit/core"
+	"github.com/discuitnet/discuit/core/sitesettings"
 	"github.com/discuitnet/discuit/internal/hcaptcha"
 	"github.com/discuitnet/discuit/internal/httperr"
 	"github.com/discuitnet/discuit/internal/httputil"
@@ -34,6 +35,18 @@ func (s *Server) getUser(w *responseWriter, r *request) error {
 	}
 
 	if err := user.LoadModdingList(r.ctx); err != nil {
+		return err
+	}
+
+	if r.urlQueryParamsValue("adminsView") == "true" {
+		if _, err = getLoggedInAdmin(s.db, r); err != nil {
+			return err
+		}
+		data, err := user.MarshalJSONForAdminViewer()
+		if err != nil {
+			return err
+		}
+		_, err = w.Write(data)
 		return err
 	}
 
@@ -112,14 +125,15 @@ func (s *Server) deleteUser(w *responseWriter, r *request) error {
 func (s *Server) initial(w *responseWriter, r *request) error {
 	var err error
 	response := struct {
-		ReportReasons  []core.ReportReason `json:"reportReasons"`
-		User           *core.User          `json:"user"`
-		Lists          []*core.List        `json:"lists"`
-		Communities    []*core.Community   `json:"communities"`
-		NoUsers        int                 `json:"noUsers"`
-		BannedFrom     []uid.ID            `json:"bannedFrom"`
-		VAPIDPublicKey string              `json:"vapidPublicKey"`
-		Mutes          struct {
+		SignupsDisabled bool                `json:"signupsDisabled"`
+		ReportReasons   []core.ReportReason `json:"reportReasons"`
+		User            *core.User          `json:"user"`
+		Lists           []*core.List        `json:"lists"`
+		Communities     []*core.Community   `json:"communities"`
+		NoUsers         int                 `json:"noUsers"`
+		BannedFrom      []uid.ID            `json:"bannedFrom"`
+		VAPIDPublicKey  string              `json:"vapidPublicKey"`
+		Mutes           struct {
 			CommunityMutes []*core.Mute `json:"communityMutes"`
 			UserMutes      []*core.Mute `json:"userMutes"`
 		} `json:"mutes"`
@@ -130,6 +144,12 @@ func (s *Server) initial(w *responseWriter, r *request) error {
 
 	response.Mutes.CommunityMutes = []*core.Mute{}
 	response.Mutes.UserMutes = []*core.Mute{}
+
+	siteSettings, err := sitesettings.GetSiteSettings(r.ctx, s.db)
+	if err != nil {
+		return err
+	}
+	response.SignupsDisabled = siteSettings.SignupsDisabled
 
 	if r.loggedIn {
 		if response.User, err = core.GetUser(r.ctx, s.db, *r.viewer, r.viewer); err != nil {
@@ -238,6 +258,13 @@ func (s *Server) login(w *responseWriter, r *request) error {
 func (s *Server) signup(w *responseWriter, r *request) error {
 	if r.loggedIn {
 		return httperr.NewBadRequest("already_logged_in", "You are already logged in")
+	}
+
+	// Verify that signups are not disabled.
+	if settings, err := sitesettings.GetSiteSettings(r.ctx, s.db); err != nil {
+		return err
+	} else if settings.SignupsDisabled {
+		return httperr.NewForbidden("signups-disabled", "Creating new accounts is disabled.")
 	}
 
 	values, err := r.unmarshalJSONBodyToStringsMap(true)
@@ -616,4 +643,52 @@ func (s *Server) addBadge(w *responseWriter, r *request) error {
 	}
 
 	return w.writeJSON(user.Badges)
+}
+
+func (s *Server) handleHiddenPosts(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
+	}
+
+	user, err := core.GetUser(r.ctx, s.db, *r.viewer, nil)
+	if err != nil {
+		return err
+	}
+
+	// The body of the incoming request must be of the JSON form:
+	body := struct {
+		PostID uid.ID `json:"postId"`
+	}{}
+
+	if err := r.unmarshalJSONBody(&body); err != nil {
+		return err
+	}
+
+	if err := user.HidePost(r.ctx, body.PostID); err != nil {
+		return err
+	}
+
+	return w.writeString(`{"success":true}`)
+}
+
+func (s *Server) unhidePost(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
+	}
+
+	user, err := core.GetUser(r.ctx, s.db, *r.viewer, nil)
+	if err != nil {
+		return err
+	}
+
+	postID, err := uid.FromString(r.muxVar("postId"))
+	if err != nil {
+		return httperr.NewBadRequest("invalid-post-id", "Invalid post id.")
+	}
+
+	if err := user.UnhidePost(r.ctx, postID); err != nil {
+		return err
+	}
+
+	return w.writeString(`{"success":true}`)
 }

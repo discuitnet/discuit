@@ -5,11 +5,13 @@ import (
 	"crypto/sha1"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -31,6 +33,7 @@ const (
 	minPasswordLength = 8
 
 	maxUserProfileAboutLength = 10000
+	maxHiddenPosts            = 1000 // per user
 )
 
 // UserGroup represents who a user is.
@@ -97,6 +100,7 @@ type User struct {
 	db *sql.DB
 
 	ID                uid.ID `json:"id"`
+	UserIndex         int    `json:"-"`
 	Username          string `json:"username"`
 	UsernameLowerCase string `json:"-"`
 
@@ -112,7 +116,8 @@ type User struct {
 	Badges           Badges          `json:"badges"`
 	NumPosts         int             `json:"noPosts"`
 	NumComments      int             `json:"noComments"`
-	LastSeen         time.Time       `json:"-"` // accurate to within 5 minutes
+	LastSeen         time.Time       `json:"-"`             // accurate to within 5 minutes
+	LastSeenMonth    string          `json:"lastSeenMonth"` // of the form: November 2024
 	CreatedAt        time.Time       `json:"createdAt"`
 	Deleted          bool            `json:"deleted"`
 	DeletedAt        msql.NullTime   `json:"deletedAt,omitempty"`
@@ -214,6 +219,7 @@ func HashPassword(password []byte) ([]byte, error) {
 func buildSelectUserQuery(where string) string {
 	cols := []string{
 		"users.id",
+		"users.user_index",
 		"users.username",
 		"users.username_lc",
 		"users.email",
@@ -329,6 +335,7 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 		}
 		dests := []any{
 			&u.ID,
+			&u.UserIndex,
 			&u.Username,
 			&u.UsernameLowerCase,
 			&u.Email,
@@ -411,9 +418,9 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 	}
 
 	for _, user := range users {
-		// Hide everything that only the user themself should see from public
-		// view.
-		if viewer != nil && *viewer == user.ID {
+		// Hide everything that only the user themself or an admin should see
+		// from public view.
+		if viewerAdmin || (viewer != nil && *viewer == user.ID) {
 			if user.Email.Valid {
 				user.EmailPublic = new(string)
 				*user.EmailPublic = user.Email.String
@@ -424,6 +431,8 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 		if user.Deleted && !viewerAdmin {
 			user.SetToGhost()
 		}
+
+		user.LastSeenMonth = user.LastSeen.Month().String() + " " + strconv.Itoa(user.LastSeen.Year())
 	}
 
 	return users, nil
@@ -632,6 +641,21 @@ func (u *User) UnsetToGhost() {
 		u.DeletedAt = u.preGhostDeletedAt
 		u.Badges = u.preGhostBadges
 	}
+}
+
+// MarshalJSONForAdminViewer marshals the user with additional fields for admin
+// eyes only.
+func (u *User) MarshalJSONForAdminViewer() ([]byte, error) {
+	user := &struct {
+		*User
+		UserIndex int       `json:"userIndex"`
+		LastSeen  time.Time `json:"lastSeen"`
+	}{
+		User:      u,
+		UserIndex: u.UserIndex,
+		LastSeen:  u.LastSeen,
+	}
+	return json.Marshal(user)
 }
 
 // Delete deletes a user. Make sure that the user is logged out on all sessions
@@ -1057,6 +1081,43 @@ func (u *User) RemoveBadge(id int) error {
 	}
 
 	_, err := u.db.Exec("DELTE FROM user_badges WHERE id = ? and user_id = ?", id, u.ID)
+	return err
+}
+
+func (u *User) HidePost(ctx context.Context, postID uid.ID) error {
+	return msql.Transact(ctx, u.db, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx, "INSERT INTO hidden_posts (user_id, post_id) VALUES (?, ?)", u.ID, postID); err != nil {
+			if msql.IsErrDuplicateErr(err) {
+				return nil
+			}
+			return err
+		}
+
+		count := 0
+		if err := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM hidden_posts WHERE user_id = ?", u.ID).Scan(&count); err != nil {
+			return err
+		}
+
+		// If there are more then maxHiddenPosts hidden posts, delete the excess
+		// rows, choosing the oldest ones.
+		if count > maxHiddenPosts {
+			_, err := tx.ExecContext(
+				ctx,
+				"DELETE FROM hidden_posts WHERE user_id = ? AND created_at <= (SELECT created_at FROM hidden_posts WHERE user_id = ? ORDER BY created_at DESC LIMIT 1 OFFSET ?)",
+				u.ID,
+				u.ID,
+				maxHiddenPosts,
+			)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func (u *User) UnhidePost(ctx context.Context, postID uid.ID) error {
+	_, err := u.db.ExecContext(ctx, "DELETE FROM hidden_posts WHERE user_id = ? AND post_id = ?", u.ID, postID)
 	return err
 }
 

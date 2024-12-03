@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { onEscapeKey } from '../helper';
 import { useIsMobile } from '../hooks';
 import Modal from './Modal';
@@ -11,7 +11,7 @@ const Dropdown = ({
   children,
   aligned = 'left',
   containerStyle = {},
-  onActiveChange,
+  onActiveChange = null,
   ...rest
 }) => {
   const [active, setActive] = useState(false);

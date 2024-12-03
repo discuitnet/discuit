@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"log"
 	"net/http"
@@ -120,6 +121,8 @@ func New(db *sql.DB, conf *config.Config, searchEngine search.SearchEngine) (*Se
 	r.Handle("/api/users/{username}/pro_pic", s.withHandler(s.handleUserProPic)).Methods("POST", "DELETE")
 	r.Handle("/api/users/{username}/badges", s.withHandler(s.addBadge)).Methods("POST")
 	r.Handle("/api/users/{username}/badges/{badgeId}", s.withHandler(s.deleteBadge)).Methods("DELETE")
+	r.Handle("/api/hidden_posts", s.withHandler(s.handleHiddenPosts)).Methods("POST")
+	r.Handle("/api/hidden_posts/{postId}", s.withHandler(s.unhidePost)).Methods("DELETE")
 
 	r.Handle("/api/users/{username}/lists", s.withHandler(s.handleLists)).Methods("GET", "POST")
 	r.Handle("/api/lists/_saved_to", s.withHandler(s.getSaveToLists)).Methods("GET")
@@ -194,6 +197,7 @@ func New(db *sql.DB, conf *config.Config, searchEngine search.SearchEngine) (*Se
 	r.Handle("/api/_link_info", s.withHandler(s.getLinkInfo)).Methods("GET")
 
 	r.Handle("/api/analytics", s.withHandler(s.handleAnalytics)).Methods("POST")
+	r.Handle("/api/site_settings", s.withHandler(s.handleSiteSettings)).Methods("GET", "PUT")
 
 	r.NotFoundHandler = http.HandlerFunc(s.apiNotFoundHandler)
 	r.MethodNotAllowedHandler = http.HandlerFunc(s.apiMethodNotAllowedHandler)
@@ -827,20 +831,69 @@ func (s *Server) serveSPA(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	serveIndexFile := func() {
+	serveIndexFileNotFound := func(perr error) {
+		log.Printf("Error serving index.html file: %v\n", perr)
+
+		const tmplStr = `
+			<!DOCTYPE html>
+			<html lang="en">
+			<head>
+				<meta charset="UTF-8">
+				<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<title>{{.Title}}</title>
+			</head>
+			<body>
+				<p>{{.ErrorMessage}}</p>
+			</body>
+			</html>
+		`
+
+		tmpl, err := template.New("page").Parse(tmplStr)
+		if err != nil {
+			log.Fatalf("Error parsing index.html not found template: %v\n", err)
+		}
+
+		data := struct {
+			Title        string
+			ErrorMessage string
+		}{
+			Title:        s.config.SiteName,
+			ErrorMessage: fmt.Sprintf("Error %s", perr.Error()),
+		}
+
+		w.Header().Add("Cache-Control", "no-store")
+
+		if err := tmpl.Execute(w, data); err != nil {
+			log.Printf("Error writing index.html not found template: %v\n", err)
+		}
+
+	}
+
+	skipServiceWorkerCache := func(header http.Header) {
+		header.Add("X-Service-Worker-Cache", "no-store")
+	}
+
+	serveIndexFile := func(fileNotFound bool) {
 		file, err := os.Open(filepath.Join(s.reactPath, s.reactIndex))
 		if err != nil {
-			log.Fatal(err)
+			skipServiceWorkerCache(w.Header())
+			serveIndexFileNotFound(fmt.Errorf("opening index.html file: %w", err))
+			return
 		}
 		defer file.Close()
 
 		doc, err := html.Parse(file)
 		if err != nil {
-			log.Fatal(err)
+			serveIndexFileNotFound(fmt.Errorf("parsing index.html file: %w", err))
+			return
 		}
 
 		s.insertMetaTags(doc, r)
+
 		w.Header().Add("Cache-Control", "no-store")
+		if fileNotFound {
+			skipServiceWorkerCache(w.Header())
+		}
 
 		var writer io.Writer = w
 		if httputil.AcceptEncoding(r.Header, "gzip") {
@@ -854,14 +907,16 @@ func (s *Server) serveSPA(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if path == "/" {
-		serveIndexFile()
+		serveIndexFile(false)
 		return
+	} else if path == "/service-worker.js" {
+		w.Header().Add("Cache-Control", "private, max-age=0")
 	}
 
 	fpath := filepath.Join(s.reactPath, path)
 	_, err = os.Stat(fpath)
 	if os.IsNotExist(err) {
-		serveIndexFile()
+		serveIndexFile(true)
 		return
 	} else if err != nil {
 		http.Error(w, "500: Internal server error", http.StatusInternalServerError)

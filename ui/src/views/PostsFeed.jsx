@@ -8,6 +8,7 @@ import { MemorizedPostCard } from '../components/PostCard/PostCard';
 import SelectBar from '../components/SelectBar';
 import { mfetchjson } from '../helper';
 import { useCanonicalTag } from '../hooks';
+import { isInfiniteScrollingDisabled } from '../pages/Settings/devicePrefs';
 import { FeedItem, feedReloaded } from '../slices/feedsSlice';
 import WelcomeBanner from './WelcomeBanner';
 
@@ -122,6 +123,8 @@ const PostsFeed = ({ feedType = 'all', communityId = null }) => {
         index={index}
         disableEmbeds={user && user.embedsOff}
         compact={compact}
+        feedItemKey={item.key}
+        canHideFromFeed
       />
     );
   };
@@ -168,6 +171,7 @@ const PostsFeed = ({ feedType = 'all', communityId = null }) => {
         onFetch={handleFetch}
         onRenderItem={handleRenderItem}
         banner={!loggedIn ? <WelcomeBanner className="is-m is-in-feed" /> : null}
+        infiniteScrollingDisabled={isInfiniteScrollingDisabled()}
       />
     </div>
   );

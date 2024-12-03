@@ -7,6 +7,7 @@ import (
 	discuitCLI "github.com/discuitnet/discuit/cli"
 	"github.com/discuitnet/discuit/cli/addalluserstocommunity"
 	"github.com/discuitnet/discuit/cli/admin"
+	"github.com/discuitnet/discuit/cli/deleteunusedcommunities"
 	"github.com/discuitnet/discuit/cli/deleteuser"
 	"github.com/discuitnet/discuit/cli/fixhotness"
 	"github.com/discuitnet/discuit/cli/forcepasschange"
@@ -41,6 +42,7 @@ func main() {
 			forcepasschange.Command,
 			fixhotness.Command,
 			addalluserstocommunity.Command,
+			deleteunusedcommunities.Command,
 			newbadge.Command,
 			deleteuser.Command,
 			injectconfig.Command,

@@ -72,16 +72,29 @@ const Comment = ({
   // right now, the logged in user, has the privilege to view this comment.
   const purged = deleted && comment.contentStripped;
 
-  const [isReplying, setIsReplying] = useState(false);
+  const [selection, setSelection] = useState('');
+  const [isReplying, _setIsReplying] = useState(false);
+
+  const openReplyBox = () => _setIsReplying(true);
+  const closeReplyBox = () => {
+    _setIsReplying(false);
+    setSelection('');
+  };
+
   const handleOnReply = () => {
     if (!loggedIn) {
       dispatch(loginPromptToggled());
       return;
     }
-    setIsReplying(true);
+    const sel = document.getSelection();
+    if (sel) {
+      const text = sel.toString();
+      if (text) setSelection(text);
+    }
+    openReplyBox();
   };
   const handleAddCommentSuccess = (newComment) => {
-    setIsReplying(false);
+    closeReplyBox();
     if (!newComment.author) {
       newComment.author = user;
     }
@@ -685,7 +698,8 @@ const Comment = ({
             post={post}
             parentCommentId={comment.id}
             onSuccess={handleAddCommentSuccess}
-            onCancel={() => setIsReplying(false)}
+            onCancel={closeReplyBox}
+            textSelection={selection}
           />
         )}
         {children &&

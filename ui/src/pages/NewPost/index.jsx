@@ -1,11 +1,13 @@
+import clsx from 'clsx';
 import PropTypes from 'prop-types';
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router';
 import { useLocation } from 'react-router-dom/cjs/react-router-dom.min';
 import { ButtonClose } from '../../components/Button';
 import Link from '../../components/Link';
+import MarkdownTextarea from '../../components/MarkdownTextarea';
 import PageLoading from '../../components/PageLoading';
 import Spinner from '../../components/Spinner';
 import Textarea from '../../components/Textarea';
@@ -40,20 +42,19 @@ const NewPost = () => {
 
   const bannedFrom = useSelector((state) => state.main.bannedFrom);
   const [community, setCommunity] = useState(null);
+
   const [isBanned, setIsBanned] = useState(false);
-  const [isMod, setIsMod] = useState(false);
+  const [isUserMod, setIsUserMod] = useState(false);
+
   useEffect(() => {
     if (community !== null) {
-      const _isBanned = bannedFrom.find((id) => id === community.id) !== undefined;
-      if (_isBanned) {
-        alert(`You are banned from ${community.name}`);
-      }
-      setIsBanned(_isBanned);
+      const isBanned = bannedFrom.find((id) => id === community.id) !== undefined;
+      setIsBanned(isBanned);
     } else {
       setIsBanned(false);
     }
-    setIsMod(community === null ? false : community.userMod);
-  }, [community]);
+    setIsUserMod(community === null ? false : community.userMod);
+  }, [community, bannedFrom]);
 
   const handleCommunityChange = async (ncomm) => {
     try {
@@ -175,8 +176,20 @@ const NewPost = () => {
     }
   };
 
+  const isPostingDisabled =
+    community !== null &&
+    (isBanned || (!isEditPost && community.postingRestricted && !(isUserMod || user.isAdmin)));
+
+  const getPostingDisabledText = () => {
+    if (isBanned) {
+      return `You've been banned from ${community.name}.`;
+    } else {
+      return `Only approved members of this community can post.`;
+    }
+  };
+
   const [_isSubmitDisabled, setIsSubmitting] = useState(false);
-  const isSubmitDisabled = _isSubmitDisabled || isUploading;
+  const isSubmitDisabled = _isSubmitDisabled || isUploading || isPostingDisabled;
   const handleSubmit = async () => {
     if (isSubmitDisabled) return;
     if (isBanned) {
@@ -346,14 +359,23 @@ const NewPost = () => {
             initial={community ? community.name : ''}
           />
           <div className="card page-new-form">
-            <div className={'page-new-tabs' + (isImagePostsDisabled ? ' is-two-tabs' : '')}>
+            {isPostingDisabled && (
+              <div className="page-new-form-disabled">{getPostingDisabledText()}</div>
+            )}
+            <div
+              className={clsx(
+                'page-new-tabs',
+                isImagePostsDisabled && ' is-two-tabs',
+                isPostingDisabled && 'is-disabled'
+              )}
+            >
               <button
                 className={
                   'button-clear button-with-icon pn-tabs-item' +
                   (postType === 'text' ? ' is-selected' : '')
                 }
                 onClick={() => setPostType('text')}
-                disabled={isEditPost}
+                disabled={isPostingDisabled || isEditPost}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -375,7 +397,7 @@ const NewPost = () => {
                     (postType === 'image' ? ' is-selected' : '')
                   }
                   onClick={() => setPostType('image')}
-                  disabled={isEditPost}
+                  disabled={isPostingDisabled || isEditPost}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -397,7 +419,7 @@ const NewPost = () => {
                   (postType === 'link' ? ' is-selected' : '')
                 }
                 onClick={() => setPostType('link')}
-                disabled={isEditPost}
+                disabled={isPostingDisabled || isEditPost}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -420,16 +442,16 @@ const NewPost = () => {
               onChange={handleTitleChange}
               rows="1"
               adjustable
+              disabled={isPostingDisabled}
             />
             {postType === 'text' && (
-              <Textarea
+              <MarkdownTextarea
                 className="page-new-post-body"
                 placeholder="Post content goes here (optional)..."
                 value={body}
                 onChange={handleBodyChange}
                 onPaste={handleBodyPaste}
-                adjustable
-                disabled={isEditPost ? post.deletedContent : false}
+                disabled={isPostingDisabled || (isEditPost ? post.deletedContent : false)}
               />
             )}
             {postType === 'image' && (
@@ -437,6 +459,7 @@ const NewPost = () => {
                 {images.length > 0 &&
                   images.map((image) => (
                     <Image
+                      key={image.id}
                       image={image}
                       onClose={() => deleteImage(image.id)}
                       disabled={isEditPost}
@@ -478,9 +501,9 @@ const NewPost = () => {
               />
             )}
           </div>
-          {!isEditPost && (
+          {!isEditPost && (isUserMod || user.isAdmin) && (
             <div className="new-page-user-group">
-              <AsUser isMod={isMod} onChange={(g) => setUserGroup(g)} />
+              <AsUser isMod={isUserMod} onChange={(g) => setUserGroup(g)} />
             </div>
           )}
           <div className="new-page-help">

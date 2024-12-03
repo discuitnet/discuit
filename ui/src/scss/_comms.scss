@@ -19,16 +19,39 @@
         }
     }
     .page-comms-header {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
+        display: grid;
+        grid-template-columns: 1fr max-content;
         align-items: center;
         margin-bottom: var(--gap);
+        height: 80px;
         @include mixins.mobile() {
             padding: var(--gap);
             background-color: transparent;
             box-shadow: none;
             border: none;
+        }
+        .left {
+            input {
+                width: 100%;
+                height: unset;
+            }
+        }
+        .right {
+            display: flex;
+            margin-left: calc(var(--gap) / 2);
+            .comms-new-button {
+                margin-left: var(--gap);
+            }
+            .comms-search-button {
+                &.is-search-svg {
+                    svg {
+                        transform: scale(1.3);
+                    }
+                }
+            }
+        }
+        input {
+            font-size: 1.8rem;
         }
     }
     .home-welcome {
@@ -100,6 +123,11 @@
         }
         .profile-picture {
             --image-size: 55px;
+        }
+    }
+    .feed {
+        .feed-no-more {
+            margin-left: 0;
         }
     }
 }

@@ -152,12 +152,13 @@ export function useQuery() {
   return new URLSearchParams(useLocation().search);
 }
 
-export function useIsChanged(deps = []) {
+export function useIsChanged(deps: unknown[] = []): [boolean, () => void] {
   const [c, setC] = useState(0);
   useEffect(() => {
     if (c < 3) setC((c) => c + 1);
   }, deps);
   const resetChanged = () => setC(1);
+  console.log('c: ', c);
   return [c > 1, resetChanged];
 }
 

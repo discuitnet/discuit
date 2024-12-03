@@ -1,7 +1,9 @@
 import { defineConfig } from 'vite';
+import viteCompression from 'vite-plugin-compression';
 
 export default defineConfig({
   manifest: true,
+  plugins: [viteCompression(), viteCompression({ algorithm: 'brotliCompress' })],
   build: {
     outDir: 'dist-sw',
     rollupOptions: {
