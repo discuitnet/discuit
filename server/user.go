@@ -115,6 +115,8 @@ func (s *Server) deleteUser(w *responseWriter, r *request) error {
 		return err
 	}
 
+	s.searchEngine.UserDeleteDocumentIfEnabled(r.ctx, s.config, toDelete.ID.String())
+
 	w.writeString(`{"success": true}`)
 	return nil
 }
@@ -299,6 +301,8 @@ func (s *Server) signup(w *responseWriter, r *request) error {
 
 	// Try logging in user.
 	s.loginUser(user, r.ses, w, r.req)
+
+	s.searchEngine.UserUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, user)
 
 	w.WriteHeader(http.StatusCreated)
 	return w.writeJSON(user)
@@ -515,6 +519,8 @@ func (s *Server) updateUserSettings(w *responseWriter, r *request) error {
 	default:
 		return httperr.NewBadRequest("invalid_action", "Unsupported action.")
 	}
+
+	s.searchEngine.UserUpdateOrCreateDocumentIfEnabled(r.ctx, s.config, user)
 
 	return w.writeJSON(user)
 }
