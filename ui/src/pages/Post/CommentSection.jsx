@@ -17,6 +17,7 @@ const CommentSection = ({
   isBanned,
   canVote,
   canComment,
+  imageHeight,
 }) => {
   const dispatch = useDispatch();
 
@@ -118,6 +119,7 @@ const CommentSection = ({
           isBanned={isBanned}
           canVote={canVote}
           canComment={canComment}
+          imageHeight={imageHeight}
         />
       );
     }
@@ -161,6 +163,7 @@ CommentSection.propTypes = {
   isBanned: PropTypes.bool.isRequired,
   canVote: PropTypes.bool.isRequired,
   canComment: PropTypes.bool.isRequired,
+  imageHeight: PropTypes.number,
 };
 
 export default CommentSection;
