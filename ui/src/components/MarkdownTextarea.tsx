@@ -66,9 +66,8 @@ const MarkdownTextarea = React.forwardRef<HTMLTextAreaElement, MarkdownTextareaP
       const node = innerRef.current;
       if (node && autoAdjustHeight) {
         adjustTextareaHeight({ target: node }, 4);
-        node.setSelectionRange(node.value.length, node.value.length);
       }
-    }, []);
+    }, [autoAdjustHeight]);
 
     return (
       <textarea
@@ -78,6 +77,12 @@ const MarkdownTextarea = React.forwardRef<HTMLTextAreaElement, MarkdownTextareaP
         onKeyDown={handleKeydown}
         onInput={handleInput}
         onPaste={handlePaste}
+        onFocus={() =>
+          innerRef.current?.setSelectionRange(
+            innerRef.current.value.length,
+            innerRef.current.value.length
+          )
+        }
         {...props}
       />
     );

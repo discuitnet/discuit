@@ -107,7 +107,9 @@ const AddComment = ({
   const textareaRef = useRef();
   const textareaCallbackRef = useCallback((node) => {
     if (node !== null) {
-      if (!main) node.focus();
+      if (!main) {
+        node.focus();
+      }
       textareaNode.current = node;
       textareaRef.current = node;
     }
