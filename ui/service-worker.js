@@ -233,6 +233,12 @@ const getNotificationInfo = (notification, csrfToken) => {
         setImage(src);
       }
       break;
+    case 'welcome':
+      {
+        ret.title = `Welcome to Discuit! Make a post in our +${notif.community.name} to say hello`;
+        setToURL(`/${notif.community.name}`);
+      }
+      break;
     default: {
       throw new Error('Unkown notification type');
     }
