@@ -95,9 +95,9 @@ func (n *Notification) MarshalJSON() ([]byte, error) {
 
 	data, err := n.Notif.marshalJSONForAPI(context.TODO(), n.db)
 	if err != nil {
-		// return nil, fmt.Errorf("marshalJSONForAPI (notifId: %v): %w", n.ID, err)
-		// Log the error but continue.
+		// Log the error but otherwise continue as if no error occurred.
 		log.Printf("marshalJSONForAPI (notifId: %v): %v", n.ID, err)
+		// return nil, fmt.Errorf("marshalJSONForAPI (notifId: %v): %w", n.ID, err)
 	} else {
 		if err = json.Unmarshal(data, &x.Notif); err != nil {
 			return nil, err
