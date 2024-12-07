@@ -973,7 +973,6 @@ func SendWelcomeNotifications(ctx context.Context, db *sql.DB, community string,
 		}
 	}
 
-	// Fetch the users who needs a notification sent
 	rows, err := db.QueryContext(ctx, "SELECT id FROM users WHERE welcome_notification_sent = false AND created_at < ?", time.Now().Add(-1*delay))
 	if err != nil {
 		return 0, err
