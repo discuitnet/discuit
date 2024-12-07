@@ -159,12 +159,12 @@ const getNotificationInfo = (notification, csrfToken) => {
     // ret.options.badge = '/favicon.png';
   };
 
-  const maxText = (text = '', maxLength = 120) => {
-    if (text.length > maxLength) {
-      return text.substring(0, maxLength) + '...';
-    }
-    return text;
-  };
+  // const maxText = (text = '', maxLength = 120) => {
+  //   if (text.length > maxLength) {
+  //     return text.substring(0, maxLength) + '...';
+  //   }
+  //   return text;
+  // };
 
   const setToURL = (to = '') => {
     ret.options.data.toURL = to;
