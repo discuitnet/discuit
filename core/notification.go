@@ -146,52 +146,29 @@ func scanNotifications(db *sql.DB, rows *sql.Rows) ([]*Notification, error) {
 	}
 
 	for _, notif := range notifs {
+		var nc notification
 		switch notif.Type {
 		case NotificationTypeNewComment:
-			nc := &NotificationNewComment{}
-			if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
-				return nil, err
-			}
-			notif.Notif = nc
+			nc = &NotificationNewComment{}
 		case NotificationTypeCommentReply:
-			nc := &NotificationCommentReply{}
-			if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
-				return nil, err
-			}
-			notif.Notif = nc
+			nc = &NotificationCommentReply{}
 		case NotificationTypeUpvote:
-			nc := &NotificationNewVotes{}
-			if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
-				return nil, err
-			}
-			notif.Notif = nc
+			nc = &NotificationNewVotes{}
 		case NotificationTypeDeletePost:
-			nc := &NotificationPostDeleted{}
-			if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
-				return nil, err
-			}
-			notif.Notif = nc
+			nc = &NotificationPostDeleted{}
 		case NotificationTypeModAdd:
-			nc := &NotificationModAdd{}
-			if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
-				return nil, err
-			}
-			notif.Notif = nc
+			nc = &NotificationModAdd{}
 		case NotificationTypeNewBadge:
-			nc := &NotificationNewBadge{}
-			if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
-				return nil, err
-			}
-			notif.Notif = nc
+			nc = &NotificationNewBadge{}
 		case NotificationTypeWelcome:
-			nc := &NotificationWelcome{}
-			if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
-				return nil, err
-			}
-			notif.Notif = nc
+			nc = &NotificationWelcome{}
 		default:
 			return nil, fmt.Errorf("unknown notification type: %s", string(notif.Type))
 		}
+		if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
+			return nil, err
+		}
+		notif.Notif = nc
 	}
 
 	return notifs, nil
