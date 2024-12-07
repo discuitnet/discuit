@@ -117,7 +117,8 @@ const NotificationItem = ({ notification, ...rest }) => {
       case 'welcome': {
         return (
           <>
-            <b>{notif.title}</b> {notif.body}
+            <b>Welcome to Discuit</b> Make a post in our <b>+{notif.community.name}</b> community to
+            say hello!
           </>
         );
       }
@@ -197,7 +198,8 @@ const NotificationItem = ({ notification, ...rest }) => {
       break;
     }
     case 'welcome':
-      to = notif.url;
+      to = `/${notif.community.name}`;
+      image = getNotifImage(notif);
       break;
   }
 

@@ -955,20 +955,29 @@ func CreateNewBadgeNotification(ctx context.Context, db *sql.DB, user uid.ID, ba
 }
 
 type NotificationWelcome struct {
-	Title string `json:"title"`
-	Body  string `json:"body"`
-	URL   string `json:"url"`
+	CommunityName string `json:"communityName"`
 }
 
 func (n *NotificationWelcome) marshalJSONForAPI(ctx context.Context, db *sql.DB) ([]byte, error) {
-	return json.Marshal(n)
+	type T NotificationWelcome
+	out := struct {
+		*T
+		Community *Community `json:"community"`
+	}{
+		T: (*T)(n),
+	}
+
+	com, err := GetCommunityByName(ctx, db, n.CommunityName, nil)
+	if err != nil {
+		return nil, err
+	}
+	out.Community = com
+	return json.Marshal(out)
 }
 
 func CreateWelcomeNotification(ctx context.Context, db *sql.DB, community string, user uid.ID) error {
 	return CreateNotification(ctx, db, user, NotificationTypeWelcome, &NotificationWelcome{
-		Title: "Welcome to Discuit",
-		Body:  fmt.Sprintf("Make a post in our +%s community to say hello!", community),
-		URL:   fmt.Sprintf("/%s", community),
+		CommunityName: community,
 	})
 }
 

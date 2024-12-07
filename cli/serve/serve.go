@@ -89,14 +89,14 @@ func serve(ctx *cli.Context) error {
 	// Send welcome notifications
 	if conf.WelcomeCommunity != "" {
 		go func() {
-			time.Sleep(time.Second * 5)
+			time.Sleep(time.Second * 1)
 			for {
-				if n, err := core.SendWelcomeNotifications(context.TODO(), db, conf.WelcomeCommunity, time.Minute); err != nil {
+				if n, err := core.SendWelcomeNotifications(context.TODO(), db, conf.WelcomeCommunity, time.Second); err != nil {
 					log.Printf("Welcome notification sending daemon error: %v\n", err)
 				} else {
 					log.Printf("%d welcome notifications successfully sent\n", n)
 				}
-				time.Sleep(time.Second * 5)
+				time.Sleep(time.Second * 1)
 			}
 		}()
 	}
