@@ -9,6 +9,7 @@ import (
 	"log"
 	"slices"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -963,16 +964,28 @@ func (n *NotificationWelcome) marshalJSONForAPI(ctx context.Context, db *sql.DB)
 	return json.Marshal(n)
 }
 
-func CreateWelcomeNotification(ctx context.Context, db *sql.DB, user uid.ID) error {
+func CreateWelcomeNotification(ctx context.Context, db *sql.DB, community string, user uid.ID) error {
 	return CreateNotification(ctx, db, user, NotificationTypeWelcome, &NotificationWelcome{
 		Title: "Welcome to Discuit",
-		Body:  "Make a post in our +Welcome community to say hello!",
-		URL:   "/Welcome",
+		Body:  fmt.Sprintf("Make a post in our +%s community to say hello!", community),
+		URL:   fmt.Sprintf("/%s", community),
 	})
 }
 
-func SendWelcomeNotifications(ctx context.Context, db *sql.DB, delay time.Duration) (int, error) {
-	rows, err := db.QueryContext(ctx, "select id from users where welcome_notification_sent = false and created_at < ?", time.Now().Add(-1*delay))
+func SendWelcomeNotifications(ctx context.Context, db *sql.DB, community string, delay time.Duration) (int, error) {
+	// Check if the community exists
+	{
+		var tmp string
+		if err := db.QueryRowContext(ctx, "SELECT name_lc FROM communities WHERE name_lc = ?", strings.ToLower(community)).Scan(&tmp); err != nil {
+			if err == sql.ErrNoRows {
+				return 0, fmt.Errorf("welcome community '%s' doesn't exist", community)
+			}
+			return 0, err
+		}
+	}
+
+	// Fetch the users who needs a notification sent
+	rows, err := db.QueryContext(ctx, "SELECT id FROM users WHERE welcome_notification_sent = false AND created_at < ?", time.Now().Add(-1*delay))
 	if err != nil {
 		return 0, err
 	}
@@ -990,8 +1003,9 @@ func SendWelcomeNotifications(ctx context.Context, db *sql.DB, delay time.Durati
 		return 0, err
 	}
 
+	// Send a notification to a single user
 	send := func(user uid.ID) error {
-		if err := CreateWelcomeNotification(ctx, db, user); err != nil {
+		if err := CreateWelcomeNotification(ctx, db, community, user); err != nil {
 			return fmt.Errorf("failed to send welcome notification: %w", err)
 		}
 		_, err := db.ExecContext(ctx, "update users set welcome_notification_sent = true where id = ?", user)
