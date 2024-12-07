@@ -74,7 +74,8 @@ type Notification struct {
 	UserID uid.ID           `json:"-"`
 	Type   NotificationType `json:"type"`
 
-	// Information specific to notification type.
+	// Information specific to notification type (nil in case there is an error
+	// fetching this resource).
 	Notif        notification `json:"notif"`
 	notifRawJSON []byte
 
@@ -94,11 +95,13 @@ func (n *Notification) MarshalJSON() ([]byte, error) {
 
 	data, err := n.Notif.marshalJSONForAPI(context.TODO(), n.db)
 	if err != nil {
-		return nil, fmt.Errorf("marshalJSONForAPI (notifId: %v): %w", n.ID, err)
-	}
-
-	if err = json.Unmarshal(data, &x.Notif); err != nil {
-		return nil, err
+		// return nil, fmt.Errorf("marshalJSONForAPI (notifId: %v): %w", n.ID, err)
+		// Log the error but continue.
+		log.Printf("marshalJSONForAPI (notifId: %v): %v", n.ID, err)
+	} else {
+		if err = json.Unmarshal(data, &x.Notif); err != nil {
+			return nil, err
+		}
 	}
 
 	return json.Marshal(x)
