@@ -201,10 +201,69 @@ export type NotificationType =
 export interface Notification {
   id: number;
   type: NotificationType;
-  notif: unknown;
+  notif:
+    | null
+    | NotificationNewComment
+    | NotificationCommentReply
+    | NotificationNewVotes
+    | NotificationPostDeleted
+    | NotificationModAdd
+    | NotificationNewBadge
+    | NotificationWelcome;
   seen: boolean;
   seenAt: string | null; // A datetime.
   createdAt: string; // A datetime.
+}
+
+export interface NotificationNewComment {
+  postId: string;
+  commentId: string;
+  noComments: number;
+  commentAuthor: string;
+  firstCreatedAt: string;
+  post: Post;
+}
+
+export interface NotificationCommentReply {
+  postId: string;
+  parentCommentId: string;
+  commentId: string;
+  noComments: number;
+  commentAuthor: string;
+  firstCreatedAt: string;
+  post: Post;
+}
+
+export interface NotificationNewVotes {
+  targetType: 'post' | 'comment';
+  targetId: string;
+  noVotes: number;
+  post?: Post;
+  comment?: Comment;
+}
+
+export interface NotificationPostDeleted {
+  targetType: 'post' | 'comment';
+  targetId: string;
+  deletedAs: UserGroup;
+  post?: Post;
+  comment?: Comment;
+}
+
+export interface NotificationModAdd {
+  communityName: string;
+  addedBy: string;
+  community: Community;
+}
+
+export interface NotificationNewBadge {
+  badgeType: string;
+  user: User;
+}
+
+export interface NotificationWelcome {
+  communityName: string;
+  community: Community;
 }
 
 export interface Mute {
