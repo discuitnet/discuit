@@ -955,7 +955,7 @@ func (n *NotificationWelcome) marshalJSONForAPI(ctx context.Context, db *sql.DB)
 	return json.Marshal(out)
 }
 
-func CreateWelcomeNotification(ctx context.Context, db *sql.DB, community string, user uid.ID) error {
+func createWelcomeNotification(ctx context.Context, db *sql.DB, community string, user uid.ID) error {
 	return CreateNotification(ctx, db, user, NotificationTypeWelcome, &NotificationWelcome{
 		CommunityName: community,
 	})
@@ -993,7 +993,7 @@ func SendWelcomeNotifications(ctx context.Context, db *sql.DB, community string,
 
 	// Send a notification to a single user
 	send := func(user uid.ID) error {
-		if err := CreateWelcomeNotification(ctx, db, community, user); err != nil {
+		if err := createWelcomeNotification(ctx, db, community, user); err != nil {
 			return fmt.Errorf("failed to send welcome notification: %w", err)
 		}
 		_, err := db.ExecContext(ctx, "update users set welcome_notification_sent = true where id = ?", user)
