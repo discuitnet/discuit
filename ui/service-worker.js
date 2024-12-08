@@ -235,7 +235,7 @@ const getNotificationInfo = (notification, csrfToken) => {
       break;
     case 'welcome':
       {
-        ret.title = `Welcome to Discuit! Make a post in our +${notif.community.name} to say hello`;
+        ret.title = `Welcome to Discuit! Make a post in our +${notif.community.name} community to say hello`;
         setToURL(`/${notif.community.name}`);
       }
       break;
