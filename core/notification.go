@@ -240,7 +240,9 @@ func CreateNotification(ctx context.Context, db *sql.DB, user uid.ID, Type Notif
 			log.Println("Error getting notification (CreateNotification)", err)
 			return
 		}
-		notif.SendPushNotification(ctx)
+		if err = notif.SendPushNotification(ctx); err != nil {
+			log.Printf("Error sending push notification: %v\n", err)
+		}
 	}
 
 	sendPushNotif()
