@@ -93,7 +93,7 @@ func serve(ctx *cli.Context) error {
 			for {
 				if n, err := core.SendWelcomeNotifications(context.TODO(), db, conf.WelcomeCommunity, time.Minute); err != nil {
 					log.Printf("Welcome notification sending daemon error: %v\n", err)
-				} else {
+				} else if n > 0 {
 					log.Printf("%d welcome notifications successfully sent\n", n)
 				}
 				time.Sleep(time.Second * 1)
