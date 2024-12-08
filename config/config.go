@@ -73,6 +73,8 @@ type Config struct {
 	DiscordURL     string `yaml:"discordURL"`
 	GithubURL      string `yaml:"githubURL"`
 	SubstackURL    string `yaml:"substackURL"`
+
+	WelcomeCommunity string `yaml:"welcomeCommunity"`
 }
 
 // Parse parses the yaml file at path and returns a Config.

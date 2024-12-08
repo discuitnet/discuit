@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router';
 import Favicon from '../../assets/imgs/favicon.png';
@@ -114,6 +114,14 @@ const NotificationItem = ({ notification, ...rest }) => {
           </>
         );
       }
+      case 'welcome': {
+        return (
+          <>
+            <b>Welcome to Discuit</b> Make a post in our <b>+{notif.community.name}</b> community to
+            say hello!
+          </>
+        );
+      }
       default: {
         return null; // unknown notification type
       }
@@ -147,6 +155,35 @@ const NotificationItem = ({ notification, ...rest }) => {
     }
     return { url: image, backgroundColor: background };
   };
+
+  const actionsRef = useRef();
+  const history = useHistory();
+  const handleClick = (event, to) => {
+    event.preventDefault();
+    if (
+      !actionsRef.current.contains(event.target) &&
+      !document.querySelector('#modal-root').contains(event.target)
+    ) {
+      if (!seen) handleMarkAsSeen();
+      history.push(to, {
+        fromNotifications: true,
+      });
+    }
+  };
+
+  if (notif === null) {
+    return (
+      <div className="notif" style={{ cursor: 'initial' }}>
+        <div className="notif-icon"></div>
+        <div className="notif-body">Error rendering notification item</div>
+      </div>
+    );
+  }
+
+  const notifText = renderText();
+  if (notifText === null) {
+    return null; // notification type is unknown
+  }
 
   let image = defaultImage;
   let to = '';
@@ -189,26 +226,10 @@ const NotificationItem = ({ notification, ...rest }) => {
       };
       break;
     }
-  }
-
-  const actionsRef = useRef();
-  const history = useHistory();
-  const handleClick = (e) => {
-    e.preventDefault();
-    if (
-      !actionsRef.current.contains(e.target) &&
-      !document.querySelector('#modal-root').contains(e.target)
-    ) {
-      if (!seen) handleMarkAsSeen();
-      history.push(to, {
-        fromNotifications: true,
-      });
-    }
-  };
-
-  const notifText = renderText();
-  if (notifText === null) {
-    return null; // notification type is unknown
+    case 'welcome':
+      to = `/${notif.community.name}`;
+      image = getNotifImage(notif);
+      break;
   }
 
   return (
@@ -219,7 +240,7 @@ const NotificationItem = ({ notification, ...rest }) => {
         (seen ? ' is-seen' : '') +
         (actionBtnHovering ? ' is-btn-hovering' : '')
       }
-      onClick={handleClick}
+      onClick={(e) => handleClick(e, to)}
       {...rest}
     >
       <div className="notif-icon">

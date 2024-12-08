@@ -159,12 +159,12 @@ const getNotificationInfo = (notification, csrfToken) => {
     // ret.options.badge = '/favicon.png';
   };
 
-  const maxText = (text = '', maxLength = 120) => {
-    if (text.length > maxLength) {
-      return text.substring(0, maxLength) + '...';
-    }
-    return text;
-  };
+  // const maxText = (text = '', maxLength = 120) => {
+  //   if (text.length > maxLength) {
+  //     return text.substring(0, maxLength) + '...';
+  //   }
+  //   return text;
+  // };
 
   const setToURL = (to = '') => {
     ret.options.data.toURL = to;
@@ -231,6 +231,12 @@ const getNotificationInfo = (notification, csrfToken) => {
         setToURL(`/@${notif.user.username}`);
         const { src } = badgeImage(notif.badgeType);
         setImage(src);
+      }
+      break;
+    case 'welcome':
+      {
+        ret.title = `Welcome to Discuit! Make a post in our +${notif.community.name} community to say hello`;
+        setToURL(`/${notif.community.name}`);
       }
       break;
     default: {

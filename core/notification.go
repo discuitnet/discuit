@@ -9,6 +9,7 @@ import (
 	"log"
 	"slices"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -46,6 +47,7 @@ const (
 	NotificationTypeDeletePost   = NotificationType("deleted_post")
 	NotificationTypeModAdd       = NotificationType("mod_add")
 	NotificationTypeNewBadge     = NotificationType("new_badge")
+	NotificationTypeWelcome      = NotificationType("welcome")
 )
 
 func (t NotificationType) Valid() bool {
@@ -56,6 +58,7 @@ func (t NotificationType) Valid() bool {
 		NotificationTypeDeletePost,
 		NotificationTypeModAdd,
 		NotificationTypeNewBadge,
+		NotificationTypeWelcome,
 	}, t)
 }
 
@@ -71,7 +74,8 @@ type Notification struct {
 	UserID uid.ID           `json:"-"`
 	Type   NotificationType `json:"type"`
 
-	// Information specific to notification type.
+	// Information specific to notification type (nil in case there is an error
+	// fetching this resource).
 	Notif        notification `json:"notif"`
 	notifRawJSON []byte
 
@@ -91,11 +95,13 @@ func (n *Notification) MarshalJSON() ([]byte, error) {
 
 	data, err := n.Notif.marshalJSONForAPI(context.TODO(), n.db)
 	if err != nil {
-		return nil, fmt.Errorf("marshalJSONForAPI (notifId: %v): %w", n.ID, err)
-	}
-
-	if err = json.Unmarshal(data, &x.Notif); err != nil {
-		return nil, err
+		// Log the error but otherwise continue as if no error occurred.
+		log.Printf("marshalJSONForAPI (notifId: %v): %v", n.ID, err)
+		// return nil, fmt.Errorf("marshalJSONForAPI (notifId: %v): %w", n.ID, err)
+	} else {
+		if err = json.Unmarshal(data, &x.Notif); err != nil {
+			return nil, err
+		}
 	}
 
 	return json.Marshal(x)
@@ -140,46 +146,29 @@ func scanNotifications(db *sql.DB, rows *sql.Rows) ([]*Notification, error) {
 	}
 
 	for _, notif := range notifs {
+		var nc notification
 		switch notif.Type {
 		case NotificationTypeNewComment:
-			nc := &NotificationNewComment{}
-			if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
-				return nil, err
-			}
-			notif.Notif = nc
+			nc = &NotificationNewComment{}
 		case NotificationTypeCommentReply:
-			nc := &NotificationCommentReply{}
-			if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
-				return nil, err
-			}
-			notif.Notif = nc
+			nc = &NotificationCommentReply{}
 		case NotificationTypeUpvote:
-			nc := &NotificationNewVotes{}
-			if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
-				return nil, err
-			}
-			notif.Notif = nc
+			nc = &NotificationNewVotes{}
 		case NotificationTypeDeletePost:
-			nc := &NotificationPostDeleted{}
-			if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
-				return nil, err
-			}
-			notif.Notif = nc
+			nc = &NotificationPostDeleted{}
 		case NotificationTypeModAdd:
-			nc := &NotificationModAdd{}
-			if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
-				return nil, err
-			}
-			notif.Notif = nc
+			nc = &NotificationModAdd{}
 		case NotificationTypeNewBadge:
-			nc := &NotificationNewBadge{}
-			if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
-				return nil, err
-			}
-			notif.Notif = nc
+			nc = &NotificationNewBadge{}
+		case NotificationTypeWelcome:
+			nc = &NotificationWelcome{}
 		default:
 			return nil, fmt.Errorf("unknown notification type: %s", string(notif.Type))
 		}
+		if err := json.Unmarshal(notif.notifRawJSON, nc); err != nil {
+			return nil, err
+		}
+		notif.Notif = nc
 	}
 
 	return notifs, nil
@@ -251,7 +240,9 @@ func CreateNotification(ctx context.Context, db *sql.DB, user uid.ID, Type Notif
 			log.Println("Error getting notification (CreateNotification)", err)
 			return
 		}
-		notif.SendPushNotification(ctx)
+		if err = notif.SendPushNotification(ctx); err != nil {
+			log.Printf("Error sending push notification: %v\n", err)
+		}
 	}
 
 	sendPushNotif()
@@ -943,4 +934,81 @@ func CreateNewBadgeNotification(ctx context.Context, db *sql.DB, user uid.ID, ba
 		UserID:    user,
 	}
 	return CreateNotification(ctx, db, user, NotificationTypeNewBadge, n)
+}
+
+type NotificationWelcome struct {
+	CommunityName string `json:"communityName"`
+}
+
+func (n *NotificationWelcome) marshalJSONForAPI(ctx context.Context, db *sql.DB) ([]byte, error) {
+	type T NotificationWelcome
+	out := struct {
+		*T
+		Community *Community `json:"community"`
+	}{
+		T: (*T)(n),
+	}
+
+	com, err := GetCommunityByName(ctx, db, n.CommunityName, nil)
+	if err != nil {
+		return nil, err
+	}
+	out.Community = com
+	return json.Marshal(out)
+}
+
+func createWelcomeNotification(ctx context.Context, db *sql.DB, community string, user uid.ID) error {
+	return CreateNotification(ctx, db, user, NotificationTypeWelcome, &NotificationWelcome{
+		CommunityName: community,
+	})
+}
+
+func SendWelcomeNotifications(ctx context.Context, db *sql.DB, community string, delay time.Duration) (int, error) {
+	// Check if the community exists
+	{
+		var tmp string
+		if err := db.QueryRowContext(ctx, "SELECT name_lc FROM communities WHERE name_lc = ?", strings.ToLower(community)).Scan(&tmp); err != nil {
+			if err == sql.ErrNoRows {
+				return 0, fmt.Errorf("welcome community '%s' doesn't exist", community)
+			}
+			return 0, err
+		}
+	}
+
+	rows, err := db.QueryContext(ctx, "SELECT id FROM users WHERE welcome_notification_sent = false AND created_at < ?", time.Now().Add(-1*delay))
+	if err != nil {
+		return 0, err
+	}
+
+	var users []uid.ID
+	for rows.Next() {
+		var id uid.ID
+		if err := rows.Scan(&id); err != nil {
+			return 0, err
+		}
+		users = append(users, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+
+	// Send a notification to a single user
+	send := func(user uid.ID) error {
+		if err := createWelcomeNotification(ctx, db, community, user); err != nil {
+			return fmt.Errorf("failed to send welcome notification: %w", err)
+		}
+		_, err := db.ExecContext(ctx, "update users set welcome_notification_sent = true where id = ?", user)
+		return err
+	}
+
+	success := 0
+	for _, user := range users {
+		if err := send(user); err != nil {
+			log.Printf("Error sending welcome notification to user (id: %v): %v", user, err)
+		}
+		success++
+	}
+
+	return success, nil
 }
