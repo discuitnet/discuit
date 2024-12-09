@@ -553,18 +553,31 @@ export const notificationsUpdated = (notification: NotificationsResponse) => {
   };
 };
 
+const closePushNotification = async (notifId: string | number) => {
+  if (!('serviceWorker' in navigator)) {
+    return;
+  }
+  const reg = await navigator.serviceWorker.ready;
+  const notifs = await reg.getNotifications();
+  notifs.filter((notif) => notif.data.notificationId === notifId).forEach((notif) => notif.close());
+};
+
 export const markNotificationAsSeen =
-  (notif: Notification, seen = true) =>
+  (notif: Notification | string | number, seen = true) =>
   async (dispatch: AppDispatch) => {
+    const notifId = typeof notif === 'object' ? notif.id : notif;
     const errMsg = 'Error marking notification as seen: ';
     try {
       await mfetchjson(
-        `/api/notifications/${notif.id}?action=markAsSeen&seen=${seen ? 'true' : 'false'}`,
+        `/api/notifications/${notifId}?action=markAsSeen&seen=${seen ? 'true' : 'false'}`,
         {
           method: 'PUT',
         }
       );
-      dispatch({ type: 'main/notificationSeen', payload: { notifId: notif.id, seen } });
+      dispatch({ type: 'main/notificationSeen', payload: { notifId: notifId, seen } });
+      if (seen) {
+        await closePushNotification(notifId);
+      }
     } catch (err) {
       console.error(errMsg, err);
     }

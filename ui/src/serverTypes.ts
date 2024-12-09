@@ -196,7 +196,8 @@ export type NotificationType =
   | 'new_votes'
   | 'deleted_post'
   | 'mod_add'
-  | 'new_badge';
+  | 'new_badge'
+  | 'welcome';
 
 export interface Notification {
   id: number;

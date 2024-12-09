@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ButtonClose } from './components/Button';
 import Modal from './components/Modal';
 import { useIsMobile } from './hooks';

@@ -44,6 +44,7 @@ import {
   createCommunityModalOpened,
   initialFieldsSet,
   loginModalOpened,
+  markNotificationAsSeen,
   signupModalOpened,
   snackAlert,
   toggleSidebarOpen,
@@ -202,6 +203,14 @@ const App = () => {
       };
     }
   }, [settingsChanged]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const notifId = params.get('fromNotif');
+    if (notifId) {
+      dispatch(markNotificationAsSeen(notifId));
+    }
+  }, [location, dispatch]);
 
   if (!isOnline && showOfflinePage) {
     return <Offline />;

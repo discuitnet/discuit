@@ -1,5 +1,4 @@
-import { selectImageCopyURL, stringCount } from './src/helper';
-import { badgeImage } from './src/pages/User/badgeImage';
+import { getNotificationDisplayInformation } from './src/components/Navbar/notification';
 
 const SW_BUILD_ID = import.meta.env.VITE_SW_BUILD_ID;
 
@@ -49,6 +48,17 @@ const deleteOldCaches = async () => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(Promise.all([deleteOldCaches(), enableNavigationPreload()]));
   self.clients.claim();
+
+  // Periodically, check if there are any push notifications that have been
+  // marked as seen, and, if any exists, close them.
+  self.setInterval(async () => {
+    try {
+      console.log('Background checking push notifications status (4)');
+      await closeSeenNotifications();
+    } catch (error) {
+      console.log(`Error closeSeenNotifications: ${error}`);
+    }
+  }, 60000 /* 1 minute */);
 });
 
 self.addEventListener('message', (e) => {
@@ -78,14 +88,12 @@ const shouldCache = (request) => {
   if (pathname.startsWith('/assets/') && endsWithOneOf(pathname, ['.js', '.css'])) {
     return true;
   }
-
   if (
     endsWithOneOf(pathname, ['.jpg', '.jpeg', '.png', '.svg', '.webp']) &&
     !pathname.startsWith('/images/')
   ) {
     return true;
   }
-
   return false;
 };
 
@@ -104,7 +112,9 @@ const cacheFirst = async ({ request, preloadResponsePromise }) => {
       }
       return preloadResponse;
     }
-  } catch (_) {}
+  } catch (error) {
+    console.error(error);
+  }
 
   try {
     const networkRes = await fetch(request);
@@ -113,12 +123,12 @@ const cacheFirst = async ({ request, preloadResponsePromise }) => {
     }
     return networkRes;
   } catch (error) {
+    console.error(error);
     if (request.method === 'GET' && request.headers.get('accept').includes('text/html')) {
       const cache = await caches.open(SW_BUILD_ID);
       const fallbackRes = await cache.match('/');
       if (fallbackRes) return fallbackRes;
     }
-
     return new Response(
       JSON.stringify({
         status: 408,
@@ -137,133 +147,21 @@ self.addEventListener('fetch', (e) => {
 });
 
 const getNotificationInfo = (notification, csrfToken) => {
-  const { type, notif } = notification;
-
-  const ret = {
-    title: '',
+  const { text: title, to, image } = getNotificationDisplayInformation(notification);
+  return {
+    title: title,
     options: {
       body: '',
-      icon: '',
+      icon: image.url,
       badge: '/discuit-logo-pwa-badge.png',
       tag: notification.id,
       data: {
         notificationId: notification.id,
-        toURL: undefined,
+        toURL: `${to}?fromNotif=${notification.id}`,
         csrfToken,
       },
     },
   };
-
-  const setImage = (url) => {
-    ret.options.icon = url;
-    // ret.options.badge = '/favicon.png';
-  };
-
-  // const maxText = (text = '', maxLength = 120) => {
-  //   if (text.length > maxLength) {
-  //     return text.substring(0, maxLength) + '...';
-  //   }
-  //   return text;
-  // };
-
-  const setToURL = (to = '') => {
-    ret.options.data.toURL = to;
-  };
-
-  setImage('/favicon.png');
-
-  switch (type) {
-    case 'new_comment':
-      {
-        let to = `/${notif.post.communityName}/post/${notif.post.publicId}`;
-        if (notif.noComments === 1) {
-          ret.title = `@${notif.commentAuthor} commented on your post '${notif.post.title}'`;
-          to += `/${notif.commentId}`;
-        } else {
-          ret.title = `${notif.noComments} new comments on your post '${notif.post.title}'`;
-        }
-        setToURL(to);
-      }
-      break;
-    case 'comment_reply':
-      {
-        let to = `/${notif.post.communityName}/post/${notif.post.publicId}`;
-        if (notif.noComments === 1) {
-          ret.title = `@${notif.commentAuthor} replied to your comment on post '${notif.post.title}'`;
-          to += `/${notif.commentId}`;
-        } else {
-          ret.title = `${notif.noComments} new replies to your comment on post '${notif.post.title}'`;
-        }
-        setToURL(to);
-      }
-      break;
-    case 'new_votes':
-      if (notif.targetType === 'post') {
-        ret.title = `${stringCount(notif.noVotes, false, 'new upvote')} on your post '${
-          notif.post.title
-        }'`;
-        setToURL(`/${notif.post.communityName}/post/${notif.post.publicId}`);
-      } else {
-        ret.title = `${stringCount(notif.noVotes, false, 'new vote')} on your comment in '${
-          notif.post.title
-        }'`;
-        setToURL(
-          `/${notif.comment.communityName}/post/${notif.comment.postPublicId}/${notif.comment.id}`
-        );
-      }
-      break;
-    case 'deleted_post':
-      {
-        const by =
-          notif.deletedAs === 'mods' ? `moderators of ${notif.post.communityName}` : 'admins';
-        ret.title = `Your post '${notif.post.title}' has been removed by the ${by}`;
-        setToURL(`/${notif.post.communityName}/post/${notif.post.publicId}`);
-      }
-      break;
-    case 'mod_add':
-      ret.title = `You are added as a moderator of /${notif.communityName} by @${notif.addedBy}`;
-      setToURL(`/${notif.communityName}`);
-      break;
-    case 'new_badge':
-      {
-        ret.title =
-          "You are awarded the 'supporter' badge for your contribution to Discuit and for sheer awesomeness!";
-        setToURL(`/@${notif.user.username}`);
-        const { src } = badgeImage(notif.badgeType);
-        setImage(src);
-      }
-      break;
-    case 'welcome':
-      {
-        ret.title = `Welcome to Discuit! Make a post in our +${notif.community.name} community to say hello`;
-        setToURL(`/${notif.community.name}`);
-      }
-      break;
-    default: {
-      throw new Error('Unkown notification type');
-    }
-  }
-
-  if (notif.post) {
-    switch (notif.post.type) {
-      case 'image':
-        if (notif.post.image) {
-          setImage(selectImageCopyURL('tiny', notif.post.image));
-        }
-        break;
-      case 'link':
-        if (notif.post.link && notif.post.link.image) {
-          setImage(selectImageCopyURL('tiny', notif.post.link.image));
-        }
-        break;
-    }
-  } else if (typeof notif.community === 'object' && notif.community !== null) {
-    if (notif.community.proPic) {
-      setImage(selectImageCopyURL('small', notif.community.proPic));
-    }
-  }
-
-  return ret;
 };
 
 const isClientFocused = async () => {
@@ -287,19 +185,18 @@ const isClientFocused = async () => {
 self.addEventListener('push', (e) => {
   const f = async () => {
     try {
-      if (await isClientFocused()) return;
+      if (await isClientFocused()) {
+        return;
+      }
 
       const pushNotif = e.data.json();
-
       const res = await fetch(`/api/notifications/${pushNotif.id}`);
-
       if (!res.ok) {
         console.log('notification error');
         return;
       }
 
       const info = getNotificationInfo(await res.json(), res.headers.get('Csrf-Token'));
-
       return self.registration.showNotification(info.title, info.options);
     } catch (error) {
       console.error(error);
@@ -312,7 +209,6 @@ self.addEventListener('push', (e) => {
 self.addEventListener('notificationclick', (e) => {
   const { notification } = e;
   const { data } = notification;
-
   notification.close();
 
   const markAsSeen = async () => {
@@ -326,7 +222,6 @@ self.addEventListener('notificationclick', (e) => {
           },
         }
       );
-
       if (!res.ok) {
         throw new Error(await res.text());
       }
@@ -334,6 +229,30 @@ self.addEventListener('notificationclick', (e) => {
       console.log(error);
     }
   };
-
   e.waitUntil(Promise.all([markAsSeen(), self.clients.openWindow(data.toURL)]));
 });
+
+/**
+ * Closes all push notifications that have been marked as seen (presumably by
+ * another device on which the user is logged in, because otherwise the push
+ * notification wouldn't be here).
+ *
+ */
+const closeSeenNotifications = async () => {
+  const existingNotifs = await self.registration.getNotifications();
+  if (existingNotifs.length === 0) {
+    return;
+  }
+  const res = await (await fetch('/api/notifications')).json();
+  const notifs = res.items || [];
+  existingNotifs.forEach((exNotif) => {
+    for (let i = 0; i < notifs.length; i++) {
+      if (exNotif.data.notificationId === notifs[i].id && notifs[i].seen) {
+        console.log(
+          `Background closing notification (it was marked as seen by another device): ${notifs[i].id}`
+        );
+        exNotif.close();
+      }
+    }
+  });
+};

@@ -20,4 +20,10 @@ module.exports = {
     'react/jsx-uses-react': 'error',
     'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
   },
+  overrides: [
+    {
+      files: ['service-worker.js'],
+      env: { serviceworker: true },
+    },
+  ],
 };
