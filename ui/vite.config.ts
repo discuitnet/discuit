@@ -49,6 +49,7 @@ interface AppConfig {
   forumCreationReqPoints: number;
   defaultFeedSort: string;
   maxImagesPerPost: number;
+  searchEnabled?: boolean;
 }
 
 function parseYamlConfigFile(): { define: { [index: string]: string }; config: AppConfig } {
@@ -73,6 +74,7 @@ function parseYamlConfigFile(): { define: { [index: string]: string }; config: A
     forumCreationReqPoints: configFile.forumCreationReqPoints,
     defaultFeedSort: configFile.defaultFeedSort,
     maxImagesPerPost: configFile.maxImagesPerPost,
+    searchEnabled: configFile.searchEnabled,
   };
 
   const define: { [key: string]: string } = {};
