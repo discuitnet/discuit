@@ -17,6 +17,7 @@ import (
 	"github.com/discuitnet/discuit/config"
 	"github.com/discuitnet/discuit/core"
 	"github.com/discuitnet/discuit/internal/images"
+	"github.com/discuitnet/discuit/internal/taskrunner"
 	"github.com/discuitnet/discuit/internal/uid"
 	"github.com/discuitnet/discuit/server"
 	"github.com/urfave/cli/v2"
@@ -66,36 +67,28 @@ func serve(ctx *cli.Context) error {
 		log.Fatalf("Error creating 'supporter' user badge: %v\n", err)
 	}
 
-	go func() {
-		// This go-routine runs a set of periodic functions every hour.
-		time.Sleep(time.Second * 5) // Just so the first console output isn't from this goroutine.
-		for {
-			if err := core.PurgePostsFromTempTables(context.TODO(), db); err != nil {
-				log.Printf("Temp posts purging failed: %v\n", err)
-			}
-			if n, err := core.RemoveTempImages(context.TODO(), db); err != nil {
-				log.Printf("Failed to remove temp images: %v\n", err)
-			} else {
-				log.Printf("Removed %d temp images\n", n)
-			}
-			time.Sleep(time.Hour)
+	// Define the background tasks to be run.
+	tr := taskrunner.New(context.Background())
+	tr.New("Purge temp posts", func(ctx context.Context) error {
+		return core.PurgePostsFromTempTables(ctx, db)
+	}, time.Hour, false)
+	tr.New("Delete temp images", func(ctx context.Context) error {
+		n, err := core.RemoveTempImages(ctx, db)
+		log.Printf("Removed %d temp images\n", n)
+		return err
+	}, time.Hour, false)
+	tr.New("Send welcome notifications", func(ctx context.Context) error {
+		n, err := core.SendWelcomeNotifications(ctx, db, conf.WelcomeCommunity, time.Minute)
+		if n > 0 {
+			log.Printf("%d welcome notifications successfully sent\n", n)
 		}
-	}()
+		return err
+	}, time.Minute, false)
 
-	// Send welcome notifications
-	if conf.WelcomeCommunity != "" {
-		go func() {
-			time.Sleep(time.Second * 1)
-			for {
-				if n, err := core.SendWelcomeNotifications(context.TODO(), db, conf.WelcomeCommunity, time.Minute); err != nil {
-					log.Printf("Welcome notification sending daemon error: %v\n", err)
-				} else if n > 0 {
-					log.Printf("%d welcome notifications successfully sent\n", n)
-				}
-				time.Sleep(time.Second * 1)
-			}
-		}()
-	}
+	go func() {
+		time.Sleep(time.Second * 2)
+		tr.Start()
+	}()
 
 	if !config.AddressValid(conf.Addr) {
 		log.Fatal("Address needs to be a valid address of the form 'host:port' (host can be empty)")
@@ -196,6 +189,16 @@ func serve(ctx *cli.Context) error {
 		}
 	}
 
+	// Stop the background tasks.
+	if err := tr.Stop(stopCtx); err != nil {
+		if errors.Is(err, stopCtx.Err()) {
+			log.Println("Forcefully exited (some) of the background tasks")
+		} else {
+			log.Printf("Background tasks stop error: %v\n", err)
+		}
+	} else {
+		log.Println("Gracefully exited all background tasks")
+	}
 	return nil
 }
 
