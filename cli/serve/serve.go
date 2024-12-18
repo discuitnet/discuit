@@ -3,10 +3,12 @@ package serve
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
 	"time"
@@ -45,7 +47,7 @@ func serve(ctx *cli.Context) error {
 	conf := ctx.Context.Value("config").(*config.Config)
 
 	if err := createGhostUser(db); err != nil {
-		os.Exit(-1)
+		os.Exit(1)
 	}
 
 	// Set images folder.
@@ -63,12 +65,6 @@ func serve(ctx *cli.Context) error {
 	if err := core.NewBadgeType(db, "supporter"); err != nil {
 		log.Fatalf("Error creating 'supporter' user badge: %v\n", err)
 	}
-
-	site, err := server.New(db, conf)
-	if err != nil {
-		log.Fatal("Error creating server: ", err)
-	}
-	defer site.Close()
 
 	go func() {
 		// This go-routine runs a set of periodic functions every hour.
@@ -105,6 +101,12 @@ func serve(ctx *cli.Context) error {
 		log.Fatal("Address needs to be a valid address of the form 'host:port' (host can be empty)")
 	}
 
+	site, err := server.New(db, conf)
+	if err != nil {
+		log.Fatal("Error creating server: ", err)
+	}
+	defer site.Close()
+
 	var https bool = conf.CertFile != ""
 
 	server := &http.Server{
@@ -112,8 +114,8 @@ func serve(ctx *cli.Context) error {
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if hostname := conf.Hostname(); hostname != "" {
 				// Redirect all requests to any subdomains of conf.Addr to
-				// conf.Addr. No redirecting is done is the hostname provided in
-				// config is empty.
+				// conf.Addr (no redirecting is done if the hostname provided in
+				// config is empty).
 				if _, subdomain := strings.CutSuffix(r.Host, "."+conf.Hostname()); subdomain {
 					url := *r.URL
 					url.Host = hostname
@@ -130,38 +132,70 @@ func serve(ctx *cli.Context) error {
 		}),
 	}
 
-	log.Println("Starting server on " + conf.Addr)
+	stopCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill) // interrupt context
+	defer stop()
 
-	if https {
-		// Running HTTPS server.
-		//
-		// A server to redirect traffic from HTTP to HTTPS. Started only if the
-		// main server is on port 443.
-		if conf.Addr[strings.Index(conf.Addr, ":"):] == ":443" {
-			redirectServer := &http.Server{
-				Addr: ":80",
-				Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					url := *r.URL
-					url.Scheme = "https"
-					url.Host = r.Host
-					http.Redirect(w, r, url.String(), http.StatusMovedPermanently)
-				}),
-			}
-			go func() {
-				if err = redirectServer.ListenAndServe(); err != nil {
-					log.Fatal("Error starting redirect server: ", err)
-				}
-			}()
+	var redirectServer *http.Server
+
+	// Optionally start a server to redirect traffic from HTTP to HTTPS.
+	if https && conf.Addr[strings.Index(conf.Addr, ":"):] == ":443" {
+		redirectServer = &http.Server{
+			Addr: ":80",
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				url := *r.URL
+				url.Scheme = "https"
+				url.Host = r.Host
+				http.Redirect(w, r, url.String(), http.StatusMovedPermanently)
+			}),
 		}
-		if err := server.ListenAndServeTLS(conf.CertFile, conf.KeyFile); err != nil {
-			log.Fatal("Error starting server (TLS): ", err)
+		go func() {
+			log.Println("Starting redirect server (HTTP -> HTTPS) on " + redirectServer.Addr)
+			if err := redirectServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				log.Printf("ListenAndServe (redirect) error: %v\n", err)
+			}
+		}()
+	}
+
+	// Start the server.
+	go func() {
+		log.Println("Starting server on " + conf.Addr)
+		if https {
+			if err := server.ListenAndServeTLS(conf.CertFile, conf.KeyFile); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				log.Printf("ListenAndServeTLS (main) error: %v\n", err)
+			}
+		} else {
+			if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				log.Printf("ListenAndServe (main) error: %v\n", err)
+			}
+		}
+	}()
+
+	// Wait for interrupt signal.
+	<-stopCtx.Done()
+
+	log.Println("Shutting down HTTP server...")
+
+	// Send another interrupt to exit immediately.
+	stopCtx, stop = signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
+	defer stop()
+
+	if err := server.Shutdown(stopCtx); err != nil {
+		if errors.Is(err, stopCtx.Err()) {
+			log.Println("Forcefully exited HTTP server")
+		} else {
+			log.Printf("HTTP server shutdown error: %v\n", err)
 		}
 	} else {
-		// Running HTTP server.
-		if err := server.ListenAndServe(); err != nil {
-			log.Fatal("Error starting server: ", err)
+		log.Println("HTTP Server exited gracefully")
+	}
+	if redirectServer != nil {
+		if err := redirectServer.Shutdown(stopCtx); err != nil {
+			if !errors.Is(err, stopCtx.Err()) {
+				log.Printf("Redirect server (HTTP -> HTTP) shutdown error: %v\n", err)
+			}
 		}
 	}
+
 	return nil
 }
 
