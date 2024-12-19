@@ -1373,3 +1373,39 @@ func GetUsers(ctx context.Context, db *sql.DB, limit int, next *string, viewer *
 
 	return users, nextNext, nil
 }
+
+func GetAllUserIDs(ctx context.Context, db *sql.DB, fetchDeleted, fetchBanned bool) ([]uid.ID, error) {
+	var where string
+	if !fetchDeleted {
+		where = "WHERE deleted_at IS NULL "
+	}
+	if !fetchBanned {
+		if where == "" {
+			where = "WHERE "
+		} else {
+			where += "AND "
+		}
+		where += "banned_at IS NULL"
+	}
+
+	rows, err := db.QueryContext(ctx, fmt.Sprintf("SELECT id FROM users %s", where))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ids := []uid.ID{}
+	for rows.Next() {
+		var id uid.ID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return ids, nil
+}

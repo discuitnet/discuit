@@ -238,6 +238,24 @@ const Post = () => {
     })();
   };
 
+  const handleAnnounce = async () => {
+    if (!confirm('Are you sure? This will send a notification to all users.')) {
+      return;
+    }
+    try {
+      const res = await mfetch(`/api/posts/${post.publicId}?action=announce`, { method: 'PUT' });
+      if (!res.ok) {
+        if (res.status === 409) {
+          dispatch(snackAlert('Already announced'));
+        } else {
+          throw new Error(await res.text());
+        }
+      }
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    }
+  };
+
   const isMobile = useIsMobile();
   const loggedIn = user !== null;
   const isAdmin = loggedIn && user.isAdmin;
@@ -532,6 +550,9 @@ const Post = () => {
                           <label htmlFor={'ch-pin-a'}>Pinned</label>
                         </div>
                       </div>
+                      <button className="button-clear dropdown-item" onClick={handleAnnounce}>
+                        Announce
+                      </button>
                     </div>
                   </Dropdown>
                 )}

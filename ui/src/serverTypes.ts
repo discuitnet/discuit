@@ -197,7 +197,8 @@ export type NotificationType =
   | 'deleted_post'
   | 'mod_add'
   | 'new_badge'
-  | 'welcome';
+  | 'welcome'
+  | 'announcement';
 
 export interface Notification {
   id: number;
@@ -210,7 +211,8 @@ export interface Notification {
     | NotificationPostDeleted
     | NotificationModAdd
     | NotificationNewBadge
-    | NotificationWelcome;
+    | NotificationWelcome
+    | NotificationAnnouncement;
   seen: boolean;
   seenAt: string | null; // A datetime.
   createdAt: string; // A datetime.
@@ -264,6 +266,12 @@ export interface NotificationNewBadge {
 
 export interface NotificationWelcome {
   communityName: string;
+  community: Community;
+}
+
+export interface NotificationAnnouncement {
+  postId: string;
+  post: Post;
   community: Community;
 }
 

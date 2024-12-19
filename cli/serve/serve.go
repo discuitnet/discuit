@@ -84,6 +84,17 @@ func serve(ctx *cli.Context) error {
 		}
 		return err
 	}, time.Minute, false)
+	tr.New("Send announcement notifications", func(ctx context.Context) error {
+		t0 := time.Now()
+		if err := core.SendAnnouncementNotifications(ctx, db, uid.ID{}); err != nil {
+			return err
+		}
+		took := time.Since(t0)
+		if took > time.Millisecond*100 {
+			log.Printf("Took %v to send announcement notifications\n", time.Since(t0))
+		}
+		return nil
+	}, time.Second*10, false)
 
 	go func() {
 		time.Sleep(time.Second * 2)

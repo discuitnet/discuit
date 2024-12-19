@@ -194,6 +194,10 @@ func (s *Server) updatePost(w *responseWriter, r *request) error {
 			if err = post.Pin(r.ctx, *r.viewer, siteWide, action == "unpin", false); err != nil {
 				return err
 			}
+		case "announce":
+			if err := post.AnnounceToAllUsers(r.ctx, *r.viewer); err != nil {
+				return err
+			}
 		default:
 			return httperr.NewBadRequest("invalid_action", "Unsupported action.")
 		}

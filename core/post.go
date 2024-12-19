@@ -1612,6 +1612,28 @@ func (p *Post) ChangeUserGroup(ctx context.Context, user uid.ID, g UserGroup) er
 	return err
 }
 
+// AnnounceToAllUsers starts a background process to send an announcement
+// notification of this post to all users. The viewer has to be an admin.
+func (p *Post) AnnounceToAllUsers(ctx context.Context, viewer uid.ID) error {
+	if is, err := IsAdmin(p.db, &viewer); err != nil {
+		return err
+	} else if !is {
+		return errNotAdmin
+	}
+
+	if _, err := p.db.ExecContext(ctx, "INSERT INTO announcement_posts (post_id, announced_by) VALUES (?, ?)", p.ID, viewer); err != nil {
+		if msql.IsErrDuplicateErr(err) {
+			return &httperr.Error{
+				HTTPStatus: http.StatusConflict,
+				Code:       "duplicate",
+				Message:    "Post was already announced",
+			}
+		}
+		return err
+	}
+	return nil
+}
+
 // PurgePostsFromTempTables removes posts from posts_today, posts_week, etc
 // tables. Call this function periodically.
 func PurgePostsFromTempTables(ctx context.Context, db *sql.DB) error {

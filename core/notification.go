@@ -48,6 +48,7 @@ const (
 	NotificationTypeModAdd       = NotificationType("mod_add")
 	NotificationTypeNewBadge     = NotificationType("new_badge")
 	NotificationTypeWelcome      = NotificationType("welcome")
+	NotificationTypeAnnouncement = NotificationType("announcement")
 )
 
 func (t NotificationType) Valid() bool {
@@ -59,6 +60,7 @@ func (t NotificationType) Valid() bool {
 		NotificationTypeModAdd,
 		NotificationTypeNewBadge,
 		NotificationTypeWelcome,
+		NotificationTypeAnnouncement,
 	}, t)
 }
 
@@ -162,6 +164,8 @@ func scanNotifications(db *sql.DB, rows *sql.Rows) ([]*Notification, error) {
 			nc = &NotificationNewBadge{}
 		case NotificationTypeWelcome:
 			nc = &NotificationWelcome{}
+		case NotificationTypeAnnouncement:
+			nc = &NotificationAnnouncement{}
 		default:
 			return nil, fmt.Errorf("unknown notification type: %s", string(notif.Type))
 		}
@@ -1011,4 +1015,149 @@ func SendWelcomeNotifications(ctx context.Context, db *sql.DB, community string,
 	}
 
 	return success, nil
+}
+
+type NotificationAnnouncement struct {
+	PostID uid.ID `json:"postId"`
+}
+
+func (n *NotificationAnnouncement) marshalJSONForAPI(ctx context.Context, db *sql.DB) ([]byte, error) {
+	type T NotificationAnnouncement
+	out := struct {
+		T
+		Post      *Post      `json:"post"`
+		Community *Community `json:"community"`
+	}{T: (T)(*n)}
+
+	post, err := GetPost(ctx, db, &n.PostID, "", nil, true)
+	if err != nil {
+		return nil, err
+	}
+	community, err := GetCommunityByID(ctx, db, post.CommunityID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	out.Post = post
+	out.Community = community
+	return json.Marshal(out)
+}
+
+// createAnnouncementNotifications creates (that is, sends) an announcement
+// notification of post to one user. If the user has more than one announcement
+// post already when this function is called, all those notifications except one
+// are deleted.
+func createAnnouncementNotification(ctx context.Context, db *sql.DB, post, receiver uid.ID) error {
+	// Select last 10 notifications to see if an identical notification exists.
+	notifs, _, err := GetNotifications(ctx, db, receiver, 10, "")
+	if err != nil {
+		return err
+	}
+	var unseen []*Notification
+	for _, notif := range notifs {
+		if notif.Type == NotificationTypeAnnouncement && !notif.Seen {
+			unseen = append(unseen, notif)
+		}
+	}
+	// There shouldn't be a ton of announcement notifications in the inbox, if,
+	// for instance, the user hasn't logged on for a while. So, delete all
+	// announcement notifications except one.
+	if len(unseen) > 1 {
+		for _, notif := range unseen[1:] {
+			if err := notif.Delete(ctx); err != nil {
+				return err
+			}
+		}
+	}
+
+	return CreateNotification(ctx, db, receiver, NotificationTypeAnnouncement, &NotificationAnnouncement{
+		PostID: post,
+	})
+}
+
+// sendAnnouncementNotifications sends an announcement notification of post to
+// every user account (except for the deleted and banned ones). This is an
+// expensive function that might take many seconds or minutes, depending on the
+// size of the userbase, to turn.
+func sendAnnouncementNotifications(ctx context.Context, db *sql.DB, post uid.ID) error {
+	users, err := GetAllUserIDs(ctx, db, false, false)
+	if err != nil {
+		return nil
+	}
+
+	if _, err := db.ExecContext(ctx, "UPDATE announcement_posts SET sending_started_at = ? WHERE post_id = ?", time.Now(), post); err != nil {
+		return err
+	}
+
+	sent := 0
+	for _, user := range users {
+		var rowID int
+		if err := db.QueryRowContext(ctx, "SELECT id FROM announcement_notifications_sent WHERE post_id = ? AND user_id = ?", post, user).Scan(&rowID); err != nil {
+			if err != sql.ErrNoRows {
+				return err
+			}
+		} else {
+			// Notification is already sent. Continue to the next user.
+			sent++
+			continue
+		}
+
+		if _, err := db.ExecContext(ctx, "INSERT INTO announcement_notifications_sent (post_id, user_id) VALUES (?, ?)", post, user); err != nil {
+			return err
+		}
+
+		// Send the notification
+		if err := createAnnouncementNotification(ctx, db, post, user); err != nil {
+			return err
+		}
+
+		sent++
+		if sent%50 == 0 {
+			// For every 50 notifs sent update the total_sent count.
+			db.ExecContext(ctx, "UPDATE announcement_posts SET total_sent = ? WHERE post_id = ?", sent, post)
+		}
+	}
+
+	totalSent := 0
+	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM announcement_notifications_sent WHERE post_id = ?", post).Scan(&totalSent); err != nil {
+		return err
+	}
+
+	if _, err := db.ExecContext(ctx, "UPDATE announcement_posts SET sending_finished_at = ?, total_sent = ? WHERE post_id = ?", time.Now(), totalSent, post); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SendAnnouncementNotifications checks if any announcement notifications for
+// any posts needs to be sent, and if so, it sends all of them. Since this
+// function can take many seconds to minutes to run, the provided context should
+// not be one that expires quickly (such as a context gotten from
+// [http.Request]).
+func SendAnnouncementNotifications(ctx context.Context, db *sql.DB, post uid.ID) error {
+	rows, err := db.QueryContext(ctx, "SELECT post_id FROM announcement_posts WHERE sending_finished_at IS NULL")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var posts []uid.ID
+	for rows.Next() {
+		var post uid.ID
+		if err := rows.Scan(&post); err != nil {
+			return err
+		}
+		posts = append(posts, post)
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	for _, post := range posts {
+		if err := sendAnnouncementNotifications(ctx, db, post); err != nil {
+			return err
+		}
+	}
+	return nil
 }
