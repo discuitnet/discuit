@@ -132,8 +132,8 @@ In the root directory are these directories:
 - [x] Dark mode.
 - [x] User created communities.
 - UI preferences:
-  - [ ] Compact mode.
-  - [ ] Enable or disable infinite scroll.
+  - [x] Compact mode.
+  - [x] Enable or disable infinite scroll.
   - [x] Choose which notifications to get.
   - [x] Change default feed sort.
 - Filtering:
