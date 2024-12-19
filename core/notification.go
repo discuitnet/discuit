@@ -1085,6 +1085,10 @@ func sendAnnouncementNotifications(ctx context.Context, db *sql.DB, post uid.ID)
 		return nil
 	}
 
+	if _, err := db.ExecContext(ctx, "UPDATE announcement_posts SET sending_started_at = ? WHERE post_id = ?", time.Now(), post); err != nil {
+		return err
+	}
+
 	sent := 0
 	for _, user := range users {
 		var rowID int

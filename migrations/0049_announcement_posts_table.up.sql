@@ -2,7 +2,7 @@ create table if not exists announcement_posts (
 	id int not null auto_increment,
 	post_id binary (12) not null,
 	announced_by binary (12) not null, 
-	sending_started_at datetime not null default current_timestamp(),
+	sending_started_at datetime,
 	sending_finished_at datetime,
 	total_sent int not null default 0,
 
