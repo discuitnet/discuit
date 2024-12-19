@@ -4,6 +4,7 @@ import { badgeImage } from '../../pages/User/badgeImage';
 import {
   Community,
   Notification,
+  NotificationAnnouncement,
   NotificationCommentReply,
   NotificationModAdd,
   NotificationNewBadge,
@@ -140,6 +141,14 @@ export function getNotificationDisplayInformation(
         const notif = notification.notif as NotificationWelcome;
         text = `${tag('<b>')}Welcome to Discuit${tag('</b>')} Make a post in our ${tag('<b>')}${notif.community.name}${tag('</b>')} community to say hello!`;
         to = `/${notif.community.name}`;
+        image = getNotifImage(notif);
+      }
+      break;
+    case 'announcement':
+      {
+        const notif = notification.notif as NotificationAnnouncement;
+        text = `${tag('<b>') + notif.post.title + tag('</b>')}`;
+        to = `/${notif.post.communityName}/post/${notif.post.publicId}`;
         image = getNotifImage(notif);
       }
       break;

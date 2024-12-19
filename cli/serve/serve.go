@@ -84,6 +84,9 @@ func serve(ctx *cli.Context) error {
 		}
 		return err
 	}, time.Minute, false)
+	tr.New("Send announcement notifications", func(ctx context.Context) error {
+		return core.SendAnnouncementNotifications(ctx, db, uid.ID{})
+	}, time.Second*10, false)
 
 	go func() {
 		time.Sleep(time.Second * 2)
