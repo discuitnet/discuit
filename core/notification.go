@@ -239,7 +239,6 @@ func CreateNotification(ctx context.Context, db *sql.DB, user uid.ID, Type Notif
 	}
 
 	sendPushNotif := func() {
-		return
 		notif, err := GetNotification(ctx, db, strconv.Itoa(int(lastID)))
 		if err != nil {
 			log.Println("Error getting notification (CreateNotification)", err)
