@@ -1132,11 +1132,6 @@ func sendAnnouncementNotifications(ctx context.Context, db *sql.DB, post uid.ID)
 // not be one that expires quickly (such as a context gotten from
 // [http.Request]).
 func SendAnnouncementNotifications(ctx context.Context, db *sql.DB, post uid.ID) error {
-	t0 := time.Now()
-	defer func() {
-		log.Printf("Took %v to send announcement notifications\n", time.Since(t0))
-	}()
-
 	rows, err := db.QueryContext(ctx, "SELECT post_id FROM announcement_posts WHERE sending_finished_at IS NULL")
 	if err != nil {
 		return err
