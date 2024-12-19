@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+type DoFunc func()
+
 type task struct {
 	name      string
 	fn        func(context.Context) error
@@ -14,6 +16,7 @@ type task struct {
 	waitFirst bool
 	done      chan struct{}
 	noLogging bool
+	do        chan struct{} // for running task on call
 }
 
 func (t *task) run(ctx context.Context, done <-chan struct{}) {
@@ -30,10 +33,20 @@ func (t *task) run(ctx context.Context, done <-chan struct{}) {
 			return
 		case <-time.After(t.period):
 			// continue
+		case <-t.do:
+			// continue
 		}
 		if t.waitFirst {
 			t.once(ctx)
 		}
+	}
+}
+
+func (t *task) doFunc() DoFunc {
+	return func() {
+		go func() {
+			t.do <- struct{}{}
+		}()
 	}
 }
 
@@ -61,14 +74,17 @@ func New(ctx context.Context) *TaskRunner {
 	return tr
 }
 
-func (tr *TaskRunner) New(name string, fn func(context.Context) error, period time.Duration, waitFirst bool) {
-	tr.tasks = append(tr.tasks, &task{
+func (tr *TaskRunner) New(name string, fn func(context.Context) error, period time.Duration, waitFirst bool) DoFunc {
+	t := &task{
 		name:      name,
 		fn:        fn,
 		period:    period,
 		done:      make(chan struct{}),
 		waitFirst: waitFirst,
-	})
+		do:        make(chan struct{}),
+	}
+	tr.tasks = append(tr.tasks, t)
+	return t.doFunc()
 }
 
 // Start starts all the task jobs in the background. The function doesn't block
