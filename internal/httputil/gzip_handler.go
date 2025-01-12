@@ -76,7 +76,7 @@ func serveGzip(w http.ResponseWriter, r *http.Request, fs http.FileSystem, name 
 	}
 
 	if w.Header().Get("Cache-Control") == "" {
-		w.Header().Add("Cache-Control", "public, max-age=86400, immutable")
+		w.Header().Add("Cache-Control", "public, max-age=3600, immutable")
 	}
 	http.ServeContent(w, r, name, info.ModTime(), f)
 }

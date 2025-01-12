@@ -12,7 +12,6 @@ import { ButtonMore } from '../Button';
 import Dropdown from '../Dropdown';
 import Image from '../Image';
 import TimeAgo from '../TimeAgo';
-import { getNotificationDisplayInformation } from './notification';
 
 const NotificationItem = ({ notification, ...rest }) => {
   const { seen, createdAt, notif } = notification;
@@ -25,7 +24,9 @@ const NotificationItem = ({ notification, ...rest }) => {
   const handleMarkAsSeen = () => dispatch(markNotificationAsSeen(notification, !seen));
   const handleDelete = async () => {
     try {
-      await mfetchjson(`/api/notifications/${notification.id}`, { method: 'DELETE' });
+      await mfetchjson(`/api/notifications/${notification.id}?render=true&format=html`, {
+        method: 'DELETE',
+      });
       dispatch(notificationsDeleted(notification));
     } catch (error) {
       dispatch(snackAlertError(error));
@@ -56,8 +57,12 @@ const NotificationItem = ({ notification, ...rest }) => {
     );
   }
 
-  const { text: __html, to, image } = getNotificationDisplayInformation(notification, true);
-  const html = { __html };
+  let html = { __html: notification.title };
+  let to = notification.toURL;
+  let image = {
+    url: notification.icons[0],
+    backgroundColor: 'transparent',
+  };
 
   return (
     <a

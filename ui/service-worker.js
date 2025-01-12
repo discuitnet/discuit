@@ -1,5 +1,3 @@
-import { getNotificationDisplayInformation } from './src/components/Navbar/notification';
-
 const SW_BUILD_ID = import.meta.env.VITE_SW_BUILD_ID;
 
 console.log(`Service worker version: ${SW_BUILD_ID}`);
@@ -147,17 +145,20 @@ self.addEventListener('fetch', (e) => {
 });
 
 const getNotificationInfo = (notification, csrfToken) => {
-  const { text: title, to, image } = getNotificationDisplayInformation(notification);
+  let icon = '';
+  if (notification.icons !== null) {
+    icon = notification.icons[0];
+  }
   return {
-    title: title,
+    title: notification.title,
     options: {
-      body: '',
-      icon: image.url,
+      body: notification.body,
+      icon,
       badge: '/discuit-logo-pwa-badge.png',
       tag: notification.id,
       data: {
         notificationId: notification.id,
-        toURL: `${to}?fromNotif=${notification.id}`,
+        toURL: notification.toURL,
         csrfToken,
       },
     },
@@ -190,7 +191,7 @@ self.addEventListener('push', (e) => {
       }
 
       const pushNotif = e.data.json();
-      const res = await fetch(`/api/notifications/${pushNotif.id}`);
+      const res = await fetch(`/api/notifications/${pushNotif.id}?render=true`);
       if (!res.ok) {
         console.log('notification error');
         return;
@@ -243,7 +244,7 @@ const closeSeenNotifications = async () => {
   if (existingNotifs.length === 0) {
     return;
   }
-  const res = await (await fetch('/api/notifications')).json();
+  const res = await (await fetch('/api/notifications?render=true')).json();
   const notifs = res.items || [];
   existingNotifs.forEach((exNotif) => {
     for (let i = 0; i < notifs.length; i++) {

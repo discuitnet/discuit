@@ -1,6 +1,5 @@
 import PropTypes from 'prop-types';
-import React from 'react';
-import favicon from '../assets/imgs/favicon.png';
+import favicon from '../../public/favicon.png';
 import { selectImageCopyURL } from '../helper';
 import { useImageLoaded } from '../hooks';
 

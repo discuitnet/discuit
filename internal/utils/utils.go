@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"io"
 	"math/rand"
+	"strconv"
 	"strings"
 )
 
@@ -194,4 +195,20 @@ func ExtractStringsFromMap(m map[string]any, trim bool) map[string]string {
 		}
 	}
 	return strMap
+}
+
+func StringCount(number int, thingName, thingNameMultiple string, excludeNumber bool) string {
+	var s string
+	if !excludeNumber {
+		s = strconv.Itoa(number) + " "
+	}
+	if thingNameMultiple == "" {
+		thingNameMultiple = thingName + "s"
+	}
+	if number == 1 {
+		s += thingName
+	} else {
+		s += thingNameMultiple
+	}
+	return s
 }

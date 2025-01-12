@@ -381,7 +381,7 @@ func (s *Server) getNotifications(w *responseWriter, r *request) error {
 	res.NewCount = user.NumNewNotifications
 
 	query := r.urlQueryParams()
-	if res.Items, res.Next, err = core.GetNotifications(r.ctx, s.db, user.ID, 10, query.Get("next")); err != nil {
+	if res.Items, res.Next, err = core.GetNotifications(r.ctx, s.db, user.ID, 10, query.Get("next"), query.Get("render") == "true", core.TextFormat(query.Get("format"))); err != nil {
 		return err
 	}
 
@@ -394,8 +394,10 @@ func (s *Server) getNotification(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
+	query := r.urlQueryParams()
+
 	notifID := r.muxVar("notificationID")
-	notif, err := core.GetNotification(r.ctx, s.db, notifID)
+	notif, err := core.GetNotification(r.ctx, s.db, notifID, query.Get("render") == "true", core.TextFormat(query.Get("format")))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return httperr.NewNotFound("notif_not_found", "Notification not found.")
@@ -407,7 +409,6 @@ func (s *Server) getNotification(w *responseWriter, r *request) error {
 		return httperr.NewForbidden("not_owner", "")
 	}
 
-	query := r.urlQueryParams()
 	if r.req.Method == "PUT" {
 		action := query.Get("action")
 		switch action {
@@ -432,8 +433,10 @@ func (s *Server) deleteNotification(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
+	query := r.urlQueryParams()
+
 	notifID := r.muxVar("notificationID")
-	notif, err := core.GetNotification(r.ctx, s.db, notifID)
+	notif, err := core.GetNotification(r.ctx, s.db, notifID, query.Get("render") == "true", core.TextFormat(query.Get("format")))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return httperr.NewNotFound("notif_not_found", "Notification not found.")

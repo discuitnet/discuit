@@ -569,7 +569,7 @@ export const markNotificationAsSeen =
     const errMsg = 'Error marking notification as seen: ';
     try {
       await mfetchjson(
-        `/api/notifications/${notifId}?action=markAsSeen&seen=${seen ? 'true' : 'false'}`,
+        `/api/notifications/${notifId}?render=true&format=html&action=markAsSeen&seen=${seen ? 'true' : 'false'}`,
         {
           method: 'PUT',
         }

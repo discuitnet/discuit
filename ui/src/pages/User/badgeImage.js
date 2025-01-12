@@ -1,4 +1,4 @@
-import BadgeSupporter from '../../assets/imgs/badge-supporter.png';
+import BadgeSupporter from '../../../public/badge-supporter.png';
 
 export function badgeImage(type) {
   let src = '',

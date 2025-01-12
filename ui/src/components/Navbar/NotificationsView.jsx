@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useDispatch, useSelector } from 'react-redux';
 import { APIError, mfetch, mfetchjson } from '../../helper';
@@ -20,24 +20,24 @@ const NotificationsView = () => {
   const { loaded, next, items, count, newCount } = notifications;
 
   const dispatch = useDispatch();
+  const apiEndpoint = '/api/notifications?render=true&format=html';
 
   // type is the type of notifications. Empty string means all notifications.
   const markAsSeen = async (type = '') => {
-    const res = await mfetch(`/api/notifications?action=markAllAsSeen&type=${type}`, {
+    const res = await mfetch(`${apiEndpoint}&action=markAllAsSeen&type=${type}`, {
       method: 'POST',
     });
     if (!res.ok) throw new APIError(res.status, await res.text());
     return res;
   };
 
-  const apiEndpoint = '/api/notifications';
   useEffect(() => {
     if (loaded && newCount === 0) return;
     (async () => {
       try {
         dispatch(notificationsLoaded(await mfetchjson(apiEndpoint)));
 
-        const res = await mfetch(`/api/notifications?action=resetNewCount`, { method: 'POST' });
+        const res = await mfetch(`${apiEndpoint}&action=resetNewCount`, { method: 'POST' });
         if (!res.ok) throw new APIError(res.status, await res.text());
 
         dispatch(notificationsNewCountReset());
@@ -67,7 +67,7 @@ const NotificationsView = () => {
       (async () => {
         try {
           nextItemsLoading.current = true;
-          dispatch(notificationsUpdated(await mfetchjson(`${apiEndpoint}?next=${next}`)));
+          dispatch(notificationsUpdated(await mfetchjson(`${apiEndpoint}&next=${next}`)));
         } catch (error) {
           dispatch(snackAlertError(error));
         } finally {
@@ -93,7 +93,9 @@ const NotificationsView = () => {
   };
   const handleDeleteAll = async () => {
     try {
-      const res = await mfetch(`/api/notifications?action=deleteAll`, { method: 'POST' });
+      const res = await mfetch(`${apiEndpoint}&action=deleteAll`, {
+        method: 'POST',
+      });
       if (!res.ok) throw new APIError(res.status, await res.text());
       dispatch(notificationsAllDeleted());
       dispatch(snackAlert('All notifications are deleted.'));
