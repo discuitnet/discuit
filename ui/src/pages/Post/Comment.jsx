@@ -2,6 +2,7 @@
 import PropTypes from 'prop-types';
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
+import { useLocation } from 'react-router-dom';
 import Dropdown from '../../components/Dropdown';
 import MarkdownBody from '../../components/MarkdownBody';
 import ModalConfirm from '../../components/Modal/ModalConfirm';
@@ -232,6 +233,19 @@ const Comment = ({
       window.scrollTo(0, pos);
     }
   }, [focused, focusId]);
+
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+
+  const highlighted = (() => {
+    const ts = new Date(comment.createdAt).getTime() / 1000,
+      from = parseInt(params.get('highlightFrom')),
+      to = parseInt(params.get('highlightTo'));
+    if (isNaN(to)) {
+      return ts >= from;
+    }
+    return ts >= from && ts <= to;
+  })();
 
   const [reportModalOpen, setReportModalOpen] = useState(false); // for mobile
 
@@ -521,7 +535,7 @@ const Comment = ({
           <div
             className={
               'post-comment-text' +
-              (focused ? ' is-focused' : '') +
+              (focused || highlighted ? ' is-focused' : '') +
               (deleted && !purged ? ' is-red' : '')
             }
             onClick={handleCommentTextClick}

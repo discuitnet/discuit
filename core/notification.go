@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -332,6 +333,17 @@ func (n *Notification) MarshalJSON() ([]byte, error) {
 		view.SeenAt = n.SeenAt
 		view.CreatedAt = n.CreatedAt
 		view.UpdatedAt = n.updatedAt
+		if view.CreatedAt != view.UpdatedAt && (n.Type == NotificationTypeNewComment || n.Type == NotificationTypeCommentReply) && view.ToURL != "" {
+			url, err := url.Parse(view.ToURL)
+			if err != nil {
+				return nil, fmt.Errorf("error parsing notification view url: %w", err)
+			}
+			q := url.Query()
+			q.Add("highlightFrom", strconv.FormatInt(view.CreatedAt.Unix(), 10))
+			q.Add("highlightTo", strconv.FormatInt(view.UpdatedAt.Unix(), 10))
+			url.RawQuery = q.Encode()
+			view.ToURL = url.String()
+		}
 		return json.Marshal(view)
 	}
 
