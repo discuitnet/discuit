@@ -1,5 +1,6 @@
 const SW_BUILD_ID = import.meta.env.VITE_SW_BUILD_ID;
 
+// Log the service-worker version for debugging.
 console.log(`Service worker version: ${SW_BUILD_ID}`);
 
 const cacheEndpoints = async (urls = []) => {
@@ -25,7 +26,6 @@ self.addEventListener('install', (e) => {
   self.skipWaiting();
 });
 
-// Enable navigation preload.
 const enableNavigationPreload = async () => {
   if (self.registration.navigationPreload) {
     await self.registration.navigationPreload.enable();
@@ -79,10 +79,8 @@ const shouldCache = (request) => {
   if (request.method !== 'GET') {
     return false;
   }
-
   const url = new URL(request.url, `${self.location.protocol}//${self.location.host}`);
   const { pathname } = url;
-
   if (pathname.startsWith('/assets/') && endsWithOneOf(pathname, ['.js', '.css'])) {
     return true;
   }
@@ -96,12 +94,15 @@ const shouldCache = (request) => {
 };
 
 const cacheFirst = async ({ request, preloadResponsePromise }) => {
+  // See if a caches response to the request is available. If so, immediately
+  // respond with that.
   const cachedRes = await caches.match(request);
   if (cachedRes) {
     return cachedRes;
   }
 
-  // Next try to use (and cache) the preloaded response, if it's there
+  // Next try to use (and cache) the preloaded response, if it exists. And if it
+  // exists, respond with that.
   try {
     const preloadResponse = await preloadResponsePromise;
     if (preloadResponse) {
@@ -170,7 +171,6 @@ const isClientFocused = async () => {
     type: 'window',
     includeUncontrolled: true,
   });
-
   let clientIsFocused = false;
   for (let i = 0; i < windowClients.length; i++) {
     const windowClient = windowClients[i];
@@ -179,7 +179,6 @@ const isClientFocused = async () => {
       break;
     }
   }
-
   return clientIsFocused;
 };
 
@@ -189,21 +188,18 @@ self.addEventListener('push', (e) => {
       if (await isClientFocused()) {
         return;
       }
-
       const pushNotif = e.data.json();
       const res = await fetch(`/api/notifications/${pushNotif.id}?render=true`);
       if (!res.ok) {
         console.log('notification error');
         return;
       }
-
       const info = getNotificationInfo(await res.json(), res.headers.get('Csrf-Token'));
       return self.registration.showNotification(info.title, info.options);
     } catch (error) {
       console.error(error);
     }
   };
-
   e.waitUntil(f());
 });
 
@@ -211,7 +207,6 @@ self.addEventListener('notificationclick', (e) => {
   const { notification } = e;
   const { data } = notification;
   notification.close();
-
   const markAsSeen = async () => {
     try {
       const res = await fetch(
