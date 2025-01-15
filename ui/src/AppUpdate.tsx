@@ -3,15 +3,15 @@ import { ButtonClose } from './components/Button';
 import Modal from './components/Modal';
 import { useIsMobile } from './hooks';
 
-export const forceSwUpdate = async () => {
+export async function forceSwUpdate() {
   if ('serviceWorker' in navigator) {
     console.log('Force updating service worker');
     const registration = await navigator.serviceWorker.ready;
     return registration.update();
   }
-};
+}
 
-const AppUpdate = () => {
+function AppUpdate() {
   const [serviceWorkerWaiting, setServiceWorkerWaiting] = useState(false);
 
   useEffect(() => {
@@ -26,29 +26,29 @@ const AppUpdate = () => {
     };
   }, []);
 
-  // const newSw = useRef();
   useEffect(() => {
     let effectCancelled = false;
-
     const detectSwUpdate = async () => {
       const registration = await navigator.serviceWorker.ready;
-      registration.addEventListener('updatefound', (e) => {
+      registration.addEventListener('updatefound', () => {
         const newSW = registration.installing;
-        newSW.addEventListener('statechange', (e) => {
-          if (newSW.state == 'installed') {
-            if (!effectCancelled) {
-              // New service worker is installed, but waiting activation
-              // newSw.current = newSw;
-              setServiceWorkerWaiting(true);
+        if (newSW) {
+          newSW.addEventListener('statechange', () => {
+            if (newSW.state == 'installed') {
+              if (!effectCancelled) {
+                setServiceWorkerWaiting(true);
+              }
             }
-          }
-        });
+          });
+        }
       });
     };
-
-    if ('serviceWorker' in navigator) detectSwUpdate();
-
-    return () => (effectCancelled = true);
+    if ('serviceWorker' in navigator) {
+      detectSwUpdate();
+    }
+    return () => {
+      effectCancelled = true;
+    };
   }, []);
 
   const handleReload = async () => {
@@ -100,8 +100,8 @@ const AppUpdate = () => {
           </div>
           <div className="modal-card-content">
             <p>
-              A new version of this app is available. Reload the page to update. It won't take more
-              than a second.
+              A new version of this app is available. Reload the page to update. It won&apos;t take
+              more than a second.
             </p>
           </div>
           <div className="modal-card-actions">
@@ -116,7 +116,7 @@ const AppUpdate = () => {
   }
 
   return null;
-};
+}
 
 const localStorageKey = 'update_prompt_displayed_at';
 
@@ -140,7 +140,7 @@ function shouldDisplayUpdatePrompt() {
 }
 
 function updateLocalStoragePromptDisplayedTimestamp() {
-  window.localStorage.setItem(localStorageKey, Math.round(Date.now() / 1000));
+  window.localStorage.setItem(localStorageKey, Math.round(Date.now() / 1000).toString());
 }
 
 export default AppUpdate;

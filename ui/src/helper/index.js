@@ -370,6 +370,12 @@ export function isDeviceIos() {
   return /iphone|ipad|ipod/.test(userAgent);
 }
 
+/**
+ * Reports whether the device is running as a standalone application (basically,
+ * reports whether it's running as a PWA).
+ *
+ * @returns void
+ */
 export function isDeviceStandalone() {
   // return window.navigator && 'standalone' in window.navigator;
   return navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
