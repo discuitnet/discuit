@@ -78,6 +78,10 @@ func serve(ctx *cli.Context) error {
 		return err
 	}, time.Hour, false)
 	tr.New("Send welcome notifications", func(ctx context.Context) error {
+		if conf.WelcomeCommunity == "" {
+			log.Println("Config.WelcomeCommunity is empty; skipping sending welcome notifications.")
+			return nil
+		}
 		n, err := core.SendWelcomeNotifications(ctx, db, conf.WelcomeCommunity, time.Hour*6)
 		if n > 0 {
 			log.Printf("%d welcome notifications successfully sent\n", n)
