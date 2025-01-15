@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ButtonClose } from './components/Button';
 import Modal from './components/Modal';
 import { useIsMobile } from './hooks';
@@ -12,7 +12,7 @@ export const forceSwUpdate = async () => {
 };
 
 const AppUpdate = () => {
-  const [swWaiting, setSwWaiting] = useState(false);
+  const [serviceWorkerWaiting, setServiceWorkerWaiting] = useState(false);
 
   useEffect(() => {
     const id = setInterval(() => forceSwUpdate(), 1000 * 60 * 2); // every 2 minutes
@@ -26,7 +26,7 @@ const AppUpdate = () => {
     };
   }, []);
 
-  const newSw = useRef();
+  // const newSw = useRef();
   useEffect(() => {
     let effectCancelled = false;
 
@@ -39,7 +39,7 @@ const AppUpdate = () => {
             if (!effectCancelled) {
               // New service worker is installed, but waiting activation
               // newSw.current = newSw;
-              setSwWaiting(true);
+              setServiceWorkerWaiting(true);
             }
           }
         });
@@ -59,7 +59,29 @@ const AppUpdate = () => {
   const handleClose = () => setModalOpen(false);
   const isMobile = useIsMobile();
 
-  if (isMobile && swWaiting) {
+  const [showPrompt, setShowPrompt] = useState(false);
+  useEffect(() => {
+    if (showPrompt) {
+      updateLocalStoragePromptDisplayedTimestamp();
+      return;
+    }
+    if (serviceWorkerWaiting) {
+      const timer = window.setInterval(() => {
+        const show = isMobile && shouldDisplayUpdatePrompt();
+        setShowPrompt(show);
+        if (show) {
+          clearInterval(timer);
+        }
+      }, 10000);
+      return () => {
+        clearInterval(timer);
+      };
+    } else {
+      setShowPrompt(false);
+    }
+  }, [showPrompt, serviceWorkerWaiting, isMobile]);
+
+  if (showPrompt) {
     /*
     return (
       <div style={{ marginTop: 'var(--navbar-height)' }}>
@@ -95,5 +117,30 @@ const AppUpdate = () => {
 
   return null;
 };
+
+const localStorageKey = 'update_prompt_displayed_at';
+
+/**
+ * Returns true if the update prompt has not been displayed to the user in the
+ * last 20 minutes.
+ *
+ * @returns booleon
+ */
+function shouldDisplayUpdatePrompt() {
+  const val = window.localStorage.getItem(localStorageKey);
+  if (val === null) {
+    return true;
+  }
+  const valInt = parseInt(val, 10);
+  if (isNaN(valInt)) {
+    return true;
+  }
+  const current = Date.now() / 1000;
+  return current - valInt > 20 * 60;
+}
+
+function updateLocalStoragePromptDisplayedTimestamp() {
+  window.localStorage.setItem(localStorageKey, Math.round(Date.now() / 1000));
+}
 
 export default AppUpdate;
