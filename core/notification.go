@@ -248,7 +248,7 @@ func (nv *NotificationView) setIcon(objects ...any) {
 	find := func(object any) string {
 		switch obj := object.(type) {
 		case *Post:
-			if obj.Type == PostTypeImage {
+			if obj.Type == PostTypeImage && obj.Image != nil {
 				return obj.Image.SelectCopy("tiny").URL
 			} else if obj.Type == PostTypeLink {
 				if obj.HasLinkImage() {

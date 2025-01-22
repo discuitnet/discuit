@@ -113,8 +113,8 @@ type Post struct {
 	Title string          `json:"title"`
 	Body  msql.NullString `json:"body"`
 
-	Image  *images.Image   `json:"image"`
-	Images []*images.Image `json:"images"`
+	Image  *images.Image   `json:"image"`  // even if the post type is [PostTypeImage], this may be nil
+	Images []*images.Image `json:"images"` // even if the post type is [PostTypeImage], this may be nil
 
 	link *postLink `json:"-"` // what's saved to the DB
 
