@@ -1,10 +1,9 @@
 import PropTypes from 'prop-types';
-import favicon from '../../public/favicon.png';
 import { selectImageCopyURL } from '../helper';
 import { useImageLoaded } from '../hooks';
 
 const CommunityProPic = ({ className, name, proPic, size = 'small', ...rest }) => {
-  let src = favicon;
+  let src = '/favicon.png';
   let averageColor = '#3d3d3d';
   if (proPic) {
     averageColor = proPic.averageColor;
