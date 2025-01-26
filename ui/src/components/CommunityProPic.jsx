@@ -3,7 +3,8 @@ import { selectImageCopyURL } from '../helper';
 import { useImageLoaded } from '../hooks';
 
 const CommunityProPic = ({ className, name, proPic, size = 'small', ...rest }) => {
-  let src = '/favicon.png';
+  const defaultFavicon = '/favicon-gray.png';
+  let src = defaultFavicon;
   let averageColor = '#3d3d3d';
   if (proPic) {
     averageColor = proPic.averageColor;
