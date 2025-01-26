@@ -8,7 +8,7 @@ type ListsStateItems = {
   [key: string]: List; // key is a list id
 };
 
-interface ListsState {
+export interface ListsState {
   ids: number[]; // list ids
   usersLists: {
     // key is a username
