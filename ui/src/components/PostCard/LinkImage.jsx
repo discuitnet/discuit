@@ -37,6 +37,7 @@ const LinkImage = ({ image, loading = 'lazy', isImagePost = false }) => {
       style={{
         backgroundColor: image.averageColor,
         backgroundImage: loaded ? `url('${src}')` : 'none',
+        backgroundPosition: 'center',
       }}
     >
       <img

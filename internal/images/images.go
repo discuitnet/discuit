@@ -733,7 +733,7 @@ func resizeImage(image []byte, width, height int, fit ImageFit) ([]byte, error) 
 	img := bimg.NewImage(image)
 	switch fit {
 	case ImageFitCover:
-		return img.SmartCrop(width, height)
+		return img.Crop(width, height, bimg.GravityCentre)
 	case ImageFitContain:
 		size, err := img.Size()
 		if err != nil {
