@@ -231,17 +231,18 @@ const (
 )
 
 type NotificationView struct {
-	ID         int           `json:"id"`
-	Version    int           `json:"version"`
-	TextFormat TextFormat    `json:"textFormat"`
-	Title      string        `json:"title"`
-	Body       string        `json:"body"`
-	Icons      []string      `json:"icons"` // list of urls
-	ToURL      string        `json:"toURL"`
-	Seen       bool          `json:"seen"`
-	SeenAt     msql.NullTime `json:"seenAt"`
-	CreatedAt  time.Time     `json:"createdAt"`
-	UpdatedAt  time.Time     `json:"updatedAt"`
+	ID         int              `json:"id"`
+	Version    int              `json:"version"`
+	Type       NotificationType `json:"type"`
+	TextFormat TextFormat       `json:"textFormat"`
+	Title      string           `json:"title"`
+	Body       string           `json:"body"`
+	Icons      []string         `json:"icons"` // list of urls
+	ToURL      string           `json:"toURL"`
+	Seen       bool             `json:"seen"`
+	SeenAt     msql.NullTime    `json:"seenAt"`
+	CreatedAt  time.Time        `json:"createdAt"`
+	UpdatedAt  time.Time        `json:"updatedAt"`
 }
 
 func (nv *NotificationView) setIcon(objects ...any) {
@@ -329,6 +330,7 @@ func (n *Notification) MarshalJSON() ([]byte, error) {
 		view.TextFormat = n.renderTextFormat
 		view.Version = 1
 		view.ID = n.ID
+		view.Type = n.Type
 		view.Seen = n.Seen
 		view.SeenAt = n.SeenAt
 		view.CreatedAt = n.CreatedAt
