@@ -655,8 +655,13 @@ func fixOgImageTag(doc *html.Node, toAbsolute func(string) string) {
 
 func (s *Server) insertMetaTags(doc *html.Node, r *http.Request) {
 	ctx := r.Context()
+
 	absoluteURL := func(path string) string {
-		return "https://" + filepath.Join(r.Host, path)
+		scheme := "http://"
+		if s.config.CertFile != "" {
+			scheme = "https://"
+		}
+		return scheme + filepath.Join(r.Host, path)
 	}
 
 	path := strings.TrimRight(r.URL.Path, "/")
