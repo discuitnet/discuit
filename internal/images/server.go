@@ -28,6 +28,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			// Handle preflighted requests.
 			w.Header().Add("Access-Control-Allow-Methods", "GET")
 			w.Header().Add("Access-Control-Max-Age", "86400") // a day
+			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 	}
