@@ -25,6 +25,15 @@ import { userHasSupporterBadge } from '../User';
 import AddComment from './AddComment';
 import CommentShareButton, { CommentShareDropdownItems } from './CommentShareButton';
 
+const collapseIconStyle = {
+  width: '18px',
+  height: '18px',
+  display: 'flex',
+  align_items: 'center',
+  // additional styles if needed
+};
+
+
 const Diagnostics = false; // import.meta.env.MODE !== 'production';
 const MaxCommentDepth = 15;
 
@@ -280,12 +289,26 @@ const Comment = ({
   const proPicRef = useRef(null);
   const renderAuthorProPic = () => {
     if (!showAuthorProPic) {
-      return <div className={'post-comment-collapse-minus' + (collapsed ? ' is-plus' : '')}></div>;
+      return (
+        <div className="post-comment-collapse-minus" onClick={() => handleCollapse(true)}>
+          {/* collapse icon only */}
+        </div>
+      );
     }
     if (!comment.userDeleted && comment.author) {
       const { author } = comment;
       return (
-        <div className="post-comment-propic" ref={proPicRef}>
+        <div
+          className="post-comment-propic"
+          ref={proPicRef}
+          style={{ display: 'flex', alignItems: 'center' }}
+        >
+          <div
+            className="collapse-icon-wrapper"
+            onClick={() => handleCollapse(collapsed ? false : true)}
+          >
+            {/* COLLAPSE WAS HERE */}
+          </div>
           <LinkOrDiv
             href={`/@${author.username}`}
             isLink={!collapsed}
@@ -298,7 +321,22 @@ const Comment = ({
       );
     }
     return (
-      <div className="post-comment-propic" ref={proPicRef}>
+      <div
+        className="post-comment-propic"
+        ref={proPicRef}
+        style={{ display: 'flex', alignItems: 'center' }}
+      >
+        <div
+          className="post-comment-collapse-minus mobile-collapse-icon"
+          onClick={() => handleCollapse(true)}
+          style={{
+            width: '18px',
+            height: '18px',
+            marginRight: '8px',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        ></div>
         <GhostUserProPic />
       </div>
     );
@@ -328,13 +366,35 @@ const Comment = ({
   const topDivClassname = 'post-comment' + (showAuthorProPic ? ' has-propics' : '');
   if (collapsed) {
     return (
+
       <div
         ref={collapsedRef}
         className={topDivClassname + ' is-collapsed'}
         onClick={() => handleCollapse(false)}
       >
+        <div
+          className="post-comment-head-item post-comment-collapse-minus new-collapse-icon"
+          onClick={() => handleCollapse(true)}
+          style={{
+            width: '14px',
+            height: '14px',
+            // maxWidth: '14px',
+            // maxHeight: '14px',
+            transform: 'translateY(6px) translateX(-5px)',
+
+            aspectRatio: '1',
+            display: isMobile ? 'none' : 'flex', // Hide in mobile view
+            // display: isMobile ? 'none' : 'flex', // Hide in mobile view
+            // transform: 'scale(0.5)',
+            alignItems: 'center',
+            // border: '2px solid var(--collapse-color)',
+
+          }}
+        ></div>
         <div className="post-comment-left">
+
           <div className="post-comment-collapse">{renderAuthorProPic()}</div>
+
         </div>
         <div className="post-comment-body">
           <div className="post-comment-body-head">
@@ -485,15 +545,59 @@ const Comment = ({
       >
         Are you sure you want to delete the comment?
       </ModalConfirm>
+      {/* <div
+        className="post-comment-head-item post-comment-collapse-minus"
+        onClick={() => handleCollapse(true)}
+      ></div> */}
+      {/* <div style={{ width: '8px', display: 'inline-block' }}></div> */}
+
+      {/* <div
+        className={`post-comment-collapse-minus ${collapsed ? 'is-plus' : 'is-minus'}`}
+        style={{
+          width: '14px',
+          height: '14px',
+
+          flexShrink: 0,
+          display: 'flex',
+          marginRight: '8px',
+          marginTop: '4px',
+          alignItems: 'center',
+        }}
+        onClick={handleLineClick}
+      ></div> */}
+      <div
+
+        className="post-comment-head-item post-comment-collapse-minus new-collapse-icon"
+        onClick={() => handleCollapse(true)}
+        style={{
+          width: '14px',
+          height: '14px',
+          // maxWidth: '14px',
+          // maxHeight: '14px',
+          transform: 'translateY(5px) translateX(-5px)',
+
+          aspectRatio: '1',
+          display: isMobile ? 'none' : 'flex', // Hide in mobile view
+          // transform: 'scale(0.5)',
+          alignItems: 'center',
+          // border: '2px solid var(--collapse-color)',
+
+        }}
+      ></div>
+
       <div className="post-comment-left">
+
         <div className="post-comment-collapse" onClick={handleLineClick}>
-          {/*<div className="post-comment-collapse-minus"></div>*/}
+
           {renderAuthorProPic()}
           <div className="post-comment-line"></div>
         </div>
       </div>
+
       <div className="post-comment-body">
+
         <div className="post-comment-body-head">
+
           {renderAuthorUsername()}
           {isOP && (
             <div className="post-comment-head-item post-comment-is-op" title="Original poster">

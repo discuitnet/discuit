@@ -1,9 +1,13 @@
 import { exec } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Get the root path
-const rootPath = path.join(import.meta.dirname, '../../');
+// Fix __dirname equivalent for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootPath = path.join(__dirname, '../../');
+
 
 // Run the command to get the config
 (async () => {

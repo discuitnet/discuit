@@ -12,6 +12,7 @@ const proxyAddr = hostnameToURL(process.env.VITE_DEV_PROXY ?? yamlConfig.addr);
 export default defineConfig({
   plugins: [react(), viteCompression(), viteCompression({ algorithm: 'brotliCompress' })],
   server: {
+
     proxy: {
       '/api': {
         target: proxyAddr,
