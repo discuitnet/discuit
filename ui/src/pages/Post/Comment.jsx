@@ -25,15 +25,6 @@ import { userHasSupporterBadge } from '../User';
 import AddComment from './AddComment';
 import CommentShareButton, { CommentShareDropdownItems } from './CommentShareButton';
 
-const collapseIconStyle = {
-  width: '18px',
-  height: '18px',
-  display: 'flex',
-  align_items: 'center',
-  // additional styles if needed
-};
-
-
 const Diagnostics = false; // import.meta.env.MODE !== 'production';
 const MaxCommentDepth = 15;
 
@@ -378,17 +369,10 @@ const Comment = ({
           style={{
             width: '14px',
             height: '14px',
-            // maxWidth: '14px',
-            // maxHeight: '14px',
-            transform: 'translateY(6px) translateX(-5px)',
-
+            transform: 'translateY(6px) translateX(-6px)',
             aspectRatio: '1',
             display: isMobile ? 'none' : 'flex', // Hide in mobile view
-            // display: isMobile ? 'none' : 'flex', // Hide in mobile view
-            // transform: 'scale(0.5)',
             alignItems: 'center',
-            // border: '2px solid var(--collapse-color)',
-
           }}
         ></div>
         <div className="post-comment-left">
@@ -419,11 +403,11 @@ const Comment = ({
             <div className="post-comment-head-item">
               {stringCount(comment.noReplies, false, 'reply', 'replies')}
             </div>
-            {/*{!deleted && comment.userGroup !== 'normal' && (
+            {/* {!deleted && comment.userGroup !== 'normal' && (
               <div className="post-comment-head-item post-comment-user-group">
                 {`${toTitleCase(userGroupSingular(comment.userGroup))}`}
               </div>
-            )*/}
+            )} */}
             <div
               className="post-comment-head-item post-comment-collapse-minus is-plus"
               onClick={() => handleCollapse(false)}
@@ -547,26 +531,6 @@ const Comment = ({
       >
         Are you sure you want to delete the comment?
       </ModalConfirm>
-      {/* <div
-        className="post-comment-head-item post-comment-collapse-minus"
-        onClick={() => handleCollapse(true)}
-      ></div> */}
-      {/* <div style={{ width: '8px', display: 'inline-block' }}></div> */}
-
-      {/* <div
-        className={`post-comment-collapse-minus ${collapsed ? 'is-plus' : 'is-minus'}`}
-        style={{
-          width: '14px',
-          height: '14px',
-
-          flexShrink: 0,
-          display: 'flex',
-          marginRight: '8px',
-          marginTop: '4px',
-          alignItems: 'center',
-        }}
-        onClick={handleLineClick}
-      ></div> */}
       <div
 
         className="post-comment-head-item post-comment-collapse-minus new-collapse-icon"
@@ -574,16 +538,12 @@ const Comment = ({
         style={{
           width: '14px',
           height: '14px',
-          // maxWidth: '14px',
-          // maxHeight: '14px',
-          transform: 'translateY(5px) translateX(-5px)',
+
+          transform: 'translateY(6px) translateX(-6px)',
 
           aspectRatio: '1',
           display: isMobile ? 'none' : 'flex', // Hide in mobile view
-          // transform: 'scale(0.5)',
           alignItems: 'center',
-          // border: '2px solid var(--collapse-color)',
-
         }}
       ></div>
 
