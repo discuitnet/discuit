@@ -12,6 +12,7 @@ const ModalConfirm = ({
   noText = 'No',
   children,
   disableEnter = false,
+  isDestructive = false,
 }) => {
   const handleKeyDown = (e) => {
     if (!disableEnter && e.key === 'Enter') {
@@ -28,7 +29,7 @@ const ModalConfirm = ({
         </div>
         <div className="modal-card-content">{children}</div>
         <div className="modal-card-actions">
-          <button className="button-main" onClick={onConfirm}>
+          <button className={`button-main ${isDestructive ? 'is-red' : ''}`} onClick={onConfirm}>
             {yesText}
           </button>
           <button onClick={onClose}>{noText}</button>

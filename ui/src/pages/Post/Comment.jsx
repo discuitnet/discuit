@@ -373,7 +373,7 @@ const Comment = ({
         onClick={() => handleCollapse(false)}
       >
         <div
-          className="post-comment-head-item post-comment-collapse-minus new-collapse-icon"
+          className="post-comment-head-item post-comment-collapse-minus new-collapse-icon is-plus"
           onClick={() => handleCollapse(true)}
           style={{
             width: '14px',
