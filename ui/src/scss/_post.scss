@@ -420,6 +420,8 @@
         --color-voted-down: var(--color-voted);
         --inner-left-margin: 5px;
 
+
+
         @include mixins.mobile() {
             border: 2px solid var(--collapse-color);
             border-top-left-radius: var(--border-radius);
@@ -599,6 +601,8 @@
         .post-comment-body {
             width: 100%;
             margin-left: 2px;
+            // testing background color for highlighting, should be disabled
+
 
             @include mixins.mobile() {
                 margin-left: 10px;
@@ -690,12 +694,16 @@
             overflow-wrap: anywhere;
             margin-left: var(--inner-left-margin);
 
+
+
             &.is-focused {
                 background-color: rgba(var(--base-brand), 0.2);
                 border-radius: var(--border-radius);
                 margin-bottom: var(--inner-left-margin);
                 padding: 0.6em;
                 margin-left: 0em;
+
+
             }
 
             .post-comment-text-sign {

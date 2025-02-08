@@ -396,7 +396,9 @@ const Comment = ({
           <div className="post-comment-collapse">{renderAuthorProPic()}</div>
 
         </div>
-        <div className="post-comment-body">
+        <div className="post-comment-body"
+
+        >
           <div className="post-comment-body-head">
             {renderAuthorUsername()}
             {isOP && (
@@ -594,7 +596,9 @@ const Comment = ({
         </div>
       </div>
 
-      <div className="post-comment-body">
+      <div className="post-comment-body"
+
+      >
 
         <div className="post-comment-body-head">
 
