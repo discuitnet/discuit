@@ -416,6 +416,19 @@
             @include mixins.mobile() {
                 margin-right: 0;
             }
+
+            &:hover,
+            .post-comment-collapse-minus:hover {
+                .post-comment-line,
+                .post-comment-collapse-minus {
+                    border-color: var(--collapse-hover-color);
+
+                    &::after,
+                    &::before {
+                        background: var(--collapse-hover-color);
+                    }
+                }
+            }
         }
         .post-comment-collapse-minus {
             border: 1px solid var(--collapse-color);
@@ -447,7 +460,31 @@
                     width: 1px;
                 }
             }
+
+            &:hover,
+            .post-comment-collapse-minus:hover {
+                .post-comment-line,
+                .post-comment-collapse-minus {
+                    border-color: var(--collapse-hover-color);
+
+                    &::after,
+                    &::before {
+                        background: var(--collapse-hover-color);
+                    }
+                }
+            }
+
+            &:hover,
+            .post-comment-collapse:hover & {
+                border-color: var(--collapse-hover-color);
+
+                &::after,
+                &::before {
+                    background: var(--collapse-hover-color);
+                }
+            }
         }
+
         .post-comment-propic {
             .profile-picture {
                 width: var(--collapse-button-size);
