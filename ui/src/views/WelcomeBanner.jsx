@@ -28,7 +28,7 @@ const WelcomeBanner = ({ className, children, hideIfMember = false, ...props }) 
       {...props}
     >
       <div className="home-welcome-text">
-        <div className="home-welcome-join">Join the discussion 241321</div>
+        <div className="home-welcome-join">Join the discussion</div>
         <div className="home-welcome-subtext">
           Discuit is a place where <span>{usersCount}</span> people get together to find cool stuff
           and discuss things.

@@ -9,12 +9,19 @@ const PostVotesBar = ({ up = 20000, down = 1000 }) => {
   const title = none
     ? 'No votes'
     : `${u.toFixed(0)}% upvoted • ${up.toLocaleString()} ${stringCount(
-        up,
-        true,
-        'upvote'
-      )} • ${down.toLocaleString()} ${stringCount(down, true, 'downvote')}`;
+      up,
+      true,
+      'upvote'
+    )} • ${down.toLocaleString()} ${stringCount(down, true, 'downvote')}`;
   return (
+
     <div className="post-card-votes-bar" title={title}>
+      {!none && (
+        <div className="votes-bar-percent"
+        >
+          {u.toFixed(0)}% upvoted
+        </div>
+      )}
       <div className={'votes-bar' + (none ? ' is-no-votes' : '')}>
         <div className="votes-bar-up"></div>
         <div className="votes-bar-down" style={{ width: `${w}%` }}></div>
