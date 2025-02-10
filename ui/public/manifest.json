@@ -5,12 +5,12 @@
   "id": "discuit_pwa_v1",
   "icons": [
     {
-      "src": "/logo-manifest-512.png",
+      "src": "/logo-manifest-512.png?v=2",
       "type": "image/png",
       "sizes": "512x512"
     },
     {
-      "src": "/logo-manifest-512.png",
+      "src": "/logo-manifest-512.png?v=2",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "maskable"
