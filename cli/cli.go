@@ -25,6 +25,10 @@ func Before(c *cli.Context) error {
 		log.Fatal("Error parsing config file: ", err)
 	}
 
+	if len(os.Args) < 2 {
+		log.Fatal("No command provided (use 'discuit help' for more information)")
+	}
+
 	if os.Args[1] != "inject-config" {
 		db := openDatabase(conf.DBAddr, conf.DBUser, conf.DBPassword, conf.DBName)
 		c.Context = context.WithValue(c.Context, "db", db)
