@@ -275,7 +275,7 @@ func (nv *NotificationView) setIcon(objects ...any) {
 	}
 
 	// No image was found, so use the default one.
-	nv.Icons = append(nv.Icons, "/favicon.png")
+	nv.Icons = append(nv.Icons, "/favicon.png?v=2")
 }
 
 // Notification is a user's notification.
