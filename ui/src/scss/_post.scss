@@ -1,4 +1,4 @@
-@use 'mixins';
+@use "mixins";
 
 .page-post {
     display: grid;
@@ -92,7 +92,7 @@
                 margin-bottom: var(--gap);
                 .post-card-link-image-img {
                     &::after {
-                        content: '';
+                        content: "";
                         position: absolute;
                         top: 0;
                         right: 0;
@@ -416,6 +416,19 @@
             @include mixins.mobile() {
                 margin-right: 0;
             }
+
+            &:hover,
+            .post-comment-collapse-minus:hover {
+                .post-comment-line,
+                .post-comment-collapse-minus {
+                    border-color: var(--collapse-hover-color);
+
+                    &::after,
+                    &::before {
+                        background: var(--collapse-hover-color);
+                    }
+                }
+            }
         }
         .post-comment-collapse-minus {
             border: 1px solid var(--collapse-color);
@@ -438,16 +451,40 @@
                 transform: translate(-50%, -50%);
             }
             &::after {
-                content: '';
+                content: "";
             }
             &.is-plus {
                 &::before {
-                    content: '';
+                    content: "";
                     height: 50%;
                     width: 1px;
                 }
             }
+
+            &:hover,
+            .post-comment-collapse-minus:hover {
+                .post-comment-line,
+                .post-comment-collapse-minus {
+                    border-color: var(--collapse-hover-color);
+
+                    &::after,
+                    &::before {
+                        background: var(--collapse-hover-color);
+                    }
+                }
+            }
+
+            &:hover,
+            .post-comment-collapse:hover & {
+                border-color: var(--collapse-hover-color);
+
+                &::after,
+                &::before {
+                    background: var(--collapse-hover-color);
+                }
+            }
         }
+
         .post-comment-propic {
             .profile-picture {
                 width: var(--collapse-button-size);
@@ -532,11 +569,7 @@
             .showmorebox {
                 &.is-overflowing {
                     .showmorebox-body {
-                        -webkit-mask-image: linear-gradient(
-                            180deg,
-                            var(--color-fg) 90%,
-                            transparent
-                        );
+                        -webkit-mask-image: linear-gradient(180deg, var(--color-fg) 90%, transparent);
                         mask-image: linear-gradient(180deg, var(--color-fg) 90%, transparent);
                     }
                 }
@@ -743,8 +776,8 @@
                     cursor: unset;
                 }
             }
-            input[type='checkbox'],
-            input[type='radio'] {
+            input[type="checkbox"],
+            input[type="radio"] {
                 // --disabled: var(--active);
                 // --disabled-inner: var(--active-inner);
             }
@@ -755,7 +788,7 @@
         li {
             &:not(.task-list-item):before {
                 display: inline-block;
-                content: '– ';
+                content: "– ";
                 margin-right: calc(var(--gap) / 2);
             }
         }
