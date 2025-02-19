@@ -11,10 +11,10 @@ import MiniFooter from '../../components/MiniFooter';
 import PageLoading from '../../components/PageLoading';
 import ShowMoreBox from '../../components/ShowMoreBox';
 import Sidebar from '../../components/Sidebar';
-import { APIError, dateString1, mfetch, stringCount } from '../../helper';
-import { useMuteCommunity } from '../../hooks';
+import { APIError, copyToClipboard, dateString1, mfetch, stringCount } from '../../helper';
+import { useIsMobile, useMuteCommunity } from '../../hooks';
 import { communityAdded, selectCommunity } from '../../slices/communitiesSlice';
-import { snackAlertError } from '../../slices/mainSlice';
+import { snackAlert, snackAlertError } from '../../slices/mainSlice';
 import PostsFeed from '../../views/PostsFeed';
 import NotFound from '../NotFound';
 import Banner from './Banner';
@@ -64,6 +64,31 @@ const Community = () => {
   const bannedFrom = useSelector((state) => state.main.bannedFrom);
   const isBanned =
     loggedIn && community && bannedFrom.find((id) => id === community.id) !== undefined;
+
+  const isMobile = useIsMobile();
+  const renderCommunityShareButton = () => {
+    const useNavigatorShare = isMobile && Boolean(window.navigator.share);
+    const handleClick = async () => {
+      const url = `${window.location.origin}/${community.name}`;
+      if (useNavigatorShare) {
+        await navigator.share({
+          title: community.name,
+          url,
+        });
+      } else {
+        let text = 'Failed to copy link to clipboard.';
+        if (copyToClipboard(url)) {
+          text = 'Link copied to clipboard.';
+        }
+        dispatch(snackAlert(text, 'pl_copied'));
+      }
+    };
+    return (
+      <button className="button-clear dropdown-item" onClick={handleClick}>
+        {useNavigatorShare ? 'Share' : 'Copy URL'}
+      </button>
+    );
+  };
 
   const [tab, setTab] = useState('posts');
   useEffect(() => {
@@ -157,6 +182,7 @@ const Community = () => {
                     <button className="button-clear dropdown-item" onClick={toggleCommunityMute}>
                       {muteDisplayText}
                     </button>
+                    {renderCommunityShareButton()}
                   </div>
                 </Dropdown>
               )}
