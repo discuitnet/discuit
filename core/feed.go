@@ -184,13 +184,13 @@ func homeFeedWhereClause(ctx context.Context, db *sql.DB, user uid.ID, where str
 	}
 	defer rows.Close()
 
-	var newArgs []any
+	var communityIDs []any
 	for rows.Next() {
 		var cid uid.ID
 		if err := rows.Scan(&cid); err != nil {
 			return where, args, err
 		}
-		newArgs = append(newArgs, cid)
+		communityIDs = append(communityIDs, cid)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -202,8 +202,17 @@ func homeFeedWhereClause(ctx context.Context, db *sql.DB, user uid.ID, where str
 		joiner = "AND"
 	}
 
-	where = fmt.Sprintf("%s %s community_id IN %s ", where, joiner, msql.InClauseQuestionMarks(len(newArgs)))
-	args = append(args, newArgs...)
+	if len(communityIDs) == 0 {
+		// User is not subscribed to any communities. Use the sentinel value of
+		// zero-bytes community ID, which no community would have, to return an
+		// empty result set.
+		where = fmt.Sprintf("%s %s community_id = ? ", where, joiner)
+		args = append(args, uid.ID{})
+		return where, args, nil
+	}
+
+	where = fmt.Sprintf("%s %s community_id IN %s ", where, joiner, msql.InClauseQuestionMarks(len(communityIDs)))
+	args = append(args, communityIDs...)
 
 	return where, args, nil
 }
