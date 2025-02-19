@@ -118,8 +118,9 @@ type User struct {
 	NumComments      int             `json:"noComments"`
 	LastSeen         time.Time       `json:"-"`             // accurate to within 5 minutes
 	LastSeenMonth    string          `json:"lastSeenMonth"` // of the form: November 2024
-	LastSeenIP       string          `json:"-"`
+	LastSeenIP       *string         `json:"-"`
 	CreatedAt        time.Time       `json:"createdAt"`
+	CreatedIP        *string         `json:"-"`
 	Deleted          bool            `json:"deleted"`
 	DeletedAt        msql.NullTime   `json:"deletedAt,omitempty"`
 
@@ -237,6 +238,7 @@ func buildSelectUserQuery(where string) string {
 		"users.last_seen",
 		"users.last_seen_ip",
 		"users.created_at",
+		"users.created_ip",
 		"users.deleted_at",
 		"users.banned_at",
 		"users.upvote_notifications_off",
@@ -339,6 +341,7 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 			&u.LastSeen,
 			&u.LastSeenIP,
 			&u.CreatedAt,
+			&u.CreatedIP,
 			&u.DeletedAt,
 			&u.BannedAt,
 			&u.UpvoteNotificationsOff,
@@ -430,7 +433,7 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 }
 
 // RegisterUser creates a new user.
-func RegisterUser(ctx context.Context, db *sql.DB, username, email, password string) (*User, error) {
+func RegisterUser(ctx context.Context, db *sql.DB, username, email, password, ip string) (*User, error) {
 	// Check for duplicates.
 	if exists, _, err := usernameExists(ctx, db, username); err != nil {
 		return nil, err
@@ -460,13 +463,19 @@ func RegisterUser(ctx context.Context, db *sql.DB, username, email, password str
 		nullEmail.String = email
 	}
 
+	var ipany any
+	if ip != "" {
+		ipany = ip
+	}
 	id := uid.New()
+
 	query, args := msql.BuildInsertQuery("users", []msql.ColumnValue{
 		{Name: "id", Value: id},
 		{Name: "username", Value: username},
 		{Name: "username_lc", Value: strings.ToLower(username)},
 		{Name: "email", Value: nullEmail},
 		{Name: "password", Value: hash},
+		{Name: "created_ip", Value: ipany},
 	})
 	_, err = db.ExecContext(ctx, query, args...)
 	if err != nil {
@@ -639,12 +648,14 @@ func (u *User) UnsetToGhost() {
 func (u *User) MarshalJSONForAdminViewer(ctx context.Context, db *sql.DB) ([]byte, error) {
 	user := &struct {
 		*User
+		CreatedIP                *string   `json:"createdIP"`
 		UserIndex                int       `json:"userIndex"`
 		LastSeen                 time.Time `json:"lastSeen"`
-		LastSeenIP               string    `json:"lastSeenIP"`
+		LastSeenIP               *string   `json:"lastSeenIP"`
 		WebPushSubsriptionsCount int       `json:"webPushSubscriptionsCount"`
 	}{
 		User:       u,
+		CreatedIP:  u.CreatedIP,
 		UserIndex:  u.UserIndex,
 		LastSeen:   u.LastSeen,
 		LastSeenIP: u.LastSeenIP,
@@ -1312,7 +1323,7 @@ func CreateGhostUser(db *sql.DB) (bool, error) {
 	if err := db.QueryRow("SELECT username_lc FROM users WHERE username_lc = ?", "ghost").Scan(&username); err != nil {
 		if err == sql.ErrNoRows {
 			// Ghost user not found; create one.
-			_, createErr := RegisterUser(context.Background(), db, "ghost", "", utils.GenerateStringID(48))
+			_, createErr := RegisterUser(context.Background(), db, "ghost", "", utils.GenerateStringID(48), "")
 			return createErr == nil, createErr
 		}
 		return false, err

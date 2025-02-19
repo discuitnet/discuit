@@ -292,7 +292,7 @@ func (s *Server) signup(w *responseWriter, r *request) error {
 		return err
 	}
 
-	user, err := core.RegisterUser(r.ctx, s.db, username, email, password)
+	user, err := core.RegisterUser(r.ctx, s.db, username, email, password, httputil.GetIP(r.req))
 	if err != nil {
 		return err
 	}
