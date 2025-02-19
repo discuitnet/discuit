@@ -42,7 +42,7 @@ func (s *Server) getUser(w *responseWriter, r *request) error {
 		if _, err = getLoggedInAdmin(s.db, r); err != nil {
 			return err
 		}
-		data, err := user.MarshalJSONForAdminViewer()
+		data, err := user.MarshalJSONForAdminViewer(r.ctx, s.db)
 		if err != nil {
 			return err
 		}

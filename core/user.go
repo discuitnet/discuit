@@ -118,6 +118,7 @@ type User struct {
 	NumComments      int             `json:"noComments"`
 	LastSeen         time.Time       `json:"-"`             // accurate to within 5 minutes
 	LastSeenMonth    string          `json:"lastSeenMonth"` // of the form: November 2024
+	LastSeenIP       string          `json:"-"`
 	CreatedAt        time.Time       `json:"createdAt"`
 	Deleted          bool            `json:"deleted"`
 	DeletedAt        msql.NullTime   `json:"deletedAt,omitempty"`
@@ -234,6 +235,7 @@ func buildSelectUserQuery(where string) string {
 		"users.no_comments",
 		"users.notifications_new_count",
 		"users.last_seen",
+		"users.last_seen_ip",
 		"users.created_at",
 		"users.deleted_at",
 		"users.banned_at",
@@ -335,6 +337,7 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 			&u.NumComments,
 			&u.NumNewNotifications,
 			&u.LastSeen,
+			&u.LastSeenIP,
 			&u.CreatedAt,
 			&u.DeletedAt,
 			&u.BannedAt,
@@ -633,16 +636,24 @@ func (u *User) UnsetToGhost() {
 
 // MarshalJSONForAdminViewer marshals the user with additional fields for admin
 // eyes only.
-func (u *User) MarshalJSONForAdminViewer() ([]byte, error) {
+func (u *User) MarshalJSONForAdminViewer(ctx context.Context, db *sql.DB) ([]byte, error) {
 	user := &struct {
 		*User
-		UserIndex int       `json:"userIndex"`
-		LastSeen  time.Time `json:"lastSeen"`
+		UserIndex                int       `json:"userIndex"`
+		LastSeen                 time.Time `json:"lastSeen"`
+		LastSeenIP               string    `json:"lastSeenIP"`
+		WebPushSubsriptionsCount int       `json:"webPushSubscriptionsCount"`
 	}{
-		User:      u,
-		UserIndex: u.UserIndex,
-		LastSeen:  u.LastSeen,
+		User:       u,
+		UserIndex:  u.UserIndex,
+		LastSeen:   u.LastSeen,
+		LastSeenIP: u.LastSeenIP,
 	}
+
+	if err := db.QueryRow("SELECT COUNT(*) FROM web_push_subscriptions WHERE user_id = ?", u.ID).Scan(&user.WebPushSubsriptionsCount); err != nil {
+		return nil, err
+	}
+
 	return json.Marshal(user)
 }
 
