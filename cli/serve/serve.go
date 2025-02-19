@@ -167,6 +167,13 @@ func serve(ctx *cli.Context) error {
 	// Start the server.
 	go func() {
 		log.Println("Starting server on " + conf.Addr)
+		if conf.IsDevelopment {
+			log.Println("\033[93;103mStarting server in development mode\033[0m")
+		} else {
+			if conf.UseHTTPCookies {
+				log.Println("\033[93;103mWarning: using unsecure HTTP cookies in production\033[0m")
+			}
+		}
 		if https {
 			if err := server.ListenAndServeTLS(conf.CertFile, conf.KeyFile); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				log.Printf("ListenAndServeTLS (main) error: %v\n", err)

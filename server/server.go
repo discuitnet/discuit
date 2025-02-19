@@ -77,6 +77,7 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	redisStore.Secure = !conf.UseHTTPCookies
 
 	s := &Server{
 		db: db,

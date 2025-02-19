@@ -12,7 +12,8 @@ import (
 
 // Config holds all site-wide configuration.
 type Config struct {
-	IsDevelopment bool `yaml:"isDevelopment"`
+	IsDevelopment  bool `yaml:"isDevelopment"`
+	UseHTTPCookies bool `yaml:"useHttpCookies"`
 
 	Addr    string `yaml:"addr"`
 	UIProxy string `yaml:"uiProxy"`
@@ -155,6 +156,8 @@ func Parse(path string) (*Config, error) {
 		"DISCUIT_DISCORD_URL":     &c.DiscordURL,
 		"DISCUIT_GITHUB_URL":      &c.GithubURL,
 		"DISCUIT_SUBSTACK_URL":    &c.SubstackURL,
+
+		"DISCUIT_USE_HTTP_COOKIES": &c.UseHTTPCookies,
 	}
 
 	// Attempt to unmarshal the YAML file if it exists
