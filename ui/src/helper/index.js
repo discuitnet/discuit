@@ -306,13 +306,13 @@ export class APIError extends Error {
 }
 
 function getCsrfCookieToken() {
-  // const cookie = document.cookie.split('; ').find((c) => c.startsWith('csrftoken='));
-  // const n = cookie.indexOf('=');
-  // return cookie.substr(n + 1);
+  const cookie = document.cookie.split('; ').find((c) => c.startsWith('csrftoken='));
+  const n = cookie.indexOf('=');
+  return cookie.substring(n + 1);
+}
 
-  // Using localStorage for saving the csrf token as service workers do not
-  // cache cookies.
-  return window.localStorage.getItem('csrftoken');
+function getCsrfToken() {
+  return window.localStorage.getItem('csrftoken') || getCsrfCookieToken();
 }
 
 export function mfetch(url, options = {}) {
@@ -320,7 +320,7 @@ export function mfetch(url, options = {}) {
     ...options,
     headers: {
       ...options.headers,
-      'X-Csrf-Token': getCsrfCookieToken(),
+      'X-Csrf-Token': getCsrfToken(),
     },
   });
 }

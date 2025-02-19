@@ -74,6 +74,16 @@ const endsWithOneOf = (searchString, endPositions = []) => {
   return false;
 };
 
+const fetchRequest = (request) => {
+  const headers = new Headers(request.headers);
+  headers.set('X-Service-Worker-Version', SW_BUILD_ID);
+  return fetch(
+    new Request(request, {
+      headers,
+    })
+  );
+};
+
 // Returns true if the request is an app asset.
 const shouldCache = (request) => {
   if (request.method !== 'GET') {
@@ -116,7 +126,7 @@ const cacheFirst = async ({ request, preloadResponsePromise }) => {
   }
 
   try {
-    const networkRes = await fetch(request);
+    const networkRes = await fetchRequest(request);
     if (shouldCache(request)) {
       putInCache(request, networkRes.clone());
     }
