@@ -120,19 +120,19 @@ func serve(ctx *cli.Context) error {
 	server := &http.Server{
 		Addr: conf.Addr,
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if hostname := conf.Hostname(); hostname != "" {
-				// Redirect all www. requests to a non-www. host.
-				if withoutWWW, found := strings.CutPrefix(r.Host, "www."); found {
-					url := *r.URL
-					url.Host = withoutWWW
-					if https {
-						url.Scheme = "https"
-					} else {
-						url.Scheme = "http"
-					}
-					http.Redirect(w, r, url.String(), http.StatusMovedPermanently)
-					return
+			// Redirect all www. requests to a non-www. host.
+			withoutWWW, found := strings.CutPrefix(r.Host, "www.")
+			log.Println(withoutWWW)
+			if found {
+				url := *r.URL
+				url.Host = withoutWWW
+				if https {
+					url.Scheme = "https"
+				} else {
+					url.Scheme = "http"
 				}
+				http.Redirect(w, r, url.String(), http.StatusMovedPermanently)
+				return
 			}
 			site.ServeHTTP(w, r)
 		}),
