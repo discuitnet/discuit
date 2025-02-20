@@ -121,9 +121,7 @@ func serve(ctx *cli.Context) error {
 		Addr: conf.Addr,
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Redirect all www. requests to a non-www. host.
-			withoutWWW, found := strings.CutPrefix(r.Host, "www.")
-			log.Println(withoutWWW)
-			if found {
+			if withoutWWW, found := strings.CutPrefix(r.Host, "www."); found {
 				url := *r.URL
 				url.Host = withoutWWW
 				if https {
