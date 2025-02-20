@@ -120,21 +120,17 @@ func serve(ctx *cli.Context) error {
 	server := &http.Server{
 		Addr: conf.Addr,
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if hostname := conf.Hostname(); hostname != "" {
-				// Redirect all requests to any subdomains of conf.Addr to
-				// conf.Addr (no redirecting is done if the hostname provided in
-				// config is empty).
-				if _, subdomain := strings.CutSuffix(r.Host, "."+conf.Hostname()); subdomain {
-					url := *r.URL
-					url.Host = hostname
-					if https {
-						url.Scheme = "https"
-					} else {
-						url.Scheme = "http"
-					}
-					http.Redirect(w, r, url.String(), http.StatusMovedPermanently)
-					return
+			// Redirect all www. requests to a non-www. host.
+			if withoutWWW, found := strings.CutPrefix(r.Host, "www."); found {
+				url := *r.URL
+				url.Host = withoutWWW
+				if https {
+					url.Scheme = "https"
+				} else {
+					url.Scheme = "http"
 				}
+				http.Redirect(w, r, url.String(), http.StatusMovedPermanently)
+				return
 			}
 			site.ServeHTTP(w, r)
 		}),
