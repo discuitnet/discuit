@@ -280,12 +280,26 @@ const Comment = ({
   const proPicRef = useRef(null);
   const renderAuthorProPic = () => {
     if (!showAuthorProPic) {
-      return <div className={'post-comment-collapse-minus' + (collapsed ? ' is-plus' : '')}></div>;
+      return (
+        <div className="post-comment-collapse-minus" onClick={() => handleCollapse(true)}>
+          {/* collapse icon only */}
+        </div>
+      );
     }
     if (!comment.userDeleted && comment.author) {
       const { author } = comment;
       return (
-        <div className="post-comment-propic" ref={proPicRef}>
+        <div
+          className="post-comment-propic"
+          ref={proPicRef}
+          style={{ display: 'flex', alignItems: 'center' }}
+        >
+          <div
+            className="collapse-icon-wrapper"
+            onClick={() => handleCollapse(collapsed ? false : true)}
+          >
+            {/* COLLAPSE WAS HERE */}
+          </div>
           <LinkOrDiv
             href={`/@${author.username}`}
             isLink={!collapsed}
@@ -298,7 +312,22 @@ const Comment = ({
       );
     }
     return (
-      <div className="post-comment-propic" ref={proPicRef}>
+      <div
+        className="post-comment-propic"
+        ref={proPicRef}
+        style={{ display: 'flex', alignItems: 'center' }}
+      >
+        <div
+          className="post-comment-collapse-minus mobile-collapse-icon"
+          onClick={() => handleCollapse(true)}
+          style={{
+            width: '18px',
+            height: '18px',
+            marginRight: '8px',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        ></div>
         <GhostUserProPic />
       </div>
     );
@@ -328,13 +357,28 @@ const Comment = ({
   const topDivClassname = 'post-comment' + (showAuthorProPic ? ' has-propics' : '');
   if (collapsed) {
     return (
+
       <div
         ref={collapsedRef}
         className={topDivClassname + ' is-collapsed'}
         onClick={() => handleCollapse(false)}
       >
+        <div
+          className="post-comment-head-item post-comment-collapse-minus new-collapse-icon is-plus"
+          onClick={() => handleCollapse(true)}
+          style={{
+            width: '14px',
+            height: '14px',
+            transform: 'translateY(6px) translateX(-6px)',
+            aspectRatio: '1',
+            display: isMobile ? 'none' : 'flex', // Hide in mobile view
+            alignItems: 'center',
+          }}
+        ></div>
         <div className="post-comment-left">
+
           <div className="post-comment-collapse">{renderAuthorProPic()}</div>
+
         </div>
         <div className="post-comment-body">
           <div className="post-comment-body-head">
@@ -357,11 +401,11 @@ const Comment = ({
             <div className="post-comment-head-item">
               {stringCount(comment.noReplies, false, 'reply', 'replies')}
             </div>
-            {/*{!deleted && comment.userGroup !== 'normal' && (
+            {/* {!deleted && comment.userGroup !== 'normal' && (
               <div className="post-comment-head-item post-comment-user-group">
                 {`${toTitleCase(userGroupSingular(comment.userGroup))}`}
               </div>
-            )*/}
+            )} */}
             <div
               className="post-comment-head-item post-comment-collapse-minus is-plus"
               onClick={() => handleCollapse(false)}
@@ -485,13 +529,31 @@ const Comment = ({
       >
         Are you sure you want to delete the comment?
       </ModalConfirm>
+      <div
+
+        className="post-comment-head-item post-comment-collapse-minus new-collapse-icon"
+        onClick={() => handleCollapse(true)}
+        style={{
+          width: '14px',
+          height: '14px',
+
+          transform: 'translateY(6px) translateX(-6px)',
+
+          aspectRatio: '1',
+          display: isMobile ? 'none' : 'flex', // Hide in mobile view
+          alignItems: 'center',
+        }}
+      ></div>
+
       <div className="post-comment-left">
+
         <div className="post-comment-collapse" onClick={handleLineClick}>
-          {/*<div className="post-comment-collapse-minus"></div>*/}
+
           {renderAuthorProPic()}
           <div className="post-comment-line"></div>
         </div>
       </div>
+
       <div className="post-comment-body">
         <div className="post-comment-body-head">
           {renderAuthorUsername()}
