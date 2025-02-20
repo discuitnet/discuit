@@ -1,6 +1,6 @@
 # Discuit
 
-This is the codebase that powers [Discuit](https://discuit.net), which is an
+This is the codebase that powers [Discuit](https://discuit.org), which is an
 open-source community platform, an alternative to Reddit.
 
 Built with:
@@ -173,10 +173,10 @@ its development.
 
 If you're thinking of working on something substantial, however, (like a major
 feature) please create an issue, or contact [the
-maintainer](https://discuit.net/@previnder), to discuss it before commencing
+maintainer](https://discuit.org/@previnder), to discuss it before commencing
 work.
 
-The documentation of the API can be found at [docs.discuit.net](https://docs.discuit.net).
+The documentation of the API can be found at [docs.discuit.org](https://docs.discuit.org).
 
 ## License
 

@@ -114,7 +114,7 @@ const Footer = () => {
           </Link>
           <a
             className="footer-item"
-            href="https://docs.discuit.net/"
+            href="https://docs.discuit.org/"
             target="_blank"
             rel="noopener"
           >

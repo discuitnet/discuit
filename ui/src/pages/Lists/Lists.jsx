@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { ButtonClose } from '../../components/Button';
@@ -171,7 +171,7 @@ const ListThumbnail = ({ list }) => {
         <div className="list-thumb-image is-default">
           {/*
           <img
-            src="https://discuit.net/images/17cad58e3fb9872ece91fc87.jpeg?sig=hgUa8EBH96UoIW4YsR5qASk36arQsP_iELgJmV18QBw"
+            src="https://discuit.org/images/17cad58e3fb9872ece91fc87.jpeg?sig=hgUa8EBH96UoIW4YsR5qASk36arQsP_iELgJmV18QBw"
             alt="Cutest little doggie"
           />*/}
           <svg
