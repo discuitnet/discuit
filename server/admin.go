@@ -71,11 +71,11 @@ func (s *Server) adminActions(w *responseWriter, r *request) error {
 			if !ok {
 				return invalidJSONErr
 			}
-			if err := user.DeleteContent(r.ctx, int(n), *r.viewer); err != nil {
+			if err := user.DeleteContent(r.ctx, s.db, int(n), *r.viewer); err != nil {
 				return err
 			}
 		}
-		if err := user.Ban(r.ctx); err != nil {
+		if err := user.Ban(r.ctx, s.db); err != nil {
 			return err
 		}
 	case "unban_user":
@@ -87,7 +87,7 @@ func (s *Server) adminActions(w *responseWriter, r *request) error {
 		if err != nil {
 			return err
 		}
-		if err := user.Unban(r.ctx); err != nil {
+		if err := user.Unban(r.ctx, s.db); err != nil {
 			return err
 		}
 	case "add_default_forum", "remove_default_forum":
@@ -99,7 +99,7 @@ func (s *Server) adminActions(w *responseWriter, r *request) error {
 		if err != nil {
 			return err
 		}
-		if err = comm.SetDefault(r.ctx, action == "add_default_forum"); err != nil {
+		if err = comm.SetDefault(r.ctx, s.db, action == "add_default_forum"); err != nil {
 			return err
 		}
 	default:

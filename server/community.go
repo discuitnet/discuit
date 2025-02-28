@@ -106,7 +106,7 @@ func (s *Server) getCommunities(w *responseWriter, r *request) error {
 
 	if r.loggedIn {
 		for _, comm := range comms {
-			if err = comm.PopulateViewerFields(r.ctx, *r.viewer); err != nil {
+			if err = comm.PopulateViewerFields(r.ctx, s.db, *r.viewer); err != nil {
 				return err
 			}
 		}
@@ -143,13 +143,13 @@ func (s *Server) getCommunity(w *responseWriter, r *request) error {
 		return err
 	}
 
-	if err = comm.PopulateMods(r.ctx); err != nil {
+	if err = comm.PopulateMods(r.ctx, s.db); err != nil {
 		return err
 	}
-	if err = comm.FetchRules(r.ctx); err != nil {
+	if err = comm.FetchRules(r.ctx, s.db); err != nil {
 		return err
 	}
-	if _, err = comm.Default(r.ctx); err != nil {
+	if _, err = comm.Default(r.ctx, s.db); err != nil {
 		return err
 	}
 
@@ -184,10 +184,10 @@ func (s *Server) updateCommunity(w *responseWriter, r *request) error {
 		return err
 	}
 
-	if err = comm.PopulateMods(r.ctx); err != nil {
+	if err = comm.PopulateMods(r.ctx, s.db); err != nil {
 		return err
 	}
-	if err = comm.FetchRules(r.ctx); err != nil {
+	if err = comm.FetchRules(r.ctx, s.db); err != nil {
 		return err
 	}
 
@@ -199,7 +199,7 @@ func (s *Server) updateCommunity(w *responseWriter, r *request) error {
 	comm.About = rcomm.About
 	comm.PostingRestricted = rcomm.PostingRestricted
 
-	if err = comm.Update(r.ctx, *r.viewer); err != nil {
+	if err = comm.Update(r.ctx, s.db, *r.viewer); err != nil {
 		return err
 	}
 
@@ -238,9 +238,9 @@ func (s *Server) joinCommunity(w *responseWriter, r *request) error {
 	}
 
 	if req.Leave {
-		err = community.Leave(r.ctx, user.ID)
+		err = community.Leave(r.ctx, s.db, user.ID)
 	} else {
-		err = community.Join(r.ctx, user.ID)
+		err = community.Join(r.ctx, s.db, user.ID)
 	}
 	if err != nil {
 		return err
@@ -366,7 +366,7 @@ func (s *Server) getCommunityRules(w *responseWriter, r *request) error {
 	if err != nil {
 		return err
 	}
-	if err = comm.FetchRules(r.ctx); err != nil {
+	if err = comm.FetchRules(r.ctx, s.db); err != nil {
 		return err
 	}
 
@@ -397,11 +397,11 @@ func (s *Server) addCommunityRule(w *responseWriter, r *request) error {
 		return err
 	}
 
-	if err = comm.AddRule(r.ctx, rule.Rule, rule.Description.String, *r.viewer); err != nil {
+	if err = comm.AddRule(r.ctx, s.db, rule.Rule, rule.Description.String, *r.viewer); err != nil {
 		return err
 	}
 
-	if err = comm.FetchRules(r.ctx); err != nil {
+	if err = comm.FetchRules(r.ctx, s.db); err != nil {
 		return err
 	}
 
@@ -451,7 +451,7 @@ func (s *Server) updateCommunityRule(w *responseWriter, r *request) error {
 	rule.Description = req.Description
 	rule.ZIndex = req.ZIndex
 
-	if err = rule.Update(r.ctx, *r.viewer); err != nil {
+	if err = rule.Update(r.ctx, s.db, *r.viewer); err != nil {
 		return err
 	}
 
@@ -474,7 +474,7 @@ func (s *Server) deleteCommunityRule(w *responseWriter, r *request) error {
 		return err
 	}
 
-	if err = rule.Delete(r.ctx, *r.viewer); err != nil {
+	if err = rule.Delete(r.ctx, s.db, *r.viewer); err != nil {
 		return err
 	}
 
@@ -621,10 +621,10 @@ func (s *Server) deleteReport(w *responseWriter, r *request) error {
 	if err != nil {
 		return err
 	}
-	if err = report.FetchTarget(r.ctx); err != nil {
+	if err = report.FetchTarget(r.ctx, s.db); err != nil {
 		return err
 	}
-	if err = report.Delete(r.ctx, *r.viewer); err != nil {
+	if err = report.Delete(r.ctx, s.db, *r.viewer); err != nil {
 		return err
 	}
 
@@ -655,7 +655,7 @@ func (s *Server) handleCommunityBanned(w *responseWriter, r *request) error {
 	}
 
 	if r.req.Method == "GET" {
-		users, err := comm.GetBannedUsers(r.ctx)
+		users, err := comm.GetBannedUsers(r.ctx, s.db)
 		if err != nil {
 			return err
 		}
@@ -680,7 +680,7 @@ func (s *Server) handleCommunityBanned(w *responseWriter, r *request) error {
 		if err != nil {
 			return err
 		}
-		if isMod, err := comm.UserMod(r.ctx, user.ID); err != nil {
+		if isMod, err := comm.UserMod(r.ctx, s.db, user.ID); err != nil {
 			return err
 		} else if r.req.Method == "POST" && (isMod || user.Admin) {
 			// Cannot ban mod or admin.
@@ -696,10 +696,10 @@ func (s *Server) handleCommunityBanned(w *responseWriter, r *request) error {
 		}
 
 		if r.req.Method == "POST" {
-			err = comm.BanUser(r.ctx, *r.viewer, user.ID, expires)
+			err = comm.BanUser(r.ctx, s.db, *r.viewer, user.ID, expires)
 		} else {
 			// Unban user.
-			err = comm.UnbanUser(r.ctx, *r.viewer, user.ID)
+			err = comm.UnbanUser(r.ctx, s.db, *r.viewer, user.ID)
 		}
 		if err != nil {
 			if msql.IsErrDuplicateErr(err) {
@@ -756,11 +756,11 @@ func (s *Server) handleCommunityProPic(w *responseWriter, r *request) error {
 		if err != nil {
 			return err
 		}
-		if err = comm.UpdateProPic(r.ctx, buf); err != nil {
+		if err = comm.UpdateProPic(r.ctx, s.db, buf); err != nil {
 			return err
 		}
 	} else if r.req.Method == "DELETE" {
-		if err = comm.DeleteProPic(r.ctx); err != nil {
+		if err = comm.DeleteProPic(r.ctx, s.db); err != nil {
 			return err
 		}
 	}
@@ -807,11 +807,11 @@ func (s *Server) handleCommunityBannerImage(w *responseWriter, r *request) error
 		if err != nil {
 			return err
 		}
-		if err = comm.UpdateBannerImage(r.ctx, buf); err != nil {
+		if err = comm.UpdateBannerImage(r.ctx, s.db, buf); err != nil {
 			return err
 		}
 	} else if r.req.Method == "DELETE" {
-		if err = comm.DeleteBannerImage(r.ctx); err != nil {
+		if err = comm.DeleteBannerImage(r.ctx, s.db); err != nil {
 			return err
 		}
 	}

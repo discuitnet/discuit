@@ -44,7 +44,7 @@ var Command = &cli.Command{
 		if err := site.LogoutAllSessionsOfUser(user); err != nil {
 			log.Fatal(err)
 		}
-		if err := user.Delete(context.Background()); err != nil {
+		if err := user.Delete(context.Background(), db); err != nil {
 			log.Fatal(err)
 		}
 		log.Printf("%s successfully deleted\n", user.Username)

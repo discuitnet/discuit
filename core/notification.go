@@ -281,8 +281,6 @@ func (nv *NotificationView) setIcon(objects ...any) {
 
 // Notification is a user's notification.
 type Notification struct {
-	db *sql.DB
-
 	ID     int              `json:"id"`
 	UserID uid.ID           `json:"-"`
 	Type   NotificationType `json:"type"`
@@ -303,6 +301,7 @@ type Notification struct {
 	ctx                   context.Context // This value is valid only once PreMarshalJSON method is invoked.
 	render                bool
 	renderTextFormat      TextFormat
+	db                    *sql.DB
 }
 
 func (n *Notification) PreMarshalJSON(ctx context.Context, render bool, format TextFormat) {

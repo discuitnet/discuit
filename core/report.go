@@ -50,8 +50,6 @@ func (r *ReportType) UnmarshalText(text []byte) error {
 
 // Report is a user submitted report.
 type Report struct {
-	db *sql.DB
-
 	ID          int             `json:"id"`
 	CommunityID uid.ID          `json:"communityId"`
 	PostID      uid.NullID      `json:"postId"`
@@ -173,7 +171,7 @@ func scanReports(db *sql.DB, rows *sql.Rows) ([]*Report, error) {
 
 	var reports []*Report
 	for rows.Next() {
-		r := &Report{db: db}
+		r := &Report{}
 		err := rows.Scan(
 			&r.ID,
 			&r.CommunityID,
@@ -221,19 +219,19 @@ func GetReport(ctx context.Context, db *sql.DB, reportID int) (*Report, error) {
 
 // FetchTarget populates r.Target with the target object on which the report was
 // made.
-func (r *Report) FetchTarget(ctx context.Context) error {
+func (r *Report) FetchTarget(ctx context.Context, db *sql.DB) error {
 	if r.Type == ReportTypePost {
-		post, err := GetPost(ctx, r.db, &r.TargetID, "", nil, true)
+		post, err := GetPost(ctx, db, &r.TargetID, "", nil, true)
 		if err != nil {
 			return err
 		}
 		r.Target = post
 	} else if r.Type == ReportTypeComment {
-		comment, err := GetComment(ctx, r.db, r.TargetID, nil)
+		comment, err := GetComment(ctx, db, r.TargetID, nil)
 		if err != nil {
 			return err
 		}
-		if err = comment.loadPostDeleted(ctx); err != nil {
+		if err = comment.loadPostDeleted(ctx, db); err != nil {
 			return err
 		}
 		r.Target = comment
@@ -254,8 +252,8 @@ func (r *Report) FetchTarget(ctx context.Context) error {
 // }
 
 // Delete deletes the report permanently.
-func (r *Report) Delete(ctx context.Context, mod uid.ID) error {
-	_, err := r.db.ExecContext(ctx, "DELETE FROM reports WHERE id = ?", r.ID)
+func (r *Report) Delete(ctx context.Context, db *sql.DB, mod uid.ID) error {
+	_, err := db.ExecContext(ctx, "DELETE FROM reports WHERE id = ?", r.ID)
 	return err
 }
 
@@ -284,7 +282,7 @@ func GetReports(ctx context.Context, db *sql.DB, community uid.ID, t ReportType,
 		return nil, err
 	}
 	for _, r := range reports {
-		if err = r.FetchTarget(ctx); err != nil {
+		if err = r.FetchTarget(ctx, db); err != nil {
 			return nil, errors.New("couldn't fetch target: " + err.Error())
 		}
 	}

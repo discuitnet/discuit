@@ -77,7 +77,7 @@ func populatePost(db *sql.DB, id, username string, n int, onlyTopLevel bool) {
 			}
 		}
 		text := utils.GenerateText()
-		nc, err := post.AddComment(ctx, user.ID, core.UserGroupNormal, parent, text)
+		nc, err := post.AddComment(ctx, db, user.ID, core.UserGroupNormal, parent, text)
 		if err != nil {
 			log.Fatal(err)
 		}

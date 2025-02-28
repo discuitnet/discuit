@@ -22,8 +22,6 @@ import (
 const maxCommunityAboutLength = 2000 // in runes
 
 type Community struct {
-	db *sql.DB
-
 	ID                uid.ID          `json:"id"`
 	AuthorID          uid.ID          `json:"userId"`
 	Name              string          `json:"name"`
@@ -101,7 +99,7 @@ func GetCommunityByName(ctx context.Context, db *sql.DB, name string, viewer *ui
 	}
 
 	if viewer != nil {
-		if err = comms[0].PopulateViewerFields(ctx, *viewer); err != nil {
+		if err = comms[0].PopulateViewerFields(ctx, db, *viewer); err != nil {
 			return nil, err
 		}
 	}
@@ -120,7 +118,7 @@ func GetCommunityByID(ctx context.Context, db *sql.DB, id uid.ID, viewer *uid.ID
 	}
 
 	if viewer != nil {
-		if err = comms[0].PopulateViewerFields(ctx, *viewer); err != nil {
+		if err = comms[0].PopulateViewerFields(ctx, db, *viewer); err != nil {
 			return nil, err
 		}
 	}
@@ -160,7 +158,7 @@ func scanCommunities(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *ui
 
 	var comms []*Community
 	for rows.Next() {
-		c := &Community{db: db}
+		c := &Community{}
 		dests := []any{
 			&c.ID,
 			&c.AuthorID,
@@ -281,7 +279,7 @@ func CreateCommunity(ctx context.Context, db *sql.DB, creator uid.ID, reqPoints,
 	}
 
 	// Attempt to make user a mod of community.
-	if err := comm.Join(ctx, creator); err == nil {
+	if err := comm.Join(ctx, db, creator); err == nil {
 		comm.ViewerJoined = msql.NewNullBool(true)
 		if err = makeUserMod(ctx, db, comm, creator, true); err == nil {
 			comm.ViewerMod = msql.NewNullBool(true)
@@ -421,22 +419,22 @@ func GetCommunitiesPrefix(ctx context.Context, db *sql.DB, s string) ([]*Communi
 //   - NSFW
 //   - About
 //   - PostingRestricted
-func (c *Community) Update(ctx context.Context, mod uid.ID) error {
-	if is, err := c.UserModOrAdmin(ctx, mod); err != nil {
+func (c *Community) Update(ctx context.Context, db *sql.DB, mod uid.ID) error {
+	if is, err := c.UserModOrAdmin(ctx, db, mod); err != nil {
 		return err
 	} else if !is {
 		return errNotMod
 	}
 
 	c.About.String = utils.TruncateUnicodeString(c.About.String, maxCommunityAboutLength)
-	_, err := c.db.ExecContext(ctx, "UPDATE communities SET nsfw = ?, about = ?, posting_restricted = ? WHERE id = ?", c.NSFW, c.About, c.PostingRestricted, c.ID)
+	_, err := db.ExecContext(ctx, "UPDATE communities SET nsfw = ?, about = ?, posting_restricted = ? WHERE id = ?", c.NSFW, c.About, c.PostingRestricted, c.ID)
 	return err
 }
 
 // Default reports whether c is a default community, and, if there's no error,
 // it sets c.IsDefault to a non-nil value.
-func (c *Community) Default(ctx context.Context) (bool, error) {
-	row := c.db.QueryRowContext(ctx, "SELECT name_lc FROM default_communities WHERE name_lc = ?", c.NameLowerCase)
+func (c *Community) Default(ctx context.Context, db *sql.DB) (bool, error) {
+	row := db.QueryRowContext(ctx, "SELECT name_lc FROM default_communities WHERE name_lc = ?", c.NameLowerCase)
 	name := ""
 	if err := row.Scan(&name); err != nil {
 		if err == sql.ErrNoRows {
@@ -452,20 +450,20 @@ func (c *Community) Default(ctx context.Context) (bool, error) {
 
 // SetDefault adds c to the list of default communities. If set is false, c is
 // removed from the default communities.
-func (c *Community) SetDefault(ctx context.Context, set bool) error {
+func (c *Community) SetDefault(ctx context.Context, db *sql.DB, set bool) error {
 	if set {
-		_, err := c.db.ExecContext(ctx, "INSERT INTO default_communities (name_lc, community_id) VALUES (?, ?)", c.NameLowerCase, c.ID)
+		_, err := db.ExecContext(ctx, "INSERT INTO default_communities (name_lc, community_id) VALUES (?, ?)", c.NameLowerCase, c.ID)
 		if err != nil && msql.IsErrDuplicateErr(err) {
 			return nil
 		}
 		return err
 	}
-	_, err := c.db.ExecContext(ctx, "DELETE FROM default_communities WHERE name_lc = ?", c.NameLowerCase)
+	_, err := db.ExecContext(ctx, "DELETE FROM default_communities WHERE name_lc = ?", c.NameLowerCase)
 	return err
 }
 
-func (c *Community) Join(ctx context.Context, user uid.ID) error {
-	err := msql.Transact(ctx, c.db, func(tx *sql.Tx) error {
+func (c *Community) Join(ctx context.Context, db *sql.DB, user uid.ID) error {
+	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
 		if _, err := tx.ExecContext(ctx, "INSERT INTO community_members (community_id, user_id) VALUES (?, ?)", c.ID, user); err != nil {
 			if msql.IsErrDuplicateErr(err) {
 				return nil // already a member, exit
@@ -480,13 +478,12 @@ func (c *Community) Join(ctx context.Context, user uid.ID) error {
 	if err != nil {
 		return err
 	}
-
 	c.NumMembers++
 	return nil
 }
 
-func (c *Community) Leave(ctx context.Context, user uid.ID) error {
-	err := msql.Transact(ctx, c.db, func(tx *sql.Tx) error {
+func (c *Community) Leave(ctx context.Context, db *sql.DB, user uid.ID) error {
+	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
 		if _, err := tx.ExecContext(ctx, "DELETE FROM community_members WHERE community_id = ? AND user_id = ?", c.ID, user); err != nil {
 			return err
 		}
@@ -501,15 +498,14 @@ func (c *Community) Leave(ctx context.Context, user uid.ID) error {
 	if err != nil {
 		return err
 	}
-
 	c.NumMembers--
 	return nil
 }
 
-func (c *Community) UpdateProPic(ctx context.Context, image []byte) error {
+func (c *Community) UpdateProPic(ctx context.Context, db *sql.DB, image []byte) error {
 	var newImageID uid.ID
-	err := msql.Transact(ctx, c.db, func(tx *sql.Tx) error {
-		if err := c.DeleteProPicTx(ctx, tx); err != nil {
+	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
+		if err := c.DeleteProPicTx(ctx, db, tx); err != nil {
 			return err
 		}
 		imageID, err := images.SaveImageTx(ctx, tx, "disk", image, &images.ImageOptions{
@@ -531,7 +527,7 @@ func (c *Community) UpdateProPic(ctx context.Context, image []byte) error {
 		return err
 	}
 
-	record, err := images.GetImageRecord(ctx, c.db, newImageID)
+	record, err := images.GetImageRecord(ctx, db, newImageID)
 	if err != nil {
 		return err
 	}
@@ -540,16 +536,16 @@ func (c *Community) UpdateProPic(ctx context.Context, image []byte) error {
 	return nil
 }
 
-func (c *Community) DeleteProPic(ctx context.Context) error {
+func (c *Community) DeleteProPic(ctx context.Context, db *sql.DB) error {
 	if c.ProPic == nil {
 		return nil
 	}
 
-	tx, err := c.db.BeginTx(ctx, nil)
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	if err := c.DeleteProPicTx(ctx, tx); err != nil {
+	if err := c.DeleteProPicTx(ctx, db, tx); err != nil {
 		if rErr := tx.Rollback(); rErr != nil {
 			return fmt.Errorf("%w (rollback error: %w)", err, rErr)
 		}
@@ -558,24 +554,24 @@ func (c *Community) DeleteProPic(ctx context.Context) error {
 	return tx.Commit()
 }
 
-func (c *Community) DeleteProPicTx(ctx context.Context, tx *sql.Tx) error {
+func (c *Community) DeleteProPicTx(ctx context.Context, db *sql.DB, tx *sql.Tx) error {
 	if c.ProPic == nil {
 		return nil
 	}
-	if _, err := c.db.ExecContext(ctx, "UPDATE communities SET pro_pic_2 = NULL where id = ?", c.ID); err != nil {
+	if _, err := db.ExecContext(ctx, "UPDATE communities SET pro_pic_2 = NULL where id = ?", c.ID); err != nil {
 		return fmt.Errorf("failed to set communities.pro_pic to null: %w", err)
 	}
-	if err := images.DeleteImagesTx(ctx, tx, c.db, *c.ProPic.ID); err != nil {
+	if err := images.DeleteImagesTx(ctx, tx, db, *c.ProPic.ID); err != nil {
 		return fmt.Errorf("failed to delete pro pic (community: %s): %w", c.Name, err)
 	}
 	c.ProPic = nil
 	return nil
 }
 
-func (c *Community) UpdateBannerImage(ctx context.Context, image []byte) error {
+func (c *Community) UpdateBannerImage(ctx context.Context, db *sql.DB, image []byte) error {
 	var newImageID uid.ID
-	err := msql.Transact(ctx, c.db, func(tx *sql.Tx) error {
-		if err := c.DeleteBannerImageTx(ctx, tx); err != nil {
+	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
+		if err := c.DeleteBannerImageTx(ctx, db, tx); err != nil {
 			return err
 		}
 		imageID, err := images.SaveImageTx(ctx, tx, "disk", image, &images.ImageOptions{
@@ -597,7 +593,7 @@ func (c *Community) UpdateBannerImage(ctx context.Context, image []byte) error {
 		return err
 	}
 
-	record, err := images.GetImageRecord(ctx, c.db, newImageID)
+	record, err := images.GetImageRecord(ctx, db, newImageID)
 	if err != nil {
 		return err
 	}
@@ -607,15 +603,15 @@ func (c *Community) UpdateBannerImage(ctx context.Context, image []byte) error {
 }
 
 // DeleteBannerImage deletes the community's banner image.
-func (c *Community) DeleteBannerImage(ctx context.Context) error {
+func (c *Community) DeleteBannerImage(ctx context.Context, db *sql.DB) error {
 	if c.BannerImage == nil {
 		return nil
 	}
-	tx, err := c.db.BeginTx(ctx, nil)
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	if err := c.DeleteBannerImageTx(ctx, tx); err != nil {
+	if err := c.DeleteBannerImageTx(ctx, db, tx); err != nil {
 		if rErr := tx.Rollback(); rErr != nil {
 			return fmt.Errorf("%w (rollback error: %w)", err, rErr)
 		}
@@ -624,14 +620,14 @@ func (c *Community) DeleteBannerImage(ctx context.Context) error {
 	return tx.Commit()
 }
 
-func (c *Community) DeleteBannerImageTx(ctx context.Context, tx *sql.Tx) error {
+func (c *Community) DeleteBannerImageTx(ctx context.Context, db *sql.DB, tx *sql.Tx) error {
 	if c.BannerImage == nil {
 		return nil
 	}
 	if _, err := tx.ExecContext(ctx, "UPDATE communities SET banner_image_2 = NULL WHERE id = ?", c.ID); err != nil {
 		return fmt.Errorf("failed to set communities.banner to null (community: %s): %w", c.Name, err)
 	}
-	if err := images.DeleteImagesTx(ctx, tx, c.db, *c.BannerImage.ID); err != nil {
+	if err := images.DeleteImagesTx(ctx, tx, db, *c.BannerImage.ID); err != nil {
 		return fmt.Errorf("failed to delete banner image: %w", err)
 	}
 	c.BannerImage = nil
@@ -639,8 +635,8 @@ func (c *Community) DeleteBannerImageTx(ctx context.Context, tx *sql.Tx) error {
 }
 
 // PopulateViewerFields populates c.ViewerJoined and c.ViewerMod fields.
-func (c *Community) PopulateViewerFields(ctx context.Context, user uid.ID) error {
-	row := c.db.QueryRowContext(ctx, "SELECT is_mod FROM community_members WHERE community_id = ? AND user_id = ?", c.ID, user)
+func (c *Community) PopulateViewerFields(ctx context.Context, db *sql.DB, user uid.ID) error {
+	row := db.QueryRowContext(ctx, "SELECT is_mod FROM community_members WHERE community_id = ? AND user_id = ?", c.ID, user)
 	isMod := false
 	if err := row.Scan(&isMod); err != nil {
 		if err == sql.ErrNoRows {
@@ -656,8 +652,8 @@ func (c *Community) PopulateViewerFields(ctx context.Context, user uid.ID) error
 }
 
 // BanUser bans user by mod. If expires is non-nil, the ban is permanent.
-func (c *Community) BanUser(ctx context.Context, mod, user uid.ID, expires *time.Time) error {
-	if is, err := c.UserModOrAdmin(ctx, mod); err != nil {
+func (c *Community) BanUser(ctx context.Context, db *sql.DB, mod, user uid.ID, expires *time.Time) error {
+	if is, err := c.UserModOrAdmin(ctx, db, mod); err != nil {
 		return err
 	} else if !is {
 		return errNotMod
@@ -670,17 +666,17 @@ func (c *Community) BanUser(ctx context.Context, mod, user uid.ID, expires *time
 		t.Valid = true
 		t.Time = *expires
 	}
-	_, err := c.db.ExecContext(ctx, "INSERT INTO community_banned (user_id, community_id, expires, banned_by) VALUES (?, ?, ?, ?)", user, c.ID, t, mod)
+	_, err := db.ExecContext(ctx, "INSERT INTO community_banned (user_id, community_id, expires, banned_by) VALUES (?, ?, ?, ?)", user, c.ID, t, mod)
 	return err
 }
 
-func (c *Community) UnbanUser(ctx context.Context, mod, user uid.ID) error {
-	if is, err := c.UserModOrAdmin(ctx, mod); err != nil {
+func (c *Community) UnbanUser(ctx context.Context, db *sql.DB, mod, user uid.ID) error {
+	if is, err := c.UserModOrAdmin(ctx, db, mod); err != nil {
 		return err
 	} else if !is {
 		return errNotMod
 	}
-	return unbanUserFromCommunity(ctx, c.db, c.ID, user)
+	return unbanUserFromCommunity(ctx, db, c.ID, user)
 }
 
 func unbanUserFromCommunity(ctx context.Context, db *sql.DB, community, user uid.ID) error {
@@ -688,8 +684,8 @@ func unbanUserFromCommunity(ctx context.Context, db *sql.DB, community, user uid
 	return err
 }
 
-func (c *Community) GetBannedUsers(ctx context.Context) ([]*User, error) {
-	rows, err := c.db.QueryContext(ctx, "SELECT user_id FROM community_banned WHERE community_id = ?", c.ID)
+func (c *Community) GetBannedUsers(ctx context.Context, db *sql.DB) ([]*User, error) {
+	rows, err := db.QueryContext(ctx, "SELECT user_id FROM community_banned WHERE community_id = ?", c.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -710,7 +706,7 @@ func (c *Community) GetBannedUsers(ctx context.Context) ([]*User, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
-	return GetUsersByIDs(ctx, c.db, ids, nil)
+	return GetUsersByIDs(ctx, db, ids, nil)
 }
 
 // IsUserBannedFromCommunity checks if user is banned from community. If user is
@@ -736,13 +732,13 @@ func IsUserBannedFromCommunity(ctx context.Context, db *sql.DB, community, user 
 
 // UserBanned reports if user is banned from community. If user is banned and
 // the ban is expired he is unbanned.
-func (c *Community) UserBanned(ctx context.Context, user uid.ID) (bool, error) {
-	return IsUserBannedFromCommunity(ctx, c.db, c.ID, user)
+func (c *Community) UserBanned(ctx context.Context, db *sql.DB, user uid.ID) (bool, error) {
+	return IsUserBannedFromCommunity(ctx, db, c.ID, user)
 }
 
 // PopulateMods populates c.Mods.
-func (c *Community) PopulateMods(ctx context.Context) (err error) {
-	c.Mods, err = GetCommunityMods(ctx, c.db, c.ID)
+func (c *Community) PopulateMods(ctx context.Context, db *sql.DB) (err error) {
+	c.Mods, err = GetCommunityMods(ctx, db, c.ID)
 	if err == nil && c.Mods == nil {
 		c.Mods = make([]*User, 0)
 	}
@@ -784,14 +780,14 @@ func UserModOrAdmin(ctx context.Context, db *sql.DB, community, user uid.ID) (bo
 }
 
 // UserMod checks if user is a moderator of c.
-func (c *Community) UserMod(ctx context.Context, user uid.ID) (bool, error) {
-	return UserMod(ctx, c.db, c.ID, user)
+func (c *Community) UserMod(ctx context.Context, db *sql.DB, user uid.ID) (bool, error) {
+	return UserMod(ctx, db, c.ID, user)
 }
 
 // UserModOrAdmin reports whether user is a moderator of c or if user is an
 // admin.
-func (c *Community) UserModOrAdmin(ctx context.Context, user uid.ID) (bool, error) {
-	return UserModOrAdmin(ctx, c.db, c.ID, user)
+func (c *Community) UserModOrAdmin(ctx context.Context, db *sql.DB, user uid.ID) (bool, error) {
+	return UserModOrAdmin(ctx, db, c.ID, user)
 }
 
 // ModHigherUp reports whether higher mod is above the lower mod in the mod
@@ -799,12 +795,12 @@ func (c *Community) UserModOrAdmin(ctx context.Context, user uid.ID) (bool, erro
 // also returns true if the two mods, higher and lower, are the same.
 //
 // ModHigherUp does not check properly for permissions.
-func (c *Community) ModHigherUp(ctx context.Context, higher, lower uid.ID) (bool, error) {
+func (c *Community) ModHigherUp(ctx context.Context, db *sql.DB, higher, lower uid.ID) (bool, error) {
 	if higher == lower {
 		return true, nil
 	}
 
-	rows, err := c.db.QueryContext(ctx, "SELECT user_id, position FROM community_mods WHERE community_id = ? AND user_id IN (?, ?)", c.ID, higher, lower)
+	rows, err := db.QueryContext(ctx, "SELECT user_id, position FROM community_mods WHERE community_id = ? AND user_id IN (?, ?)", c.ID, higher, lower)
 	if err != nil {
 		return false, err
 	}
@@ -844,8 +840,8 @@ func (c *Community) ModHigherUp(ctx context.Context, higher, lower uid.ID) (bool
 // FixModPositions fixes the mod hierarchy of moderators. If two mods have the
 // same position, they are given new positions according when they were made
 // mods of c.
-func (c *Community) FixModPositions(ctx context.Context) error {
-	rows, err := c.db.QueryContext(ctx, "SELECT user_id, position, created_at FROM community_mods WHERE community_id = ?", c.ID)
+func (c *Community) FixModPositions(ctx context.Context, db *sql.DB) error {
+	rows, err := db.QueryContext(ctx, "SELECT user_id, position, created_at FROM community_mods WHERE community_id = ?", c.ID)
 	if err != nil {
 		return err
 	}
@@ -878,7 +874,7 @@ func (c *Community) FixModPositions(ctx context.Context) error {
 	})
 
 	for i, mod := range mods {
-		if _, err := c.db.ExecContext(ctx, "UPDATE community_mods SET position = ? WHERE user_id = ? AND community_id = ?", i, mod.UserID, c.ID); err != nil {
+		if _, err := db.ExecContext(ctx, "UPDATE community_mods SET position = ? WHERE user_id = ? AND community_id = ?", i, mod.UserID, c.ID); err != nil {
 			return err
 		}
 	}
@@ -955,7 +951,7 @@ func GetCommunityMods(ctx context.Context, db *sql.DB, community uid.ID) ([]*Use
 func MakeUserMod(ctx context.Context, db *sql.DB, c *Community, viewer uid.ID, user uid.ID, isMod bool) error {
 	addMod := isMod
 	if isMod {
-		if is, err := c.UserMod(ctx, user); err != nil {
+		if is, err := c.UserMod(ctx, db, user); err != nil {
 			return err
 		} else if is {
 			return nil
@@ -967,7 +963,7 @@ func MakeUserMod(ctx context.Context, db *sql.DB, c *Community, viewer uid.ID, u
 		return err
 	}
 
-	if is, err := c.UserMod(ctx, viewer); err != nil {
+	if is, err := c.UserMod(ctx, db, viewer); err != nil {
 		return err
 	} else if !is {
 		if !actionUser.Admin {
@@ -980,7 +976,7 @@ func MakeUserMod(ctx context.Context, db *sql.DB, c *Community, viewer uid.ID, u
 	//
 	// A mod, however, is allowed to resign.
 	if !addMod && !actionUser.Admin {
-		higher, err := c.ModHigherUp(ctx, actionUser.ID, user)
+		higher, err := c.ModHigherUp(ctx, db, actionUser.ID, user)
 		if err != nil {
 			return err
 		}
@@ -991,7 +987,7 @@ func MakeUserMod(ctx context.Context, db *sql.DB, c *Community, viewer uid.ID, u
 
 	err = makeUserMod(ctx, db, c, user, isMod)
 	if err == nil {
-		if err := c.FixModPositions(ctx); err != nil {
+		if err := c.FixModPositions(ctx, db); err != nil {
 			log.Println("Fixing mod positions failed: ", err)
 		}
 		// send notification
@@ -1025,7 +1021,7 @@ func makeUserMod(ctx context.Context, db *sql.DB, c *Community, user uid.ID, isM
 	// changes in User.Delete function as well.
 
 	// First add user as member of c.
-	if err := c.Join(ctx, user); err != nil {
+	if err := c.Join(ctx, db, user); err != nil {
 		if e, ok := err.(*httperr.Error); ok {
 			if e.HTTPStatus != http.StatusConflict {
 				return err
@@ -1067,15 +1063,15 @@ func makeUserMod(ctx context.Context, db *sql.DB, c *Community, user uid.ID, isM
 	})
 }
 
-func (c *Community) AddRule(ctx context.Context, rule, description string, mod uid.ID) error {
-	if is, err := c.UserModOrAdmin(ctx, mod); err != nil {
+func (c *Community) AddRule(ctx context.Context, db *sql.DB, rule, description string, mod uid.ID) error {
+	if is, err := c.UserModOrAdmin(ctx, db, mod); err != nil {
 		return err
 	} else if !is {
 		return errNotMod
 	}
 
 	zIndex := 0
-	row := c.db.QueryRowContext(ctx, "SELECT z_index FROM community_rules WHERE community_id = ? ORDER BY z_index DESC LIMIT 1", c.ID)
+	row := db.QueryRowContext(ctx, "SELECT z_index FROM community_rules WHERE community_id = ? ORDER BY z_index DESC LIMIT 1", c.ID)
 	if err := row.Scan(&zIndex); err != nil && err != sql.ErrNoRows {
 		return err
 	}
@@ -1084,29 +1080,29 @@ func (c *Community) AddRule(ctx context.Context, rule, description string, mod u
 	if description != "" {
 		d = description
 	}
-	_, err := c.db.ExecContext(ctx, "INSERT INTO community_rules (rule, description, community_id, created_by, z_index) VALUES (?, ?, ?, ?, ?)", rule, d, c.ID, mod, zIndex+1)
+	_, err := db.ExecContext(ctx, "INSERT INTO community_rules (rule, description, community_id, created_by, z_index) VALUES (?, ?, ?, ?, ?)", rule, d, c.ID, mod, zIndex+1)
 	return err
 }
 
-func (c *Community) RemoveRule(ctx context.Context, ruleID string, mod uid.ID) error {
-	if is, err := c.UserModOrAdmin(ctx, mod); err != nil {
+func (c *Community) RemoveRule(ctx context.Context, db *sql.DB, ruleID string, mod uid.ID) error {
+	if is, err := c.UserModOrAdmin(ctx, db, mod); err != nil {
 		return err
 	} else if !is {
 		return errNotMod
 	}
-	_, err := c.db.ExecContext(ctx, "DELETE FROM community_rules WHERE id = ?", ruleID)
+	_, err := db.ExecContext(ctx, "DELETE FROM community_rules WHERE id = ?", ruleID)
 	return err
 }
 
 // FetchRules populates c.Rules.
-func (c *Community) FetchRules(ctx context.Context) error {
+func (c *Community) FetchRules(ctx context.Context, db *sql.DB) error {
 	query := msql.BuildSelectQuery("community_rules", selectCommunityRuleCols, nil, "WHERE community_id = ?")
-	rows, err := c.db.QueryContext(ctx, query, c.ID)
+	rows, err := db.QueryContext(ctx, query, c.ID)
 	if err != nil {
 		return err
 	}
 
-	rules, err := scanCommunityRules(c.db, rows)
+	rules, err := scanCommunityRules(db, rows)
 	if err != nil {
 		if hErr, ok := err.(*httperr.Error); ok {
 			if hErr.HTTPStatus != http.StatusNotFound {
@@ -1126,8 +1122,6 @@ func (c *Community) FetchRules(ctx context.Context) error {
 }
 
 type CommunityRule struct {
-	db *sql.DB
-
 	ID          uint            `json:"id"`
 	Rule        string          `json:"rule"`
 	Description msql.NullString `json:"description"`
@@ -1167,7 +1161,7 @@ func scanCommunityRules(db *sql.DB, rows *sql.Rows) ([]*CommunityRule, error) {
 	var rules []*CommunityRule
 	var err error
 	for rows.Next() {
-		rule := &CommunityRule{db: db}
+		rule := &CommunityRule{}
 		err = rows.Scan(&rule.ID,
 			&rule.Rule,
 			&rule.Description,
@@ -1191,23 +1185,23 @@ func scanCommunityRules(db *sql.DB, rows *sql.Rows) ([]*CommunityRule, error) {
 }
 
 // Update updates the rule's rule, description, and ZIndex.
-func (r *CommunityRule) Update(ctx context.Context, mod uid.ID) error {
-	if is, err := UserModOrAdmin(ctx, r.db, r.CommunityID, mod); err != nil {
+func (r *CommunityRule) Update(ctx context.Context, db *sql.DB, mod uid.ID) error {
+	if is, err := UserModOrAdmin(ctx, db, r.CommunityID, mod); err != nil {
 		return err
 	} else if !is {
 		return errNotMod
 	}
-	_, err := r.db.ExecContext(ctx, "UPDATE community_rules SET rule = ?, description = ?, z_index = ? WHERE id = ?", r.Rule, r.Description, r.ZIndex, r.ID)
+	_, err := db.ExecContext(ctx, "UPDATE community_rules SET rule = ?, description = ?, z_index = ? WHERE id = ?", r.Rule, r.Description, r.ZIndex, r.ID)
 	return err
 }
 
-func (r *CommunityRule) Delete(ctx context.Context, mod uid.ID) error {
-	if is, err := UserModOrAdmin(ctx, r.db, r.CommunityID, mod); err != nil {
+func (r *CommunityRule) Delete(ctx context.Context, db *sql.DB, mod uid.ID) error {
+	if is, err := UserModOrAdmin(ctx, db, r.CommunityID, mod); err != nil {
 		return err
 	} else if !is {
 		return errNotMod
 	}
-	_, err := r.db.ExecContext(ctx, "DELETE FROM community_rules WHERE id = ?", r.ID)
+	_, err := db.ExecContext(ctx, "DELETE FROM community_rules WHERE id = ?", r.ID)
 	return err
 }
 

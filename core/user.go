@@ -97,8 +97,6 @@ func (u *UserGroup) UnmarshalText(text []byte) error {
 }
 
 type User struct {
-	db *sql.DB
-
 	ID                uid.ID `json:"id"`
 	UserIndex         int    `json:"-"`
 	Username          string `json:"username"`
@@ -321,7 +319,6 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 	var users []*User
 	for rows.Next() {
 		u := &User{
-			db:     db,
 			Badges: make(Badges, 0),
 		}
 		dests := []any{
@@ -585,13 +582,13 @@ func incrementUserPoints(ctx context.Context, db *sql.DB, user uid.ID, amount in
 }
 
 // Update updates the user's updatable fields.
-func (u *User) Update(ctx context.Context) error {
+func (u *User) Update(ctx context.Context, db *sql.DB) error {
 	if u.Deleted {
 		return ErrUserDeleted
 	}
 
 	u.About.String = utils.TruncateUnicodeString(u.About.String, maxUserProfileAboutLength)
-	_, err := u.db.ExecContext(ctx, `
+	_, err := db.ExecContext(ctx, `
 	UPDATE users SET
 		email = ?, 
 		about_me = ?,
@@ -670,7 +667,7 @@ func (u *User) MarshalJSONForAdminViewer(ctx context.Context, db *sql.DB) ([]byt
 
 // Delete deletes a user. Make sure that the user is logged out on all sessions
 // before calling this function.
-func (u *User) Delete(ctx context.Context) error {
+func (u *User) Delete(ctx context.Context, db *sql.DB) error {
 	if u.Deleted {
 		return ErrUserDeleted
 	}
@@ -678,7 +675,7 @@ func (u *User) Delete(ctx context.Context) error {
 		return errors.New("cannot delete banned account (unban user first and then continue)")
 	}
 
-	return msql.Transact(ctx, u.db, func(tx *sql.Tx) (err error) {
+	return msql.Transact(ctx, db, func(tx *sql.Tx) (err error) {
 		// Remove the user's membership of all communities the user is a member of.
 		if _, err := tx.ExecContext(ctx, `
 			UPDATE communities 
@@ -731,7 +728,7 @@ func (u *User) Delete(ctx context.Context) error {
 		}
 
 		// Delete the user's profile picture
-		if err := u.DeleteProPicTx(ctx, tx); err != nil {
+		if err := u.DeleteProPicTx(ctx, db, tx); err != nil {
 			return err
 		}
 
@@ -768,7 +765,7 @@ func (u *User) Delete(ctx context.Context) error {
 
 // DeleteContent deletes all posts and comments of user that were created in the
 // last n days.
-func (u *User) DeleteContent(ctx context.Context, n int, admin uid.ID) error {
+func (u *User) DeleteContent(ctx context.Context, db *sql.DB, n int, admin uid.ID) error {
 	t := time.Now()
 	defer func() {
 		log.Printf("Took %v to delete content of user %s\n", time.Since(t), u.Username)
@@ -782,18 +779,18 @@ func (u *User) DeleteContent(ctx context.Context, n int, admin uid.ID) error {
 	}
 
 	query := buildSelectPostQuery(false, where)
-	rows, err := u.db.QueryContext(ctx, query, args...)
+	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return err
 	}
-	posts, err := scanPosts(ctx, u.db, rows, nil)
+	posts, err := scanPosts(ctx, db, rows, nil)
 	if err != nil && err != errPostNotFound {
 		return err
 	}
 
 	for _, post := range posts {
 		if !(post.Deleted && post.DeletedContent) {
-			if err := post.Delete(ctx, admin, UserGroupAdmins, true, false); err != nil {
+			if err := post.Delete(ctx, db, admin, UserGroupAdmins, true, false); err != nil {
 				return err
 			}
 		}
@@ -807,18 +804,18 @@ func (u *User) DeleteContent(ctx context.Context, n int, admin uid.ID) error {
 	}
 
 	query = buildSelectCommentsQuery(false, where)
-	rows, err = u.db.QueryContext(ctx, query, args...)
+	rows, err = db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return err
 	}
-	comments, err := scanComments(ctx, u.db, rows, nil)
+	comments, err := scanComments(ctx, db, rows, nil)
 	if err != nil && err != errCommentNotFound {
 		return err
 	}
 
 	for _, comment := range comments {
 		if !comment.Deleted {
-			if err := comment.Delete(ctx, admin, UserGroupAdmins); err != nil {
+			if err := comment.Delete(ctx, db, admin, UserGroupAdmins); err != nil {
 				return err
 			}
 		}
@@ -831,13 +828,13 @@ func (u *User) DeleteContent(ctx context.Context, n int, admin uid.ID) error {
 // this user before calling this function, and never allow this user to login.
 //
 // Note: An admin can be banned.
-func (u *User) Ban(ctx context.Context) error {
+func (u *User) Ban(ctx context.Context, db *sql.DB) error {
 	if u.Deleted {
 		return ErrUserDeleted
 	}
 
 	t := time.Now()
-	_, err := u.db.ExecContext(ctx, "UPDATE users SET banned_at = ? WHERE id = ?", t, u.ID)
+	_, err := db.ExecContext(ctx, "UPDATE users SET banned_at = ? WHERE id = ?", t, u.ID)
 	if err == nil {
 		u.BannedAt = msql.NewNullTime(t)
 		u.Banned = true
@@ -845,45 +842,45 @@ func (u *User) Ban(ctx context.Context) error {
 	return err
 }
 
-func (u *User) Unban(ctx context.Context) error {
+func (u *User) Unban(ctx context.Context, db *sql.DB) error {
 	if u.Deleted {
 		return ErrUserDeleted
 	}
 
-	_, err := u.db.ExecContext(ctx, "UPDATE users SET banned_at = NULL WHERE id = ?", u.ID)
+	_, err := db.ExecContext(ctx, "UPDATE users SET banned_at = NULL WHERE id = ?", u.ID)
 	return err
 }
 
 // MakeAdmin makes the user an admin of the site. If isAdmin is false
 // admin is removed as an admin.
-func (u *User) MakeAdmin(ctx context.Context, isAdmin bool) error {
-	_, err := MakeAdmin(ctx, u.db, u.Username, isAdmin)
+func (u *User) MakeAdmin(ctx context.Context, db *sql.DB, isAdmin bool) error {
+	_, err := MakeAdmin(ctx, db, u.Username, isAdmin)
 	if err != nil {
 		u.Admin = isAdmin
 	}
 	return err
 }
 
-func (u *User) incrementPoints(ctx context.Context, amount int) error {
-	return incrementUserPoints(ctx, u.db, u.ID, amount)
+func (u *User) incrementPoints(ctx context.Context, db *sql.DB, amount int) error {
+	return incrementUserPoints(ctx, db, u.ID, amount)
 }
 
-func (u *User) ChangePassword(ctx context.Context, previousPass, newPass string) error {
+func (u *User) ChangePassword(ctx context.Context, db *sql.DB, previousPass, newPass string) error {
 	// MatchLoginCredentials checks for deleted account status.
-	if _, err := MatchLoginCredentials(ctx, u.db, u.Username, previousPass); err != nil {
+	if _, err := MatchLoginCredentials(ctx, db, u.Username, previousPass); err != nil {
 		return err
 	}
 	hash, err := HashPassword([]byte(newPass))
 	if err != nil {
 		return err
 	}
-	_, err = u.db.ExecContext(ctx, "UPDATE users SET password = ? WHERE id = ?", hash, u.ID)
+	_, err = db.ExecContext(ctx, "UPDATE users SET password = ? WHERE id = ?", hash, u.ID)
 	u.Password = string(hash)
 	return err
 }
 
-func (u *User) ResetNewNotificationsCount(ctx context.Context) error {
-	err := resetNewNotificationsCount(ctx, u.db, u.ID)
+func (u *User) ResetNewNotificationsCount(ctx context.Context, db *sql.DB) error {
+	err := resetNewNotificationsCount(ctx, db, u.ID)
 	if err == nil {
 		u.NumNewNotifications = 0
 	}
@@ -892,18 +889,18 @@ func (u *User) ResetNewNotificationsCount(ctx context.Context) error {
 
 // MarkAllNotificationsAsSeen marks all notifications as seen, if t is the zero
 // value, and if not, it marks all notifications of type t as seen.
-func (u *User) MarkAllNotificationsAsSeen(ctx context.Context, t NotificationType) error {
-	return markAllNotificationsAsSeen(ctx, u.db, u.ID, t)
+func (u *User) MarkAllNotificationsAsSeen(ctx context.Context, db *sql.DB, t NotificationType) error {
+	return markAllNotificationsAsSeen(ctx, db, u.ID, t)
 }
 
-func (u *User) DeleteAllNotifications(ctx context.Context) error {
-	return deleteAllNotifications(ctx, u.db, u.ID)
+func (u *User) DeleteAllNotifications(ctx context.Context, db *sql.DB) error {
+	return deleteAllNotifications(ctx, db, u.ID)
 }
 
 // GetBannedFromCommunities returns the list of communities that user
 // is banned from.
-func (u *User) GetBannedFromCommunities(ctx context.Context) ([]uid.ID, error) {
-	rows, err := u.db.QueryContext(ctx, "SELECT community_id, expires FROM community_banned WHERE user_id = ?", u.ID)
+func (u *User) GetBannedFromCommunities(ctx context.Context, db *sql.DB) ([]uid.ID, error) {
+	rows, err := db.QueryContext(ctx, "SELECT community_id, expires FROM community_banned WHERE user_id = ?", u.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -934,11 +931,11 @@ func (u *User) GetBannedFromCommunities(ctx context.Context) ([]uid.ID, error) {
 
 // Saw updates u.LastSeen to current time. It also updates the IP address of the
 // user.
-func (u *User) Saw(ctx context.Context, userIP string) error {
+func (u *User) Saw(ctx context.Context, db *sql.DB, userIP string) error {
 	if u.Deleted {
 		return ErrUserDeleted
 	}
-	err := UserSeen(ctx, u.db, u.ID, userIP)
+	err := UserSeen(ctx, db, u.ID, userIP)
 	if err != nil {
 		u.LastSeen = time.Now()
 	}
@@ -959,42 +956,42 @@ func CountAllUsers(ctx context.Context, db *sql.DB) (n int, err error) {
 	return
 }
 
-func (u *User) LoadModdingList(ctx context.Context) error {
-	comms, err := getCommunities(ctx, u.db, nil, "WHERE communities.id IN (SELECT community_mods.community_id FROM community_mods WHERE user_id = ?)", u.ID)
+func (u *User) LoadModdingList(ctx context.Context, db *sql.DB) error {
+	comms, err := getCommunities(ctx, db, nil, "WHERE communities.id IN (SELECT community_mods.community_id FROM community_mods WHERE user_id = ?)", u.ID)
 	if err == nil {
 		u.ModdingList = comms
 	}
 	return err
 }
 
-func (u *User) DeleteProPicTx(ctx context.Context, tx *sql.Tx) error {
+func (u *User) DeleteProPicTx(ctx context.Context, db *sql.DB, tx *sql.Tx) error {
 	if u.ProPic == nil {
 		return nil
 	}
-	if _, err := u.db.ExecContext(ctx, "UPDATE users SET pro_pic = NULL where id = ?", u.ID); err != nil {
+	if _, err := db.ExecContext(ctx, "UPDATE users SET pro_pic = NULL where id = ?", u.ID); err != nil {
 		return fmt.Errorf("failed to set users.pro_pic to null for user %s: %w", u.Username, err)
 	}
-	if err := images.DeleteImagesTx(ctx, tx, u.db, *u.ProPic.ID); err != nil {
+	if err := images.DeleteImagesTx(ctx, tx, db, *u.ProPic.ID); err != nil {
 		return fmt.Errorf("failed to delete pro pic of user %s: %w", u.Username, err)
 	}
 	u.ProPic = nil
 	return nil
 }
 
-func (u *User) DeleteProPic(ctx context.Context) error {
-	return msql.Transact(ctx, u.db, func(tx *sql.Tx) error {
-		return u.DeleteProPicTx(ctx, tx)
+func (u *User) DeleteProPic(ctx context.Context, db *sql.DB) error {
+	return msql.Transact(ctx, db, func(tx *sql.Tx) error {
+		return u.DeleteProPicTx(ctx, db, tx)
 	})
 }
 
-func (u *User) UpdateProPic(ctx context.Context, image []byte) error {
+func (u *User) UpdateProPic(ctx context.Context, db *sql.DB, image []byte) error {
 	if u.Deleted {
 		return ErrUserDeleted
 	}
 
 	var newImageID uid.ID
-	err := msql.Transact(ctx, u.db, func(tx *sql.Tx) error {
-		if err := u.DeleteProPicTx(ctx, tx); err != nil {
+	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
+		if err := u.DeleteProPicTx(ctx, db, tx); err != nil {
 			return err
 		}
 		imageID, err := images.SaveImageTx(ctx, tx, "disk", image, &images.ImageOptions{
@@ -1008,7 +1005,7 @@ func (u *User) UpdateProPic(ctx context.Context, image []byte) error {
 		}
 		if _, err := tx.ExecContext(ctx, "UPDATE users SET pro_pic = ? WHERE id = ?", imageID, u.ID); err != nil {
 			// Attempt to delete the image
-			if err := images.DeleteImagesTx(ctx, tx, u.db, imageID); err != nil {
+			if err := images.DeleteImagesTx(ctx, tx, db, imageID); err != nil {
 				log.Printf("failed to delete image (core.User.UpdateProPic): %v\n", err)
 			}
 			return fmt.Errorf("failed to set users.pro_pic to value: %w", err)
@@ -1020,7 +1017,7 @@ func (u *User) UpdateProPic(ctx context.Context, image []byte) error {
 		return err
 	}
 
-	record, err := images.GetImageRecord(ctx, u.db, newImageID)
+	record, err := images.GetImageRecord(ctx, db, newImageID)
 	if err != nil {
 		return err
 	}
@@ -1051,51 +1048,51 @@ func badgeTypeInt(db *sql.DB, badgeType string) (int, error) {
 
 // AddBadge addes new badge to u. Also, u.Badges is refetched upon a successful
 // add.
-func (u *User) AddBadge(ctx context.Context, badgeType string) error {
+func (u *User) AddBadge(ctx context.Context, db *sql.DB, badgeType string) error {
 	if u.Deleted {
 		return ErrUserDeleted
 	}
 
-	badgeTypeInt, err := badgeTypeInt(u.db, badgeType)
+	badgeTypeInt, err := badgeTypeInt(db, badgeType)
 	if err != nil {
 		return err
 	}
-	_, err = u.db.Exec("INSERT INTO user_badges (type, user_id) VALUES (?, ?)", badgeTypeInt, u.ID)
+	_, err = db.Exec("INSERT INTO user_badges (type, user_id) VALUES (?, ?)", badgeTypeInt, u.ID)
 	if err != nil && !msql.IsErrDuplicateErr(err) {
 		return err
 	}
 
-	if err := CreateNewBadgeNotification(ctx, u.db, u.ID, badgeType); err != nil {
+	if err := CreateNewBadgeNotification(ctx, db, u.ID, badgeType); err != nil {
 		log.Printf("Error creating new badge notification: %v\n", err)
 	}
 
-	return fetchBadges(u.db, u)
+	return fetchBadges(db, u)
 }
 
-func (u *User) RemoveBadgesByType(badgeType string) error {
+func (u *User) RemoveBadgesByType(db *sql.DB, badgeType string) error {
 	if u.Deleted {
 		return ErrUserDeleted
 	}
 
-	badgeTypeInt, err := badgeTypeInt(u.db, badgeType)
+	badgeTypeInt, err := badgeTypeInt(db, badgeType)
 	if err != nil {
 		return err
 	}
-	_, err = u.db.Exec("DELETE FROM user_badges WHERE type = ? AND user_id = ?", badgeTypeInt, u.ID)
+	_, err = db.Exec("DELETE FROM user_badges WHERE type = ? AND user_id = ?", badgeTypeInt, u.ID)
 	return err
 }
 
-func (u *User) RemoveBadge(id int) error {
+func (u *User) RemoveBadge(db *sql.DB, id int) error {
 	if u.Deleted {
 		return ErrUserDeleted
 	}
 
-	_, err := u.db.Exec("DELTE FROM user_badges WHERE id = ? and user_id = ?", id, u.ID)
+	_, err := db.Exec("DELTE FROM user_badges WHERE id = ? and user_id = ?", id, u.ID)
 	return err
 }
 
-func (u *User) HidePost(ctx context.Context, postID uid.ID) error {
-	return msql.Transact(ctx, u.db, func(tx *sql.Tx) error {
+func (u *User) HidePost(ctx context.Context, db *sql.DB, postID uid.ID) error {
+	return msql.Transact(ctx, db, func(tx *sql.Tx) error {
 		if _, err := tx.ExecContext(ctx, "INSERT INTO hidden_posts (user_id, post_id) VALUES (?, ?)", u.ID, postID); err != nil {
 			if msql.IsErrDuplicateErr(err) {
 				return nil
@@ -1126,8 +1123,8 @@ func (u *User) HidePost(ctx context.Context, postID uid.ID) error {
 	})
 }
 
-func (u *User) UnhidePost(ctx context.Context, postID uid.ID) error {
-	_, err := u.db.ExecContext(ctx, "DELETE FROM hidden_posts WHERE user_id = ? AND post_id = ?", u.ID, postID)
+func (u *User) UnhidePost(ctx context.Context, db *sql.DB, postID uid.ID) error {
+	_, err := db.ExecContext(ctx, "DELETE FROM hidden_posts WHERE user_id = ? AND post_id = ?", u.ID, postID)
 	return err
 }
 

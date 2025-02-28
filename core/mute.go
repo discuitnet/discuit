@@ -25,8 +25,6 @@ const (
 )
 
 type Mute struct {
-	db *sql.DB
-
 	ID               int       `json:"-"`
 	PublicID         string    `json:"id"` // augmented id based on Type
 	User             uid.ID    `json:"-"`
@@ -105,7 +103,7 @@ func GetMutedCommunities(ctx context.Context, db *sql.DB, user uid.ID, fetchComm
 
 	var mutes []*Mute
 	for rows.Next() {
-		mute := &Mute{db: db, User: user, Type: MuteTypeCommunity}
+		mute := &Mute{User: user, Type: MuteTypeCommunity}
 		if err := rows.Scan(&mute.ID, &mute.MutedCommunityID, &mute.CreatedAt); err != nil {
 			return nil, err
 		}
@@ -148,7 +146,7 @@ func GetMutedUsers(ctx context.Context, db *sql.DB, user uid.ID, fillUsers bool)
 
 	var mutes []*Mute
 	for rows.Next() {
-		mute := &Mute{db: db, User: user, Type: MuteTypeUser}
+		mute := &Mute{User: user, Type: MuteTypeUser}
 		if err := rows.Scan(&mute.ID, &mute.MutedUserID, &mute.CreatedAt); err != nil {
 			return nil, err
 		}

@@ -82,13 +82,13 @@ func (s *Server) addPost(w *responseWriter, r *request) error {
 	}
 
 	if req.UserGroup != core.UserGroupNormal {
-		if err := post.ChangeUserGroup(r.ctx, *r.viewer, req.UserGroup); err != nil {
+		if err := post.ChangeUserGroup(r.ctx, s.db, *r.viewer, req.UserGroup); err != nil {
 			return err
 		}
 	}
 
 	// +1 your own post.
-	post.Vote(r.ctx, *r.viewer, true)
+	post.Vote(r.ctx, s.db, *r.viewer, true)
 	return w.writeJSON(post)
 }
 
@@ -100,7 +100,7 @@ func (s *Server) getPost(w *responseWriter, r *request) error {
 		return err
 	}
 
-	if _, err = post.GetComments(r.ctx, r.viewer, nil); err != nil {
+	if _, err = post.GetComments(r.ctx, s.db, r.viewer, nil); err != nil {
 		return err
 	}
 
@@ -109,10 +109,10 @@ func (s *Server) getPost(w *responseWriter, r *request) error {
 		if err != nil {
 			return err
 		}
-		if err = comm.FetchRules(r.ctx); err != nil {
+		if err = comm.FetchRules(r.ctx, s.db); err != nil {
 			return err
 		}
-		if err = comm.PopulateMods(r.ctx); err != nil {
+		if err = comm.PopulateMods(r.ctx, s.db); err != nil {
 			return err
 		}
 		post.Community = comm
@@ -162,7 +162,7 @@ func (s *Server) updatePost(w *responseWriter, r *request) error {
 		}
 
 		if needSaving {
-			if err = post.Save(r.ctx, *r.viewer); err != nil {
+			if err = post.Save(r.ctx, s.db, *r.viewer); err != nil {
 				return err
 			}
 		}
@@ -174,9 +174,9 @@ func (s *Server) updatePost(w *responseWriter, r *request) error {
 				return err
 			}
 			if action == "lock" {
-				err = post.Lock(r.ctx, *r.viewer, as)
+				err = post.Lock(r.ctx, s.db, *r.viewer, as)
 			} else {
-				err = post.Unlock(r.ctx, *r.viewer)
+				err = post.Unlock(r.ctx, s.db, *r.viewer)
 			}
 			if err != nil {
 				return err
@@ -186,16 +186,16 @@ func (s *Server) updatePost(w *responseWriter, r *request) error {
 			if err = as.UnmarshalText([]byte(query.Get("userGroup"))); err != nil {
 				return err
 			}
-			if err = post.ChangeUserGroup(r.ctx, *r.viewer, as); err != nil {
+			if err = post.ChangeUserGroup(r.ctx, s.db, *r.viewer, as); err != nil {
 				return err
 			}
 		case "pin", "unpin":
 			siteWide := strings.ToLower(query.Get("siteWide")) == "true"
-			if err = post.Pin(r.ctx, *r.viewer, siteWide, action == "unpin", false); err != nil {
+			if err = post.Pin(r.ctx, s.db, *r.viewer, siteWide, action == "unpin", false); err != nil {
 				return err
 			}
 		case "announce":
-			if err := post.AnnounceToAllUsers(r.ctx, *r.viewer); err != nil {
+			if err := post.AnnounceToAllUsers(r.ctx, s.db, *r.viewer); err != nil {
 				return err
 			}
 		default:
@@ -235,7 +235,7 @@ func (s *Server) deletePost(w *responseWriter, r *request) error {
 			return httperr.NewBadRequest("", "deleteContent must be a bool.")
 		}
 	}
-	if err := post.Delete(r.ctx, *r.viewer, as, deleteContent, true); err != nil {
+	if err := post.Delete(r.ctx, s.db, *r.viewer, as, deleteContent, true); err != nil {
 		return err
 	}
 
@@ -267,12 +267,12 @@ func (s *Server) postVote(w *responseWriter, r *request) error {
 
 	if post.ViewerVoted.Bool {
 		if req.Up == post.ViewerVotedUp.Bool {
-			err = post.DeleteVote(r.ctx, *r.viewer)
+			err = post.DeleteVote(r.ctx, s.db, *r.viewer)
 		} else {
-			err = post.ChangeVote(r.ctx, *r.viewer, req.Up)
+			err = post.ChangeVote(r.ctx, s.db, *r.viewer, req.Up)
 		}
 	} else {
-		err = post.Vote(r.ctx, *r.viewer, req.Up)
+		err = post.Vote(r.ctx, s.db, *r.viewer, req.Up)
 	}
 	if err != nil {
 		return err

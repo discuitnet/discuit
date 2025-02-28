@@ -34,7 +34,7 @@ func (s *Server) getUser(w *responseWriter, r *request) error {
 		user.Username = username
 	}
 
-	if err := user.LoadModdingList(r.ctx); err != nil {
+	if err := user.LoadModdingList(r.ctx, s.db); err != nil {
 		return err
 	}
 
@@ -111,7 +111,7 @@ func (s *Server) deleteUser(w *responseWriter, r *request) error {
 	}
 
 	// Finally, delete the user.
-	if err := toDelete.Delete(r.ctx); err != nil {
+	if err := toDelete.Delete(r.ctx, s.db); err != nil {
 		return err
 	}
 
@@ -159,7 +159,7 @@ func (s *Server) initial(w *responseWriter, r *request) error {
 			}
 			return err
 		}
-		if response.BannedFrom, err = response.User.GetBannedFromCommunities(r.ctx); err != nil {
+		if response.BannedFrom, err = response.User.GetBannedFromCommunities(r.ctx, s.db); err != nil {
 			return err
 		}
 		if communityMutes, err := core.GetMutedCommunities(r.ctx, s.db, *r.viewer, true); err != nil {
@@ -315,7 +315,7 @@ func (s *Server) getLoggedInUser(w *responseWriter, r *request) error {
 		return err
 	}
 
-	if err := user.LoadModdingList(r.ctx); err != nil {
+	if err := user.LoadModdingList(r.ctx, s.db); err != nil {
 		return err
 	}
 
@@ -340,15 +340,15 @@ func (s *Server) updateNotifications(w *responseWriter, r *request) error {
 	query := r.urlQueryParams()
 	switch query.Get("action") {
 	case "resetNewCount":
-		if err = user.ResetNewNotificationsCount(r.ctx); err != nil {
+		if err = user.ResetNewNotificationsCount(r.ctx, s.db); err != nil {
 			return err
 		}
 	case "markAllAsSeen":
-		if err = user.MarkAllNotificationsAsSeen(r.ctx, core.NotificationType(query.Get("type"))); err != nil {
+		if err = user.MarkAllNotificationsAsSeen(r.ctx, s.db, core.NotificationType(query.Get("type"))); err != nil {
 			return err
 		}
 	case "deleteAll":
-		if err = user.DeleteAllNotifications(r.ctx); err != nil {
+		if err = user.DeleteAllNotifications(r.ctx, s.db); err != nil {
 			return err
 		}
 	default:
@@ -498,7 +498,7 @@ func (s *Server) updateUserSettings(w *responseWriter, r *request) error {
 			return err
 		}
 
-		if err = user.Update(r.ctx); err != nil {
+		if err = user.Update(r.ctx, s.db); err != nil {
 			return err
 		}
 	case "changePassword":
@@ -512,7 +512,7 @@ func (s *Server) updateUserSettings(w *responseWriter, r *request) error {
 		if newPassword != repeatPassword {
 			return httperr.NewBadRequest("password_not_match", "Passwords do not match.")
 		}
-		if err = user.ChangePassword(r.ctx, password, newPassword); err != nil {
+		if err = user.ChangePassword(r.ctx, s.db, password, newPassword); err != nil {
 			return err
 		}
 	default:
@@ -554,11 +554,11 @@ func (s *Server) handleUserProPic(w *responseWriter, r *request) error {
 		if err != nil {
 			return err
 		}
-		if err := user.UpdateProPic(r.ctx, data); err != nil {
+		if err := user.UpdateProPic(r.ctx, s.db, data); err != nil {
 			return err
 		}
 	} else if r.req.Method == "DELETE" {
-		if err := user.DeleteProPic(r.ctx); err != nil {
+		if err := user.DeleteProPic(r.ctx, s.db); err != nil {
 			return err
 		}
 	}
@@ -590,7 +590,7 @@ func (s *Server) deleteBadge(w *responseWriter, r *request) error {
 
 	byType := strings.ToLower(r.urlQueryParamsValue("byType")) == "true"
 	if byType {
-		if err = user.RemoveBadgesByType(badgeID); err != nil {
+		if err = user.RemoveBadgesByType(s.db, badgeID); err != nil {
 			return err
 		}
 	} else {
@@ -598,7 +598,7 @@ func (s *Server) deleteBadge(w *responseWriter, r *request) error {
 		if err != nil {
 			return httperr.NewBadRequest("bad_badge_id", "Bad badge id.")
 		}
-		if err := user.RemoveBadge(intID); err != nil {
+		if err := user.RemoveBadge(s.db, intID); err != nil {
 			return err
 		}
 	}
@@ -635,7 +635,7 @@ func (s *Server) addBadge(w *responseWriter, r *request) error {
 		return err
 	}
 
-	if err := user.AddBadge(r.ctx, reqBody.BadgeType); err != nil {
+	if err := user.AddBadge(r.ctx, s.db, reqBody.BadgeType); err != nil {
 		return err
 	}
 
@@ -661,7 +661,7 @@ func (s *Server) handleHiddenPosts(w *responseWriter, r *request) error {
 		return err
 	}
 
-	if err := user.HidePost(r.ctx, body.PostID); err != nil {
+	if err := user.HidePost(r.ctx, s.db, body.PostID); err != nil {
 		return err
 	}
 
@@ -683,7 +683,7 @@ func (s *Server) unhidePost(w *responseWriter, r *request) error {
 		return httperr.NewBadRequest("invalid-post-id", "Invalid post id.")
 	}
 
-	if err := user.UnhidePost(r.ctx, postID); err != nil {
+	if err := user.UnhidePost(r.ctx, s.db, postID); err != nil {
 		return err
 	}
 
