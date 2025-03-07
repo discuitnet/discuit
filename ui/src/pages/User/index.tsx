@@ -506,7 +506,9 @@ const User = () => {
             Joined on {dateString1(user.createdAt)} ({getLastSeenMonthText(user.lastSeenMonth)}).
           </div>
           {user.deleted && (
-            <div className="user-card-joined">Account deleted on {dateString1(user.deletedAt)}</div>
+            <div className="user-card-joined">
+              Account deleted on {dateString1(user.deletedAt as string)}
+            </div>
           )}
           {loggedIn && !user.deleted && (
             <div className="user-card-buttons">

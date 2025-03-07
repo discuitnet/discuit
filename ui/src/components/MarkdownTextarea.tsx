@@ -65,7 +65,10 @@ const MarkdownTextarea = React.forwardRef<HTMLTextAreaElement, MarkdownTextareaP
     useEffect(() => {
       const node = innerRef.current;
       if (node && autoAdjustHeight) {
-        adjustTextareaHeight({ target: node }, 4);
+        adjustTextareaHeight(
+          { target: node } as unknown as React.FormEvent<HTMLTextAreaElement>,
+          4
+        );
       }
     }, [autoAdjustHeight]);
 
