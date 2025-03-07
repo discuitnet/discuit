@@ -1007,8 +1007,8 @@ func MakeUserMod(ctx context.Context, db *sql.DB, c *Community, viewer uid.ID, u
 
 // MakeUserModCLI adds or removes user as a mod of c. Do not use this function
 // in an API.
-func MakeUserModCLI(db *sql.DB, c *Community, user uid.ID, isMod bool) error {
-	return makeUserMod(context.Background(), db, c, user, isMod)
+func MakeUserModCLI(ctx context.Context, db *sql.DB, c *Community, user uid.ID, isMod bool) error {
+	return makeUserMod(ctx, db, c, user, isMod)
 }
 
 // makeUserMod makes user a moderator of c, or, if isMod is false, user is
