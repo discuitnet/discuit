@@ -764,7 +764,7 @@ func (u *User) Delete(ctx context.Context, db *sql.DB) error {
 }
 
 // DeleteContent deletes all posts and comments of user that were created in the
-// last n days.
+// last n days (n=0 means all time). It does not delete the user.
 func (u *User) DeleteContent(ctx context.Context, db *sql.DB, n int, admin uid.ID) error {
 	t := time.Now()
 	defer func() {
@@ -1309,6 +1309,11 @@ func MakeAdmin(ctx context.Context, db *sql.DB, user string, isAdmin bool) (*Use
 	return u, nil
 }
 
+const (
+	GhostUserUsername  = "ghost"
+	NobodyUserUsername = "nobody"
+)
+
 // CreateGhostUser creates the ghost user, if the ghost user isn't already
 // created. The ghost user is the user with the username ghost that takes, so to
 // speak, the place of all deleted users.
@@ -1316,14 +1321,39 @@ func MakeAdmin(ctx context.Context, db *sql.DB, user string, isAdmin bool) (*Use
 // The returned bool indicates whether the call to this function created the
 // ghost user (if the ghost user was already created, it will be false).
 func CreateGhostUser(db *sql.DB) (bool, error) {
-	var username string
-	if err := db.QueryRow("SELECT username_lc FROM users WHERE username_lc = ?", "ghost").Scan(&username); err != nil {
+	var s string
+	if err := db.QueryRow("SELECT username_lc FROM users WHERE username_lc = ?", GhostUserUsername).Scan(&s); err != nil {
 		if err == sql.ErrNoRows {
 			// Ghost user not found; create one.
-			_, createErr := RegisterUser(context.Background(), db, "ghost", "", utils.GenerateStringID(48), "")
+			_, createErr := RegisterUser(context.Background(), db, GhostUserUsername, "", utils.GenerateStringID(48), "")
 			return createErr == nil, createErr
 		}
 		return false, err
+	}
+	return false, nil
+}
+
+// CreateNobodyUser creates a user named nobody and makes that user an admin.
+// This is an admin account reserved for programmatic admin actions.
+func CreateNobodyUser(db *sql.DB) (bool, error) {
+	var s string
+	if dbErr := db.QueryRow("SELECT username_lc FROM users WHERE username_lc = ?", NobodyUserUsername).Scan(&s); dbErr != nil {
+		if dbErr == sql.ErrNoRows {
+			// Ghost user not found; create one.
+			user, err := RegisterUser(context.Background(), db, NobodyUserUsername, "", utils.GenerateStringID(48), "")
+			if err != nil {
+				return false, err
+			}
+
+			user.About = msql.NewNullString("Not a human")
+			user.Update(context.Background(), db)
+
+			if _, err := MakeAdmin(context.Background(), db, user.Username, true); err != nil {
+				return false, err
+			}
+			return true, nil
+		}
+		return false, dbErr
 	}
 	return false, nil
 }

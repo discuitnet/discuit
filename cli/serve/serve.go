@@ -47,7 +47,7 @@ func serve(ctx *cli.Context) error {
 	db := ctx.Context.Value("db").(*sql.DB)
 	conf := ctx.Context.Value("config").(*config.Config)
 
-	if err := createGhostUser(db); err != nil {
+	if err := createSentinelUsers(db); err != nil {
 		os.Exit(1)
 	}
 
@@ -220,10 +220,10 @@ func serve(ctx *cli.Context) error {
 	return nil
 }
 
-// createGhostUser creates the ghost user only if migrations have been run. If
+// createSentinelUsers creates the ghost user only if migrations have been run. If
 // migrations have not yet been run, the function exists silently without
 // returning an error
-func createGhostUser(db *sql.DB) error {
+func createSentinelUsers(db *sql.DB) error {
 	if _, err := migrate.Version(db); err != nil {
 		if err == migrate.ErrMigrationsTableNotFound || err == sql.ErrNoRows {
 			log.Println("Skipping creating ghost user, as migrations are not yet run.")
@@ -233,13 +233,25 @@ func createGhostUser(db *sql.DB) error {
 		return err
 	}
 
+	// Create the ghost user:
 	created, err := core.CreateGhostUser(db)
 	if err != nil {
 		log.Printf("Error creating the ghost user: %v\n", err)
 		return err
 	}
 	if created {
-		log.Println("Ghost user succesfully created.")
+		log.Println("User @ghost succesfully created.")
 	}
+
+	// Create the ghost user:
+	created, err = core.CreateNobodyUser(db)
+	if err != nil {
+		log.Printf("Error creating the nobody user: %v\n", err)
+		return err
+	}
+	if created {
+		log.Println("User @nobody succesfully created.")
+	}
+
 	return nil
 }
