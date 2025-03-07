@@ -76,7 +76,11 @@ const endsWithOneOf = (searchString, endPositions = []) => {
 
 const fetchRequest = (request) => {
   const headers = new Headers(request.headers);
-  headers.set('X-Service-Worker-Version', SW_BUILD_ID);
+  if (request.url.startsWith(self.location.origin)) {
+    // Setting the custom headers only for same-origin requests. Otherwise, CORS
+    // will block the request.
+    headers.set('X-Service-Worker-Version', SW_BUILD_ID);
+  }
   return fetch(
     new Request(request, {
       headers,
