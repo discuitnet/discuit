@@ -193,6 +193,7 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/_link_info", s.withHandler(s.getLinkInfo)).Methods("GET")
 
 	r.Handle("/api/analytics", s.withHandler(s.handleAnalytics)).Methods("POST")
+	r.Handle("/api/analytics/bss", s.withHandler(s.getBasicSiteStats)).Methods("GET")
 	r.Handle("/api/site_settings", s.withHandler(s.handleSiteSettings)).Methods("GET", "PUT")
 
 	r.NotFoundHandler = http.HandlerFunc(s.apiNotFoundHandler)

@@ -179,3 +179,17 @@ func (s *Server) handleSiteSettings(w *responseWriter, r *request) error {
 
 	return w.writeJSON(settings)
 }
+
+func (s *Server) getBasicSiteStats(w *responseWriter, r *request) error {
+	_, err := getLoggedInAdmin(s.db, r)
+	if err != nil {
+		return err
+	}
+
+	events, err := core.GetBasicSiteStats(r.ctx, s.db, 30)
+	if err != nil {
+		return err
+	}
+
+	return w.writeJSON(events)
+}

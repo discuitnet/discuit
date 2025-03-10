@@ -102,6 +102,9 @@ func (pg *Program) startBackgroundTasks(delay time.Duration) {
 		}
 		return nil
 	}, time.Second*10, false)
+	pg.tr.New("Record basic site analytics", func(ctx context.Context) error {
+		return core.RecordBasicSiteStats(ctx, pg.db)
+	}, time.Hour, false)
 
 	go func() {
 		time.Sleep(delay)
