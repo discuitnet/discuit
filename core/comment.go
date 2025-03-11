@@ -873,11 +873,11 @@ func GetSiteComments(ctx context.Context, db *sql.DB, limit int, next *string, v
 		if err != nil {
 			return nil, nil, errors.New("invalid next for site comments")
 		}
-		where = "WHERE id <= ? "
+		where = "WHERE comments.id <= ? "
 		args = append(args, nextID)
 	}
 
-	where += "ORDER BY id DESC LIMIT ? "
+	where += "ORDER BY comments.id DESC LIMIT ? "
 	args = append(args, limit+1)
 
 	comments, err := getComments(ctx, db, viewer, where, args...)
