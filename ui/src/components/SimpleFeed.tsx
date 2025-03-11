@@ -1,3 +1,6 @@
+import clsx from 'clsx';
+import React from 'react';
+
 export interface SimpleFeedItem<T> {
   item: T;
   key: string;
@@ -6,26 +9,29 @@ export interface SimpleFeedItem<T> {
 function SimpleFeed<T>({
   items,
   onRenderItem,
+  onRenderHead /* For table style feeds, especially. */,
+  className,
 }: {
   items: SimpleFeedItem<T>[] | null;
   onRenderItem: (item: T) => React.ReactNode;
+  onRenderHead?: () => React.ReactNode;
+  className?: string;
 }) {
   const renderItems = () => {
     const rendered = [];
     if (items) {
       for (let i = 0; i < items.length; i++) {
         rendered.push(
-          <div className="simple-feed-item" key={items[i].key}>
-            {onRenderItem(items[i].item)}
-          </div>
+          <React.Fragment key={items[i].key}>{onRenderItem(items[i].item)}</React.Fragment>
         );
       }
     }
     return rendered;
   };
   return (
-    <div className="simple-feed">
-      <div className="simple-feed-items">{renderItems()}</div>
+    <div className={clsx('simple-feed', className)}>
+      {onRenderHead && onRenderHead()}
+      {renderItems()}
     </div>
   );
 }

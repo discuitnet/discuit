@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import Button from '../../components/Button';
 import PageLoading from '../../components/PageLoading';
 import SimpleFeed, { SimpleFeedItem } from '../../components/SimpleFeed';
+import { TableRow } from '../../components/Table';
 import TimeAgo from '../../components/TimeAgo';
 import { mfetchjson } from '../../helper';
 import { useLoading } from '../../hooks';
@@ -56,12 +57,24 @@ export default function Users() {
   const handleRenderItem = (item: User) => {
     const user = item;
     return (
-      <div className="feed-item-user">
-        <Link to={`/@${user.username}`}>@{user.username}</Link>
-        <div className="feed-item-user-is-banned">
+      <TableRow columns={3}>
+        <Link className="table-column" to={`/@${user.username}`}>
+          @{user.username}
+        </Link>
+        <div className="table-column" style={{ color: 'red' }}>
           {user.isBanned ? 'Banned' : user.deleted ? 'Deleted' : ''}
         </div>
-        <TimeAgo time={user.createdAt} />
+        <TimeAgo className="table-column" time={user.createdAt} />
+      </TableRow>
+    );
+  };
+
+  const handleRenderHead = () => {
+    return (
+      <div className="table-row table-head">
+        <div className="table-column">Username</div>
+        <div className="table-column">Deleted</div>
+        <div className="table-column">Created at</div>
       </div>
     );
   };
@@ -77,7 +90,12 @@ export default function Users() {
     <div className="dashboard-page-users document">
       <div className="dashboard-page-title">Users</div>
       <div className="dashboard-page-content">
-        <SimpleFeed items={feedItems} onRenderItem={handleRenderItem} />
+        <SimpleFeed
+          className="table"
+          items={feedItems}
+          onRenderItem={handleRenderItem}
+          onRenderHead={handleRenderHead}
+        />
         <Button className="is-more-button" loading={nextUsersLoading} onClick={fetchNextUsers}>
           More
         </Button>

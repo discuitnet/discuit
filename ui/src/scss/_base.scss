@@ -955,6 +955,12 @@ a,
     }
 }
 
+html.no-wrap {
+    .wrap {
+        max-width: unset;
+    }
+}
+
 .page-content {
     padding-top: var(--page-top-margin);
     min-height: calc(100vh - var(--navbar-height));
@@ -1214,8 +1220,17 @@ a,
             background: rgba(var(--base-brand), 0.02);
         }
         &.table-head {
-            text-transform: uppercase;
+            // text-transform: uppercase;
             color: gray;
+            font-weight: 600;
+        }
+        .table-column {
+            &:last-child {
+                justify-self: end;
+            }
+            &:first-child {
+                justify-self: unset;
+            }
         }
     }
 }

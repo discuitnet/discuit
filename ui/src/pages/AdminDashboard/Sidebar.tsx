@@ -46,6 +46,9 @@ function Sidebar({
           <Link className="sidebar-item" to={dashboardLink('ipbans')}>
             IP bans
           </Link>
+          <Link className="sidebar-item" to={dashboardLink('bss')}>
+            Analytics
+          </Link>
         </div>
       </div>
     </aside>

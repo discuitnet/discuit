@@ -5,6 +5,7 @@ import { Route, Switch, useRouteMatch } from 'react-router-dom';
 import { ButtonHamburger } from '../../components/Button';
 import { RootState } from '../../store';
 import Forbidden from '../Forbidden';
+import BasicSiteAnalytics from './BasicSiteAnalytics';
 import Comments from './Comments';
 import Communities from './Communities';
 import IPBans from './IPBans';
@@ -13,7 +14,7 @@ import Sidebar from './Sidebar';
 import Users from './Users';
 
 function AdminDashboard() {
-  const [menuVisible, setMenuVisible] = useState(true);
+  const [menuVisible, setMenuVisible] = useState(false);
   const toggleMenuVisible = () => setMenuVisible((v) => !v);
 
   /*
@@ -41,8 +42,10 @@ function AdminDashboard() {
   useEffect(() => {
     const before = document.body.style.backgroundColor;
     document.body.style.backgroundColor = 'var(--color-bg)';
+    document.documentElement.classList.add('no-wrap');
     return () => {
       document.body.style.backgroundColor = before;
+      document.documentElement.classList.remove('no-wrap');
     };
   }, []);
 
@@ -56,7 +59,7 @@ function AdminDashboard() {
   return (
     <div className="page-content page-dashboard wrap">
       <div className="navbar page-dashboard-head">
-        <div className="wrap">
+        <div className="inner-wrap">
           <div className="left">
             <h1>Admin dashboard</h1>
           </div>
@@ -86,6 +89,9 @@ function AdminDashboard() {
             </Route>
             <Route exact path={`${path}/ipbans`}>
               <IPBans />
+            </Route>
+            <Route exact path={`${path}/bss`}>
+              <BasicSiteAnalytics />
             </Route>
             <Route path="*">
               <div className="dashboard-page-404">

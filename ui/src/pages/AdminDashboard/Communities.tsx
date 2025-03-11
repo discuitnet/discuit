@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import PageLoading from '../../components/PageLoading';
 import SimpleFeed, { SimpleFeedItem } from '../../components/SimpleFeed';
+import { TableRow } from '../../components/Table';
 import { mfetchjson } from '../../helper';
 import { useLoading } from '../../hooks';
 import { Community } from '../../serverTypes';
@@ -48,9 +49,11 @@ export default function Communities() {
   const handleRenderItem = (item: Community): React.ReactNode => {
     const community = item;
     return (
-      <div className="feed-item-user">
-        <Link to={`/${community.name}`}>{community.name}</Link>
-      </div>
+      <TableRow columns={1}>
+        <Link className="table-column" to={`/${community.name}`}>
+          {community.name}
+        </Link>
+      </TableRow>
     );
   };
 
@@ -68,7 +71,7 @@ export default function Communities() {
     <div className="dashboard-page-communities document">
       <div className="dashboard-page-title">Communities</div>
       <div className="dashboard-page-content">
-        <SimpleFeed items={feedItems} onRenderItem={handleRenderItem} />
+        <SimpleFeed className="table" items={feedItems} onRenderItem={handleRenderItem} />
       </div>
     </div>
   );

@@ -293,3 +293,11 @@ export interface Mutes {
 export interface SiteSettings {
   signupsDisabled: boolean;
 }
+
+export interface AnalyticsEvent {
+  id: number;
+  name: string;
+  uniqueKey: string | null;
+  payload: string;
+  createdAt: string; // A datetime.
+}

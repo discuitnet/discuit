@@ -12,11 +12,11 @@ import (
 
 // AnalyticsEven represents a record in the analytics table.
 type AnalyticsEvent struct {
-	ID        int
-	Name      string
-	UniqueKey []byte
-	Payload   string
-	CreatedAt time.Time
+	ID        int       `json:"id"`
+	Name      string    `json:"name"`
+	UniqueKey []byte    `json:"uniqueKey"`
+	Payload   string    `json:"payload"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 // CreateAnalyticsEvent adds a record to the analytics table. If uniqueKey is
