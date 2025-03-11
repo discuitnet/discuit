@@ -42,18 +42,20 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button className={cls ? cls : undefined} ref={ref} {...props} disabled={loading || disabled}>
         {loading && (
-          <span className="button-icon">
+          <div className="button-icon button-spinner">
             <Spinner color="currentColor" />
-          </span>
+          </div>
         )}
-        {icon ? (
-          <>
-            {!loading && <span className="button-icon">{icon}</span>}
-            <span>{children}</span>
-          </>
-        ) : (
-          children
-        )}
+        <div className="button-inner" style={{ visibility: loading ? 'hidden' : undefined }}>
+          {icon ? (
+            <>
+              {!loading && <span className="button-icon">{icon}</span>}
+              <span>{children}</span>
+            </>
+          ) : (
+            children
+          )}
+        </div>
       </button>
     );
   }

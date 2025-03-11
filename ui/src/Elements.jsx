@@ -29,6 +29,14 @@ function Elements() {
   const textareaRef = useRef();
   const [textareaValue, setTextareaValue] = useState('blaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
 
+  const [buttonLoading, setButtonLoading] = useState(false);
+  const handleLoadButtonClick = () => {
+    setButtonLoading(true);
+    setTimeout(() => {
+      setButtonLoading(false);
+    }, 2 * 1000);
+  };
+
   const icons = {
     trash: (
       <svg
@@ -133,30 +141,34 @@ function Elements() {
         </Section>
         <Section title="Link elements as buttons">
           <a className="button" href="https://www.google.com/">
-            Link button
+            <div className="button-inner">Link button</div>
           </a>
           <a className="button is-main" href="https://www.google.com/">
-            Link button
+            <div className="button-inner">Link button</div>
           </a>
           <a className="button is-red" href="https://www.google.com/">
-            Link button
+            <div className="button-inner">Link button</div>
           </a>
           <a className="button is-text" href="https://www.google.com/">
-            Link button
+            <div className="button-inner">Link button</div>
           </a>
           <a className="button is-text is-main" href="https://www.google.com/">
-            Link button
+            <div className="button-inner">Link button</div>
           </a>
           <a className="button is-text is-red" href="https://www.google.com/">
-            Link button
+            <div className="button-inner">Link button</div>
           </a>
           <a className="button" href="https://www.google.com/">
-            <span className="button-icon">{icons.trash}</span>
-            <span>Link button with icon</span>
+            <div className="button-inner">
+              <span className="button-icon">{icons.trash}</span>
+              <span>Link button with icon</span>
+            </div>
           </a>
           <a className="button" href="https://www.google.com/">
-            <span className="button-icon">{icons.bubbles}</span>
-            <span>Link button with icon</span>
+            <div className="button-inner">
+              <span className="button-icon">{icons.bubbles}</span>
+              <span>Link button with icon</span>
+            </div>
           </a>
         </Section>
         <Section title="Icon buttons">
@@ -165,13 +177,19 @@ function Elements() {
           <Button icon={<SVGSettings />} />
         </Section>
         <Section title="Button loading state">
-          <Button color="main" loading>
+          <Button color="main" loading={buttonLoading} onClick={handleLoadButtonClick}>
             Button
           </Button>
-          <Button icon={icons.trash} loading>
+          <Button icon={icons.trash} loading={buttonLoading} onClick={handleLoadButtonClick}>
             Button with icon
           </Button>
-          <Button variant="text" icon={icons.trash} loading color="red">
+          <Button
+            variant="text"
+            icon={icons.trash}
+            loading={buttonLoading}
+            color="red"
+            onClick={handleLoadButtonClick}
+          >
             Button with icon
           </Button>
         </Section>

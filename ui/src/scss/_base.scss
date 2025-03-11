@@ -726,6 +726,7 @@ button,
 
 button,
 .button {
+    position: relative;
     color: var(--color-button-text);
     background-color: var(--color-button);
     border: none;
@@ -733,12 +734,15 @@ button,
     border-radius: var(--border-radius);
     font-weight: 600;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    text-decoration: none;
     transition: all var(--t-time-button);
+    &,
+    .button-inner {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        text-decoration: none;
+    }
     &:hover {
         background-color: var(--color-button-hover);
         text-decoration: none;
@@ -836,13 +840,15 @@ button,
             height: 100%;
         }
     }
-    > span {
-        margin-right: 8px;
-        &:last-of-type {
-            margin-right: 0;
-        }
-        &:first-of-type {
+    .button-inner {
+        > span {
             margin-right: 8px;
+            &:last-of-type {
+                margin-right: 0;
+            }
+            &:first-of-type {
+                margin-right: 8px;
+            }
         }
     }
     &.is-icon {
@@ -884,6 +890,12 @@ button,
     }
     &.button-link {
         color: var(--color-link);
+    }
+    .button-spinner {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
     }
 }
 
