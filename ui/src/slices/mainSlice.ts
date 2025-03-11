@@ -1,7 +1,7 @@
 import { ThunkDispatch } from 'redux-thunk';
 import { APIError, mfetch, mfetchjson } from '../helper';
 import { getDevicePreference, setDevicePreference } from '../pages/Settings/devicePrefs';
-import { Community, List, Mute, Mutes, Notification, User } from '../serverTypes';
+import { CommunitiesSort, Community, List, Mute, Mutes, Notification, User } from '../serverTypes';
 import { AppDispatch, RootState, UnknownAction } from '../store';
 import { communitiesAdded } from './communitiesSlice';
 
@@ -68,6 +68,8 @@ export interface MainState {
   };
   settingsChanged: number; // A counter to serve as a signal for when user settings change.
   feedLayout: string;
+  allCommunitiesSort: CommunitiesSort;
+  allCommunitiesSearchQuery: string;
 }
 
 const initialNotifications = {
@@ -119,6 +121,8 @@ const initialState: MainState = {
   },
   settingsChanged: 0,
   feedLayout: (getDevicePreference('feed_layout') ?? 'card') as string,
+  allCommunitiesSort: 'size',
+  allCommunitiesSearchQuery: '',
 };
 
 export default function mainReducer(
@@ -454,6 +458,18 @@ export default function mainReducer(
         feedLayout: action.payload as string,
       };
     }
+    case 'main/allCommunitiesSortChanged': {
+      return {
+        ...state,
+        allCommunitiesSort: action.payload as CommunitiesSort,
+      };
+    }
+    case 'main/allCommunitiesSearchQueryChanged': {
+      return {
+        ...state,
+        allCommunitiesSearchQuery: action.payload as string,
+      };
+    }
     default:
       return state;
   }
@@ -773,4 +789,12 @@ export const initialFieldsSet = (initial: InitialValues) => (dispatch: AppDispat
   dispatch(mutesAdded(initial.mutes));
   dispatch(listsAdded(initial.lists));
   dispatch(miscInitialValuesAdded(initial));
+};
+
+export const allCommunitiesSortChanged = (sort: CommunitiesSort) => {
+  return { type: 'main/allCommunitiesSortChanged', payload: sort };
+};
+
+export const allCommunitiesSearchQueryChanged = (query: string) => {
+  return { type: 'main/allCommunitiesSearchQueryChanged', payload: query };
 };

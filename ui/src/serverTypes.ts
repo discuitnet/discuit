@@ -301,3 +301,5 @@ export interface AnalyticsEvent {
   payload: string;
   createdAt: string; // A datetime.
 }
+
+export type CommunitiesSort = 'new' | 'old' | 'size' | 'name_asc' | 'name_dsc';

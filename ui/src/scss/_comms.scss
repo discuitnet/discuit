@@ -30,6 +30,12 @@
             box-shadow: none;
             border: none;
         }
+        h1 {
+            font-size: var(--fs-2xl);
+            @include mixins.mobile() {
+                font-size: var(--fs-xl);
+            }
+        }
         .left {
             input {
                 width: 100%;
@@ -39,8 +45,11 @@
         .right {
             display: flex;
             margin-left: calc(var(--gap) / 2);
-            .comms-new-button {
-                margin-left: var(--gap);
+            > * {
+                margin-right: var(--gap);
+                &:last-child {
+                    margin-right: 0;
+                }
             }
             .comms-search-button {
                 &.is-search-svg {
@@ -75,7 +84,7 @@
         }
         .comms-list-item {
             cursor: pointer;
-            padding: 12px 20px;
+            padding: 18px 20px;
             display: grid;
             grid-template-columns: max-content 1fr;
             border-bottom: var(--seperator);
@@ -99,8 +108,7 @@
             .comms-list-item-right {
                 display: flex;
                 flex-direction: column;
-                padding-left: calc(var(--gap) * 2);
-                padding-right: var(--gap);
+                padding-left: var(--gap);
             }
             .comms-list-item-name {
                 font-size: var(--fs-xl);

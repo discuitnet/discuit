@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import Button, { ButtonClose } from '../components/Button';
 import CommunityProPic from '../components/CommunityProPic';
+import Dropdown from '../components/Dropdown';
 import Feed from '../components/Feed';
 import { FormField } from '../components/Form';
 import Input, { InputWithCount, useInputMaxLength } from '../components/Input';
@@ -17,7 +18,13 @@ import { communityNameMaxLength } from '../config';
 import { mfetch, mfetchjson } from '../helper';
 import { useInputUsername } from '../hooks';
 import { FeedItem } from '../slices/feedsSlice';
-import { loginPromptToggled, snackAlert, snackAlertError } from '../slices/mainSlice';
+import {
+  allCommunitiesSearchQueryChanged,
+  allCommunitiesSortChanged,
+  loginPromptToggled,
+  snackAlert,
+  snackAlertError,
+} from '../slices/mainSlice';
 import { SVGClose, SVGSearch } from '../SVGs';
 import LoginForm from '../views/LoginForm';
 import JoinButton from './Community/JoinButton';
@@ -32,28 +39,29 @@ const prepareText = (isMobile = false) => {
 };
 
 const AllCommunities = () => {
+  const dispatch = useDispatch();
+
   const user = useSelector((state) => state.main.user);
   const loggedIn = user !== null;
 
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const searchQuery = useSelector((state) => state.main.allCommunitiesSearchQuery);
+  const [isSearching, setIsSearching] = useState(searchQuery !== '');
+  const setSearchQuery = (query) => {
+    dispatch(allCommunitiesSearchQueryChanged(query));
+  };
   useEffect(() => {
-    setSearchQuery('');
+    if (!isSearching) {
+      setSearchQuery('');
+    }
   }, [isSearching]);
 
-  // const { items: comms, loading } = useSelector((state) => {
-  //   const names = state.main.allCommunities.items;
-  //   const communities = state.communities.items;
-  //   const items = [];
-  //   names.forEach((name) => items.push(communities[name]));
-  //   return {
-  //     items: items || [],
-  //     loading: state.main.allCommunities.loading,
-  //   };
-  // });
+  const sort = useSelector((state) => state.main.allCommunitiesSort);
+  const setSort = (sort) => {
+    dispatch(allCommunitiesSortChanged(sort));
+  };
 
   const fetchCommunities = async (next) => {
-    const res = await mfetchjson('/api/communities?sort=size');
+    const res = await mfetchjson(`/api/communities?sort=${sort}`);
     const items = res.map((community) => new FeedItem(community, 'community', community.id));
     return {
       items: items,
@@ -88,6 +96,28 @@ const AllCommunities = () => {
     );
   };
 
+  const renderSortDropdown = () => {
+    const sortOptions = {
+      new: 'Latest',
+      size: 'Popular',
+      name_asc: 'A-Z',
+      name_dsc: 'Z-A',
+    };
+    return (
+      <Dropdown target={<Button>{sortOptions[sort]}</Button>} aligned="right">
+        <div className="dropdown-list">
+          {Object.keys(sortOptions)
+            .filter((key) => key !== sort)
+            .map((key) => (
+              <Button className="button-clear dropdown-item" onClick={() => setSort(key)} key={key}>
+                {sortOptions[key]}
+              </Button>
+            ))}
+        </div>
+      </Dropdown>
+    );
+  };
+
   return (
     <div className="page-content page-comms wrap page-grid">
       <Sidebar />
@@ -100,6 +130,7 @@ const AllCommunities = () => {
               icon={isSearching ? <SVGClose /> : <SVGSearch />}
               onClick={() => setIsSearching((v) => !v)}
             />
+            {!isSearching && renderSortDropdown()}
             {!isSearching && (
               <RequestCommunityButton className="button-main is-m comms-new-button" isMobile>
                 New
@@ -109,7 +140,7 @@ const AllCommunities = () => {
         </div>
         <div className="comms-list">
           <Feed
-            feedId="all-communities"
+            feedId={'all-communities-' + sort}
             onFetch={fetchCommunities}
             onRenderItem={handleRenderItem}
             infiniteScrollingDisabled={isInfiniteScrollingDisabled()}
