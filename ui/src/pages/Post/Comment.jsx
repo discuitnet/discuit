@@ -677,29 +677,17 @@ const Comment = ({
                 </button>
               )}
               {isAdmin && (
-                <Dropdown
-                  target={
-                    <button className="button-text" style={{ color: 'var(--color-red)' }}>
-                      Admin actions
-                    </button>
-                  }
-                >
+                <Dropdown target={<button className="button-text">Admin actions</button>}>
                   <div className="dropdown-list">{getAdminActionsItems()}</div>
                 </Dropdown>
               )}
               {isAdmin && !userMod && (
-                <button className="button-text" style={{ color: 'rgb(var(--base-6))' }}>
+                <button className="button-text" style={{ color: 'rgb(var(--base-8))' }}>
                   Mod actions
                 </button>
               )}
               {userMod && (
-                <Dropdown
-                  target={
-                    <button className="button-text" style={{ color: 'var(--color-red)' }}>
-                      Mod actions
-                    </button>
-                  }
-                >
+                <Dropdown target={<button className="button-text">Mod actions</button>}>
                   <div className="dropdown-list">{getModActionsItems()}</div>
                 </Dropdown>
               )}

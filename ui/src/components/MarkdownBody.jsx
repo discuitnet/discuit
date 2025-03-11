@@ -1,6 +1,5 @@
 /* eslint-disable no-unused-vars */
 import PropTypes from 'prop-types';
-import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Link from './Link';
