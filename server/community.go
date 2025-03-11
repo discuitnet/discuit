@@ -819,8 +819,8 @@ func (s *Server) handleCommunityBannerImage(w *responseWriter, r *request) error
 	return w.writeJSON(comm)
 }
 
-// /api/community_requests [GET, POST]
-func (s *Server) handleCommunityRequests(w *responseWriter, r *request) error {
+// /api/community_requests [POST]
+func (s *Server) createCommunityRequest(w *responseWriter, r *request) error {
 	if !r.loggedIn {
 		return errNotLoggedIn
 	}
@@ -869,17 +869,9 @@ func (s *Server) handleCommunityRequests(w *responseWriter, r *request) error {
 
 // /api/community_requests/{requestID} [DELETE]
 func (s *Server) deleteCommunityRequest(w *responseWriter, r *request) error {
-	if !r.loggedIn {
-		return errNotLoggedIn
-	}
-
-	user, err := core.GetUser(r.ctx, s.db, *r.viewer, nil)
+	_, err := getLoggedInAdmin(s.db, r)
 	if err != nil {
 		return err
-	}
-
-	if !user.Admin {
-		return httperr.NewForbidden("", "Not admin.")
 	}
 
 	id, err := strconv.Atoi(r.muxVar("requestID"))

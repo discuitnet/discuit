@@ -155,8 +155,14 @@ const RequestCommunityButton = ({ children, isMobile = false, ...props }) => {
 
   const noteLength = 500;
 
+  const [formError, setFormError] = useState('');
+
   const [name, handleNameChange] = useInputUsername(communityNameMaxLength);
   const [note, handleNoteChange] = useInputMaxLength(noteLength);
+
+  useEffect(() => {
+    setFormError('');
+  }, [name, note]);
 
   const handleButtonClick = () => {
     if (!loggedIn) {
@@ -183,7 +189,11 @@ const RequestCommunityButton = ({ children, isMobile = false, ...props }) => {
         dispatch(snackAlert('Requested!'));
         handleClose();
       } else {
-        throw new Error(await res.text());
+        if (res.status === 409) {
+          setFormError('A community by that name already exists');
+        } else {
+          throw new Error(await res.text());
+        }
       }
     } catch (error) {
       dispatch(snackAlertError(error));
@@ -218,6 +228,11 @@ const RequestCommunityButton = ({ children, isMobile = false, ...props }) => {
                 maxLength={noteLength}
               />
             </FormField>
+            {formError !== '' && (
+              <div className="form-field">
+                <div className="form-error text-center">{formError}</div>
+              </div>
+            )}
             <FormField>
               <button className="button-main" onClick={handleSubmit} style={{ width: '100%' }}>
                 Request community

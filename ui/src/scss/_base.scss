@@ -932,22 +932,24 @@ a,
 
 .button-hamburger {
     @include mixins.button-clear;
-    & {
-        background: transparent;
-        cursor: pointer;
-        width: 23px;
-        height: var(--input-height);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        .hamburger-lines {
-            width: 100%;
-            div {
+    .button-inner {
+        & {
+            background: transparent;
+            cursor: pointer;
+            width: 23px;
+            height: var(--input-height);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            .hamburger-lines {
                 width: 100%;
-                height: 0;
-                border-top: 2px solid rgba(var(--base-fg), 0.7);
-                border-radius: 5px;
-                margin: 5px 0;
+                div {
+                    width: 100%;
+                    height: 0;
+                    border-top: 2px solid rgba(var(--base-fg), 0.7);
+                    border-radius: 5px;
+                    margin: 5px 0;
+                }
             }
         }
     }
@@ -1239,9 +1241,11 @@ html.no-wrap {
         .table-column {
             &:last-child {
                 justify-self: end;
+                text-align: end;
             }
             &:first-child {
                 justify-self: unset;
+                text-align: unset;
             }
         }
     }

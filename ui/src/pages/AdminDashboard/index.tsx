@@ -9,6 +9,7 @@ import BasicSiteAnalytics from './BasicSiteAnalytics';
 import Comments from './Comments';
 import Communities from './Communities';
 import IPBans from './IPBans';
+import NewCommunityRequests from './NewCommunityRequests';
 import Settings from './Settings';
 import Sidebar from './Sidebar';
 import Users from './Users';
@@ -92,6 +93,9 @@ function AdminDashboard() {
             </Route>
             <Route exact path={`${path}/bss`}>
               <BasicSiteAnalytics />
+            </Route>
+            <Route exact path={`${path}/new-community-requests`}>
+              <NewCommunityRequests />
             </Route>
             <Route path="*">
               <div className="dashboard-page-404">

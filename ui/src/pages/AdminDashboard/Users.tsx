@@ -71,11 +71,11 @@ export default function Users() {
 
   const handleRenderHead = () => {
     return (
-      <div className="table-row table-head">
+      <TableRow columns={3} head>
         <div className="table-column">Username</div>
         <div className="table-column">Deleted</div>
         <div className="table-column">Created at</div>
-      </div>
+      </TableRow>
     );
   };
 

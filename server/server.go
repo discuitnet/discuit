@@ -179,7 +179,8 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 
 	r.Handle("/api/push_subscriptions", s.withHandler(s.pushSubscriptions)).Methods("POST")
 
-	r.Handle("/api/community_requests", s.withHandler(s.handleCommunityRequests)).Methods("GET", "POST")
+	r.Handle("/api/community_requests", s.withHandler(s.createCommunityRequest)).Methods("POST")
+	r.Handle("/api/community_requests", s.withHandler(s.getCommunityRequests)).Methods("GET")
 	r.Handle("/api/community_requests/{requestID}", s.withHandler(s.deleteCommunityRequest)).Methods("DELTE")
 
 	r.Handle("/api/_report", s.withHandler(s.report)).Methods("POST")

@@ -193,3 +193,17 @@ func (s *Server) getBasicSiteStats(w *responseWriter, r *request) error {
 
 	return w.writeJSON(events)
 }
+
+func (s *Server) getCommunityRequests(w *responseWriter, r *request) error {
+	_, err := getLoggedInAdmin(s.db, r)
+	if err != nil {
+		return err
+	}
+
+	request, err := core.GetCommunityRequests(r.ctx, s.db)
+	if err != nil {
+		return err
+	}
+
+	return w.writeJSON(request)
+}

@@ -49,6 +49,9 @@ function Sidebar({
           <Link className="sidebar-item" to={dashboardLink('bss')}>
             Analytics
           </Link>
+          <Link className="sidebar-item" to={dashboardLink('new-community-requests')}>
+            Community Requests
+          </Link>
         </div>
       </div>
     </aside>

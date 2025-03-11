@@ -84,7 +84,7 @@ export default function BasicSiteAnalytics() {
 
   const handleRenderHead = () => {
     return (
-      <TableRow columns={14} className="table-head">
+      <TableRow columns={14} head>
         <div className="table-column">Timestamp (UTC)</div>
         <div className="table-column">Signups</div>
         <div className="table-column">PWA intalls</div>

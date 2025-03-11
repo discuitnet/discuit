@@ -1256,58 +1256,6 @@ func AddAllUsersToCommunity(ctx context.Context, db *sql.DB, community string) e
 	})
 }
 
-type CommunityRequest struct {
-	ID            int        `json:"id"`
-	ByUser        string     `json:"byUser"`
-	CommunityName string     `json:"communityName"`
-	Note          string     `json:"note"`
-	CreatedAt     time.Time  `json:"createdAt"`
-	DeletedAt     *time.Time `json:"deletedAt"`
-}
-
-func CreateCommunityRequest(ctx context.Context, db *sql.DB, byUser, name, note string) error {
-	_, err := db.ExecContext(ctx, "INSERT INTO community_requests (by_user, community_name, community_name_lc, note) VALUES (?, ?, ?, ?)",
-		byUser, name, strings.ToLower(name), note)
-	if err != nil && msql.IsErrDuplicateErr(err) {
-		return nil
-	}
-	return err
-}
-
-func GetCommunityRequests(ctx context.Context, db *sql.DB) ([]*CommunityRequest, error) {
-	rows, err := db.QueryContext(ctx, "SELECT id, by_user, community_name, note, created_at, deleted_at FROM community_requests WHERE deleted_at IS NULL ORDER BY created_at")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var items []*CommunityRequest
-	for rows.Next() {
-		r := &CommunityRequest{}
-		err := rows.Scan(&r.ID,
-			&r.ByUser,
-			&r.CommunityName,
-			&r.Note,
-			&r.CreatedAt,
-			&r.DeletedAt)
-
-		if err != nil {
-			return nil, err
-		}
-		items = append(items, r)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-func DeleteCommunityRequest(ctx context.Context, db *sql.DB, id int) error {
-	_, err := db.ExecContext(ctx, "UPDATE community_requests SET deleted_at = ? WHERE id = ?", time.Now(), id)
-	return err
-}
-
 // DeleteUnusedCommunities deletes communities older than n days with 0 posts in
 // them. It returns the names (all in lowercase) of the deleted communities.
 func DeleteUnusedCommunities(ctx context.Context, db *sql.DB, n uint, dryRun bool) ([]string, error) {
@@ -1356,4 +1304,68 @@ func DeleteUnusedCommunities(ctx context.Context, db *sql.DB, n uint, dryRun boo
 		return nil, err
 	}
 	return deleted, nil
+}
+
+type CommunityRequest struct {
+	ID              int             `json:"id"`
+	ByUser          string          `json:"byUser"`
+	CommunityName   string          `json:"communityName"`
+	CommunityExists bool            `json:"communityExists"`
+	Note            msql.NullString `json:"note"`
+	CreatedAt       time.Time       `json:"createdAt"`
+}
+
+func CreateCommunityRequest(ctx context.Context, db *sql.DB, byUser, name, note string) error {
+	exists, _, err := CommunityExists(ctx, db, name)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return &httperr.Error{
+			HTTPStatus: http.StatusConflict,
+			Code:       "community-already-exists",
+			Message:    "The community you're requesting to create already exists",
+		}
+	}
+
+	_, err = db.ExecContext(ctx, "INSERT INTO community_requests (by_user, community_name, community_name_lc, note) VALUES (?, ?, ?, ?)",
+		byUser, name, strings.ToLower(name), note)
+	if err != nil && msql.IsErrDuplicateErr(err) {
+		return nil
+	}
+	return err
+}
+
+func GetCommunityRequests(ctx context.Context, db *sql.DB) ([]*CommunityRequest, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT cr.id, cr.by_user, cr.community_name, cr.note, cr.created_at, c.id IS NOT NULL
+		FROM community_requests AS cr 
+		LEFT JOIN communities AS c ON cr.community_name_lc = c.name_lc 
+		WHERE cr.created_at >  SUBDATE(NOW(), 90)
+		ORDER BY created_at DESC`,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	requests := []*CommunityRequest{}
+	for rows.Next() {
+		r := &CommunityRequest{}
+		if err := rows.Scan(&r.ID, &r.ByUser, &r.CommunityName, &r.Note, &r.CreatedAt, &r.CommunityExists); err != nil {
+			return nil, err
+		}
+		requests = append(requests, r)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return requests, nil
+}
+
+func DeleteCommunityRequest(ctx context.Context, db *sql.DB, id int) error {
+	_, err := db.ExecContext(ctx, "UPDATE community_requests SET deleted_at = ? WHERE id = ?", time.Now(), id)
+	return err
 }
