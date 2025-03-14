@@ -1241,3 +1241,18 @@
         }
     }
 }
+
+.scroll-to-top {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 200000;
+
+    button {
+        color: white;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        transition: opacity 0.3s ease-in-out;
+    }
+}

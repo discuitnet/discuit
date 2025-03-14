@@ -10,6 +10,7 @@ import { forceSwUpdate } from './AppUpdate';
 import { isDeviceIos } from './helper';
 import './scss/styles.scss';
 import store from './store';
+import ScrollToTheTop from './components/ScrollToTheTop';
 
 const Fallback = ({ error, resetErrorBoundary }) => {
   useEffect(() => {
@@ -52,6 +53,7 @@ root.render(
     <HelmetProvider>
       <ErrorBoundary FallbackComponent={Fallback} onError={logAppError}>
         <Router>
+          <ScrollToTheTop />
           <App />
         </Router>
       </ErrorBoundary>
