@@ -1,9 +1,12 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import PropTypes from 'prop-types';
+import { useEffect, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useParams } from 'react-router-dom';
+import Dropdown from '../../components/Dropdown';
 import MiniFooter from '../../components/MiniFooter';
 import PostVotes from '../../components/PostCard/PostVotes';
+import ReportModal from '../../components/ReportModal';
+import Sidebar from '../../components/Sidebar';
 import {
   mfetch,
   mfetchjson,
@@ -13,29 +16,27 @@ import {
 } from '../../helper';
 import { useIsMobile } from '../../hooks';
 import { saveToListModalOpened, snackAlert, snackAlertError } from '../../slices/mainSlice';
-import AddComment from './AddComment';
-import ReportModal from '../../components/ReportModal';
-import Sidebar from '../../components/Sidebar';
-import CommentSection from './CommentSection';
-import PostShareButton from './PostShareButton';
 import PageNotLoaded from '../PageNotLoaded';
-import Dropdown from '../../components/Dropdown';
-import { Helmet } from 'react-helmet-async';
+import AddComment from './AddComment';
+import CommentSection from './CommentSection';
 import PostDeleteModal, { PostContentDeleteModal } from './PostDeleteModal';
+import PostShareButton from './PostShareButton';
 // import CommentsSortButton from './CommentsSortButton';
-import PostVotesBar from './PostVotesBar';
+import { useLocation } from 'react-router-dom';
 import MarkdownBody from '../../components/MarkdownBody';
-import PostCardHeadingDetails from '../../components/PostCard/PostCardHeadingDetails';
-import { ExternalLink, LinkOrDiv } from '../../components/Utils';
-import PostImage from './PostImage';
+import { getEmbedComponent } from '../../components/PostCard';
 import LinkImage from '../../components/PostCard/LinkImage';
-import CommunityCard from './CommunityCard';
+import PostCardHeadingDetails from '../../components/PostCard/PostCardHeadingDetails';
+import PostImageGallery from '../../components/PostImageGallery';
 import Spinner from '../../components/Spinner';
-import { postAdded } from '../../slices/postsSlice';
+import { ExternalLink, LinkOrDiv } from '../../components/Utils';
 import { commentsAdded, newCommentAdded } from '../../slices/commentsSlice';
 import { communityAdded } from '../../slices/communitiesSlice';
-import { useLocation } from 'react-router-dom';
-import { getEmbedComponent } from '../../components/PostCard';
+import { postAdded } from '../../slices/postsSlice';
+import { SVGExternalLink } from '../../SVGs';
+import CommunityCard from './CommunityCard';
+import PostImage from './PostImage';
+import PostVotesBar from './PostVotesBar';
 
 const Post = () => {
   const { id, commentId, communityName } = useParams(); // id is post.publicId
@@ -237,6 +238,24 @@ const Post = () => {
     })();
   };
 
+  const handleAnnounce = async () => {
+    if (!confirm('Are you sure? This will send a notification to all users.')) {
+      return;
+    }
+    try {
+      const res = await mfetch(`/api/posts/${post.publicId}?action=announce`, { method: 'PUT' });
+      if (!res.ok) {
+        if (res.status === 409) {
+          dispatch(snackAlert('Already announced'));
+        } else {
+          throw new Error(await res.text());
+        }
+      }
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    }
+  };
+
   const isMobile = useIsMobile();
   const loggedIn = user !== null;
   const isAdmin = loggedIn && user.isAdmin;
@@ -268,10 +287,9 @@ const Post = () => {
   const getDeletedBannerText = (post) => {
     if (post.deletedContent) {
       if (post.deletedAs === post.deletedContentAs) {
-        return `This post and its ${post.type} have been removed by ${userGroupSingular(
-          post.deletedAs,
-          true
-        )}.`;
+        return `This post and its ${
+          post.type === 'image' ? 'image(s)' : post.type
+        } have been removed by ${userGroupSingular(post.deletedAs, true)}.`;
       } else {
         return `This post has been removed by ${userGroupSingular(post.deletedAs, true)} and its ${
           post.type
@@ -281,6 +299,10 @@ const Post = () => {
     }
     return `This post has been removed by ${userGroupSingular(post.deletedAs, true)}.`;
   };
+
+  const deletePostContentButtonText = `Delete ${
+    post.type === 'image' ? (post.images.length > 1 ? 'images' : 'image') : post.type
+  }`;
 
   return (
     <div className="page-content page-post wrap">
@@ -300,7 +322,7 @@ const Post = () => {
             canDeleteContent={canDeletePostContent}
           />
           <PostContentDeleteModal
-            postType={post.type}
+            post={post}
             open={deleteContentModalOpen}
             onClose={() => setDeleteContentModalOpen(false)}
             onDelete={handleContentDelete}
@@ -341,16 +363,8 @@ const Post = () => {
                 </LinkOrDiv>
                 {showLink && !isEmbed && post.link.image && (
                   <ExternalLink className="post-card-link-image" href={post.link.url}>
-                    <LinkImage link={post.link} />
-                    <svg
-                      fill="currentColor"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 16 16"
-                      width="16px"
-                      height="16px"
-                    >
-                      <path d="M 9 2 L 9 3 L 12.292969 3 L 6.023438 9.273438 L 6.726563 9.976563 L 13 3.707031 L 13 7 L 14 7 L 14 2 Z M 4 4 C 2.894531 4 2 4.894531 2 6 L 2 12 C 2 13.105469 2.894531 14 4 14 L 10 14 C 11.105469 14 12 13.105469 12 12 L 12 7 L 11 8 L 11 12 C 11 12.550781 10.550781 13 10 13 L 4 13 C 3.449219 13 3 12.550781 3 12 L 3 6 C 3 5.449219 3.449219 5 4 5 L 8 5 L 9 4 Z" />
-                    </svg>
+                    <LinkImage image={post.link.image} />
+                    <SVGExternalLink />
                   </ExternalLink>
                 )}
               </header>
@@ -359,14 +373,17 @@ const Post = () => {
                   <MarkdownBody>{post.body}</MarkdownBody>
                 </div>
               )}
-              {/*process.env.NODE_ENV !== 'production' && (
+              {/*import.meta.env.MODE !== 'production' && (
                 <img
                   src="https://source.unsplash.com/featured?people,nature"
                   alt=""
-                  className="post-card-img"
+                  className="post-image"
                 />
               )*/}
-              {showImage && <PostImage post={post} />}
+              {showImage && post.images.length === 1 && <PostImage post={post} />}
+              {showImage && post.images.length > 1 && (
+                <PostImageGallery post={post} isMobile={isMobile} keyboardControlsOn />
+              )}
               {isEmbed && <Embed url={embedURL} />}
               {(isLocked || post.deleted) && (
                 <div className="post-card-banners">
@@ -427,7 +444,7 @@ const Post = () => {
                 )}
                 {postOwner && post.deleted && !post.deletedContent && post.type !== 'text' && (
                   <button className="button-red" onClick={() => setDeleteContentModalOpen(true)}>
-                    Delete {post.type}
+                    {deletePostContentButtonText}
                   </button>
                 )}
                 {/*loggedIn && isMod && (
@@ -507,7 +524,7 @@ const Post = () => {
                         onClick={() => setDeleteContentModalOpen(true, 'admins')}
                         disabled={!post.deleted || post.deletedContent}
                       >
-                        Delete {post.type}
+                        {deletePostContentButtonText}
                       </button>
                       <div className="dropdown-item is-non-reactive">
                         <div className="checkbox">
@@ -533,6 +550,9 @@ const Post = () => {
                           <label htmlFor={'ch-pin-a'}>Pinned</label>
                         </div>
                       </div>
+                      <button className="button-clear dropdown-item" onClick={handleAnnounce}>
+                        Announce
+                      </button>
                     </div>
                   </Dropdown>
                 )}

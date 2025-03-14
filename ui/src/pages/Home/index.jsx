@@ -1,21 +1,22 @@
-import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useLocation } from 'react-router-dom';
+import { ButtonClose } from '../../components/Button';
 import Link from '../../components/Link';
 import MiniFooter from '../../components/MiniFooter';
-import Sidebar from '../../components/Sidebar';
-import PostsFeed from '../../views/PostsFeed';
-import LoginForm from '../../views/LoginForm';
-import WelcomeBanner from '../../views/WelcomeBanner';
-import { ButtonClose } from '../../components/Button';
-import { isDeviceIos, isDeviceStandalone } from '../../helper';
-import { showAppInstallButton } from '../../slices/mainSlice';
 import Modal from '../../components/Modal';
+import Sidebar from '../../components/Sidebar';
+import { isDeviceIos, isDeviceStandalone } from '../../helper';
+import { createCommunityModalOpened, showAppInstallButton } from '../../slices/mainSlice';
+import LoginForm from '../../views/LoginForm';
+import PostsFeed from '../../views/PostsFeed';
+import WelcomeBanner from '../../views/WelcomeBanner';
 
 const Home = () => {
   const user = useSelector((state) => state.main.user);
   const loggedIn = user !== null;
+  const canCreateForum = loggedIn && (user.isAdmin || !import.meta.env.VITE_DISABLEFORUMCREATION);
 
   const location = useLocation();
   const feedType = (() => {
@@ -31,9 +32,12 @@ const Home = () => {
   );
 
   const dispatch = useDispatch();
+  const [neverShowBanner, setNeverShowBanner] = useState(
+    localStorage.getItem('neverShowInstallBanner') === 'true'
+  );
 
   useEffect(() => {
-    if (!isDeviceStandalone()) {
+    if (!isDeviceStandalone() || !neverShowBanner) {
       if ('onbeforeinstallprompt' in window) {
         window.addEventListener('beforeinstallprompt', (e) => {
           e.preventDefault();
@@ -49,25 +53,42 @@ const Home = () => {
         }
       }
     }
-  }, []);
+  }, [dispatch, neverShowBanner]);
+
+  const handleNeverShowBanner = () => {
+    localStorage.setItem('neverShowInstallBanner', 'true');
+    setNeverShowBanner(true);
+  };
 
   return (
     <div className="page-content page-home wrap page-grid">
       <Sidebar />
       <main className="posts">
-        {showInstallPrompt && (
+        {showInstallPrompt && !neverShowBanner && (
           <div className="banner-install is-m">
-            {/*<ButtonClose className="banner-button-close" />*/}
             <div className="banner-install-text">Get the app for a better experience.</div>
-            <ButtonAppInstall className="banner-install-button" deferredPrompt={deferredPrompt}>
-              Install
-            </ButtonAppInstall>
+            <div className="banner-install-actions">
+              <ButtonAppInstall className="banner-install-button" deferredPrompt={deferredPrompt}>
+                Install
+              </ButtonAppInstall>
+              <ButtonClose onClick={handleNeverShowBanner} style={{ color: "inherit" }} />
+            </div>
           </div>
         )}
         {loggedIn && (
           <Link className="button button-main home-btn-new-post is-m" to="/new">
             Create post
           </Link>
+        )}
+        {canCreateForum && (
+          <>
+            <Link
+              onClick={() => dispatch(createCommunityModalOpened())}
+              className={'button button-main home-btn-new-post is-m'}
+            >
+              Create community
+            </Link>
+          </>
         )}
         <PostsFeed feedType={feedType} />
       </main>
@@ -122,8 +143,8 @@ export const ButtonAppInstall = ({ deferredPrompt, children, ...props }) => {
             <div className="modal-ios-install-steps">
               <ol>
                 <li>1. Tap on the Safari share button.</li>
-                <li>2. Tap on "Add to Home Screen."</li>
-                <li>3. Tap on "Add."</li>
+                <li>{`2. Tap on "Add to Home Screen."`}</li>
+                <li>{`3. Tap on "Add."`}</li>
               </ol>
               <p>Note that web apps on iOS can only be installed using Safari.</p>
             </div>

@@ -1,26 +1,25 @@
-import React, { useEffect, useState } from 'react';
-import PropTypes from 'prop-types';
+import { useEffect, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
+import { ButtonMore } from '../../components/Button';
+import CommunityProPic from '../../components/CommunityProPic';
+import Dropdown from '../../components/Dropdown';
 import Link from '../../components/Link';
-import { Helmet } from 'react-helmet-async';
+import MarkdownBody from '../../components/MarkdownBody';
 import MiniFooter from '../../components/MiniFooter';
+import PageLoading from '../../components/PageLoading';
+import ShowMoreBox from '../../components/ShowMoreBox';
 import Sidebar from '../../components/Sidebar';
-import { APIError, dateString1, mfetch, stringCount } from '../../helper';
-import { snackAlertError } from '../../slices/mainSlice';
+import { APIError, copyToClipboard, dateString1, mfetch, stringCount } from '../../helper';
+import { useIsMobile, useMuteCommunity } from '../../hooks';
+import { communityAdded, selectCommunity } from '../../slices/communitiesSlice';
+import { snackAlert, snackAlertError } from '../../slices/mainSlice';
+import PostsFeed from '../../views/PostsFeed';
+import NotFound from '../NotFound';
+import Banner from './Banner';
 import JoinButton from './JoinButton';
 import Rules from './Rules';
-import PostsFeed from '../../views/PostsFeed';
-import ShowMoreBox from '../../components/ShowMoreBox';
-import MarkdownBody from '../../components/MarkdownBody';
-import { communityAdded, selectCommunity } from '../../slices/communitiesSlice';
-import PageLoading from '../../components/PageLoading';
-import NotFound from '../NotFound';
-import CommunityProPic from '../../components/CommunityProPic';
-import Banner from './Banner';
-import { useMuteCommunity } from '../../hooks';
-import Dropdown from '../../components/Dropdown';
-import { ButtonMore } from '../../components/Button';
 
 const Community = () => {
   const { name } = useParams();
@@ -65,6 +64,31 @@ const Community = () => {
   const bannedFrom = useSelector((state) => state.main.bannedFrom);
   const isBanned =
     loggedIn && community && bannedFrom.find((id) => id === community.id) !== undefined;
+
+  const isMobile = useIsMobile();
+  const renderCommunityShareButton = () => {
+    const useNavigatorShare = isMobile && Boolean(window.navigator.share);
+    const handleClick = async () => {
+      const url = `${window.location.origin}/${community.name}`;
+      if (useNavigatorShare) {
+        await navigator.share({
+          title: community.name,
+          url,
+        });
+      } else {
+        let text = 'Failed to copy link to clipboard.';
+        if (copyToClipboard(url)) {
+          text = 'Link copied to clipboard.';
+        }
+        dispatch(snackAlert(text, 'pl_copied'));
+      }
+    };
+    return (
+      <button className="button-clear dropdown-item" onClick={handleClick}>
+        {useNavigatorShare ? 'Share' : 'Copy URL'}
+      </button>
+    );
+  };
 
   const [tab, setTab] = useState('posts');
   useEffect(() => {
@@ -111,24 +135,13 @@ const Community = () => {
   };
 
   const renderActionButtons = () => {
-    const url = `/new?community=${community.name}`;
-    const handleClick = (e) => {
-      e.preventDefault();
-      if (!isBanned) {
-        history.push(url);
-      }
-    };
     return (
       <>
-        <a
-          className={'button button-main border-radius-0' + (isBanned ? ' is-disabled' : '')}
-          href={url}
-          onClick={handleClick}
-        >
+        <Link to={`/new?community=${community.name}`} className={'button button-main'}>
           Create post
-        </a>
+        </Link>
         {(community.userMod || (user && user.isAdmin)) && (
-          <Link className="button border-radius-0" to={`/${name}/modtools`}>
+          <Link className="button" to={`/${name}/modtools`}>
             {`MOD TOOLS` + (!community.userMod ? ' (ADMIN)' : '')}
           </Link>
         )}
@@ -169,6 +182,7 @@ const Community = () => {
                     <button className="button-clear dropdown-item" onClick={toggleCommunityMute}>
                       {muteDisplayText}
                     </button>
+                    {renderCommunityShareButton()}
                   </div>
                 </Dropdown>
               )}
@@ -222,10 +236,6 @@ const Community = () => {
       </aside>
     </div>
   );
-};
-
-Community.propTypes = {
-  name: PropTypes.string.isRequired,
 };
 
 export default Community;

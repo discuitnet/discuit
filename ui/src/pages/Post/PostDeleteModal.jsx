@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
 import PropTypes from 'prop-types';
+import React, { useState } from 'react';
 import { ButtonClose } from '../../components/Button';
 import Modal from '../../components/Modal';
 
@@ -51,16 +51,18 @@ PostDeleteModal.propTypes = {
   canDeleteContent: PropTypes.bool,
 };
 
-export const PostContentDeleteModal = ({ open, onClose, onDelete, postType }) => {
+export const PostContentDeleteModal = ({ open, onClose, onDelete, post }) => {
+  const postContentType =
+    post.type === 'image' ? (post.images.length > 1 ? 'images' : 'image') : post.type;
   return (
     <Modal open={open} onClose={onClose}>
       <div className="modal-card">
         <div className="modal-card-head">
-          <div className="modal-card-title">Delete post {postType}</div>
+          <div className="modal-card-title">Delete post {postContentType}</div>
           <ButtonClose onClick={onClose} />
         </div>
         <div className="modal-card-content">
-          <p>Are you sure you want to permanently delete post's {postType}?</p>
+          <p>Are you sure you want to permanently delete the post's {postContentType}?</p>
         </div>
         <div className="modal-card-actions">
           <button className="button-main" onClick={onDelete}>
@@ -77,7 +79,7 @@ PostContentDeleteModal.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
-  postType: PropTypes.string.isRequired,
+  post: PropTypes.object.isRequired,
 };
 
 export default PostDeleteModal;

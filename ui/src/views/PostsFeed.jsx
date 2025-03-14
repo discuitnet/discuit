@@ -1,37 +1,28 @@
-import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { mfetchjson } from '../helper';
-import { useDispatch } from 'react-redux';
-import { snackAlertError } from '../slices/mainSlice';
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useLocation } from 'react-router';
-import { MemorizedPostCard } from '../components/PostCard/PostCard';
-import { useSelector } from 'react-redux';
-import {
-  feedInViewItemsUpdated,
-  FeedItem,
-  feedItemHeightChanged,
-  feedReloaded,
-  feedUpdated,
-  selectFeed,
-  selectFeedInViewItems,
-} from '../slices/feedsSlice';
-import Feed from '../components/Feed';
-import SelectBar from '../components/SelectBar';
-import { useCanonicalTag, useQuery } from '../hooks';
-import WelcomeBanner from '../views/WelcomeBanner';
 import { useHistory } from 'react-router-dom/cjs/react-router-dom.min';
+import Feed from '../components/Feed';
+import { MemorizedPostCard } from '../components/PostCard/PostCard';
+import SelectBar from '../components/SelectBar';
+import { mfetchjson } from '../helper';
+import { useCanonicalTag } from '../hooks';
+import { isInfiniteScrollingDisabled } from '../pages/Settings/devicePrefs';
+import { FeedItem, feedReloaded } from '../slices/feedsSlice';
+import WelcomeBanner from './WelcomeBanner';
 
 const sortOptions = [
   { text: 'Hot', id: 'hot' },
   { text: 'Activity', id: 'activity' },
   { text: 'New', id: 'latest' },
-  { text: 'Day', id: 'day' },
-  { text: 'Week', id: 'week' },
-  { text: 'Month', id: 'month' },
-  { text: 'Year', id: 'year' },
-  // { text: 'All', id: 'all' },
+  { text: 'Top Day', id: 'day' },
+  { text: 'Top Week', id: 'week' },
+  { text: 'Top Month', id: 'month' },
+  { text: 'Top Year', id: 'year' },
+  { text: 'Top All', id: 'all' },
 ];
-const sortDefault = CONFIG.defaultFeedSort;
+const sortDefault = import.meta.env.VITE_DEFAULTFEEDSORT;
 const baseURL = '/api/posts';
 
 export const homeReloaded = (homeFeed = 'all', rememberFeedSort = false) => {
@@ -94,7 +85,7 @@ function useFeedSort(rememberLastSort = false) {
   return [sort, setSort];
 }
 
-const PostsFeed = ({ name = 'Posts', feedType = 'all', communityId = null }) => {
+const PostsFeed = ({ feedType = 'all', communityId = null }) => {
   const dispatch = useDispatch();
   // const history = useHistory();
 
@@ -114,64 +105,28 @@ const PostsFeed = ({ name = 'Posts', feedType = 'all', communityId = null }) => 
     urlParams.set('feed', 'home');
   }
   if (communityId !== null) urlParams.set('communityId', communityId);
-  const endpoint = `${baseURL}?${urlParams.toString()}`; // api endpoint.
+  const feedId = `${baseURL}?${urlParams.toString()}`; // api endpoint.
 
   // Only called on button clicks (not history API changes)
   const handleSortChange = (value) => {
     setSort(value);
-    dispatch(feedReloaded(endpoint));
+    dispatch(feedReloaded(feedId));
   };
 
-  const feed = useSelector(selectFeed(endpoint));
-  const setFeed = (res, url) => {
-    const feedItems = (res.posts ?? []).map((post) => new FeedItem(post, 'post', post.publicId));
-    dispatch(feedUpdated(url, feedItems, res.next));
-  };
+  const layout = useSelector((state) => state.main.feedLayout);
+  const compact = layout === 'compact';
 
-  const loading = feed ? feed.loading : true;
-  const [error, setError] = useState(null);
-  useEffect(() => {
-    if (!loading) return;
-    (async () => {
-      try {
-        const res = await mfetchjson(endpoint);
-        setFeed(res, endpoint);
-      } catch (error) {
-        setError(error);
-        dispatch(snackAlertError(error));
-      }
-    })();
-  }, [endpoint, loading]);
-
-  const [feedReloading, setFeedReloading] = useState(false);
-  const fetchNextPosts = async () => {
-    if (feedReloading) return;
-    setFeedReloading(true);
-    try {
-      const params = new URLSearchParams(urlParams.toString());
-      params.set('next', feed.next);
-      const res = await mfetchjson(`${baseURL}?${params.toString()}`);
-      setFeed(res, endpoint);
-    } catch (error) {
-      dispatch(snackAlertError(error));
-    } finally {
-      setFeedReloading(false);
-    }
-  };
-
-  const handleItemHeightChange = (height, item) => {
-    dispatch(feedItemHeightChanged(item.key, height));
-  };
-  const handleRenderItem = (item, index) => (
-    <MemorizedPostCard
-      initialPost={item.item}
-      index={index}
-      disableEmbeds={user && user.embedsOff}
-    />
-  );
-  const itemsInitiallyInView = useSelector(selectFeedInViewItems(endpoint));
-  const handleSaveVisibleItems = (items) => {
-    dispatch(feedInViewItemsUpdated(endpoint, items));
+  const handleRenderItem = (item, index) => {
+    return (
+      <MemorizedPostCard
+        initialPost={item.item}
+        index={index}
+        disableEmbeds={user && user.embedsOff}
+        compact={compact}
+        feedItemKey={item.key}
+        canHideFromFeed
+      />
+    );
   };
 
   const canonicalURL = () => {
@@ -183,30 +138,46 @@ const PostsFeed = ({ name = 'Posts', feedType = 'all', communityId = null }) => 
   };
   useCanonicalTag(canonicalURL(), [location]);
 
-  const posts = feed ? feed.items : [];
+  let name = 'Posts';
+  if (!communityId) {
+    if (feedType === 'all') {
+      name = 'Home';
+    } else if (feedType === 'subscriptions') {
+      name = 'Subscriptions';
+    }
+  }
+
+  const handleFetch = async (next) => {
+    const params = new URLSearchParams(urlParams.toString());
+    if (next) {
+      params.set('next', next);
+    }
+    const url = `${baseURL}?${params.toString()}`;
+    const res = await mfetchjson(url);
+    const feedItems = (res.posts ?? []).map((post) => new FeedItem(post, 'post', post.publicId));
+    return {
+      items: feedItems,
+      next: res.next,
+    };
+  };
 
   return (
     <div className="posts-feed">
       {/*<PostsFilterBar name={name} sort={sort} onChange={handleSortChange} />*/}
       <SelectBar name={name} options={sortOptions} value={sort} onChange={handleSortChange} />
       <Feed
-        loading={loading}
-        items={posts}
-        hasMore={Boolean(feed ? feed.next : false)}
-        onNext={fetchNextPosts}
-        isMoreItemsLoading={feedReloading}
+        feedId={feedId}
+        compact={compact}
+        onFetch={handleFetch}
         onRenderItem={handleRenderItem}
-        onItemHeightChange={handleItemHeightChange}
-        itemsInitiallyInView={itemsInitiallyInView}
-        onSaveVisibleItems={handleSaveVisibleItems}
         banner={!loggedIn ? <WelcomeBanner className="is-m is-in-feed" /> : null}
+        infiniteScrollingDisabled={isInfiniteScrollingDisabled()}
       />
     </div>
   );
 };
 
 PostsFeed.propTypes = {
-  name: PropTypes.string,
   communityId: PropTypes.string,
   feedType: PropTypes.oneOf(['all', 'subscriptions', 'community']),
 };

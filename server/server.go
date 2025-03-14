@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"log"
 	"net/http"
@@ -76,6 +77,7 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	redisStore.Secure = !conf.UseHTTPCookies
 
 	s := &Server{
 		db: db,
@@ -95,8 +97,10 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	if keys, err := core.GetApplicationVAPIDKeys(context.Background(), db); err != nil {
 		log.Printf("Error generating vapid keys: %v (you might want to run migrations)\n", err)
 	} else {
-		s.webPushVAPIDKeys = *keys
-		core.EnablePushNotifications(keys, "discuit@previnder.com")
+		if !conf.IsDevelopment {
+			s.webPushVAPIDKeys = *keys
+			core.EnablePushNotifications(keys, "discuit@previnder.com")
+		}
 	}
 
 	s.openLoggers()
@@ -113,6 +117,8 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/users/{username}/pro_pic", s.withHandler(s.handleUserProPic)).Methods("POST", "DELETE")
 	r.Handle("/api/users/{username}/badges", s.withHandler(s.addBadge)).Methods("POST")
 	r.Handle("/api/users/{username}/badges/{badgeId}", s.withHandler(s.deleteBadge)).Methods("DELETE")
+	r.Handle("/api/hidden_posts", s.withHandler(s.handleHiddenPosts)).Methods("POST")
+	r.Handle("/api/hidden_posts/{postId}", s.withHandler(s.unhidePost)).Methods("DELETE")
 
 	r.Handle("/api/users/{username}/lists", s.withHandler(s.handleLists)).Methods("GET", "POST")
 	r.Handle("/api/lists/_saved_to", s.withHandler(s.getSaveToLists)).Methods("GET")
@@ -135,7 +141,7 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/_postVote", s.withHandler(s.postVote)).Methods("POST")
 	r.Handle("/api/_uploads", s.withHandler(s.imageUpload)).Methods("POST")
 
-	r.Handle("/api/posts/{postID}/comments", s.withHandler(s.getComments)).Methods("GET")
+	r.Handle("/api/posts/{postID}/comments", s.withHandler(s.getPostComments)).Methods("GET")
 	r.Handle("/api/posts/{postID}/comments", s.withHandler(s.addComment)).Methods("POST")
 	r.Handle("/api/posts/{postID}/comments/{commentID}", s.withHandler(s.updateComment)).Methods("PUT")
 	r.Handle("/api/posts/{postID}/comments/{commentID}", s.withHandler(s.deleteComment)).Methods("DELETE")
@@ -173,7 +179,8 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 
 	r.Handle("/api/push_subscriptions", s.withHandler(s.pushSubscriptions)).Methods("POST")
 
-	r.Handle("/api/community_requests", s.withHandler(s.handleCommunityRequests)).Methods("GET", "POST")
+	r.Handle("/api/community_requests", s.withHandler(s.createCommunityRequest)).Methods("POST")
+	r.Handle("/api/community_requests", s.withHandler(s.getCommunityRequests)).Methods("GET")
 	r.Handle("/api/community_requests/{requestID}", s.withHandler(s.deleteCommunityRequest)).Methods("DELTE")
 
 	r.Handle("/api/_report", s.withHandler(s.report)).Methods("POST")
@@ -181,10 +188,14 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/_settings", s.withHandler(s.updateUserSettings)).Methods("POST")
 
 	r.Handle("/api/_admin", s.withHandler(s.adminActions)).Methods("POST")
+	r.Handle("/api/users", s.withHandler(s.getUsers)).Methods("GET")
+	r.Handle("/api/comments", s.withHandler(s.getComments)).Methods("GET")
 
 	r.Handle("/api/_link_info", s.withHandler(s.getLinkInfo)).Methods("GET")
 
 	r.Handle("/api/analytics", s.withHandler(s.handleAnalytics)).Methods("POST")
+	r.Handle("/api/analytics/bss", s.withHandler(s.getBasicSiteStats)).Methods("GET")
+	r.Handle("/api/site_settings", s.withHandler(s.handleSiteSettings)).Methods("GET", "PUT")
 
 	r.NotFoundHandler = http.HandlerFunc(s.apiNotFoundHandler)
 	r.MethodNotAllowedHandler = http.HandlerFunc(s.apiMethodNotAllowedHandler)
@@ -193,6 +204,7 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	s.staticRouter.PathPrefix("/images/").Handler(&images.Server{
 		SkipHashCheck: conf.IsDevelopment,
 		DB:            db,
+		EnableCORS:    true,
 	})
 
 	if conf.UIProxy != "" {
@@ -303,7 +315,7 @@ func (s *Server) withHandler(h handler) http.Handler {
 		}
 
 		adminKey := r.URL.Query().Get("adminKey")
-		skipCsrfCheck := s.config.CSRFOff || adminKey == s.config.AdminApiKey || r.Method == "GET"
+		skipCsrfCheck := s.config.CSRFOff || (s.config.AdminAPIKey != "" && s.config.AdminAPIKey == adminKey) || r.Method == "GET"
 		if !skipCsrfCheck {
 			csrftoken := r.Header.Get("X-Csrf-Token")
 			valid, _ := utils.ValidMAC(ses.ID, csrftoken, s.config.HMACSecret)
@@ -646,8 +658,13 @@ func fixOgImageTag(doc *html.Node, toAbsolute func(string) string) {
 
 func (s *Server) insertMetaTags(doc *html.Node, r *http.Request) {
 	ctx := r.Context()
+
 	absoluteURL := func(path string) string {
-		return "https://" + filepath.Join(r.Host, path)
+		scheme := "http://"
+		if s.config.CertFile != "" {
+			scheme = "https://"
+		}
+		return scheme + filepath.Join(r.Host, path)
 	}
 
 	path := strings.TrimRight(r.URL.Path, "/")
@@ -817,20 +834,69 @@ func (s *Server) serveSPA(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	serveIndexFile := func() {
+	serveIndexFileNotFound := func(perr error) {
+		log.Printf("Error serving index.html file: %v\n", perr)
+
+		const tmplStr = `
+			<!DOCTYPE html>
+			<html lang="en">
+			<head>
+				<meta charset="UTF-8">
+				<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<title>{{.Title}}</title>
+			</head>
+			<body>
+				<p>{{.ErrorMessage}}</p>
+			</body>
+			</html>
+		`
+
+		tmpl, err := template.New("page").Parse(tmplStr)
+		if err != nil {
+			log.Fatalf("Error parsing index.html not found template: %v\n", err)
+		}
+
+		data := struct {
+			Title        string
+			ErrorMessage string
+		}{
+			Title:        s.config.SiteName,
+			ErrorMessage: fmt.Sprintf("Error %s", perr.Error()),
+		}
+
+		w.Header().Add("Cache-Control", "no-store")
+
+		if err := tmpl.Execute(w, data); err != nil {
+			log.Printf("Error writing index.html not found template: %v\n", err)
+		}
+
+	}
+
+	skipServiceWorkerCache := func(header http.Header) {
+		header.Add("X-Service-Worker-Cache", "no-store")
+	}
+
+	serveIndexFile := func(fileNotFound bool) {
 		file, err := os.Open(filepath.Join(s.reactPath, s.reactIndex))
 		if err != nil {
-			log.Fatal(err)
+			skipServiceWorkerCache(w.Header())
+			serveIndexFileNotFound(fmt.Errorf("opening index.html file: %w", err))
+			return
 		}
 		defer file.Close()
 
 		doc, err := html.Parse(file)
 		if err != nil {
-			log.Fatal(err)
+			serveIndexFileNotFound(fmt.Errorf("parsing index.html file: %w", err))
+			return
 		}
 
 		s.insertMetaTags(doc, r)
+
 		w.Header().Add("Cache-Control", "no-store")
+		if fileNotFound {
+			skipServiceWorkerCache(w.Header())
+		}
 
 		var writer io.Writer = w
 		if httputil.AcceptEncoding(r.Header, "gzip") {
@@ -844,14 +910,16 @@ func (s *Server) serveSPA(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if path == "/" {
-		serveIndexFile()
+		serveIndexFile(false)
 		return
+	} else if path == "/service-worker.js" {
+		w.Header().Add("Cache-Control", "private, max-age=0")
 	}
 
 	fpath := filepath.Join(s.reactPath, path)
 	_, err = os.Stat(fpath)
 	if os.IsNotExist(err) {
-		serveIndexFile()
+		serveIndexFile(true)
 		return
 	} else if err != nil {
 		http.Error(w, "500: Internal server error", http.StatusInternalServerError)
@@ -958,9 +1026,9 @@ func (s *Server) rateLimit(r *request, bucketID string, interval time.Duration, 
 		return nil // skip rate limits
 	}
 
-	if s.config.AdminApiKey != "" {
+	if s.config.AdminAPIKey != "" {
 		adminKey := r.urlQueryParamsValue("adminKey")
-		if adminKey == s.config.AdminApiKey {
+		if adminKey == s.config.AdminAPIKey {
 			return nil // skip rate limits
 		}
 	}

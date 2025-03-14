@@ -1,8 +1,11 @@
-import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { ButtonHamburger, ButtonNotifications } from '../Button';
-import Dropdown from '../Dropdown';
+import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useLocation } from 'react-router-dom';
+import Link from '../../components/Link';
+import { kRound, mfetch, onKeyEnter, stringCount } from '../../helper';
+import { mobileBreakpointWidth, useTheme, useWindowWidth } from '../../hooks';
+import { clearNotificationsLocalStorage } from '../../PushNotifications';
 import {
   chatOpenToggled,
   loginModalOpened,
@@ -12,15 +15,10 @@ import {
   snackAlertError,
   toggleSidebarOpen,
 } from '../../slices/mainSlice';
-import Link from '../../components/Link';
-import { kRound, mfetch, onKeyEnter, stringCount } from '../../helper';
-import Search from './Search';
-import { useRef } from 'react';
-import { useState } from 'react';
 import { homeReloaded } from '../../views/PostsFeed';
-import { useLocation } from 'react-router-dom';
-import { useIsMobile, useTheme } from '../../hooks';
-import { clearNotificationsLocalStorage } from '../../PushNotifications';
+import { ButtonHamburger, ButtonNotifications } from '../Button';
+import Dropdown from '../Dropdown';
+import Search from './Search';
 
 const Navbar = ({ offline = false }) => {
   const dispatch = useDispatch();
@@ -94,7 +92,8 @@ const Navbar = ({ offline = false }) => {
     setTheme(checked ? 'dark' : 'light');
   };
 
-  const isMobile = useIsMobile();
+  const windowWidth = useWindowWidth();
+  const isMobile = windowWidth <= mobileBreakpointWidth;
 
   return (
     <header className={'navbar' + (blur ? ' is-blured' : '')} ref={navbarRef}>
@@ -109,12 +108,12 @@ const Navbar = ({ offline = false }) => {
             style={{ fontSize: '1.65rem' }}
             onClick={handleLogoClick}
           >
-            {CONFIG.siteName}
+            {import.meta.env.VITE_SITENAME}
           </Link>
           <Search />
         </div>
         <div className="right">
-          {process.env.NODE_ENV !== 'production' && (
+          {import.meta.env.MODE !== 'production' && (
             <button
               className="button-text is-no-m"
               onClick={() => dispatch(chatOpenToggled())}
@@ -123,7 +122,7 @@ const Navbar = ({ offline = false }) => {
               Chat
             </button>
           )}
-          {process.env.NODE_ENV !== 'production' && (
+          {import.meta.env.MODE !== 'production' && (
             <Link className="is-no-m" to="/elements">
               Elements
             </Link>
@@ -162,7 +161,10 @@ const Navbar = ({ offline = false }) => {
                     true
                   )}`}</span>
                   <span className="navbar-name">
-                    @{isMobile && user.username.length > 10 ? 'me' : user.username}
+                    @
+                    {windowWidth < 400 || (isMobile && user.username.length > 10)
+                      ? 'me'
+                      : user.username}
                   </span>
                 </div>
               }
@@ -175,6 +177,11 @@ const Navbar = ({ offline = false }) => {
                 <Link className="link-reset dropdown-item" to={`/@${user.username}`}>
                   Profile
                 </Link>
+                {user.isAdmin && (
+                  <Link className="link-reset dropdown-item" to={`/admin`}>
+                    Admin dashboard
+                  </Link>
+                )}
                 {/*<div className="dropdown-item">Darkmode</div>*/}
                 <div className="dropdown-item is-non-reactive">
                   <div className="checkbox">

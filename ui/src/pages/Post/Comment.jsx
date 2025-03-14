@@ -1,32 +1,31 @@
 /* eslint-disable react/display-name */
-/* eslint-disable jsx-a11y/click-events-have-key-events */
-/* eslint-disable jsx-a11y/no-static-element-interactions */
-import React, { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
-import AddComment from './AddComment';
+import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { kRound, mfetchjson, stringCount, toTitleCase, userGroupSingular } from '../../helper';
+import { useLocation } from 'react-router-dom';
 import Dropdown from '../../components/Dropdown';
+import MarkdownBody from '../../components/MarkdownBody';
+import ModalConfirm from '../../components/Modal/ModalConfirm';
+import ReportModal from '../../components/ReportModal';
+import ShowMoreBox from '../../components/ShowMoreBox';
+import TimeAgo from '../../components/TimeAgo';
+import UserProPic, { GhostUserProPic, UserLink } from '../../components/UserProPic';
+import { LinkOrDiv } from '../../components/Utils';
+import { kRound, mfetchjson, stringCount, toTitleCase, userGroupSingular } from '../../helper';
+import { useVoting } from '../../hooks';
+import { newCommentAdded, replyCommentsAdded } from '../../slices/commentsSlice';
+import { countChildrenReplies } from '../../slices/commentsTree';
 import {
   loginPromptToggled,
   saveToListModalOpened,
   snackAlert,
   snackAlertError,
 } from '../../slices/mainSlice';
-import TimeAgo from '../../components/TimeAgo';
-import ModalConfirm from '../../components/Modal/ModalConfirm';
-import ReportModal from '../../components/ReportModal';
-import { countChildrenReplies } from '../../slices/commentsTree';
-import MarkdownBody from '../../components/MarkdownBody';
-import ShowMoreBox from '../../components/ShowMoreBox';
-import { newCommentAdded, replyCommentsAdded } from '../../slices/commentsSlice';
-import { useVoting } from '../../hooks';
-import UserProPic, { GhostUserProPic, UserLink } from '../../components/UserProPic';
-import { LinkOrDiv } from '../../components/Utils';
 import { userHasSupporterBadge } from '../User';
+import AddComment from './AddComment';
 import CommentShareButton, { CommentShareDropdownItems } from './CommentShareButton';
 
-const Diagnostics = false; // process.env.NODE_ENV !== 'production';
+const Diagnostics = false; // import.meta.env.MODE !== 'production';
 const MaxCommentDepth = 15;
 
 const Comment = ({
@@ -74,16 +73,29 @@ const Comment = ({
   // right now, the logged in user, has the privilege to view this comment.
   const purged = deleted && comment.contentStripped;
 
-  const [isReplying, setIsReplying] = useState(false);
+  const [selection, setSelection] = useState('');
+  const [isReplying, _setIsReplying] = useState(false);
+
+  const openReplyBox = () => _setIsReplying(true);
+  const closeReplyBox = () => {
+    _setIsReplying(false);
+    setSelection('');
+  };
+
   const handleOnReply = () => {
     if (!loggedIn) {
       dispatch(loginPromptToggled());
       return;
     }
-    setIsReplying(true);
+    const sel = document.getSelection();
+    if (sel) {
+      const text = sel.toString();
+      if (text) setSelection(text);
+    }
+    openReplyBox();
   };
   const handleAddCommentSuccess = (newComment) => {
-    setIsReplying(false);
+    closeReplyBox();
     if (!newComment.author) {
       newComment.author = user;
     }
@@ -221,6 +233,19 @@ const Comment = ({
       window.scrollTo(0, pos);
     }
   }, [focused, focusId]);
+
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+
+  const highlighted = (() => {
+    const ts = new Date(comment.createdAt).getTime() / 1000,
+      from = parseInt(params.get('highlightFrom')),
+      to = parseInt(params.get('highlightTo'));
+    if (isNaN(to)) {
+      return ts >= from;
+    }
+    return ts >= from && ts <= to;
+  })();
 
   const [reportModalOpen, setReportModalOpen] = useState(false); // for mobile
 
@@ -510,7 +535,7 @@ const Comment = ({
           <div
             className={
               'post-comment-text' +
-              (focused ? ' is-focused' : '') +
+              (focused || highlighted ? ' is-focused' : '') +
               (deleted && !purged ? ' is-red' : '')
             }
             onClick={handleCommentTextClick}
@@ -543,20 +568,11 @@ const Comment = ({
             disabled={disabled}
             onClick={() => handleVote(true)}
           >
-            <svg
-              version="1.1"
-              xmlns="http://www.w3.org/2000/svg"
-              x="0px"
-              y="0px"
-              viewBox="0 0 512.171 512.171"
-              xmlSpace="preserve"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
               <path
+                d="m19.707 9.293-7-7a1 1 0 0 0-1.414 0l-7 7A1 1 0 0 0 5 11h3v10a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V11h3a1 1 0 0 0 .707-1.707z"
                 fill="currentColor"
-                d="M479.046,283.925c-1.664-3.989-5.547-6.592-9.856-6.592H352.305V10.667C352.305,4.779,347.526,0,341.638,0H170.971
-			c-5.888,0-10.667,4.779-10.667,10.667v266.667H42.971c-4.309,0-8.192,2.603-9.856,6.571c-1.643,3.989-0.747,8.576,2.304,11.627
-			l212.8,213.504c2.005,2.005,4.715,3.136,7.552,3.136s5.547-1.131,7.552-3.115l213.419-213.504
-			C479.793,292.501,480.71,287.915,479.046,283.925z"
+                data-name="Up"
               />
             </svg>
           </button>
@@ -564,25 +580,16 @@ const Comment = ({
             {kRound(upvotes)}
           </div>
           <button
-            className="button-text post-comment-buttons-vote"
+            className="button-text post-comment-buttons-vote is-down"
             style={downCls}
             disabled={disabled}
             onClick={() => handleVote(false)}
           >
-            <svg
-              version="1.1"
-              xmlns="http://www.w3.org/2000/svg"
-              x="0px"
-              y="0px"
-              viewBox="0 0 512.171 512.171"
-              xmlSpace="preserve"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
               <path
+                d="m19.707 9.293-7-7a1 1 0 0 0-1.414 0l-7 7A1 1 0 0 0 5 11h3v10a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V11h3a1 1 0 0 0 .707-1.707z"
                 fill="currentColor"
-                d="M479.046,283.925c-1.664-3.989-5.547-6.592-9.856-6.592H352.305V10.667C352.305,4.779,347.526,0,341.638,0H170.971
-			c-5.888,0-10.667,4.779-10.667,10.667v266.667H42.971c-4.309,0-8.192,2.603-9.856,6.571c-1.643,3.989-0.747,8.576,2.304,11.627
-			l212.8,213.504c2.005,2.005,4.715,3.136,7.552,3.136s5.547-1.131,7.552-3.115l213.419-213.504
-			C479.793,292.501,480.71,287.915,479.046,283.925z"
+                data-name="Up"
               />
             </svg>
           </button>
@@ -670,29 +677,17 @@ const Comment = ({
                 </button>
               )}
               {isAdmin && (
-                <Dropdown
-                  target={
-                    <button className="button-text" style={{ color: 'var(--color-red)' }}>
-                      Admin actions
-                    </button>
-                  }
-                >
+                <Dropdown target={<button className="button-text">Admin actions</button>}>
                   <div className="dropdown-list">{getAdminActionsItems()}</div>
                 </Dropdown>
               )}
               {isAdmin && !userMod && (
-                <button className="button-text" style={{ color: 'rgb(var(--base-6))' }}>
+                <button className="button-text" style={{ color: 'rgb(var(--base-8))' }}>
                   Mod actions
                 </button>
               )}
               {userMod && (
-                <Dropdown
-                  target={
-                    <button className="button-text" style={{ color: 'var(--color-red)' }}>
-                      Mod actions
-                    </button>
-                  }
-                >
+                <Dropdown target={<button className="button-text">Mod actions</button>}>
                   <div className="dropdown-list">{getModActionsItems()}</div>
                 </Dropdown>
               )}
@@ -705,7 +700,8 @@ const Comment = ({
             post={post}
             parentCommentId={comment.id}
             onSuccess={handleAddCommentSuccess}
-            onCancel={() => setIsReplying(false)}
+            onCancel={closeReplyBox}
+            textSelection={selection}
           />
         )}
         {children &&

@@ -1,13 +1,12 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 import Link from '../../components/Link';
-import TimeAgo from '../../components/TimeAgo';
-import { kRound, stringCount } from '../../helper';
 import MarkdownBody from '../../components/MarkdownBody';
 import ShowMoreBox from '../../components/ShowMoreBox';
-import CommunityLink from '../../components/PostCard/CommunityLink';
+import TimeAgo from '../../components/TimeAgo';
+import { kRound, stringCount } from '../../helper';
 
-const Comment = ({ comment }) => {
+const Comment = ({ comment, onRemoveFromList = null }) => {
   return (
     <div className="comment">
       <div className="comment-head">
@@ -38,17 +37,27 @@ const Comment = ({ comment }) => {
           <MarkdownBody noLinks>{comment.body}</MarkdownBody>
         </ShowMoreBox>
       </Link>
-      <div className="comment-score">{`${kRound(comment.upvotes)} ${stringCount(
-        comment.upvotes,
-        true,
-        'upvote'
-      )} • ${kRound(comment.downvotes)} ${stringCount(comment.downvotes, true, 'downvote')}`}</div>
+      <div className="comment-footer">
+        <div className="comment-score">
+          {`${kRound(comment.upvotes)} ${stringCount(comment.upvotes, true, 'upvote')} • ${kRound(
+            comment.downvotes
+          )} ${stringCount(comment.downvotes, true, 'downvote')}`}
+        </div>
+        <div className="comment-remove">
+          {onRemoveFromList && (
+            <button className="button-clear" onClick={() => onRemoveFromList(comment.id)}>
+              Remove
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
 
 Comment.propTypes = {
   comment: PropTypes.object.isRequired,
+  onRemoveFromList: PropTypes.func,
 };
 
 export default Comment;

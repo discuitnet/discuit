@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import Badge from './Badge';
-import Modal from '../../components/Modal';
+import React, { useState } from 'react';
 import { ButtonClose } from '../../components/Button';
+import Modal from '../../components/Modal';
+import Badge from './Badge';
 
 function BadgesList({ user }) {
   const { badges } = user;

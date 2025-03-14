@@ -3,7 +3,10 @@ node_modules
 .idea
 /ui/dist/
 /config.yaml
+/ui-config.yaml
+/.env
 /cookies
 /logs
 /discuit
 /images
+.secrets

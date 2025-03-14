@@ -12,4 +12,4 @@ const templatePost = {
 };
 
 export default PostCard;
-export { templatePost, getEmbedComponent };
+export { getEmbedComponent, templatePost };

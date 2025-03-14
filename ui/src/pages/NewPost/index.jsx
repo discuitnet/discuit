@@ -1,22 +1,25 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import clsx from 'clsx';
+import PropTypes from 'prop-types';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router';
+import { useLocation } from 'react-router-dom/cjs/react-router-dom.min';
+import { ButtonClose } from '../../components/Button';
+import Link from '../../components/Link';
+import MarkdownTextarea from '../../components/MarkdownTextarea';
+import PageLoading from '../../components/PageLoading';
+import Spinner from '../../components/Spinner';
+import Textarea from '../../components/Textarea';
 import { APIError, isValidHttpUrl, mfetch, mfetchjson } from '../../helper';
 import { useLoading, useQuery } from '../../hooks';
 import { snackAlert, snackAlertError } from '../../slices/mainSlice';
-import SelectCommunity from './SelectCommunity';
-import { ButtonClose } from '../../components/Button';
-import { Helmet } from 'react-helmet-async';
-import Rules from '../Community/Rules';
-import PageLoading from '../../components/PageLoading';
-import Link from '../../components/Link';
-import AsUser from '../Post/AsUser';
-import Textarea from '../../components/Textarea';
-import Image from './Image';
-import Spinner from '../../components/Spinner';
 import { postAdded } from '../../slices/postsSlice';
-import { useLocation } from 'react-router-dom/cjs/react-router-dom.min';
+import Rules from '../Community/Rules';
+import AsUser from '../Post/AsUser';
 import CommunityCard from '../Post/CommunityCard';
+import Image from './Image';
+import SelectCommunity from './SelectCommunity';
 
 const NewPost = () => {
   const dispatch = useDispatch();
@@ -39,20 +42,19 @@ const NewPost = () => {
 
   const bannedFrom = useSelector((state) => state.main.bannedFrom);
   const [community, setCommunity] = useState(null);
+
   const [isBanned, setIsBanned] = useState(false);
-  const [isMod, setIsMod] = useState(false);
+  const [isUserMod, setIsUserMod] = useState(false);
+
   useEffect(() => {
     if (community !== null) {
-      const _isBanned = bannedFrom.find((id) => id === community.id) !== undefined;
-      if (_isBanned) {
-        alert(`You are banned from ${community.name}`);
-      }
-      setIsBanned(_isBanned);
+      const isBanned = bannedFrom.find((id) => id === community.id) !== undefined;
+      setIsBanned(isBanned);
     } else {
       setIsBanned(false);
     }
-    setIsMod(community === null ? false : community.userMod);
-  }, [community]);
+    setIsUserMod(community === null ? false : community.userMod);
+  }, [community, bannedFrom]);
 
   const handleCommunityChange = async (ncomm) => {
     try {
@@ -72,7 +74,8 @@ const NewPost = () => {
   const setTitle = (title) => _setTitle(title.length > 255 ? title.substr(0, 256) : title);
   const [body, setBody] = useState('');
   const [link, setLink] = useState('');
-  const [image, setImage] = useState(null);
+  const [images, SetImages] = useState([]);
+  const maxNumOfImages = import.meta.env.VITE_MAXIMAGESPERPOST;
 
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useLoading();
@@ -86,7 +89,7 @@ const NewPost = () => {
           setBody(post.body);
           setPost(post);
           if (post.type === 'image') {
-            setImage(post.image);
+            SetImages(post.images);
           } else if (post.type === 'link') {
             setLink(post.deletedContent ? 'Deleted link' : post.link.url);
           }
@@ -108,60 +111,58 @@ const NewPost = () => {
     };
   }, []);
 
-  const [isDraggingOver, setIsDraggingOver] = useState(false);
-  const fileInputRef = useRef();
-  const handleAddPhoto = () => {
-    fileInputRef.current.click();
-  };
   const [isUploading, setIsUploading] = useState(false);
   const abortController = useRef(new AbortController());
-  const uploadImage = async (file) => {
-    if (isUploading) return;
-    try {
-      const data = new FormData();
-      data.append('image', file);
-      setIsUploading(true);
-      const res = await mfetch('/api/_uploads', {
-        signal: abortController.current.signal,
-        method: 'POST',
-        body: data,
-      });
-      if (!res.ok) {
-        if (res.status === 400) {
-          const error = await res.json();
-          if (error.code === 'file_size_exceeded') {
-            dispatch(snackAlert('Maximum file size exceeded.'));
-            return;
-          } else if (error.code === 'unsupported_image') {
-            dispatch(snackAlert('Unsupported image.'));
-            return;
+  const handleImagesUpload = async (files = []) => {
+    if (isUploading) {
+      return;
+    }
+    // Check to see if uploading these images would reach the max image limit.
+    if (images.length + files.length > maxNumOfImages) {
+      alert(
+        `Image posts cannot contain more than ${maxNumOfImages} images. Please select fewer images and continue.`
+      );
+      return;
+    }
+    setIsUploading(true);
+    for (const file of files) {
+      try {
+        const data = new FormData();
+        data.append('image', file);
+        const res = await mfetch('/api/_uploads', {
+          signal: abortController.current.signal,
+          method: 'POST',
+          body: data,
+        });
+        if (!res.ok) {
+          if (res.status === 400) {
+            const error = await res.json();
+            if (error.code === 'file_size_exceeded') {
+              dispatch(snackAlert('Maximum file size exceeded.'));
+              return;
+            } else if (error.code === 'unsupported_image') {
+              dispatch(snackAlert('Unsupported image.'));
+              return;
+            }
           }
+          throw new APIError(res.status, await res.json());
         }
-        throw new APIError(res.status, await res.json());
+        const resImage = await res.json();
+        SetImages((images) => {
+          return [...images, resImage];
+        });
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === 'AbortError')) {
+          dispatch(snackAlertError(error));
+        }
+        break;
       }
-      const resImage = await res.json();
-      setImage(resImage);
-    } catch (error) {
-      if (!(error instanceof DOMException && error.name === 'AbortError')) {
-        dispatch(snackAlertError(error));
-      }
-    } finally {
-      setIsUploading(false);
     }
+    setIsUploading(false);
   };
-  const handleFileChange = () => {
-    uploadImage(fileInputRef.current.files[0]);
-  };
-  const dropzoneRef = useRef();
-  const handleOnDrop = (e) => {
-    const dt = e.dataTransfer;
-    if (dt.files.length > 0) {
-      uploadImage(dt.files[0]);
-    }
-  };
-  const handleImageDelete = () => {
+  const deleteImage = (imageId) => {
     // TODO: send DELETE request to server.
-    setImage(null);
+    SetImages((images) => images.filter((image) => image.id !== imageId));
   };
 
   // For only when editing a post.
@@ -175,7 +176,20 @@ const NewPost = () => {
     }
   };
 
-  const [isSubmitDisabled, setIsSubmitting] = useState(false);
+  const isPostingDisabled =
+    community !== null &&
+    (isBanned || (!isEditPost && community.postingRestricted && !(isUserMod || user.isAdmin)));
+
+  const getPostingDisabledText = () => {
+    if (isBanned) {
+      return `You've been banned from ${community.name}.`;
+    } else {
+      return `Only approved members of this community can post.`;
+    }
+  };
+
+  const [_isSubmitDisabled, setIsSubmitting] = useState(false);
+  const isSubmitDisabled = _isSubmitDisabled || isUploading || isPostingDisabled;
   const handleSubmit = async () => {
     if (isSubmitDisabled) return;
     if (isBanned) {
@@ -195,7 +209,7 @@ const NewPost = () => {
       return;
     }
     if (postType === 'image') {
-      if (image === null) {
+      if (images.length === 0) {
         alert("You haven't uploaded an image");
         return;
       }
@@ -223,7 +237,15 @@ const NewPost = () => {
             body,
             community: community.name,
             userGroup,
-            imageId: postType === 'image' ? image.id : undefined,
+            images:
+              postType === 'image'
+                ? images.map((image) => {
+                    return {
+                      imageId: image.id,
+                      caption: '',
+                    };
+                  })
+                : undefined,
             url: postType === 'link' ? link : undefined,
           }),
         });
@@ -310,20 +332,6 @@ const NewPost = () => {
     }
   };
 
-  // Prevent image load on missing drop-zone.
-  useEffect(() => {
-    const handleDrop = (e) => {
-      if (!['TEXTAREA', 'INPUT'].includes(e.target.nodeName)) e.preventDefault();
-    };
-    const handleDragOver = (e) => e.preventDefault();
-    window.addEventListener('drop', handleDrop);
-    window.addEventListener('dragover', handleDragOver);
-    return () => {
-      window.removeEventListener('drop', handleDrop);
-      window.removeEventListener('dragover', handleDragOver);
-    };
-  }, []);
-
   if (loading !== 'loaded') {
     return (
       <div className="page-new">
@@ -332,7 +340,7 @@ const NewPost = () => {
     );
   }
 
-  const isImagePostsDisabled = CONFIG.disableImagePosts === true;
+  const isImagePostsDisabled = import.meta.env.VITE_DISABLEIMAGEPOSTS === true;
 
   return (
     <div className="page-new">
@@ -351,14 +359,23 @@ const NewPost = () => {
             initial={community ? community.name : ''}
           />
           <div className="card page-new-form">
-            <div className={'page-new-tabs' + (isImagePostsDisabled ? ' is-two-tabs' : '')}>
+            {isPostingDisabled && (
+              <div className="page-new-form-disabled">{getPostingDisabledText()}</div>
+            )}
+            <div
+              className={clsx(
+                'page-new-tabs',
+                isImagePostsDisabled && ' is-two-tabs',
+                isPostingDisabled && 'is-disabled'
+              )}
+            >
               <button
                 className={
                   'button-clear button-with-icon pn-tabs-item' +
                   (postType === 'text' ? ' is-selected' : '')
                 }
                 onClick={() => setPostType('text')}
-                disabled={isEditPost}
+                disabled={isPostingDisabled || isEditPost}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -380,7 +397,7 @@ const NewPost = () => {
                     (postType === 'image' ? ' is-selected' : '')
                   }
                   onClick={() => setPostType('image')}
-                  disabled={isEditPost}
+                  disabled={isPostingDisabled || isEditPost}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -402,7 +419,7 @@ const NewPost = () => {
                   (postType === 'link' ? ' is-selected' : '')
                 }
                 onClick={() => setPostType('link')}
-                disabled={isEditPost}
+                disabled={isPostingDisabled || isEditPost}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -425,66 +442,35 @@ const NewPost = () => {
               onChange={handleTitleChange}
               rows="1"
               adjustable
+              disabled={isPostingDisabled}
             />
             {postType === 'text' && (
-              <Textarea
+              <MarkdownTextarea
                 className="page-new-post-body"
                 placeholder="Post content goes here (optional)..."
                 value={body}
                 onChange={handleBodyChange}
                 onPaste={handleBodyPaste}
-                adjustable
-                disabled={isEditPost ? post.deletedContent : false}
+                disabled={isPostingDisabled || (isEditPost ? post.deletedContent : false)}
               />
             )}
             {postType === 'image' && (
               <div className="page-new-image-upload">
-                {image && <Image image={image} onClose={handleImageDelete} disabled={isEditPost} />}
-                {!image && !(post && post.deletedContent) && (
-                  <div
-                    ref={dropzoneRef}
-                    className={'page-new-image-drop' + (isDraggingOver ? ' is-dropping' : '')}
-                    onClick={handleAddPhoto}
-                    onDragEnter={() => {
-                      setIsDraggingOver(true);
-                    }}
-                    onDragLeave={() => {
-                      setIsDraggingOver(false);
-                    }}
-                    onDragOver={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      setIsDraggingOver(true);
-                    }}
-                    onDrop={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      setIsDraggingOver(false);
-                      handleOnDrop(e);
-                    }}
-                  >
-                    <div className="page-new-image-text">
-                      {!isUploading && (
-                        <>
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            name="image"
-                            style={{ visibility: 'hidden', width: 0, height: 0 }}
-                            onChange={handleFileChange}
-                          />
-                          <div>Add photo</div>
-                          <div>Or drag and drop</div>
-                        </>
-                      )}
-                      {isUploading && (
-                        <div className="flex flex-center page-new-image-uploading">
-                          <div className="page-new-uploading-text">Uploading image</div>
-                          <Spinner style={{ marginLeft: 5 }} size={25} />
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                {images.length > 0 &&
+                  images.map((image) => (
+                    <Image
+                      key={image.id}
+                      image={image}
+                      onClose={() => deleteImage(image.id)}
+                      disabled={isEditPost}
+                    />
+                  ))}
+                {!isEditPost && !(post && post.deletedContent) && (
+                  <ImageUploadArea
+                    isUploading={isUploading}
+                    onImagesUpload={handleImagesUpload}
+                    disabled={images.length >= maxNumOfImages}
+                  />
                 )}
                 {post && post.deletedContent && (
                   <div className="page-new-image-deleted flex flex-column flex-center">
@@ -515,9 +501,9 @@ const NewPost = () => {
               />
             )}
           </div>
-          {!isEditPost && (
+          {!isEditPost && (isUserMod || user.isAdmin) && (
             <div className="new-page-user-group">
-              <AsUser isMod={isMod} onChange={(g) => setUserGroup(g)} />
+              <AsUser isMod={isUserMod} onChange={(g) => setUserGroup(g)} />
             </div>
           )}
           <div className="new-page-help">
@@ -554,3 +540,97 @@ const NewPost = () => {
 };
 
 export default NewPost;
+
+const ImageUploadArea = ({ isUploading, onImagesUpload, disabled = false }) => {
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const dropzoneRef = useRef();
+  const handleOnDrop = (e) => {
+    const dt = e.dataTransfer;
+    if (dt.files.length > 0) {
+      onImagesUpload(dt.files);
+    }
+  };
+
+  const fileInputRef = useRef();
+  const handleFileChange = () => {
+    onImagesUpload(fileInputRef.current.files);
+  };
+
+  const handleAddPhoto = () => {
+    fileInputRef.current.click();
+  };
+
+  // Prevent image load on missing drop-zone.
+  useEffect(() => {
+    const handleDrop = (e) => {
+      if (!['TEXTAREA', 'INPUT'].includes(e.target.nodeName)) e.preventDefault();
+    };
+    const handleDragOver = (e) => e.preventDefault();
+    window.addEventListener('drop', handleDrop);
+    window.addEventListener('dragover', handleDragOver);
+    return () => {
+      window.removeEventListener('drop', handleDrop);
+      window.removeEventListener('dragover', handleDragOver);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={dropzoneRef}
+      className={
+        'page-new-image-drop' +
+        (isDraggingOver ? ' is-dropping' : '') +
+        (disabled ? +' is-disabled' : '')
+      }
+      onClick={handleAddPhoto}
+      onDragEnter={() => {
+        setIsDraggingOver(true);
+      }}
+      onDragLeave={() => {
+        setIsDraggingOver(false);
+      }}
+      onDragOver={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        setIsDraggingOver(true);
+      }}
+      onDrop={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        setIsDraggingOver(false);
+        handleOnDrop(e);
+      }}
+    >
+      <div className="page-new-image-text">
+        {!disabled && !isUploading && (
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              name="image"
+              style={{ visibility: 'hidden', width: 0, height: 0 }}
+              onChange={handleFileChange}
+              disabled={disabled}
+            />
+            <div>Add photo</div>
+            <div>Or drag and drop</div>
+          </>
+        )}
+        {disabled && <div>Maximum number of images reached.</div>}
+        {isUploading && (
+          <div className="flex flex-center page-new-image-uploading">
+            <div className="page-new-uploading-text">Uploading image</div>
+            <Spinner style={{ marginLeft: 5 }} size={25} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+ImageUploadArea.propTypes = {
+  isUploading: PropTypes.bool.isRequired,
+  onImagesUpload: PropTypes.func.isRequired,
+  disabled: PropTypes.bool,
+};

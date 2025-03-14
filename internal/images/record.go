@@ -275,6 +275,17 @@ func (m *Image) AppendCopy(name string, boxWidth, boxHeight int, fit ImageFit, f
 	return copy
 }
 
+// SelectCopy selects the first copy of this image that matches the name. If no
+// copy is found, it returns nil.
+func (m *Image) SelectCopy(name string) *ImageCopy {
+	for _, copy := range m.Copies {
+		if copy.Name == name {
+			return copy
+		}
+	}
+	return nil
+}
+
 // An ImageCopy is a transformed (size, format, and/or fit changed) copy of an
 // Image.
 type ImageCopy struct {

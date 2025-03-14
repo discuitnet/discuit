@@ -177,14 +177,52 @@ func NextPointsIDCursor(text string) (p int, id *uid.ID, err error) {
 	return
 }
 
-const whereSelectUserComms = "community_id IN (SELECT community_members.community_id FROM community_members WHERE community_members.user_id = ?) "
+func homeFeedWhereClause(ctx context.Context, db *sql.DB, user uid.ID, where string, args []any) (string, []any, error) {
+	rows, err := db.QueryContext(ctx, "SELECT community_members.community_id FROM community_members WHERE community_members.user_id = ?", user)
+	if err != nil {
+		return where, args, err
+	}
+	defer rows.Close()
+
+	var communityIDs []any
+	for rows.Next() {
+		var cid uid.ID
+		if err := rows.Scan(&cid); err != nil {
+			return where, args, err
+		}
+		communityIDs = append(communityIDs, cid)
+	}
+
+	if err := rows.Err(); err != nil {
+		return where, args, err
+	}
+
+	joiner := ""
+	if where != "" {
+		joiner = "AND"
+	}
+
+	if len(communityIDs) == 0 {
+		// User is not subscribed to any communities. Use the sentinel value of
+		// zero-bytes community ID, which no community would have, to return an
+		// empty result set.
+		where = fmt.Sprintf("%s %s community_id = ? ", where, joiner)
+		args = append(args, uid.ID{})
+		return where, args, nil
+	}
+
+	where = fmt.Sprintf("%s %s community_id IN %s ", where, joiner, msql.InClauseQuestionMarks(len(communityIDs)))
+	args = append(args, communityIDs...)
+
+	return where, args, nil
+}
 
 type FeedOptions struct {
 	Sort        FeedSort
 	DefaultSort bool
 	Viewer      *uid.ID
 	Community   *uid.ID // Community should be nil if Homefeed is true.
-	Homefeed    bool
+	Homefeed    bool    // If true, the requested feed is the feed with only posts from communities where the user is a member
 	Limit       int
 	Next        string // The pagination cursor, taken from previous API response.
 }
@@ -260,8 +298,11 @@ func getPostsLatest(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedRe
 	}
 	where := "WHERE posts.deleted = FALSE "
 	if opts.Homefeed {
-		where += "AND " + whereSelectUserComms
-		args = append(args, *opts.Viewer)
+		var err error
+		where, args, err = homeFeedWhereClause(ctx, db, *opts.Viewer, where, args)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		if opts.Community != nil {
 			where += "AND community_id = ? "
@@ -269,7 +310,7 @@ func getPostsLatest(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedRe
 		}
 	}
 	if loggedIn {
-		where, args = whereMuted(where, "posts", args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
+		where, args = whereMutedAndHidden(where, "posts", args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
 	}
 	if opts.Next != "" {
 		next, err := opts.nextID()
@@ -360,7 +401,7 @@ func mergePinnedPosts(ctx context.Context, db *sql.DB, viewer, community *uid.ID
 	return rs, nil
 }
 
-func whereMuted(where, postsTable string, args []any, viewer uid.ID, muteCommunities bool) (string, []any) {
+func whereMutedAndHidden(where, postsTable string, args []any, viewer uid.ID, muteCommunities bool) (string, []any) {
 	if !(where == "" || strings.TrimSpace(strings.ToUpper(where)) == "WHERE") {
 		where += "AND "
 	}
@@ -368,8 +409,16 @@ func whereMuted(where, postsTable string, args []any, viewer uid.ID, muteCommuni
 		where += "community_id NOT IN (SELECT community_id FROM muted_communities WHERE user_id = ?) AND "
 		args = append(args, viewer)
 	}
-	where += postsTable + ".user_id NOT IN (SELECT muted_user_id FROM muted_users WHERE user_id = ?)"
+	where += postsTable + ".user_id NOT IN (SELECT muted_user_id FROM muted_users WHERE user_id = ?) "
 	args = append(args, viewer)
+
+	colName := "id"
+	if postsTable != "posts" {
+		colName = "post_id"
+	}
+	where += fmt.Sprintf(" AND %s.%s NOT IN (SELECT post_id FROM hidden_posts WHERE user_id = ?) ", postsTable, colName)
+	args = append(args, viewer)
+
 	return where, args
 }
 
@@ -384,8 +433,11 @@ func getPostsHot(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedResul
 	}
 	where := "WHERE posts.deleted = FALSE "
 	if opts.Homefeed {
-		where += "AND " + whereSelectUserComms
-		args = append(args, *opts.Viewer)
+		var err error
+		where, args, err = homeFeedWhereClause(ctx, db, *opts.Viewer, where, args)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		if opts.Community != nil {
 			where += "AND community_id = ? "
@@ -393,7 +445,7 @@ func getPostsHot(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedResul
 		}
 	}
 	if loggedIn {
-		where, args = whereMuted(where, "posts", args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
+		where, args = whereMutedAndHidden(where, "posts", args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
 	}
 	if opts.Next != "" {
 		nextHotness, nextID, err := opts.nextPointsID()
@@ -436,8 +488,11 @@ func getPostsTopAll(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedRe
 
 	where := "WHERE deleted = FALSE "
 	if opts.Homefeed {
-		where += "AND " + whereSelectUserComms
-		args = append(args, *opts.Viewer)
+		var err error
+		where, args, err = homeFeedWhereClause(ctx, db, *opts.Viewer, where, args)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		if opts.Community != nil {
 			where += "AND community_id = ? "
@@ -445,7 +500,7 @@ func getPostsTopAll(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedRe
 		}
 	}
 	if loggedIn {
-		where, args = whereMuted(where, "posts", args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
+		where, args = whereMutedAndHidden(where, "posts", args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
 	}
 	if opts.Next != "" {
 		nextPoints, nextID, err := opts.nextPointsID()
@@ -488,8 +543,11 @@ func getPostsTop(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedResul
 	query := fmt.Sprintf("SELECT post_id FROM %s ", table)
 	where := ""
 	if opts.Homefeed {
-		where += whereSelectUserComms
-		args = append(args, *opts.Viewer)
+		var err error
+		where, args, err = homeFeedWhereClause(ctx, db, *opts.Viewer, where, args)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		if opts.Community != nil {
 			where += "community_id = ? "
@@ -497,7 +555,7 @@ func getPostsTop(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedResul
 		}
 	}
 	if opts.Viewer != nil {
-		where, args = whereMuted(where, table, args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
+		where, args = whereMutedAndHidden(where, table, args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
 	}
 	if opts.Next != "" {
 		nextPoints, nextID, err := opts.nextPointsID()
@@ -549,8 +607,11 @@ func getPostsActivity(ctx context.Context, db *sql.DB, opts *FeedOptions) (*Feed
 	}
 	where := "WHERE posts.deleted = FALSE "
 	if opts.Homefeed {
-		where += "AND " + whereSelectUserComms
-		args = append(args, *opts.Viewer)
+		var err error
+		where, args, err = homeFeedWhereClause(ctx, db, *opts.Viewer, where, args)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		if opts.Community != nil {
 			where += "AND community_id = ? "
@@ -558,7 +619,7 @@ func getPostsActivity(ctx context.Context, db *sql.DB, opts *FeedOptions) (*Feed
 		}
 	}
 	if loggedIn {
-		where, args = whereMuted(where, "posts", args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
+		where, args = whereMutedAndHidden(where, "posts", args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
 	}
 	if opts.Next != "" {
 		next, err := opts.nextInt64()
@@ -767,10 +828,44 @@ func GetUserFeed(ctx context.Context, db *sql.DB, viewer *uid.ID, userID uid.ID,
 		for _, comment := range comments {
 			commentItemsMap[comment.ID].Item = comment
 		}
+		if err := getCommentsPostTitles(ctx, db, comments, viewer); err != nil {
+			return nil, err
+		}
 	}
 
 	if len(ids) == limit+1 {
 		set.Next = &ids[limit]
 	}
 	return set, nil
+}
+
+func getCommentsPostTitles(ctx context.Context, db *sql.DB, comments []*Comment, viewer *uid.ID) error {
+	postIDs := make([]uid.ID, len(comments))
+	postTitles := make(map[uid.ID]string, len(comments))
+	for i, comment := range comments {
+		postIDs[i] = comment.PostID
+	}
+
+	posts, err := GetPostsByIDs(ctx, db, viewer, true, postIDs...)
+	if err != nil {
+		return err
+	}
+
+	for _, post := range posts {
+		if post.Title == "" {
+			return fmt.Errorf("populating comments' postTitle, could not find post title of post id %v", post.ID)
+		}
+
+		if _, ok := postTitles[post.ID]; ok {
+			continue
+		}
+
+		postTitles[post.ID] = post.Title
+	}
+
+	for _, comment := range comments {
+		comment.PostTitle = postTitles[comment.PostID]
+	}
+
+	return nil
 }

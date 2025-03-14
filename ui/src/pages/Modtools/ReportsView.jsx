@@ -1,5 +1,5 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 import Dropdown from '../../components/Dropdown';
 
 const ReportsView = ({ title, noPosts, noComments, filter, setFilter, children }) => {

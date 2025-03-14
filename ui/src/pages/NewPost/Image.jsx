@@ -1,8 +1,8 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { ButtonClose } from '../../components/Button';
-import { useWindowWidth } from '../../hooks';
 import Img from '../../components/Image';
+import { useWindowWidth } from '../../hooks';
 
 const Image = ({ image, onClose, disabled = false }) => {
   const url = image.url ?? `/images/${image.fid}/${image.id}.jpg`;

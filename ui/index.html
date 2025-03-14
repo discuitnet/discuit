@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
     <!-- If any assets are changed the service worker cache name must be updated. -->
     <head>
@@ -10,7 +10,7 @@
         <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
         <meta name="theme-color" content="rgb(32, 32, 32)" media="(prefers-color-scheme: dark)" />
         <meta name="description" content="" />
-        <link rel="manifest" href="manifest.json" />
+        <link rel="manifest" href="/manifest.json" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-touch-fullscreen" content="yes" />
         <meta name="apple-mobile-web-app-title" content="Discuit" />
@@ -64,8 +64,10 @@
                 changeMetaColorTheme(theme);
             })();
             (() => {
-                if ('serviceWorker' in navigator) {
+                const mode = '%MODE%'; // Supported by Vite.
+                if ('serviceWorker' in navigator && mode === 'production') {
                     try {
+                        console.log('Registering the service-worker');
                         navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
                     } catch (error) {
                         console.error(error);
@@ -73,9 +75,9 @@
                 }
             })();
         </script>
-        <link rel="shortcut icon" href="./src/assets/imgs/favicon.png" />
-        <link rel="mask-icon" href="./src/assets/imgs/favicon.png" color="#6b02f2" />
-        <link rel="apple-touch-icon" href="./src/assets/imgs/logo-manifest-512.png" />
+        <link rel="shortcut icon" href="/favicon.png?v=2" />
+        <link rel="mask-icon" href="/favicon.png?v=2" color="#6b02f2" />
+        <link rel="apple-touch-icon" href="/logo-manifest-512.png?v=2" />
     </head>
     <body>
         <noscript>Please enable javascript to continue.</noscript>
@@ -85,5 +87,6 @@
         <div id="root"></div>
         <div id="modal-root"></div>
         <div id="snacks-root"></div>
+        <script type="module" src="/src/main.jsx"></script>
     </body>
 </html>

@@ -13,6 +13,9 @@ import (
 // FileServer is like http.FileServer except if name.gz file is found, it's
 // assumed to be gzipped, and is served instead without the .gz suffix (if all
 // appropriate request headers are present).
+//
+// A Cache-Control header is added to all responses of this server, unless one
+// is already added before, in which case it's left as is.
 func FileServer(root http.FileSystem) http.Handler {
 	return &fileHandler{root}
 }
@@ -72,7 +75,9 @@ func serveGzip(w http.ResponseWriter, r *http.Request, fs http.FileSystem, name 
 		}
 	}
 
-	w.Header().Add("Cache-Control", "public, max-age=86400, immutable")
+	if w.Header().Get("Cache-Control") == "" {
+		w.Header().Add("Cache-Control", "public, max-age=3600, immutable")
+	}
 	http.ServeContent(w, r, name, info.ModTime(), f)
 }
 

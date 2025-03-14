@@ -1,16 +1,24 @@
-import { selectImageCopyURL, stringCount } from './src/helper';
-import { badgeImage } from './src/pages/User/Badge';
+const SW_BUILD_ID = import.meta.env.VITE_SW_BUILD_ID;
 
-const CACHE_VERSION = CONFIG.cacheStorageVersion;
+// Log the service-worker version for debugging.
+console.log(`Service worker version: ${SW_BUILD_ID}`);
 
 const cacheEndpoints = async (urls = []) => {
-  const cache = await caches.open(CACHE_VERSION);
+  const cache = await caches.open(SW_BUILD_ID);
   await cache.addAll(urls);
 };
 
 const putInCache = async (request, response) => {
-  const cache = await caches.open(CACHE_VERSION);
-  await cache.put(request, response);
+  // If the headers contain an x-service-worker-cache header or if the response
+  // code isn't in the range of 2xx, then the file is not cached, even if it
+  // meets prior criteria for caching.
+  if (response.ok && !response.headers.has('X-Service-Worker-Cache')) {
+    // Note that the argument to headers.has() in the above line is
+    // case-insensitive. In HTTP/2, all headers are lowercased in any case
+    // before they are transmitted.
+    const cache = await caches.open(SW_BUILD_ID);
+    await cache.put(request, response);
+  }
 };
 
 self.addEventListener('install', (e) => {
@@ -18,7 +26,6 @@ self.addEventListener('install', (e) => {
   self.skipWaiting();
 });
 
-// Enable navigation preload.
 const enableNavigationPreload = async () => {
   if (self.registration.navigationPreload) {
     await self.registration.navigationPreload.enable();
@@ -30,7 +37,7 @@ const deleteCache = async (key) => {
 };
 
 const deleteOldCaches = async () => {
-  const cacheKeepList = [CACHE_VERSION];
+  const cacheKeepList = [SW_BUILD_ID];
   const keyList = await caches.keys();
   const cachesToDelete = keyList.filter((key) => !cacheKeepList.includes(key));
   await Promise.all(cachesToDelete.map(deleteCache));
@@ -39,6 +46,17 @@ const deleteOldCaches = async () => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(Promise.all([deleteOldCaches(), enableNavigationPreload()]));
   self.clients.claim();
+
+  // Periodically, check if there are any push notifications that have been
+  // marked as seen, and, if any exists, close them.
+  self.setInterval(async () => {
+    try {
+      console.log('Background checking push notifications status (4)');
+      await closeSeenNotifications();
+    } catch (error) {
+      console.log(`Error closeSeenNotifications: ${error}`);
+    }
+  }, 60000 /* 1 minute */);
 });
 
 self.addEventListener('message', (e) => {
@@ -56,36 +74,49 @@ const endsWithOneOf = (searchString, endPositions = []) => {
   return false;
 };
 
+const fetchRequest = (request) => {
+  const headers = new Headers(request.headers);
+  if (request.url.startsWith(self.location.origin)) {
+    // Setting the custom headers only for same-origin requests. Otherwise, CORS
+    // will block the request.
+    headers.set('X-Service-Worker-Version', SW_BUILD_ID);
+  }
+  return fetch(
+    new Request(request, {
+      headers,
+    })
+  );
+};
+
 // Returns true if the request is an app asset.
 const shouldCache = (request) => {
   if (request.method !== 'GET') {
     return false;
   }
-
   const url = new URL(request.url, `${self.location.protocol}//${self.location.host}`);
   const { pathname } = url;
-
-  if (pathname.startsWith('/app.') && endsWithOneOf(pathname, ['.js', '.css'])) {
+  if (pathname.startsWith('/assets/') && endsWithOneOf(pathname, ['.js', '.css'])) {
     return true;
   }
-
   if (
     endsWithOneOf(pathname, ['.jpg', '.jpeg', '.png', '.svg', '.webp']) &&
     !pathname.startsWith('/images/')
   ) {
     return true;
   }
-
   return false;
 };
 
 const cacheFirst = async ({ request, preloadResponsePromise }) => {
+  // See if a caches response to the request is available. If so, immediately
+  // respond with that.
   const cachedRes = await caches.match(request);
   if (cachedRes) {
     return cachedRes;
   }
 
-  // Next try to use (and cache) the preloaded response, if it's there
+  // Next try to use (and cache) the preloaded response, if it exists. And if it
+  // exists, respond with that.
   try {
     const preloadResponse = await preloadResponsePromise;
     if (preloadResponse) {
@@ -94,21 +125,23 @@ const cacheFirst = async ({ request, preloadResponsePromise }) => {
       }
       return preloadResponse;
     }
-  } catch (_) {}
+  } catch (error) {
+    console.error(error);
+  }
 
   try {
-    const networkRes = await fetch(request);
+    const networkRes = await fetchRequest(request);
     if (shouldCache(request)) {
       putInCache(request, networkRes.clone());
     }
     return networkRes;
   } catch (error) {
+    console.error(error);
     if (request.method === 'GET' && request.headers.get('accept').includes('text/html')) {
-      const cache = await caches.open(CACHE_VERSION);
+      const cache = await caches.open(SW_BUILD_ID);
       const fallbackRes = await cache.match('/');
       if (fallbackRes) return fallbackRes;
     }
-
     return new Response(
       JSON.stringify({
         status: 408,
@@ -127,123 +160,24 @@ self.addEventListener('fetch', (e) => {
 });
 
 const getNotificationInfo = (notification, csrfToken) => {
-  const { type, notif } = notification;
-
-  const ret = {
-    title: '',
+  let icon = '';
+  if (notification.icons !== null) {
+    icon = notification.icons[0];
+  }
+  return {
+    title: notification.title,
     options: {
-      body: '',
-      icon: '',
+      body: notification.body,
+      icon,
       badge: '/discuit-logo-pwa-badge.png',
       tag: notification.id,
       data: {
         notificationId: notification.id,
-        toURL: undefined,
+        toURL: notification.toURL,
         csrfToken,
       },
     },
   };
-
-  const setImage = (url) => {
-    ret.options.icon = url;
-    // ret.options.badge = '/favicon.png';
-  };
-
-  const maxText = (text = '', maxLength = 120) => {
-    if (text.length > maxLength) {
-      return text.substring(0, maxLength) + '...';
-    }
-    return text;
-  };
-
-  const setToURL = (to = '') => {
-    ret.options.data.toURL = to;
-  };
-
-  setImage('/favicon.png');
-
-  switch (type) {
-    case 'new_comment':
-      {
-        let to = `/${notif.post.communityName}/post/${notif.post.publicId}`;
-        if (notif.noComments === 1) {
-          ret.title = `@${notif.commentAuthor} commented on your post '${notif.post.title}'`;
-          to += `/${notif.commentId}`;
-        } else {
-          ret.title = `${notif.noComments} new comments on your post '${notif.post.title}'`;
-        }
-        setToURL(to);
-      }
-      break;
-    case 'comment_reply':
-      {
-        let to = `/${notif.post.communityName}/post/${notif.post.publicId}`;
-        if (notif.noComments === 1) {
-          ret.title = `@${notif.commentAuthor} replied to your comment on post '${notif.post.title}'`;
-          to += `/${notif.commentId}`;
-        } else {
-          ret.title = `${notif.noComments} new replies to your comment on post '${notif.post.title}'`;
-        }
-        setToURL(to);
-      }
-      break;
-    case 'new_votes':
-      if (notif.targetType === 'post') {
-        ret.title = `${stringCount(notif.noVotes, false, 'new upvote')} on your post '${
-          notif.post.title
-        }'`;
-        setToURL(`/${notif.post.communityName}/post/${notif.post.publicId}`);
-      } else {
-        ret.title = `${stringCount(notif.noVotes, false, 'new vote')} on your comment in '${
-          notif.post.title
-        }'`;
-        setToURL(
-          `/${notif.comment.communityName}/post/${notif.comment.postPublicId}/${notif.comment.id}`
-        );
-      }
-      break;
-    case 'deleted_post':
-      const by =
-        notif.deletedAs === 'mods' ? `moderators of ${notif.post.communityName}` : 'admins';
-      ret.title = `Your post '${notif.post.title}' has been removed by the ${by}`;
-      setToURL(`/${notif.post.communityName}/post/${notif.post.publicId}`);
-      break;
-    case 'mod_add':
-      ret.title = `You are added as a moderator of /${notif.communityName} by @${notif.addedBy}`;
-      setToURL(`/${notif.post.communityName}/post/${notif.post.publicId}`);
-      break;
-    case 'new_badge':
-      ret.title =
-        "You are awarded the 'supporter' badge for your contribution to Discuit and for sheer awesomeness!";
-      setToURL(`/@${notif.user.username}`);
-      const { src } = badgeImage(notif.badgeType);
-      setImage(src);
-      break;
-    default: {
-      throw new Error('Unkown notification type');
-    }
-  }
-
-  if (notif.post) {
-    switch (notif.post.type) {
-      case 'image':
-        if (notif.post.image) {
-          setImage(selectImageCopyURL('tiny', notif.post.image));
-        }
-        break;
-      case 'link':
-        if (notif.post.link && notif.post.link.image) {
-          setImage(selectImageCopyURL('tiny', notif.post.link.image));
-        }
-        break;
-    }
-  } else if (typeof notif.community === 'object' && notif.community !== null) {
-    if (notif.community.proPic) {
-      setImage(selectImageCopyURL('small', notif.community.proPic));
-    }
-  }
-
-  return ret;
 };
 
 const isClientFocused = async () => {
@@ -251,7 +185,6 @@ const isClientFocused = async () => {
     type: 'window',
     includeUncontrolled: true,
   });
-
   let clientIsFocused = false;
   for (let i = 0; i < windowClients.length; i++) {
     const windowClient = windowClients[i];
@@ -260,41 +193,34 @@ const isClientFocused = async () => {
       break;
     }
   }
-
   return clientIsFocused;
 };
 
 self.addEventListener('push', (e) => {
   const f = async () => {
     try {
-      if (await isClientFocused()) return;
-
+      if (await isClientFocused()) {
+        return;
+      }
       const pushNotif = e.data.json();
-
-      const res = await fetch(`/api/notifications/${pushNotif.id}`);
-
+      const res = await fetch(`/api/notifications/${pushNotif.id}?render=true`);
       if (!res.ok) {
         console.log('notification error');
         return;
       }
-
       const info = getNotificationInfo(await res.json(), res.headers.get('Csrf-Token'));
-
       return self.registration.showNotification(info.title, info.options);
     } catch (error) {
       console.error(error);
     }
   };
-
   e.waitUntil(f());
 });
 
 self.addEventListener('notificationclick', (e) => {
   const { notification } = e;
   const { data } = notification;
-
   notification.close();
-
   const markAsSeen = async () => {
     try {
       const res = await fetch(
@@ -306,7 +232,6 @@ self.addEventListener('notificationclick', (e) => {
           },
         }
       );
-
       if (!res.ok) {
         throw new Error(await res.text());
       }
@@ -314,6 +239,30 @@ self.addEventListener('notificationclick', (e) => {
       console.log(error);
     }
   };
-
   e.waitUntil(Promise.all([markAsSeen(), self.clients.openWindow(data.toURL)]));
 });
+
+/**
+ * Closes all push notifications that have been marked as seen (presumably by
+ * another device on which the user is logged in, because otherwise the push
+ * notification wouldn't be here).
+ *
+ */
+const closeSeenNotifications = async () => {
+  const existingNotifs = await self.registration.getNotifications();
+  if (existingNotifs.length === 0) {
+    return;
+  }
+  const res = await (await fetch('/api/notifications?render=true')).json();
+  const notifs = res.items || [];
+  existingNotifs.forEach((exNotif) => {
+    for (let i = 0; i < notifs.length; i++) {
+      if (exNotif.data.notificationId === notifs[i].id && notifs[i].seen) {
+        console.log(
+          `Background closing notification (it was marked as seen by another device): ${notifs[i].id}`
+        );
+        exNotif.close();
+      }
+    }
+  });
+};

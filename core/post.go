@@ -81,8 +81,6 @@ func (p *PostType) UnmarshalText(text []byte) error {
 }
 
 type Post struct {
-	db *sql.DB
-
 	ID   uid.ID   `json:"id"`
 	Type PostType `json:"type"`
 
@@ -113,7 +111,8 @@ type Post struct {
 	Title string          `json:"title"`
 	Body  msql.NullString `json:"body"`
 
-	Image *images.Image `json:"image"`
+	Image  *images.Image   `json:"image"`  // even if the post type is [PostTypeImage], this may be nil
+	Images []*images.Image `json:"images"` // even if the post type is [PostTypeImage], this may be nil
 
 	link *postLink `json:"-"` // what's saved to the DB
 
@@ -197,7 +196,6 @@ var selectPostCols = []string{
 	"posts.deleted_by",
 	"posts.deleted_as",
 	"posts.no_comments",
-	"posts.deleted_by",
 	"posts.deleted_content",
 	"posts.deleted_content_at",
 	"posts.deleted_content_by",
@@ -296,7 +294,7 @@ func GetPostsByIDs(ctx context.Context, db *sql.DB, viewer *uid.ID, includeDelet
 	return scanPosts(ctx, db, rows, viewer)
 }
 
-// scanPosts returns ErrPostNotFound is no posts are found.
+// scanPosts returns errPostNotFound is no posts are found.
 func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) ([]*Post, error) {
 	defer rows.Close()
 
@@ -304,7 +302,9 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 	loggedIn := viewer != nil
 
 	for rows.Next() {
-		post := &Post{db: db}
+		post := &Post{
+			Images: make([]*images.Image, 0),
+		}
 		var linkBytes []byte
 		dest := []interface{}{
 			&post.ID,
@@ -337,7 +337,6 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 			&post.DeletedBy,
 			&post.DeletedAs,
 			&post.NumComments,
-			&post.DeletedBy,
 			&post.DeletedContent,
 			&post.DeletedContentAt,
 			&post.DeletedContentBy,
@@ -537,6 +536,7 @@ func populatePostsImages(ctx context.Context, db *sql.DB, posts []*Post) error {
 				img.AppendCopy("large", 1080, 2160, images.ImageFitContain, "")
 				img.AppendCopy("large", 2160, 4320, images.ImageFitContain, "")
 				post.Image = img
+				post.Images = append(post.Images, img)
 				break
 			}
 		}
@@ -561,6 +561,11 @@ var (
 	postsTablesValidity = []time.Duration{0 - time.Hour*24, 0 - time.Hour*24*7, 0 - time.Hour*24*30, 0 - time.Hour*24*365}
 )
 
+type ImageUpload struct {
+	ImageID uid.ID `json:"imageId"`
+	Caption string `json:"caption"`
+}
+
 type createPostOpts struct {
 	// Required:
 	author    uid.ID
@@ -572,7 +577,8 @@ type createPostOpts struct {
 	body      string // for text posts
 	link      postLink
 	linkImage []byte // for link posts (thumbnail image)
-	image     uid.ID // for image posts
+	// image     uid.ID // for image posts
+	images []*ImageUpload // for image posts
 }
 
 func createPost(ctx context.Context, db *sql.DB, opts *createPostOpts) (*Post, error) {
@@ -580,11 +586,25 @@ func createPost(ctx context.Context, db *sql.DB, opts *createPostOpts) (*Post, e
 		return nil, err
 	}
 
+	community, err := GetCommunityByID(ctx, db, opts.community, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	// Check if the author is banned from community.
-	if is, err := IsUserBannedFromCommunity(ctx, db, opts.community, opts.author); err != nil {
+	if is, err := community.UserBanned(ctx, db, opts.author); err != nil {
 		return nil, err
 	} else if is {
 		return nil, errUserBannedFromCommunity
+	}
+
+	// Check if posting in the community is restricted, and if so, if the user has permission.
+	if community.PostingRestricted {
+		if is, err := community.UserModOrAdmin(ctx, db, opts.author); err != nil {
+			return nil, err
+		} else if !is {
+			return nil, httperr.NewForbidden("posting-restricted", "Posting in this community is restricted.")
+		}
 	}
 
 	// Truncate title and body if max lengths are exceeded.
@@ -630,10 +650,11 @@ func createPost(ctx context.Context, db *sql.DB, opts *createPostOpts) (*Post, e
 			Fit:    images.ImageFitCover,
 		})
 		if err != nil {
-			tx.Rollback()
-			return nil, err
+			log.Printf("could not save the og:image of post %s with link %s\n", post.ID, opts.link.URL)
+			// Continue on error...
+		} else {
+			cols = append(cols, msql.ColumnValue{Name: "link_image", Value: imageID})
 		}
-		cols = append(cols, msql.ColumnValue{Name: "link_image", Value: imageID})
 	}
 
 	query, args := msql.BuildInsertQuery("posts", cols)
@@ -643,13 +664,28 @@ func createPost(ctx context.Context, db *sql.DB, opts *createPostOpts) (*Post, e
 	}
 
 	if opts.postType == PostTypeImage {
-		// Save image post image.
-		if _, err = tx.ExecContext(ctx, "INSERT INTO post_images (post_id, image_id) VALUES (?, ?)", post.ID, opts.image); err != nil {
+		// Insert the rows into post_images table.
+		var rows [][]msql.ColumnValue
+		for _, image := range opts.images {
+			row := []msql.ColumnValue{
+				{Name: "post_id", Value: post.ID},
+				{Name: "image_id", Value: image.ImageID},
+			}
+			rows = append(rows, row)
+		}
+
+		query, args := msql.BuildInsertQuery("post_images", rows...)
+		if _, err = tx.ExecContext(ctx, query, args...); err != nil {
 			tx.Rollback()
 			return nil, err
 		}
-		// Delete row from temp images table.
-		if _, err = tx.ExecContext(ctx, "DELETE FROM temp_images_2 WHERE image_id = ?", opts.image); err != nil {
+
+		// Delete rows from the temp_images table.
+		imageIDs := make([]any, len(opts.images))
+		for i := range opts.images {
+			imageIDs[i] = opts.images[i].ImageID
+		}
+		if _, err = tx.ExecContext(ctx, fmt.Sprintf("DELETE FROM temp_images WHERE image_id IN %s", msql.InClauseQuestionMarks(len(opts.images))), imageIDs...); err != nil {
 			tx.Rollback()
 			return nil, err
 		}
@@ -675,6 +711,11 @@ func createPost(ctx context.Context, db *sql.DB, opts *createPostOpts) (*Post, e
 		return nil, err
 	}
 
+	if _, err := tx.ExecContext(ctx, "UPDATE communities SET posts_count = posts_count + 1 WHERE id = ?", opts.community); err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
 	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -692,12 +733,16 @@ func CreateTextPost(ctx context.Context, db *sql.DB, author, community uid.ID, t
 	})
 }
 
-func CreateImagePost(ctx context.Context, db *sql.DB, author, community uid.ID, title string, imageID uid.ID) (*Post, error) {
+func CreateImagePost(ctx context.Context, db *sql.DB, author, community uid.ID, title string, imgs []*ImageUpload) (*Post, error) {
 	// We don't check whether the image belongs to the person who uploaded it.
 	// This is not a big deal as image ids are hard to guess.
 
-	// Check if the image exists.
-	if _, err := images.GetImageRecord(ctx, db, imageID); err != nil {
+	// Check if the images exist.
+	recordIDs := make([]uid.ID, len(imgs))
+	for i := range imgs {
+		recordIDs[i] = imgs[i].ImageID
+	}
+	if _, err := images.GetImageRecords(ctx, db, recordIDs...); err != nil {
 		if err == images.ErrImageNotFound {
 			return nil, errImageNotFound
 		}
@@ -709,7 +754,7 @@ func CreateImagePost(ctx context.Context, db *sql.DB, author, community uid.ID, 
 		author:    author,
 		community: community,
 		title:     title,
-		image:     imageID,
+		images:    imgs,
 	})
 }
 
@@ -726,10 +771,11 @@ func getLinkPostImage(u *url.URL) []byte {
 
 	imageURL, err := httputil.ExtractOpenGraphImage(res.Body)
 	if err != nil {
-		// TODO: Log this error.
+		log.Printf("error extracting the og:image tag of url: %v\n", u)
+		return nil
 	}
 	if imageURL == "" {
-		// Since og:image not found, see if the link itself is an image.
+		// Since og:image is not found, see if the link itself is an image.
 		probablyAnImage := slices.Contains([]string{"image/jpeg", "image/png", "image/webp"}, res.Header.Get("Content-Type"))
 		if !probablyAnImage {
 			exts := []string{".jpg", ".jpeg", ".png", ".webp"}
@@ -750,8 +796,14 @@ func getLinkPostImage(u *url.URL) []byte {
 			return nil
 		}
 		defer res.Body.Close()
+		if res.StatusCode < 200 || res.StatusCode > 299 {
+			return nil
+		}
 		image, err := io.ReadAll(res.Body)
 		if err != nil {
+			return nil
+		}
+		if len(image) == 0 {
 			return nil
 		}
 		return image
@@ -801,7 +853,7 @@ func (p *Post) HasLinkImage() bool {
 }
 
 // Save updates the post's updatable fields.
-func (p *Post) Save(ctx context.Context, user uid.ID) error {
+func (p *Post) Save(ctx context.Context, db *sql.DB, user uid.ID) error {
 	if !p.AuthorID.EqualsTo(user) {
 		return errNotAuthor
 	}
@@ -823,7 +875,7 @@ func (p *Post) Save(ctx context.Context, user uid.ID) error {
 	query += ", edited_at = ? WHERE id = ?"
 	args = append(args, now, p.ID)
 
-	_, err := p.db.ExecContext(ctx, query, args...)
+	_, err := db.ExecContext(ctx, query, args...)
 	if err == nil {
 		p.EditedAt.Valid = true
 		p.EditedAt.Time = now
@@ -851,7 +903,7 @@ func (p *Post) setGhostAuthorID() {
 // Delete deletes p on behalf of user, who's deleting the post in his capacity
 // as g. In case the post is deleted by an admin or a mod, a notification is
 // sent to the original poster.
-func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteContent bool) error {
+func (p *Post) Delete(ctx context.Context, db *sql.DB, user uid.ID, g UserGroup, deleteContent bool, sendNotif bool) error {
 	if p.Deleted && !(deleteContent && !p.DeletedContent) {
 		return &httperr.Error{
 			HTTPStatus: http.StatusConflict,
@@ -870,7 +922,7 @@ func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteConte
 			return errNotAuthor
 		}
 	case UserGroupMods:
-		is, err := UserMod(ctx, p.db, p.CommunityID, user)
+		is, err := UserMod(ctx, db, p.CommunityID, user)
 		if err != nil {
 			return err
 		}
@@ -878,7 +930,7 @@ func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteConte
 			return errNotMod
 		}
 	case UserGroupAdmins:
-		user, err := GetUser(ctx, p.db, user, nil)
+		user, err := GetUser(ctx, db, user, nil)
 		if err != nil {
 			return err
 		}
@@ -890,15 +942,15 @@ func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteConte
 	}
 
 	// Unpin all pins of this post:
-	if err := p.Pin(ctx, user, true, true, true); err != nil { // unpin site-wide pin
+	if err := p.Pin(ctx, db, user, true, true, true); err != nil { // unpin site-wide pin
 		return err
 	}
-	if err := p.Pin(ctx, user, false, true, true); err != nil { // unpin community pin
+	if err := p.Pin(ctx, db, user, false, true, true); err != nil { // unpin community pin
 		return err
 	}
 
 	now := time.Now()
-	err := msql.Transact(ctx, p.db, func(tx *sql.Tx) (err error) {
+	err := msql.Transact(ctx, db, func(tx *sql.Tx) (err error) {
 		if !deleteContent || (deleteContent && !p.Deleted) {
 			q := "UPDATE posts SET deleted = ?, deleted_at = ?, deleted_by = ?, deleted_as = ? WHERE id = ?"
 			if _, err := tx.ExecContext(ctx, q, true, now, user, g, p.ID); err != nil {
@@ -929,11 +981,17 @@ func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteConte
 				if _, err := tx.ExecContext(ctx, "DELETE FROM post_images WHERE post_id = ?", p.ID); err != nil {
 					return err
 				}
-				if err := images.DeleteImageTx(ctx, tx, p.db, *p.Image.ID); err != nil {
+
+				imageIDs := make([]uid.ID, len(p.Images))
+				for i := range p.Images {
+					imageIDs[i] = *p.Images[i].ID
+				}
+
+				if err := images.DeleteImagesTx(ctx, tx, db, imageIDs...); err != nil {
 					return err
 				}
 			} else if p.Type == PostTypeLink && p.HasLinkImage() {
-				if err := images.DeleteImageTx(ctx, tx, p.db, *p.Link.Image.ID); err != nil {
+				if err := images.DeleteImagesTx(ctx, tx, db, *p.Link.Image.ID); err != nil {
 					return err
 				}
 			}
@@ -956,12 +1014,12 @@ func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteConte
 	p.DeletedAs = g
 
 	if g != UserGroupNormal {
-		RemoveAllReportsOfPost(ctx, p.db, p.ID)
+		RemoveAllReportsOfPost(ctx, db, p.ID)
 	}
 
-	if g == UserGroupAdmins || g == UserGroupMods {
+	if sendNotif && (g == UserGroupAdmins || g == UserGroupMods) {
 		go func() {
-			if err := CreatePostDeletedNotification(context.Background(), p.db, p.AuthorID, g, true, p.ID); err != nil {
+			if err := CreatePostDeletedNotification(context.Background(), db, p.AuthorID, g, true, p.ID); err != nil {
 				log.Printf("Failed to create deleted_post notification on post %v\n", p.PublicID)
 			}
 		}()
@@ -972,10 +1030,10 @@ func (p *Post) Delete(ctx context.Context, user uid.ID, g UserGroup, deleteConte
 
 // Lock locks the post on behalf of user who's locking the post in his or her
 // capacity as g.
-func (p *Post) Lock(ctx context.Context, user uid.ID, g UserGroup) error {
+func (p *Post) Lock(ctx context.Context, db *sql.DB, user uid.ID, g UserGroup) error {
 	switch g {
 	case UserGroupMods:
-		is, err := UserMod(ctx, p.db, p.CommunityID, user)
+		is, err := UserMod(ctx, db, p.CommunityID, user)
 		if err != nil {
 			return err
 		}
@@ -983,7 +1041,7 @@ func (p *Post) Lock(ctx context.Context, user uid.ID, g UserGroup) error {
 			return errNotMod
 		}
 	case UserGroupAdmins:
-		user, err := GetUser(ctx, p.db, user, nil)
+		user, err := GetUser(ctx, db, user, nil)
 		if err != nil {
 			return err
 		}
@@ -995,7 +1053,7 @@ func (p *Post) Lock(ctx context.Context, user uid.ID, g UserGroup) error {
 	}
 
 	now := time.Now()
-	_, err := p.db.ExecContext(ctx, "UPDATE posts SET locked = ?, locked_by = ?, locked_by_group = ?, locked_at = ? WHERE id = ?", true, user, g, now, p.ID)
+	_, err := db.ExecContext(ctx, "UPDATE posts SET locked = ?, locked_by = ?, locked_by_group = ?, locked_at = ? WHERE id = ?", true, user, g, now, p.ID)
 	if err == nil {
 		p.Locked = true
 		p.LockedAt = msql.NewNullTime(now)
@@ -1006,14 +1064,14 @@ func (p *Post) Lock(ctx context.Context, user uid.ID, g UserGroup) error {
 }
 
 // Unlock unlocks the post on behalf of user.
-func (p *Post) Unlock(ctx context.Context, user uid.ID) error {
+func (p *Post) Unlock(ctx context.Context, db *sql.DB, user uid.ID) error {
 	// TODO: Add a UserGroup argument to this method.
 
-	isMod, err := UserMod(ctx, p.db, p.CommunityID, user)
+	isMod, err := UserMod(ctx, db, p.CommunityID, user)
 	if err != nil {
 		return err
 	}
-	u, err := GetUser(ctx, p.db, user, nil)
+	u, err := GetUser(ctx, db, user, nil)
 	if err != nil {
 		return err
 	}
@@ -1022,7 +1080,7 @@ func (p *Post) Unlock(ctx context.Context, user uid.ID) error {
 		return httperr.NewForbidden("not-mod-not-admin", "User is neither a moderator nor an admin.")
 	}
 
-	_, err = p.db.ExecContext(ctx, "UPDATE posts SET locked = ?, locked_by = null, locked_by_group = ?, locked_at = null WHERE id = ?", false, UserGroupNaN, p.ID)
+	_, err = db.ExecContext(ctx, "UPDATE posts SET locked = ?, locked_by = null, locked_by_group = ?, locked_at = null WHERE id = ?", false, UserGroupNaN, p.ID)
 	if err == nil {
 		p.Locked = false
 		p.LockedAt.Valid = false
@@ -1037,7 +1095,7 @@ const MaxPinnedPosts = 2
 // Pin pins a post on behalf of user to its community if siteWide is false,
 // otherwise it pins the post site-wide. If skipPermissions is true, it's not
 // checked if user has the permissioned to perform this action.
-func (p *Post) Pin(ctx context.Context, user uid.ID, siteWide, unpin bool, skipPermissions bool) error {
+func (p *Post) Pin(ctx context.Context, db *sql.DB, user uid.ID, siteWide, unpin bool, skipPermissions bool) error {
 	if p.Deleted && !unpin {
 		return httperr.NewForbidden("cannot-pin-deleted-post", "Cannot pin deleted posts.")
 	}
@@ -1056,7 +1114,7 @@ func (p *Post) Pin(ctx context.Context, user uid.ID, siteWide, unpin bool, skipP
 	// Check permissions.
 	if !skipPermissions {
 		if siteWide { // for site-wise pins
-			admin, err := IsAdmin(p.db, &user)
+			admin, err := IsAdmin(db, &user)
 			if err != nil {
 				return err
 			}
@@ -1064,13 +1122,13 @@ func (p *Post) Pin(ctx context.Context, user uid.ID, siteWide, unpin bool, skipP
 				return errNotAdmin
 			}
 		} else { // for community-wide pins
-			isMod, err := UserMod(ctx, p.db, p.CommunityID, user)
+			isMod, err := UserMod(ctx, db, p.CommunityID, user)
 			if err != nil {
 				return err
 			}
 			if !isMod {
 				// User is not a mod of the community. See if he's an admin.
-				admin, err := IsAdmin(p.db, &user)
+				admin, err := IsAdmin(db, &user)
 				if err != nil {
 					return err
 				}
@@ -1081,7 +1139,7 @@ func (p *Post) Pin(ctx context.Context, user uid.ID, siteWide, unpin bool, skipP
 		}
 	}
 
-	return msql.Transact(ctx, p.db, func(tx *sql.Tx) (err error) {
+	return msql.Transact(ctx, db, func(tx *sql.Tx) (err error) {
 		var (
 			query string
 			args  []any
@@ -1124,21 +1182,21 @@ func (p *Post) Pin(ctx context.Context, user uid.ID, siteWide, unpin bool, skipP
 	})
 }
 
-func (p *Post) updatePostsTablesPoints(ctx context.Context) error {
+func (p *Post) updatePostsTablesPoints(ctx context.Context, db *sql.DB) error {
 	for _, table := range postsTables {
-		if _, err := p.db.ExecContext(ctx, "UPDATE "+table+" SET points = ? WHERE post_id = ?", p.Points, p.ID); err != nil {
+		if _, err := db.ExecContext(ctx, "UPDATE "+table+" SET points = ? WHERE post_id = ?", p.Points, p.ID); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (p *Post) Vote(ctx context.Context, user uid.ID, up bool) error {
+func (p *Post) Vote(ctx context.Context, db *sql.DB, user uid.ID, up bool) error {
 	if p.Locked {
 		return errPostLocked
 	}
 
-	tx, err := p.db.BeginTx(ctx, nil)
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -1190,34 +1248,34 @@ func (p *Post) Vote(ctx context.Context, user uid.ID, up bool) error {
 
 	// Attempt to update user's points.
 	if up && !p.AuthorID.EqualsTo(user) {
-		incrementUserPoints(ctx, p.db, p.AuthorID, 1)
+		incrementUserPoints(ctx, db, p.AuthorID, 1)
 	}
 
 	// Attempt to create a notification (only for upvotes).
 	if !p.AuthorID.EqualsTo(user) && up {
 		go func() {
-			if err := CreateNewVotesNotification(context.Background(), p.db, p.AuthorID, p.CommunityName, true, p.ID); err != nil {
+			if err := CreateNewVotesNotification(context.Background(), db, p.AuthorID, p.CommunityName, true, p.ID); err != nil {
 				log.Printf("Failed creating new_votes notification: %v\n", err)
 			}
 		}()
 	}
 
-	return p.updatePostsTablesPoints(ctx)
+	return p.updatePostsTablesPoints(ctx, db)
 }
 
 // DeleteVote undos users's vote on post.
-func (p *Post) DeleteVote(ctx context.Context, user uid.ID) error {
+func (p *Post) DeleteVote(ctx context.Context, db *sql.DB, user uid.ID) error {
 	if p.Locked {
 		return errPostLocked
 	}
 
 	id, up := 0, false
-	row := p.db.QueryRowContext(ctx, "SELECT id, up FROM post_votes WHERE post_id = ? AND user_id = ?", p.ID, user)
+	row := db.QueryRowContext(ctx, "SELECT id, up FROM post_votes WHERE post_id = ? AND user_id = ?", p.ID, user)
 	if err := row.Scan(&id, &up); err != nil {
 		return err
 	}
 
-	tx, err := p.db.BeginTx(ctx, nil)
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -1259,20 +1317,20 @@ func (p *Post) DeleteVote(ctx context.Context, user uid.ID) error {
 
 	// Attempt to update user's points.
 	if up && !p.AuthorID.EqualsTo(user) {
-		incrementUserPoints(ctx, p.db, p.AuthorID, -1)
+		incrementUserPoints(ctx, db, p.AuthorID, -1)
 	}
 
-	return p.updatePostsTablesPoints(ctx)
+	return p.updatePostsTablesPoints(ctx, db)
 }
 
 // ChangeVote changes user's vote on post.
-func (p *Post) ChangeVote(ctx context.Context, user uid.ID, up bool) error {
+func (p *Post) ChangeVote(ctx context.Context, db *sql.DB, user uid.ID, up bool) error {
 	if p.Locked {
 		return errPostLocked
 	}
 
 	id, dbUp := 0, false
-	row := p.db.QueryRowContext(ctx, "SELECT id, up FROM post_votes WHERE post_id = ? AND user_id = ?", p.ID, user)
+	row := db.QueryRowContext(ctx, "SELECT id, up FROM post_votes WHERE post_id = ? AND user_id = ?", p.ID, user)
 	if err := row.Scan(&id, &dbUp); err != nil {
 		return err
 	}
@@ -1281,7 +1339,7 @@ func (p *Post) ChangeVote(ctx context.Context, user uid.ID, up bool) error {
 		return nil
 	}
 
-	tx, err := p.db.BeginTx(ctx, nil)
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -1328,10 +1386,10 @@ func (p *Post) ChangeVote(ctx context.Context, user uid.ID, up bool) error {
 		if dbUp {
 			point = -1
 		}
-		incrementUserPoints(ctx, p.db, p.AuthorID, point)
+		incrementUserPoints(ctx, db, p.AuthorID, point)
 	}
 
-	return p.updatePostsTablesPoints(ctx)
+	return p.updatePostsTablesPoints(ctx, db)
 }
 
 func getComments(ctx context.Context, db *sql.DB, viewer *uid.ID, where string, args ...interface{}) ([]*Comment, error) {
@@ -1380,7 +1438,7 @@ type CommentsCursor struct {
 }
 
 // GetComments populates c.Comments and returns the next comment's cursor.
-func (p *Post) GetComments(ctx context.Context, viewer *uid.ID, cursor *CommentsCursor) (*CommentsCursor, error) {
+func (p *Post) GetComments(ctx context.Context, db *sql.DB, viewer *uid.ID, cursor *CommentsCursor) (*CommentsCursor, error) {
 	var args []any
 	where := "WHERE comments.post_id = ? "
 	args = append(args, p.ID)
@@ -1391,7 +1449,7 @@ func (p *Post) GetComments(ctx context.Context, viewer *uid.ID, cursor *Comments
 	where += "ORDER BY upvotes DESC, comments.id DESC LIMIT ?"
 	args = append(args, commentsFetchLimit+1)
 
-	all, err := getComments(ctx, p.db, viewer, where, args...)
+	all, err := getComments(ctx, db, viewer, where, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1432,7 +1490,7 @@ func (p *Post) GetComments(ctx context.Context, viewer *uid.ID, cursor *Comments
 	}
 
 	if len(toGet) > 0 {
-		c2, err := GetCommentsByIDs(ctx, p.db, viewer, toGet...)
+		c2, err := GetCommentsByIDs(ctx, db, viewer, toGet...)
 		if err != nil {
 			return nil, err
 		}
@@ -1448,8 +1506,8 @@ func (p *Post) GetComments(ctx context.Context, viewer *uid.ID, cursor *Comments
 }
 
 // GetCommentReplies returns all the replies of comment.
-func (p *Post) GetCommentReplies(ctx context.Context, viewer *uid.ID, comment uid.ID) ([]*Comment, error) {
-	rows, err := p.db.QueryContext(ctx, "SELECT reply_id FROM comment_replies WHERE parent_id = ?", comment)
+func (p *Post) GetCommentReplies(ctx context.Context, db *sql.DB, viewer *uid.ID, comment uid.ID) ([]*Comment, error) {
+	rows, err := db.QueryContext(ctx, "SELECT reply_id FROM comment_replies WHERE parent_id = ?", comment)
 	if err != nil {
 		return nil, err
 	}
@@ -1463,23 +1521,23 @@ func (p *Post) GetCommentReplies(ctx context.Context, viewer *uid.ID, comment ui
 		return nil, nil
 	}
 
-	return GetCommentsByIDs(ctx, p.db, viewer, ids...)
+	return GetCommentsByIDs(ctx, db, viewer, ids...)
 }
 
 // AddComment adds a new comment to post.
-func (p *Post) AddComment(ctx context.Context, user uid.ID, g UserGroup, parentComment *uid.ID, body string) (*Comment, error) {
+func (p *Post) AddComment(ctx context.Context, db *sql.DB, user uid.ID, g UserGroup, parentComment *uid.ID, body string) (*Comment, error) {
 	if p.Locked {
 		return nil, errPostLocked
 	}
 
 	// Check if author is banned from community.
-	if is, err := IsUserBannedFromCommunity(ctx, p.db, p.CommunityID, user); err != nil {
+	if is, err := IsUserBannedFromCommunity(ctx, db, p.CommunityID, user); err != nil {
 		return nil, err
 	} else if is {
 		return nil, errUserBannedFromCommunity
 	}
 
-	u, err := GetUser(ctx, p.db, user, nil)
+	u, err := GetUser(ctx, db, user, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1488,7 +1546,7 @@ func (p *Post) AddComment(ctx context.Context, user uid.ID, g UserGroup, parentC
 	switch g {
 	case UserGroupNormal:
 	case UserGroupMods:
-		is, err := UserMod(ctx, p.db, p.CommunityID, user)
+		is, err := UserMod(ctx, db, p.CommunityID, user)
 		if err != nil {
 			return nil, err
 		}
@@ -1504,17 +1562,17 @@ func (p *Post) AddComment(ctx context.Context, user uid.ID, g UserGroup, parentC
 	}
 
 	body = strings.TrimSpace(body)
-	comment, err := addComment(ctx, p.db, p, u, parentComment, body)
+	comment, err := addComment(ctx, db, p, u, parentComment, body)
 	if err != nil {
 		return nil, err
 	}
-	comment.ChangeUserGroup(ctx, u.ID, g)
+	comment.ChangeUserGroup(ctx, db, u.ID, g)
 	return comment, nil
 }
 
 // ChangeUserGroup changes the capacity in which the post's author submitted the
 // post.
-func (p *Post) ChangeUserGroup(ctx context.Context, user uid.ID, g UserGroup) error {
+func (p *Post) ChangeUserGroup(ctx context.Context, db *sql.DB, user uid.ID, g UserGroup) error {
 	if !p.AuthorID.EqualsTo(user) {
 		return errNotAuthor
 	}
@@ -1525,7 +1583,7 @@ func (p *Post) ChangeUserGroup(ctx context.Context, user uid.ID, g UserGroup) er
 	switch g {
 	case UserGroupNormal:
 	case UserGroupMods:
-		is, err := UserMod(ctx, p.db, p.CommunityID, user)
+		is, err := UserMod(ctx, db, p.CommunityID, user)
 		if err != nil {
 			return err
 		}
@@ -1533,7 +1591,7 @@ func (p *Post) ChangeUserGroup(ctx context.Context, user uid.ID, g UserGroup) er
 			return errNotMod
 		}
 	case UserGroupAdmins:
-		u, err := GetUser(ctx, p.db, user, nil)
+		u, err := GetUser(ctx, db, user, nil)
 		if err != nil {
 			return err
 		}
@@ -1544,11 +1602,33 @@ func (p *Post) ChangeUserGroup(ctx context.Context, user uid.ID, g UserGroup) er
 		return errInvalidUserGroup
 	}
 
-	_, err := p.db.ExecContext(ctx, "UPDATE posts SET user_group = ? WHERE id = ? AND deleted_at IS NULL", g, p.ID)
+	_, err := db.ExecContext(ctx, "UPDATE posts SET user_group = ? WHERE id = ? AND deleted_at IS NULL", g, p.ID)
 	if err == nil {
 		p.PostedAs = g
 	}
 	return err
+}
+
+// AnnounceToAllUsers starts a background process to send an announcement
+// notification of this post to all users. The viewer has to be an admin.
+func (p *Post) AnnounceToAllUsers(ctx context.Context, db *sql.DB, viewer uid.ID) error {
+	if is, err := IsAdmin(db, &viewer); err != nil {
+		return err
+	} else if !is {
+		return errNotAdmin
+	}
+
+	if _, err := db.ExecContext(ctx, "INSERT INTO announcement_posts (post_id, announced_by) VALUES (?, ?)", p.ID, viewer); err != nil {
+		if msql.IsErrDuplicateErr(err) {
+			return &httperr.Error{
+				HTTPStatus: http.StatusConflict,
+				Code:       "duplicate",
+				Message:    "Post was already announced",
+			}
+		}
+		return err
+	}
+	return nil
 }
 
 // PurgePostsFromTempTables removes posts from posts_today, posts_week, etc
@@ -1696,7 +1776,7 @@ func SavePostImage(ctx context.Context, db *sql.DB, authorID uid.ID, image []byt
 			return fmt.Errorf("failed to save post image (author: %v): %w", authorID, err)
 		}
 		imageID = id
-		if _, err := tx.ExecContext(ctx, "INSERT INTO temp_images_2 (user_id, image_id) values (?, ?)", authorID, imageID); err != nil {
+		if _, err := tx.ExecContext(ctx, "INSERT INTO temp_images (user_id, image_id) values (?, ?)", authorID, imageID); err != nil {
 			return fmt.Errorf("failed to insert row into temp_images (author: %v, image: %v): %w", authorID, imageID, err)
 		}
 		return nil
@@ -1711,7 +1791,7 @@ func SavePostImage(ctx context.Context, db *sql.DB, authorID uid.ID, image []byt
 // many were removed.
 func RemoveTempImages(ctx context.Context, db *sql.DB) (int, error) {
 	t := time.Now().Add(-time.Hour * 12)
-	rows, err := db.QueryContext(ctx, "select image_id from temp_images_2 where created_at < ?", t)
+	rows, err := db.QueryContext(ctx, "select image_id from temp_images where created_at < ?", t)
 	if err != nil {
 		return 0, err
 	}
@@ -1737,12 +1817,12 @@ func RemoveTempImages(ctx context.Context, db *sql.DB) (int, error) {
 		for i := range imageIDs {
 			args[i] = imageIDs[i]
 		}
-		query := fmt.Sprintf("DELETE FROM temp_images_2 WHERE image_id IN %s", msql.InClauseQuestionMarks(len(imageIDs)))
+		query := fmt.Sprintf("DELETE FROM temp_images WHERE image_id IN %s", msql.InClauseQuestionMarks(len(imageIDs)))
 		if _, err := db.ExecContext(ctx, query, args...); err != nil {
 			return fmt.Errorf("failed to delete %d rows from temp_images: %w", len(imageIDs), err)
 		}
 		for _, id := range imageIDs {
-			if err := images.DeleteImageTx(ctx, tx, db, id); err != nil {
+			if err := images.DeleteImagesTx(ctx, tx, db, id); err != nil {
 				return err
 			}
 		}

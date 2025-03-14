@@ -1,10 +1,9 @@
-/* eslint-disable jsx-a11y/click-events-have-key-events */
-import React, { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
-import { useDelayedEffect, useQuery } from '../../hooks';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { snackAlertError } from '../../slices/mainSlice';
 import { kRound, mfetchjson, selectImageCopyURL } from '../../helper';
+import { useDelayedEffect, useQuery } from '../../hooks';
+import { snackAlertError } from '../../slices/mainSlice';
 
 const SelectCommunity = ({ initial = '', onFocus, onChange, disabled = false }) => {
   const dispatch = useDispatch();
@@ -13,7 +12,7 @@ const SelectCommunity = ({ initial = '', onFocus, onChange, disabled = false }) 
   useEffect(() => {
     (async function () {
       try {
-        const communities = await mfetchjson('/api/communities?limit=10');
+        const communities = await mfetchjson('/api/communities?sort=size&limit=10');
         setSuggestions(communities);
       } catch (error) {
         dispatch(snackAlertError(error));
@@ -39,17 +38,16 @@ const SelectCommunity = ({ initial = '', onFocus, onChange, disabled = false }) 
 
   const handleChange = (e) => setValue(e.target.value);
   useDelayedEffect(
-    () => {
+    useCallback(() => {
       (async function () {
         try {
-          const communities = await mfetchjson(`/api/communities?q=${value}&limit=10`);
+          const communities = await mfetchjson(`/api/communities?q=${value}&sort=size&limit=10`);
           setSuggestions(communities);
         } catch (error) {
           console.error(error);
         }
       })();
-    },
-    [value],
+    }, [value]),
     200
   );
 

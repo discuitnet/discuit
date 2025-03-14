@@ -1,11 +1,11 @@
-import React from 'react';
 import PropTypes from 'prop-types';
-import ShowMoreBox from '../../components/ShowMoreBox';
-import MarkdownBody from '../../components/MarkdownBody';
-import JoinButton from '../Community/JoinButton';
-import { stringCount } from '../../helper';
-import Link from '../../components/Link';
+import React from 'react';
 import CommunityProPic from '../../components/CommunityProPic';
+import Link from '../../components/Link';
+import MarkdownBody from '../../components/MarkdownBody';
+import ShowMoreBox from '../../components/ShowMoreBox';
+import { stringCount } from '../../helper';
+import JoinButton from '../Community/JoinButton';
 
 const CommunityCard = ({ community }) => {
   const { name } = community;

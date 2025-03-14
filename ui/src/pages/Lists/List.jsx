@@ -1,36 +1,29 @@
-import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { useParams } from 'react-router-dom';
-import Sidebar from '../../components/Sidebar';
-import MiniFooter from '../../components/MiniFooter';
+import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import Link from '../../components/Link';
-import Modal from '../../components/Modal';
-import { ButtonClose, ButtonMore } from '../../components/Button';
-import Input, { InputWithCount } from '../../components/Input';
-import { APIError, dateString1, mfetch, mfetchjson, stringCount, timeAgo } from '../../helper';
 import { useDispatch, useSelector } from 'react-redux';
-import { listsAdded, snackAlertError } from '../../slices/mainSlice';
-import {
-  FeedItem,
-  feedInViewItemsUpdated,
-  feedItemHeightChanged,
-  feedReloaded,
-  feedUpdated,
-  selectFeed,
-  selectFeedInViewItems,
-} from '../../slices/feedsSlice';
-import Feed from '../../components/Feed';
-import { MemorizedPostCard } from '../../components/PostCard/PostCard';
-import { selectUser } from '../../slices/usersSlice';
-import { MemorizedComment } from '../User/Comment';
-import PageLoading from '../../components/PageLoading';
-import NotFound from '../NotFound';
-import { listAdded, selectList } from '../../slices/listsSlice';
-import { useInputUsername } from '../../hooks';
-import { usernameMaxLength } from '../../config';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useParams } from 'react-router-dom';
+import { ButtonClose, ButtonMore } from '../../components/Button';
 import Dropdown from '../../components/Dropdown';
+import Feed from '../../components/Feed';
+import { Form, FormField } from '../../components/Form';
+import Input, { Checkbox, InputWithCount } from '../../components/Input';
+import Link from '../../components/Link';
+import MiniFooter from '../../components/MiniFooter';
+import Modal from '../../components/Modal';
+import PageLoading from '../../components/PageLoading';
+import { MemorizedPostCard } from '../../components/PostCard/PostCard';
+import Sidebar from '../../components/Sidebar';
+import { usernameMaxLength } from '../../config';
+import { APIError, dateString1, mfetch, mfetchjson, stringCount, timeAgo } from '../../helper';
+import { useInputUsername } from '../../hooks';
+import { FeedItem, feedReloaded } from '../../slices/feedsSlice';
+import { listAdded, selectList } from '../../slices/listsSlice';
+import { listsAdded, snackAlertError } from '../../slices/mainSlice';
+import { selectUser } from '../../slices/usersSlice';
+import NotFound from '../NotFound';
+import { isInfiniteScrollingDisabled } from '../Settings/devicePrefs';
+import { MemorizedComment } from '../User/Comment';
 
 const List = () => {
   const dispatch = useDispatch();
@@ -72,70 +65,56 @@ const List = () => {
   }, [list, username, listname]);
 
   const feedEndpoint = `${listEndpoint}/items`;
-  const feed = useSelector(selectFeed(feedEndpoint));
-  const setFeed = (res) => {
-    const feedItems = (res.items ?? []).map(
+  const handleFeedFetch = async (next = null) => {
+    const url = next === null ? feedEndpoint : `${feedEndpoint}?next=${next}`;
+    const res = await mfetchjson(url);
+    const items = (res.items || []).map(
       (item) => new FeedItem(item.targetItem, item.targetType, item.id)
     );
-    dispatch(feedUpdated(feedEndpoint, feedItems, res.next ?? null));
+    return {
+      items,
+      next: res.next,
+    };
   };
 
-  const feedLoading = feed ? feed.loading : true;
-  const [feedLoadingError, setFeedLoadingError] = useState(null);
-
-  useEffect(() => {
-    if (!feedLoading) {
-      return;
-    }
-    const f = async () => {
-      try {
-        const res = await mfetch(feedEndpoint);
-        if (!res.ok) {
-          if (res.status === 404) {
-            setFeedLoadingError(new Error('feed not found'));
-            return;
-          }
-        }
-        setFeed(await res.json());
-      } catch (error) {
-        setFeedLoadingError(error);
-        dispatch(snackAlertError(error));
-      }
-    };
-    f();
-  }, [feedEndpoint, feedLoading]);
-
-  const [feedReloading, setFeedReloading] = useState(false);
-  const fetchNextItems = async () => {
-    if (feedReloading) return;
+  const handleRemoveFromList = async (item, type) => {
+    const endpoint = `/api/lists/${list.id}/items`;
     try {
-      setFeedReloading(true);
-      const res = await mfetchjson(`${feedEndpoint}?next=${feed.next}`);
-      setFeed(res);
+      await mfetchjson(endpoint, {
+        method: 'DELETE',
+        body: JSON.stringify({ targetId: item.id, targetType: type }),
+      });
+      dispatch(feedReloaded(feedEndpoint));
     } catch (error) {
       dispatch(snackAlertError(error));
-    } finally {
-      setFeedReloading(false);
     }
   };
+
+  const viewer = useSelector((state) => state.main.user);
+  const viewerListOwner = viewer && list && viewer.id === list.userId;
 
   const user = useSelector(selectUser(username));
   const handleRenderItem = (item) => {
     if (item.type === 'post') {
-      return <MemorizedPostCard initialPost={item.item} disableEmbeds={user && user.embedsOff} />;
+      return (
+        <MemorizedPostCard
+          initialPost={item.item}
+          disableEmbeds={user && user.embedsOff}
+          onRemoveFromList={viewerListOwner ? () => handleRemoveFromList(item.item, 'post') : null}
+          compact={compact}
+        />
+      );
     }
     if (item.type === 'comment') {
-      return <MemorizedComment comment={item.item} />;
+      return (
+        <MemorizedComment
+          comment={item.item}
+          onRemoveFromList={
+            viewerListOwner ? () => handleRemoveFromList(item.item, 'comment') : null
+          }
+        />
+      );
     }
-  };
-
-  const handleItemHeightChange = (height, item) => {
-    dispatch(feedItemHeightChanged(item.key, height));
-  };
-
-  const itemsInitiallyInView = useSelector(selectFeedInViewItems(feedEndpoint));
-  const handleSaveVisibleItems = (items) => {
-    dispatch(feedInViewItemsUpdated(feedEndpoint, items));
   };
 
   const handleRemoveAllItems = async () => {
@@ -165,11 +144,10 @@ const List = () => {
     }
   };
 
-  const viewer = useSelector((state) => state.main.user);
-  const viewerListOwner = viewer && list && viewer.id === list.userId;
+  const layout = useSelector((state) => state.main.feedLayout);
+  const compact = layout === 'compact';
 
-  if (feedLoading || feedLoadingError || listLoading !== 'loaded' || !list) {
-    console.log('loading: ', listLoading);
+  if (listLoading !== 'loaded' || !list) {
     if (listLoading === 'notfound') {
       return <NotFound />;
     }
@@ -215,15 +193,12 @@ const List = () => {
           {/*<PostsFeed feedType="all" />*/}
 
           <Feed
-            loading={feedLoading}
-            items={feed ? feed.items : []}
-            hasMore={Boolean(feed ? feed.next : false)}
-            onNext={fetchNextItems}
-            isMoreItemsLoading={feedReloading}
+            className="posts-feed"
+            feedId={feedEndpoint}
+            onFetch={handleFeedFetch}
             onRenderItem={handleRenderItem}
-            onItemHeightChange={handleItemHeightChange}
-            itemsInitiallyInView={itemsInitiallyInView}
-            onSaveVisibleItems={handleSaveVisibleItems}
+            infiniteScrollingDisabled={isInfiniteScrollingDisabled()}
+            compact={compact}
           />
         </div>
       </main>
@@ -461,48 +436,44 @@ export const EditListForm = ({ list, onCancel, onSuccess }) => {
 
   return (
     <>
-      <form className="modal-card-content" onSubmit={handleSubmit}>
+      <Form className="modal-card-content" onSubmit={handleSubmit}>
         <div className="edit-list-modal-form" onSubmit={handleSubmit}>
-          <InputWithCount
+          <FormField
             label="Name"
-            maxLength={usernameMaxLength}
             description="Name will be part of the URL of the list."
             error={nameError}
-            value={name}
-            onChange={handleNameChange}
-            onBlur={handleNameBlur}
-            autoFocus
-            style={{ marginBottom: 0 }}
-            autoComplete="name"
-          />
-          <Input
-            label="Display name"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-          />
-          <div className="checkbox is-check-last">
-            <label htmlFor="pub">Public</label>
-            <input
-              className="switch"
-              type="checkbox"
-              id="pub"
+            style={{ marginBottom: '5px' }}
+          >
+            <InputWithCount
+              maxLength={usernameMaxLength}
+              value={name}
+              onChange={handleNameChange}
+              onBlur={handleNameBlur}
+              autoFocus
+              autoComplete="name"
+            />
+          </FormField>
+          <FormField label="Display name">
+            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+          </FormField>
+          <FormField>
+            <Checkbox
+              variant="switch"
+              label="Public"
               checked={isPublic}
               onChange={(e) => setIsPublic(e.target.checked)}
             />
-          </div>
-          <div className="input-with-label">
-            <div className="input-label-box">
-              <div className="label">Description</div>
-            </div>
+          </FormField>
+          <FormField label="Description">
             <textarea
               rows="5"
               placeholder=""
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
-          </div>
+          </FormField>
         </div>
-      </form>
+      </Form>
       <div className="modal-card-actions">
         <button className="button-main" onClick={handleSubmit} disabled={formDisabled}>
           {list ? 'Save' : 'Create'}

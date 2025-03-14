@@ -20,7 +20,7 @@
     right: 0;
     // min-height: 100vh;
     background-color: var(--color-body);
-    z-index: 300;
+    z-index: 30000;
     display: flex;
     flex-direction: column;
     overflow-y: scroll;
@@ -150,6 +150,7 @@
         .page-new-form {
             --form-padding: 15px;
             --textarea-min-height: 300px;
+            position: relative;
             width: 100%;
             display: flex;
             .page-new-tabs {
@@ -188,6 +189,20 @@
                     color: var(--color-brand);
                 }
             }
+            .page-new-form-disabled {
+                position: absolute;
+                background: rgba(var(--base-fg), 0.05);
+                left: 0;
+                right: 0;
+                top: -2px;
+                bottom: 0;
+                border-radius: var(--border-radius);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                padding: var(--gap);
+            }
             textarea {
                 padding: 0;
                 background-color: transparent;
@@ -209,8 +224,7 @@
             }
             .page-new-image-upload {
                 display: flex;
-                align-items: center;
-                justify-content: center;
+                flex-direction: column;
                 .page-new-image-drop {
                     width: 100%;
                     height: var(--textarea-min-height);
@@ -224,6 +238,9 @@
                     &:hover,
                     &.is-dropping {
                         background-color: rgba(var(--base-bg), 0.028);
+                    }
+                    &.is-disabled {
+                        cursor: initial;
                     }
                     .page-new-image-text {
                         display: flex;
@@ -239,6 +256,7 @@
                     display: flex;
                     flex-direction: column;
                     border-radius: var(--border-radius);
+                    margin-bottom: var(--gap);
                     .contain-image {
                         max-height: none;
                         .image,

@@ -11,7 +11,7 @@ const MarkdownGuide = () => {
           <a href="https://en.wikipedia.org/wiki/Markdown" target="_blank" rel="noreferrer">
             Markdown
           </a>
-          {` to format posts and comments on ${CONFIG.siteName}. We support `}
+          {` to format posts and comments on ${import.meta.env.VITE_SITENAME}. We support `}
           <a href="https://commonmark.org/" target="_blank" rel="noreferrer">
             CommonMark
           </a>

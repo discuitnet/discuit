@@ -21,7 +21,7 @@
     right: 0;
     box-shadow: var(--box-shadow-navbar);
     border-bottom: var(--card-border);
-    z-index: 200;
+    z-index: 100000;
     height: var(--navbar-height);
     display: flex;
     align-items: center;
@@ -167,10 +167,10 @@
         align-items: center;
         z-index: 100;
         background: var(--color-bg);
+        padding: var(--card-padding) calc(var(--card-padding) * 2);
         .notifs-title {
             font-size: var(--fs-2xl);
         }
-        padding: var(--card-padding) calc(var(--card-padding) * 2);
         .dropdown-menu {
             width: max-content;
         }
@@ -339,6 +339,8 @@
     }
     .modal-card {
         @include mixins.card;
+    }
+    .modal-card {
         position: relative;
         z-index: 2;
         min-width: 320px;
@@ -366,15 +368,6 @@
             padding: var(--card-padding);
             display: flex;
             flex-direction: column;
-        }
-        .modal-card-content.is-form,
-        form.modal-card-content {
-            > * {
-                margin-bottom: var(--gap);
-                &:last-child {
-                    margin-bottom: 0;
-                }
-            }
         }
         .modal-card-actions {
             padding: var(--card-padding);
@@ -523,7 +516,7 @@
 
 .dropdown {
     position: relative;
-    z-index: 10;
+    z-index: 15;
     > .dropdown-target {
     }
     .dropdown-target {
@@ -582,7 +575,9 @@
     &.is-active {
         > .dropdown-target {
             .button-icon,
-            .button-text {
+            .button-text,
+            .button.is-icon,
+            button.is-icon {
                 background-color: var(--color-button);
             }
         }
@@ -919,6 +914,7 @@
     .showmorebox-body {
         max-height: 300px;
         overflow: hidden;
+        padding: 2px 0;
     }
     .showmorebox-button {
         margin-top: 5px;
@@ -947,19 +943,12 @@
     }
 }
 
-.select-bar,
-.select-bar-m {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: var(--gap);
-    .select-bar-name {
-        font-size: var(--fs-l);
-    }
+/*
+.select-bar {
+    @include mixins.card-sub;
 }
 
 .select-bar {
-    @include mixins.card-sub;
     padding: calc(var(--card-padding) / 2) var(--card-padding);
     .select-bar-options {
         display: flex;
@@ -999,9 +988,31 @@
         }
     }
 }
+*/
 
-.select-bar-m {
-    margin: 0 var(--gap-edge) var(--gap) var(--gap-edge);
+.select-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--gap);
+    margin-left: var(--post-card-votes-margin);
+    padding: calc(var(--card-padding) / 2) var(--card-padding);
+    position: relative;
+    z-index: 10000;
+    @include mixins.not-mobile() {
+        @include mixins.card-sub;
+    }
+    .left {
+    }
+    .right {
+        display: flex;
+        > * {
+            margin-left: calc(var(--gap) / 2);
+        }
+    }
+    .select-bar-name {
+        font-size: var(--fs-l);
+    }
     select {
         min-width: calc(7 * var(--gap));
     }
@@ -1010,6 +1021,12 @@
         font-weight: normal;
         padding-left: 1.5rem;
         padding-right: 1.5rem;
+    }
+    .dropdown .dropdown-target button {
+        background-color: rgba(var(--base-fg), 0.07);
+        @include mixins.mobile() {
+            background-color: var(--color-bg);
+        }
     }
 }
 
@@ -1117,6 +1134,110 @@
         @include mixins.mobile {
             padding: 0;
             padding-bottom: var(--gap);
+        }
+    }
+}
+
+.image-gallery {
+    position: relative;
+
+    // Without this, Chrome, for some reason, automatically selects the images
+    // when clicking on the next and previous buttons quickly.
+    user-select: none;
+
+    .image-gallery-next-btn {
+        position: absolute;
+        z-index: 100;
+        cursor: pointer;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        --padding: 30px;
+        padding: var(--padding); // for a larger click area
+        padding-right: 10px;
+        &.is-previous {
+            left: 0;
+            right: unset;
+            padding: var(--padding); // for a larger click area
+            padding-left: 10px;
+            svg {
+                transform: rotate(180deg);
+            }
+        }
+        svg {
+            --size: 28px;
+            width: var(--size);
+            height: var(--size);
+            filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
+        }
+    }
+    .image-gallery-images {
+        position: relative;
+        overflow: hidden;
+        .is-slot-1 {
+            position: absolute;
+            top: 0;
+            left: -100%;
+        }
+        .is-slot-3 {
+            position: absolute;
+            top: 0;
+            right: -100%;
+        }
+    }
+    .image-gallery-image {
+        background: #000;
+        height: 480px;
+        width: 100%;
+        .image {
+            width: 100%;
+            height: 100%;
+        }
+        img {
+            object-fit: contain;
+        }
+        &.is-previous,
+        &.is-next {
+            width: 0;
+            height: 0;
+            overflow: hidden;
+        }
+    }
+    .image-gallery-dots {
+        position: absolute;
+        z-index: 100;
+        bottom: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        .image-gallery-dot {
+            --size: 6px;
+            width: var(--size);
+            height: var(--size);
+            background: #fff;
+            filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
+            border-radius: 50%;
+            margin-right: 6px;
+            opacity: 0.45;
+            &:last-child {
+                margin-right: 0;
+            }
+            &.is-highlighted {
+                opacity: 1;
+            }
+        }
+    }
+}
+
+.simple-feed {
+    .simple-feed-items {
+        display: flex;
+        flex-direction: column;
+        .simple-feed-item {
+            margin-bottom: var(--gap);
+            &:last-child {
+                margin-bottom: 0;
+            }
         }
     }
 }

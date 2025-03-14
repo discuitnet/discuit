@@ -1,11 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
-import Input from '../../components/Input';
-import { mfetch, mfetchjson, validEmail } from '../../helper';
+import { Link } from 'react-router-dom/cjs/react-router-dom.min';
+import {
+  getNotificationsPermissions,
+  shouldAskForNotificationsPermissions,
+} from '../../PushNotifications';
+import { ButtonUpload } from '../../components/Button';
+import CommunityProPic from '../../components/CommunityProPic';
+import Dropdown from '../../components/Dropdown';
+import { FormField, FormSection } from '../../components/Form';
+import Input, { Checkbox } from '../../components/Input';
+import CommunityLink from '../../components/PostCard/CommunityLink';
+import { APIError, mfetch, mfetchjson, validEmail } from '../../helper';
 import { useIsChanged } from '../../hooks';
 import {
   mutesAdded,
+  settingsChanged,
   snackAlert,
   snackAlertError,
   unmuteCommunity,
@@ -14,15 +25,7 @@ import {
 } from '../../slices/mainSlice';
 import ChangePassword from './ChangePassword';
 import DeleteAccount from './DeleteAccount';
-import {
-  getNotificationsPermissions,
-  shouldAskForNotificationsPermissions,
-} from '../../PushNotifications';
-import Dropdown from '../../components/Dropdown';
-import CommunityLink from '../../components/PostCard/CommunityLink';
-import { Link } from 'react-router-dom/cjs/react-router-dom.min';
-import { ButtonUpload } from '../../components/Button';
-import CommunityProPic from '../../components/CommunityProPic';
+import { getDevicePreference, setDevicePreference } from './devicePrefs';
 
 const Settings = () => {
   const dispatch = useDispatch();
@@ -58,6 +61,16 @@ const Settings = () => {
     !user.hideUserProfilePictures
   );
 
+  // Per-device preferences:
+  const [font, setFont] = useState(getDevicePreference('font') ?? 'custom');
+  const fontOptions = {
+    custom: 'Custom', // value -> display name
+    system: 'System',
+  };
+  const [infiniteScrollingDisabed, setInfinitedScrollingDisabled] = useState(
+    getDevicePreference('infinite_scrolling_disabled') === 'true'
+  );
+
   const [changed, resetChanged] = useIsChanged([
     aboutMe /*, email*/,
     notifsSettings,
@@ -66,6 +79,8 @@ const Settings = () => {
     enableEmbeds,
     email,
     showUserProfilePictures,
+    font,
+    infiniteScrollingDisabed,
   ]);
 
   const applicationServerKey = useSelector((state) => state.main.vapidPublicKey);
@@ -113,6 +128,9 @@ const Settings = () => {
       dispatch(snackAlert('Please enter a valid email'));
       return;
     }
+    // Save device preferences first:
+    setDevicePreference('font', font);
+    setDevicePreference('infinite_scrolling_disabled', infiniteScrollingDisabed ? 'true' : 'false');
     try {
       const ruser = await mfetchjson(`/api/_settings?action=updateProfile`, {
         method: 'POST',
@@ -130,6 +148,7 @@ const Settings = () => {
       dispatch(userLoggedIn(ruser));
       dispatch(snackAlert('Settings saved.', 'settings_saved'));
       resetChanged();
+      dispatch(settingsChanged());
     } catch (error) {
       dispatch(snackAlertError(error));
     }
@@ -242,7 +261,7 @@ const Settings = () => {
     if (mute.type === 'community') {
       const community = mute.mutedCommunity;
       return (
-        <div>
+        <div className="mute-list-item">
           <CommunityLink name={community.name} proPic={community.proPic} />
           <button onClick={() => handleUnmute(mute)}>Unmute</button>
         </div>
@@ -265,140 +284,134 @@ const Settings = () => {
       <Helmet>
         <title>Settings</title>
       </Helmet>
-      <div className="account-settings card">
+      <div className="form account-settings card">
         <h1>Account settings</h1>
-        <div className="settings-propic">
-          <CommunityProPic name={user.username} proPic={user.proPic} size="standard" />
-          <ButtonUpload onChange={handleProPicUpload} disabled={isProPicUploading}>
-            Change
-          </ButtonUpload>
-          <button onClick={handleProPicDelete} disabled={isProPicUploading}>
-            Delete
-          </button>
-        </div>
-        <div className="flex-column">
-          <Input label="Username" value={user.username || ''} disabled />
-          <p className="input-desc">Username cannot be changed.</p>
-        </div>
-        <div className="flex-column">
-          <Input
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <div className="input-with-label">
-          <div className="input-label-box">
-            <div className="label">About me</div>
-          </div>
-          <textarea
-            rows="5"
-            placeholder="Write something about yourself..."
-            value={aboutMe}
-            onChange={(e) => setAboutMe(e.target.value)}
-          />
-        </div>
-        <ChangePassword />
-        <DeleteAccount user={user} />
-        <div className="input-with-label settings-prefs">
-          <div className="input-label-box">
-            <div className="label">Preferences</div>
-          </div>
-          <div className="settings-list">
-            <div>
-              <div>Home feed</div>
-              <Dropdown
-                aligned="right"
-                target={
-                  <button className="select-bar-dp-target">{homeFeedOptions[homeFeed]}</button>
-                }
-              >
-                <div className="dropdown-list">
-                  {Object.keys(homeFeedOptions)
-                    .filter((key) => key != homeFeed)
-                    .map((key) => (
-                      <div key={key} className="dropdown-item" onClick={() => setHomeFeed(key)}>
-                        {homeFeedOptions[key]}
-                      </div>
-                    ))}
-                </div>
-              </Dropdown>
-            </div>
-            <div className="checkbox is-check-last">
-              <label htmlFor="c3">Remember last feed sort</label>
-              <input
-                className="switch"
-                id="c3"
-                type="checkbox"
-                checked={rememberFeedSort}
-                onChange={(e) => setRememberFeedSort(e.target.checked)}
-              />
-            </div>
-            <div className="checkbox is-check-last">
-              <label htmlFor="c4">Enable embeds</label>
-              <input
-                className="switch"
-                id="c4"
-                type="checkbox"
-                checked={enableEmbeds}
-                onChange={(e) => setEnableEmbeds(e.target.checked)}
-              />
-            </div>
-            <div className="checkbox is-check-last">
-              <label htmlFor="c5">Show user profile pictures</label>
-              <input
-                className="switch"
-                id="c5"
-                type="checkbox"
-                checked={showUserProfilePictures}
-                onChange={(e) => setShowUserProfilePictures(e.target.checked)}
-              />
-            </div>
-          </div>
-        </div>
-        <div className="input-with-label settings-notifs">
-          <div className="input-label-box">
-            <div className="label">Notifications</div>
-          </div>
-          <div className="settings-list">
-            <div className="checkbox is-check-last">
-              <label htmlFor="c1">Enable upvote notifications</label>
-              <input
-                className="switch"
-                id="c1"
-                type="checkbox"
-                checked={notifsSettings.upvoteNotifs}
-                onChange={(e) => setNotifsSettings('upvoteNotifs', e.target.checked)}
-              />
-            </div>
-            <div className="checkbox is-check-last">
-              <label htmlFor="c2">Enable reply notifications</label>
-              <input
-                className="switch"
-                id="c2"
-                type="checkbox"
-                checked={notifsSettings.replyNotifs}
-                onChange={(e) => setNotifsSettings('replyNotifs', e.target.checked)}
-              />
-            </div>
-            {/*notificationsPermissions === 'granted' && (
-              <button onClick={handleDisablePushNotifications} style={{ alignSelf: 'flex-start' }}>
-                Disable push notifications
+        <FormSection>
+          <FormSection>
+            <div className="settings-propic">
+              <CommunityProPic name={user.username} proPic={user.proPic} size="standard" />
+              <ButtonUpload onChange={handleProPicUpload} disabled={isProPicUploading}>
+                Change
+              </ButtonUpload>
+              <button onClick={handleProPicDelete} disabled={isProPicUploading}>
+                Delete
               </button>
-            )*/}
-            {canEnableWebPushNotifications && (
+            </div>
+          </FormSection>
+          <FormField label="Username" description="Username cannot be changed.">
+            <Input value={user.username || ''} disabled />
+          </FormField>
+          <FormField label="Email">
+            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </FormField>
+          <FormField label="About me">
+            <textarea
+              rows="5"
+              placeholder="Write something about yourself..."
+              value={aboutMe}
+              onChange={(e) => setAboutMe(e.target.value)}
+            />
+          </FormField>
+          <FormField>
+            <ChangePassword />
+          </FormField>
+          <FormField>
+            <DeleteAccount user={user} />
+          </FormField>
+        </FormSection>
+        <FormSection heading="Preferences">
+          <FormField className="is-preference" label="Home feed">
+            <Dropdown
+              aligned="right"
+              target={<button className="select-bar-dp-target">{homeFeedOptions[homeFeed]}</button>}
+            >
+              <div className="dropdown-list">
+                {Object.keys(homeFeedOptions)
+                  .filter((key) => key != homeFeed)
+                  .map((key) => (
+                    <div key={key} className="dropdown-item" onClick={() => setHomeFeed(key)}>
+                      {homeFeedOptions[key]}
+                    </div>
+                  ))}
+              </div>
+            </Dropdown>
+          </FormField>
+          <FormField className="is-preference is-switch">
+            <Checkbox
+              variant="switch"
+              label="Remember last feed sort"
+              checked={rememberFeedSort}
+              onChange={(e) => setRememberFeedSort(e.target.checked)}
+            />
+          </FormField>
+          <FormField className="is-preference is-switch">
+            <Checkbox
+              label="Enable embeds"
+              variant="switch"
+              checked={enableEmbeds}
+              onChange={(e) => setEnableEmbeds(e.target.checked)}
+            />
+          </FormField>
+          <FormField className="is-preference is-switch">
+            <Checkbox
+              variant="switch"
+              label="Show user profile pictures"
+              checked={showUserProfilePictures}
+              onChange={(e) => setShowUserProfilePictures(e.target.checked)}
+            />
+          </FormField>
+        </FormSection>
+        <FormSection heading="Device preferences">
+          <FormField className="is-preference" label="Font">
+            <Dropdown
+              aligned="right"
+              target={<button className="select-bar-dp-target">{fontOptions[font]}</button>}
+            >
+              <div className="dropdown-list">
+                {Object.keys(fontOptions).map((key) => (
+                  <div key={key} className="dropdown-item" onClick={() => setFont(key)}>
+                    {fontOptions[key]}
+                  </div>
+                ))}
+              </div>
+            </Dropdown>
+          </FormField>
+          <FormField className="is-preference is-switch">
+            <Checkbox
+              variant="switch"
+              label="Enable infinite scrolling"
+              checked={!infiniteScrollingDisabed}
+              onChange={(e) => setInfinitedScrollingDisabled(!e.target.checked)}
+            />
+          </FormField>
+        </FormSection>
+        <FormSection heading="Notifications">
+          <FormField className="is-preference is-switch">
+            <Checkbox
+              variant="switch"
+              label="Enable upvote notifications"
+              checked={notifsSettings.upvoteNotifs}
+              onChange={(e) => setNotifsSettings('upvoteNotifs', e.target.checked)}
+            />
+          </FormField>
+          <FormField className="is-preference is-switch">
+            <Checkbox
+              variant="switch"
+              label="Enable reply notifications"
+              checked={notifsSettings.replyNotifs}
+              onChange={(e) => setNotifsSettings('replyNotifs', e.target.checked)}
+            />
+          </FormField>
+          {canEnableWebPushNotifications && (
+            <FormField>
               <button onClick={handleEnablePushNotifications} style={{ alignSelf: 'flex-start' }}>
                 Enable push notifications
               </button>
-            )}
-          </div>
-        </div>
-        <div className="input-with-label settings-prefs">
-          <div className="input-label-box">
-            <div className="label">Muted communities</div>
-          </div>
-          <div className="settings-list">
+            </FormField>
+          )}
+        </FormSection>
+        <FormSection heading="Muted communities">
+          <div className="mutes-list">
             {mutes.communityMutes.length === 0 && <div>None</div>}
             {mutes.communityMutes.map((mute) => renderMute(mute))}
             {mutes.communityMutes.length > 0 && (
@@ -410,12 +423,9 @@ const Settings = () => {
               </button>
             )}
           </div>
-        </div>
-        <div className="input-with-label settings-prefs">
-          <div className="input-label-box">
-            <div className="label">Muted users</div>
-          </div>
-          <div className="settings-list">
+        </FormSection>
+        <FormSection heading="Muted users">
+          <div className="mutes-list">
             {mutes.userMutes.length === 0 && <div>None</div>}
             {mutes.userMutes.map((mute) => renderMute(mute))}
             {mutes.userMutes.length > 0 && (
@@ -424,10 +434,17 @@ const Settings = () => {
               </button>
             )}
           </div>
-        </div>
-        <button className="button-main" disabled={!changed} onClick={handleSave}>
-          Save
-        </button>
+        </FormSection>
+        <FormField>
+          <button
+            className="button-main"
+            disabled={!changed}
+            onClick={handleSave}
+            style={{ width: '100%' }}
+          >
+            Save
+          </button>
+        </FormField>
       </div>
     </div>
   );

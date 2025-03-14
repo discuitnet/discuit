@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"golang.org/x/net/html"
@@ -12,6 +13,12 @@ import (
 
 // GetIP returns the IP address associated with r.
 func GetIP(r *http.Request) string {
+	if header := r.Header.Get("X-Forwarded-For"); header != "" {
+		addresses := strings.Split(header, ",")
+		if len(addresses) > 0 {
+			return strings.TrimSpace(addresses[len(addresses)-1])
+		}
+	}
 	host, _, _ := net.SplitHostPort(r.RemoteAddr)
 	return host
 }

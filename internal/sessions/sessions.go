@@ -61,13 +61,17 @@ type RedisStore struct {
 	// Session ID length (ie cookie value).
 	IDLength int
 
+	// If true, all session cookies will have the Secure flag. So they'll only
+	// be accessible over HTTPS connections.
+	Secure bool
+
 	pool *redis.Pool
 }
 
 // NewRedisStore returns a session store that uses Redis for storage. Redis
 // runs on tcp port 6379 by default.
 func NewRedisStore(network, address, cookieName string) (*RedisStore, error) {
-	store := &RedisStore{CookieName: cookieName, IDLength: defaultSessionIDLength}
+	store := &RedisStore{CookieName: cookieName, IDLength: defaultSessionIDLength, Secure: true}
 	store.pool = &redis.Pool{
 		MaxIdle: 30,
 		// MaxActive:   10,
@@ -143,7 +147,7 @@ func (rs *RedisStore) Save(w http.ResponseWriter, r *http.Request, s *Session) e
 		http.SetCookie(w, &http.Cookie{
 			Name:     rs.CookieName,
 			Value:    s.ID,
-			Secure:   true,
+			Secure:   rs.Secure,
 			HttpOnly: true,
 			Path:     "/",
 			Expires:  time.Now().UTC().Add(expires),

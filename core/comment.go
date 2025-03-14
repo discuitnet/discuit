@@ -59,8 +59,6 @@ func (t *ContentType) UnmarshalText(data []byte) error {
 
 // Comment is a comment of a post.
 type Comment struct {
-	db *sql.DB
-
 	ID               uid.ID        `json:"id"`
 	PostID           uid.ID        `json:"postId"`
 	PostPublicID     string        `json:"postPublicId"`
@@ -194,7 +192,7 @@ func scanComments(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.I
 
 	var comments []*Comment
 	for rows.Next() {
-		comment := &Comment{db: db}
+		comment := &Comment{}
 		var ancestors []byte
 		dest := []interface{}{
 			&comment.ID,
@@ -428,7 +426,7 @@ func addComment(ctx context.Context, db *sql.DB, post *Post, author *User, paren
 	// Send notifications.
 	if parent != nil && !parent.AuthorID.EqualsTo(author.ID) {
 		go func() {
-			if err := CreateCommentReplyNotification(context.Background(), db, parent.AuthorID, parent.ID, id, author.Username, post); err != nil {
+			if err := CreateCommentReplyNotification(context.Background(), db, parent.AuthorID, parent.ID, id, author, post); err != nil {
 				log.Printf("Create reply notification failed: %v\n", err)
 			}
 		}()
@@ -436,7 +434,7 @@ func addComment(ctx context.Context, db *sql.DB, post *Post, author *User, paren
 	}
 	if !post.AuthorID.EqualsTo(author.ID) && (parent == nil || !(parent.AuthorID.EqualsTo(post.AuthorID))) {
 		go func() {
-			if err := CreateNewCommentNotification(context.Background(), db, post, id, author.Username); err != nil {
+			if err := CreateNewCommentNotification(context.Background(), db, post, id, author); err != nil {
 				log.Printf("Create new_comment notification failed: %v\n", err)
 			}
 		}()
@@ -446,7 +444,7 @@ func addComment(ctx context.Context, db *sql.DB, post *Post, author *User, paren
 }
 
 // Save updates comment's body.
-func (c *Comment) Save(ctx context.Context, user uid.ID) error {
+func (c *Comment) Save(ctx context.Context, db *sql.DB, user uid.ID) error {
 	if c.Deleted {
 		return errCommentDeleted
 	}
@@ -458,7 +456,7 @@ func (c *Comment) Save(ctx context.Context, user uid.ID) error {
 
 	now := time.Now()
 	query := "UPDATE comments SET body = ?, edited_at = ? WHERE id = ? AND deleted_at IS NULL"
-	_, err := c.db.ExecContext(ctx, query, c.Body, now, c.ID)
+	_, err := db.ExecContext(ctx, query, c.Body, now, c.ID)
 	if err == nil {
 		c.EditedAt.Valid = true
 		c.EditedAt.Time = now
@@ -468,7 +466,7 @@ func (c *Comment) Save(ctx context.Context, user uid.ID) error {
 
 // Delete returns an error if user, who's deleting the comment, has no
 // permissions in his capacity as g to delete this comment.
-func (c *Comment) Delete(ctx context.Context, user uid.ID, g UserGroup) error {
+func (c *Comment) Delete(ctx context.Context, db *sql.DB, user uid.ID, g UserGroup) error {
 	if c.Deleted {
 		return errCommentDeleted
 	}
@@ -479,7 +477,7 @@ func (c *Comment) Delete(ctx context.Context, user uid.ID, g UserGroup) error {
 			return errNotAuthor
 		}
 	case UserGroupMods:
-		is, err := UserMod(ctx, c.db, c.CommunityID, user)
+		is, err := UserMod(ctx, db, c.CommunityID, user)
 		if err != nil {
 			return err
 		}
@@ -487,7 +485,7 @@ func (c *Comment) Delete(ctx context.Context, user uid.ID, g UserGroup) error {
 			return errNotMod
 		}
 	case UserGroupAdmins:
-		u, err := GetUser(ctx, c.db, user, nil)
+		u, err := GetUser(ctx, db, user, nil)
 		if err != nil {
 			return err
 		}
@@ -499,7 +497,7 @@ func (c *Comment) Delete(ctx context.Context, user uid.ID, g UserGroup) error {
 	}
 
 	now := time.Now()
-	err := msql.Transact(ctx, c.db, func(tx *sql.Tx) error {
+	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
 		var newBody string
 		if g == UserGroupNormal {
 			newBody = ""
@@ -531,7 +529,7 @@ func (c *Comment) Delete(ctx context.Context, user uid.ID, g UserGroup) error {
 	c.DeletedBy = uid.NullID{Valid: true, ID: user}
 	c.DeletedAs = g
 	c.StripContent()
-	RemoveAllReportsOfComment(ctx, c.db, c.ID)
+	RemoveAllReportsOfComment(ctx, db, c.ID)
 	return err
 }
 
@@ -574,19 +572,19 @@ func (c *Comment) StripContent() {
 }
 
 // Vote votes on comment (if the comment is not deleted or the post locked).
-func (c *Comment) Vote(ctx context.Context, user uid.ID, up bool) error {
+func (c *Comment) Vote(ctx context.Context, db *sql.DB, user uid.ID, up bool) error {
 	if c.Deleted {
 		return errCommentDeleted
 	}
 
-	if is, err := IsPostLocked(ctx, c.db, c.PostID); err != nil {
+	if is, err := IsPostLocked(ctx, db, c.PostID); err != nil {
 		return err
 	} else if is {
 		return errPostLocked
 	}
 
 	point := 1
-	err := msql.Transact(ctx, c.db, func(tx *sql.Tx) error {
+	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
 		if _, err := tx.ExecContext(ctx, "INSERT INTO comment_votes (comment_id, user_id, up) VALUES (?, ?, ?)", c.ID, user, up); err != nil {
 			if msql.IsErrDuplicateErr(err) {
 				return httperr.NewBadRequest("already-voted", "You've already voted on the comment.")
@@ -622,13 +620,13 @@ func (c *Comment) Vote(ctx context.Context, user uid.ID, up bool) error {
 
 	// Attempt to update user's points.
 	if up && !c.AuthorID.EqualsTo(user) {
-		incrementUserPoints(ctx, c.db, c.AuthorID, 1)
+		incrementUserPoints(ctx, db, c.AuthorID, 1)
 	}
 
 	// Attempt to create a notification (only for upvotes).
 	if !c.AuthorID.EqualsTo(user) && up {
 		go func() {
-			if err := CreateNewVotesNotification(context.Background(), c.db, c.AuthorID, c.CommunityName, false, c.ID); err != nil {
+			if err := CreateNewVotesNotification(context.Background(), db, c.AuthorID, c.CommunityName, false, c.ID); err != nil {
 				log.Printf("Failed creating new_votes notification: %v\n", err)
 			}
 		}()
@@ -638,26 +636,26 @@ func (c *Comment) Vote(ctx context.Context, user uid.ID, up bool) error {
 }
 
 // DeleteVote returns an error is the comment is deleted or the post locked.
-func (c *Comment) DeleteVote(ctx context.Context, user uid.ID) error {
+func (c *Comment) DeleteVote(ctx context.Context, db *sql.DB, user uid.ID) error {
 	if c.Deleted {
 		return errCommentDeleted
 	}
 
 	// Cannot vote if the post is locked.
-	if is, err := IsPostLocked(ctx, c.db, c.PostID); err != nil {
+	if is, err := IsPostLocked(ctx, db, c.PostID); err != nil {
 		return err
 	} else if is {
 		return errPostLocked
 	}
 
 	id, up := 0, false
-	row := c.db.QueryRowContext(ctx, "SELECT id, up FROM comment_votes WHERE comment_id = ? AND user_id = ?", c.ID, user)
+	row := db.QueryRowContext(ctx, "SELECT id, up FROM comment_votes WHERE comment_id = ? AND user_id = ?", c.ID, user)
 	if err := row.Scan(&id, &up); err != nil {
 		return err
 	}
 
 	point := 1
-	err := msql.Transact(ctx, c.db, func(tx *sql.Tx) error {
+	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
 		if _, err := tx.ExecContext(ctx, "DELETE FROM comment_votes WHERE id = ?", id); err != nil {
 			return err
 		}
@@ -689,27 +687,27 @@ func (c *Comment) DeleteVote(ctx context.Context, user uid.ID) error {
 
 	// Attempt to update user's points.
 	if up && !c.AuthorID.EqualsTo(user) {
-		incrementUserPoints(ctx, c.db, c.AuthorID, -1)
+		incrementUserPoints(ctx, db, c.AuthorID, -1)
 	}
 
 	return nil
 }
 
 // ChangeVote returns an error is the comment is deleted or the post locked.
-func (c *Comment) ChangeVote(ctx context.Context, user uid.ID, up bool) error {
+func (c *Comment) ChangeVote(ctx context.Context, db *sql.DB, user uid.ID, up bool) error {
 	if c.Deleted {
 		return errCommentDeleted
 	}
 
 	// Cannot vote if the post is locked.
-	if is, err := IsPostLocked(ctx, c.db, c.PostID); err != nil {
+	if is, err := IsPostLocked(ctx, db, c.PostID); err != nil {
 		return err
 	} else if is {
 		return errPostLocked
 	}
 
 	id, dbUp := 0, false
-	row := c.db.QueryRowContext(ctx, "SELECT id, up FROM comment_votes WHERE comment_id = ? AND user_id = ?", c.ID, user)
+	row := db.QueryRowContext(ctx, "SELECT id, up FROM comment_votes WHERE comment_id = ? AND user_id = ?", c.ID, user)
 	if err := row.Scan(&id, &dbUp); err != nil {
 		return err
 	}
@@ -719,7 +717,7 @@ func (c *Comment) ChangeVote(ctx context.Context, user uid.ID, up bool) error {
 	}
 
 	points := 2
-	err := msql.Transact(ctx, c.db, func(tx *sql.Tx) error {
+	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
 		if _, err := tx.ExecContext(ctx, "UPDATE comment_votes SET up = ? WHERE id = ?", up, id); err != nil {
 			return err
 		}
@@ -756,7 +754,7 @@ func (c *Comment) ChangeVote(ctx context.Context, user uid.ID, up bool) error {
 		if dbUp {
 			points = -1
 		}
-		incrementUserPoints(ctx, c.db, c.AuthorID, points)
+		incrementUserPoints(ctx, db, c.AuthorID, points)
 	}
 
 	return nil
@@ -764,7 +762,7 @@ func (c *Comment) ChangeVote(ctx context.Context, user uid.ID, up bool) error {
 
 // ChangeUserGroup changes the capacity in which the comment's author added the
 // post.
-func (c *Comment) ChangeUserGroup(ctx context.Context, author uid.ID, g UserGroup) error {
+func (c *Comment) ChangeUserGroup(ctx context.Context, db *sql.DB, author uid.ID, g UserGroup) error {
 	if !c.AuthorID.EqualsTo(author) {
 		return errNotAuthor
 	}
@@ -776,7 +774,7 @@ func (c *Comment) ChangeUserGroup(ctx context.Context, author uid.ID, g UserGrou
 	switch g {
 	case UserGroupNormal:
 	case UserGroupMods:
-		is, err := UserMod(ctx, c.db, c.CommunityID, author)
+		is, err := UserMod(ctx, db, c.CommunityID, author)
 		if err != nil {
 			return err
 		}
@@ -784,7 +782,7 @@ func (c *Comment) ChangeUserGroup(ctx context.Context, author uid.ID, g UserGrou
 			return errNotMod
 		}
 	case UserGroupAdmins:
-		u, err := GetUser(ctx, c.db, author, nil)
+		u, err := GetUser(ctx, db, author, nil)
 		if err != nil {
 			return err
 		}
@@ -795,7 +793,7 @@ func (c *Comment) ChangeUserGroup(ctx context.Context, author uid.ID, g UserGrou
 		return errInvalidUserGroup
 	}
 
-	_, err := c.db.ExecContext(ctx, "UPDATE comments SET user_group = ? WHERE id = ? AND deleted_at IS NULL", g, c.ID)
+	_, err := db.ExecContext(ctx, "UPDATE comments SET user_group = ? WHERE id = ? AND deleted_at IS NULL", g, c.ID)
 	if err == nil {
 		c.PostedAs = g
 	}
@@ -803,9 +801,9 @@ func (c *Comment) ChangeUserGroup(ctx context.Context, author uid.ID, g UserGrou
 }
 
 // loadPostDeleted populates c.PostDeleted.
-func (c *Comment) loadPostDeleted(ctx context.Context) error {
+func (c *Comment) loadPostDeleted(ctx context.Context, db *sql.DB) error {
 	var at msql.NullTime
-	row := c.db.QueryRowContext(ctx, "SELECT deleted_at, deleted_as FROM posts WHERE id = ?", c.PostID)
+	row := db.QueryRowContext(ctx, "SELECT deleted_at, deleted_as FROM posts WHERE id = ?", c.PostID)
 	err := row.Scan(&at, &c.PostDeletedAs)
 	if err == nil && at.Valid {
 		c.PostDeleted = true
@@ -865,4 +863,38 @@ func populateCommentAuthors(ctx context.Context, db *sql.DB, comments []*Comment
 	}
 
 	return nil
+}
+
+// GetSiteComments returns a cursor-paginated response of all comments of the site.
+func GetSiteComments(ctx context.Context, db *sql.DB, limit int, next *string, viewer *uid.ID) ([]*Comment, *string, error) {
+	where, args := "", []any{}
+	if next != nil {
+		nextID, err := uid.FromString(*next)
+		if err != nil {
+			return nil, nil, errors.New("invalid next for site comments")
+		}
+		where = "WHERE comments.id <= ? "
+		args = append(args, nextID)
+	}
+
+	where += "ORDER BY comments.id DESC LIMIT ? "
+	args = append(args, limit+1)
+
+	comments, err := getComments(ctx, db, viewer, where, args...)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var nextNext *string
+	if len(comments) >= limit+1 {
+		nextNext = new(string)
+		*nextNext = comments[limit].ID.String()
+		comments = comments[:limit]
+	}
+
+	if err := getCommentsPostTitles(ctx, db, comments, nil); err != nil {
+		return nil, nil, err
+	}
+
+	return comments, nextNext, nil
 }

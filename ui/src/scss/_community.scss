@@ -20,8 +20,10 @@
 
 // 'comm' short for community.
 .comm-main {
-    --padding-hor: calc(2 * var(--gap));
     @include mixins.card;
+}
+.comm-main {
+    --padding-hor: calc(2 * var(--gap));
     border-top: 0;
     border-top-left-radius: 0;
     border-top-right-radius: 0;

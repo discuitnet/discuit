@@ -1,21 +1,23 @@
-import React from 'react';
 import PropTypes from 'prop-types';
-import { toTitleCase, userGroupSingular } from '../../helper';
-import CommunityLink from './CommunityLink';
-import TimeAgo from '../TimeAgo';
-import { useIsMobile, useMuteCommunity, useMuteUser } from '../../hooks';
-import Dropdown from '../Dropdown';
-import { ButtonMore } from '../Button';
 import { useDispatch, useSelector } from 'react-redux';
-import { UserLink } from '../UserProPic';
+import { toTitleCase, userGroupSingular } from '../../helper';
+import { useIsMobile, useMuteCommunity, useMuteUser } from '../../hooks';
 import { userHasSupporterBadge } from '../../pages/User';
 import { saveToListModalOpened } from '../../slices/mainSlice';
+import { ButtonMore } from '../Button';
+import Dropdown from '../Dropdown';
+import TimeAgo from '../TimeAgo';
+import { UserLink } from '../UserProPic';
+import CommunityLink from './CommunityLink';
 
 const PostCardHeadingDetails = ({
   post,
   userGroup,
   showEdited = false,
   showAuthorProPic = false,
+  onRemoveFromList = null,
+  compact = false,
+  onHidePost,
 }) => {
   // const userURL = `/@${post.username}`;
   userGroup = userGroup ?? post.userGroup;
@@ -62,7 +64,7 @@ const PostCardHeadingDetails = ({
       <div className="left">
         <CommunityLink name={post.communityName} proPic={post.communityProPic} />
         <div className="post-card-heading-by">
-          <span>Posted by </span>
+          <span>{compact ? null : 'Posted by '}</span>
           <UserLink
             className={post.userDeleted && viewerAdmin ? 'is-red' : ''}
             username={isUsernameGhost ? 'Ghost' : post.username}
@@ -108,6 +110,19 @@ const PostCardHeadingDetails = ({
               >
                 Save to list
               </button>
+              {onRemoveFromList && (
+                <button
+                  className="button-clear dropdown-item"
+                  onClick={() => onRemoveFromList(post.id)}
+                >
+                  Remove from list
+                </button>
+              )}
+              {onHidePost && (
+                <button className="button-clear dropdown-item" onClick={onHidePost}>
+                  Hide
+                </button>
+              )}
             </div>
           </Dropdown>
         )}
@@ -122,6 +137,9 @@ PostCardHeadingDetails.propTypes = {
   userGroup: PropTypes.string,
   showEdited: PropTypes.bool,
   showAuthorProPic: PropTypes.bool,
+  onRemoveFromList: PropTypes.func,
+  compact: PropTypes.bool,
+  onHidePost: PropTypes.func,
 };
 
 export default PostCardHeadingDetails;

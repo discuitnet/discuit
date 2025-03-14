@@ -1,31 +1,34 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import clsx from 'clsx';
 import PropTypes from 'prop-types';
-import Sidebar from '../components/Sidebar';
-import WelcomeBanner from '../views/WelcomeBanner';
-import MiniFooter from '../components/MiniFooter';
-import CommunityProPic from '../components/CommunityProPic';
-import PageLoading from '../components/PageLoading';
-import { mfetch, mfetchjson } from '../helper';
+import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useHistory } from 'react-router-dom';
+import Button, { ButtonClose } from '../components/Button';
+import CommunityProPic from '../components/CommunityProPic';
+import Dropdown from '../components/Dropdown';
+import Feed from '../components/Feed';
+import { FormField } from '../components/Form';
+import Input, { InputWithCount, useInputMaxLength } from '../components/Input';
+import MarkdownBody from '../components/MarkdownBody';
+import MiniFooter from '../components/MiniFooter';
+import Modal from '../components/Modal';
+import ShowMoreBox from '../components/ShowMoreBox';
+import Sidebar from '../components/Sidebar';
+import { communityNameMaxLength } from '../config';
+import { mfetch, mfetchjson } from '../helper';
+import { useInputUsername } from '../hooks';
+import { FeedItem } from '../slices/feedsSlice';
 import {
-  allCommunitiesUpdated,
+  allCommunitiesSearchQueryChanged,
+  allCommunitiesSortChanged,
   loginPromptToggled,
   snackAlert,
   snackAlertError,
 } from '../slices/mainSlice';
-import ShowMoreBox from '../components/ShowMoreBox';
-import MarkdownBody from '../components/MarkdownBody';
-import Link from '../components/Link';
+import { SVGClose, SVGSearch } from '../SVGs';
 import LoginForm from '../views/LoginForm';
-import Modal from '../components/Modal';
-import { ButtonClose } from '../components/Button';
-import { InputWithCount, useInputMaxLength } from '../components/Input';
-import { communityNameMaxLength } from '../config';
-import { useInputUsername } from '../hooks';
 import JoinButton from './Community/JoinButton';
-import { useHistory, useLocation } from 'react-router-dom';
-import Feed from '../components/Feed';
-import { useInView } from 'react-intersection-observer';
+import { isInfiniteScrollingDisabled } from './Settings/devicePrefs';
 
 const prepareText = (isMobile = false) => {
   const x = isMobile ? 'by filling out the form below' : 'by clicking on the button below';
@@ -35,68 +38,114 @@ const prepareText = (isMobile = false) => {
     be added as a moderator of that community.`;
 };
 
-let posY = 0;
-
 const AllCommunities = () => {
+  const dispatch = useDispatch();
+
   const user = useSelector((state) => state.main.user);
   const loggedIn = user !== null;
 
-  const dispatch = useDispatch();
-
-  const { items: comms, loading } = useSelector((state) => {
-    const names = state.main.allCommunities.items;
-    const communities = state.communities.items;
-    const items = [];
-    names.forEach((name) => items.push(communities[name]));
-    return {
-      items: items || [],
-      loading: state.main.allCommunities.loading,
-    };
-  });
-
+  const searchQuery = useSelector((state) => state.main.allCommunitiesSearchQuery);
+  const [isSearching, setIsSearching] = useState(searchQuery !== '');
+  const setSearchQuery = (query) => {
+    dispatch(allCommunitiesSearchQueryChanged(query));
+  };
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await mfetchjson('/api/communities');
-        dispatch(allCommunitiesUpdated(res));
-      } catch (error) {
-        dispatch(snackAlertError(error));
-      }
-    })();
-  }, []);
+    if (!isSearching) {
+      setSearchQuery('');
+    }
+  }, [isSearching]);
 
-  // const history = useHistory();
-  // useEffect(() => {
-  //   if (history.action === 'POP') {
-  //     window.scrollTo(0, posY);
-  //     console.log('scrolling to pos', posY);
-  //   }
-  //   return () => {
-  //     posY = window.scrollY;
-  //     console.log('marked pos: ', posY);
-  //   };
-  // }, []);
+  const sort = useSelector((state) => state.main.allCommunitiesSort);
+  const setSort = (sort) => {
+    dispatch(allCommunitiesSortChanged(sort));
+  };
 
-  if (loading) {
-    return <PageLoading />;
-  }
+  const fetchCommunities = async (next) => {
+    const res = await mfetchjson(`/api/communities?sort=${sort}`);
+    const items = res.map((community) => new FeedItem(community, 'community', community.id));
+    return {
+      items: items,
+      next: null,
+    };
+  };
+
+  const handleRenderItem = (item, index) => {
+    if (
+      searchQuery !== '' &&
+      !item.item.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
+    ) {
+      return null;
+    }
+    return <ListItem community={item.item} />;
+  };
+
+  const renderSearchBox = () => {
+    return (
+      <div className="communities-search">
+        <Input
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          autoFocus
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              setIsSearching(false);
+            }
+          }}
+        />
+      </div>
+    );
+  };
+
+  const renderSortDropdown = () => {
+    const sortOptions = {
+      new: 'Latest',
+      size: 'Popular',
+      name_asc: 'A-Z',
+      name_dsc: 'Z-A',
+    };
+    return (
+      <Dropdown target={<Button>{sortOptions[sort]}</Button>} aligned="right">
+        <div className="dropdown-list">
+          {Object.keys(sortOptions)
+            .filter((key) => key !== sort)
+            .map((key) => (
+              <Button className="button-clear dropdown-item" onClick={() => setSort(key)} key={key}>
+                {sortOptions[key]}
+              </Button>
+            ))}
+        </div>
+      </Dropdown>
+    );
+  };
 
   return (
     <div className="page-content page-comms wrap page-grid">
       <Sidebar />
       <main>
         <div className="page-comms-header card card-padding">
-          <h1>All communities</h1>
-          <RequestCommunityButton className="button-main is-m" isMobile>
-            New
-          </RequestCommunityButton>
+          <div className="left">{isSearching ? renderSearchBox() : <h1>All communities</h1>}</div>
+          <div className="right">
+            <Button
+              className={clsx('comms-search-button', !isSearching && 'is-search-svg')}
+              icon={isSearching ? <SVGClose /> : <SVGSearch />}
+              onClick={() => setIsSearching((v) => !v)}
+            />
+            {!isSearching && renderSortDropdown()}
+            {!isSearching && (
+              <RequestCommunityButton className="button-main is-m comms-new-button" isMobile>
+                New
+              </RequestCommunityButton>
+            )}
+          </div>
         </div>
         <div className="comms-list">
-          {comms.map((community) => (
-            <CommItem key={community.id} itemKey={community.id}>
-              <ListItem key={community.id} community={community} />
-            </CommItem>
-          ))}
+          <Feed
+            feedId={'all-communities-' + sort}
+            onFetch={fetchCommunities}
+            onRenderItem={handleRenderItem}
+            infiniteScrollingDisabled={isInfiniteScrollingDisabled()}
+            noMoreItemsText="Nothing to show"
+          />
         </div>
       </main>
       <aside className="sidebar-right">
@@ -108,54 +157,6 @@ const AllCommunities = () => {
         <CommunityCreationCard />
         <MiniFooter />
       </aside>
-    </div>
-  );
-};
-
-const heights = {};
-
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'O') console.log(heights);
-});
-
-const CommItem = ({ itemKey, children }) => {
-  const [ref, inView] = useInView({
-    // rootMargin: '200px 0px',
-    threshold: 0,
-    initialInView: itemKey < 10,
-  });
-
-  const [beenInView, setBeenInView] = useState(inView);
-  useEffect(() => {
-    if (inView) {
-      setBeenInView(true);
-    }
-  }, [inView]);
-
-  const [height, setHeight] = useState(heights[itemKey] ?? 0);
-  const innerRef = useCallback((node) => {
-    if (node !== null && inView) {
-      const child = node.firstChild;
-      if (child) {
-        const { height } = child.getBoundingClientRect();
-        setHeight(height);
-      }
-    }
-  });
-  useEffect(() => {
-    if (height > 0) {
-      heights[itemKey] = height;
-    }
-  }, [height]);
-
-  let h = height;
-  if (h < 100) h = 100;
-
-  return (
-    <div className="comm-item" ref={ref}>
-      <div ref={innerRef} style={{ height: `${h}px` }}>
-        {(inView || beenInView) && children}
-      </div>
     </div>
   );
 };
@@ -185,8 +186,14 @@ const RequestCommunityButton = ({ children, isMobile = false, ...props }) => {
 
   const noteLength = 500;
 
+  const [formError, setFormError] = useState('');
+
   const [name, handleNameChange] = useInputUsername(communityNameMaxLength);
   const [note, handleNoteChange] = useInputMaxLength(noteLength);
+
+  useEffect(() => {
+    setFormError('');
+  }, [name, note]);
 
   const handleButtonClick = () => {
     if (!loggedIn) {
@@ -213,7 +220,11 @@ const RequestCommunityButton = ({ children, isMobile = false, ...props }) => {
         dispatch(snackAlert('Requested!'));
         handleClose();
       } else {
-        throw new Error(await res.text());
+        if (res.status === 409) {
+          setFormError('A community by that name already exists');
+        } else {
+          throw new Error(await res.text());
+        }
       }
     } catch (error) {
       dispatch(snackAlertError(error));
@@ -228,29 +239,36 @@ const RequestCommunityButton = ({ children, isMobile = false, ...props }) => {
             <div className="modal-card-title">Request community</div>
             <ButtonClose onClick={handleClose} />
           </div>
-          <div className="modal-card-content flex-column inner-gap-1">
-            {isMobile && <p>{prepareText(true)}</p>}
-            <InputWithCount
-              value={name}
-              onChange={handleNameChange}
-              label="Community name"
-              description="Community name cannot be changed."
-              maxLength={communityNameMaxLength}
-              style={{ marginBottom: '0' }}
-              autoFocus
-            />
-            <InputWithCount
-              value={note}
-              onChange={handleNoteChange}
-              label="Note"
-              description="An optional message for the admins."
-              textarea
-              rows="4"
-              maxLength={noteLength}
-            />
-            <button className="button-main" onClick={handleSubmit}>
-              Request community
-            </button>
+          <div className="form modal-card-content flex-column inner-gap-1">
+            <div className="form-field">{isMobile && <p>{prepareText(true)}</p>}</div>
+            <FormField label="Community name" description="Community name cannot be changed.">
+              <InputWithCount
+                value={name}
+                onChange={handleNameChange}
+                maxLength={communityNameMaxLength}
+                style={{ marginBottom: '0' }}
+                autoFocus
+              />
+            </FormField>
+            <FormField label="Note" description="An optional message for the admins.">
+              <InputWithCount
+                value={note}
+                onChange={handleNoteChange}
+                textarea
+                rows="4"
+                maxLength={noteLength}
+              />
+            </FormField>
+            {formError !== '' && (
+              <div className="form-field">
+                <div className="form-error text-center">{formError}</div>
+              </div>
+            )}
+            <FormField>
+              <button className="button-main" onClick={handleSubmit} style={{ width: '100%' }}>
+                Request community
+              </button>
+            </FormField>
           </div>
         </div>
       </Modal>
@@ -266,7 +284,7 @@ RequestCommunityButton.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
-const ListItem = ({ community }) => {
+const ListItem = React.memo(function ListItem({ community }) {
   const to = `/${community.name}`;
 
   const history = useHistory();
@@ -313,4 +331,4 @@ const ListItem = ({ community }) => {
       </div>
     </div>
   );
-};
+});

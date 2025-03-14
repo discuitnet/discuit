@@ -14,9 +14,25 @@ type Server struct {
 	SkipHashCheck bool
 	DB            *sql.DB
 	CacheDisabled bool
+
+	// If enabled, CORS headers will be set for all responses from this server,
+	// so that images can be downloaded dynamically using Javascript APIs in the
+	// web environment.
+	EnableCORS bool
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if s.EnableCORS {
+		w.Header().Add("Access-Control-Allow-Origin", "*")
+		if r.Method == "OPTIONS" {
+			// Handle preflighted requests.
+			w.Header().Add("Access-Control-Allow-Methods", "GET")
+			w.Header().Add("Access-Control-Max-Age", "86400") // a day
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+	}
+
 	imgReq, err := fromURL(r.URL)
 	if err != nil {
 		s.writeError(w, http.StatusBadRequest, "")

@@ -1,17 +1,17 @@
-/* eslint-disable react/jsx-no-target-blank */
-import React, { useEffect, useState } from 'react';
+import clsx from 'clsx';
 import PropTypes from 'prop-types';
-import { ButtonClose } from './Button';
-import Input, { InputPassword, InputWithCount } from './Input';
-import Modal from './Modal';
-import { useDispatch } from 'react-redux';
-import { loginModalOpened, snackAlert, snackAlertError } from '../slices/mainSlice';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import ReCAPTCHA from 'react-google-recaptcha';
+import { Helmet } from 'react-helmet-async';
+import { useDispatch, useSelector } from 'react-redux';
+import { usernameMaxLength } from '../config';
 import { APIError, mfetch, validEmail } from '../helper';
 import { useDelayedEffect, useInputUsername } from '../hooks';
-import { usernameMaxLength } from '../config';
-import ReCAPTCHA from 'react-google-recaptcha';
-import { useRef } from 'react';
-import { Helmet } from 'react-helmet-async';
+import { loginModalOpened, snackAlert, snackAlertError } from '../slices/mainSlice';
+import { ButtonClose } from './Button';
+import { Form, FormField } from './Form';
+import Input, { InputPassword, InputWithCount } from './Input';
+import Modal from './Modal';
 
 const errors = [
   'Username cannot be empty.',
@@ -26,9 +26,11 @@ const errors = [
 const Signup = ({ open, onClose }) => {
   const dispatch = useDispatch();
 
+  const signupsDisabled = useSelector((state) => state.main.signupsDisabled);
+
   const [username, handleUsernameChange] = useInputUsername(usernameMaxLength);
   const [usernameError, setUsernameError] = useState(null);
-  const checkUsernameExists = async () => {
+  const checkUsernameExists = useCallback(async () => {
     if (username === '') return true;
     try {
       const res = await mfetch(`/api/users/${username}`);
@@ -44,8 +46,8 @@ const Signup = ({ open, onClose }) => {
     } catch (error) {
       dispatch(snackAlertError(error));
     }
-  };
-  useDelayedEffect(checkUsernameExists, [username]);
+  }, [dispatch, username]);
+  useDelayedEffect(checkUsernameExists);
 
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState(null);
@@ -65,7 +67,7 @@ const Signup = ({ open, onClose }) => {
     setRepeatPasswordError(null);
   }, [repeatPassword]);
 
-  const CAPTCHA_ENABLED = CONFIG.captchaSiteKey ? true : false;
+  const CAPTCHA_ENABLED = import.meta.env.VITE_CAPTCHASITEKEY ? true : false;
   const captchaRef = useRef();
   const handleCaptchaVerify = (token) => {
     if (!token) {
@@ -148,87 +150,103 @@ const Signup = ({ open, onClose }) => {
         <style>{`.grecaptcha-badge { visibility: hidden; }`}</style>
       </Helmet>
       <Modal open={open} onClose={onClose} noOuterClickClose={false}>
-        <div className="modal-card modal-form modal-signup">
+        <div className={clsx('modal-card modal-signup', signupsDisabled && 'is-disabled')}>
           <div className="modal-card-head">
             <div className="modal-card-title">Signup</div>
             <ButtonClose onClick={onClose} />
           </div>
-          <form className="modal-card-content" onSubmit={handleSubmit}>
-            <InputWithCount
+          <Form className="modal-card-content" onSubmit={handleSubmit}>
+            {signupsDisabled && (
+              <div className="modal-signup-disabled">{`We have temporarily disabled creating new accounts. Please check back again later.`}</div>
+            )}
+            <FormField
+              className="is-username"
               label="Username"
-              maxLength={usernameMaxLength}
               description="The name you will use when interacting with the community."
               error={usernameError}
-              value={username}
-              onChange={handleUsernameChange}
-              onBlur={() => checkUsernameExists()}
-              autoFocus
-              style={{ marginBottom: 0 }}
-              autoComplete="username"
-            />
-            <Input
-              type="email"
+            >
+              <InputWithCount
+                maxLength={usernameMaxLength}
+                value={username}
+                onChange={handleUsernameChange}
+                onBlur={() => checkUsernameExists()}
+                autoFocus
+                autoComplete="username"
+                disabled={signupsDisabled}
+              />
+            </FormField>
+            <FormField
               label="Email (optional)"
               description="Without an email address, there's no way to recover your account if you lose your password."
-              value={email}
               error={emailError}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <InputPassword
-              label="Password"
-              value={password}
-              error={passwordError}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="new-password"
-            />
-            <InputPassword
-              label="Repeat password"
-              value={repeatPassword}
-              error={repeatPasswordError}
-              onChange={(e) => {
-                setRepeatPassword(e.target.value);
-              }}
-              style={{ marginBottom: 0 }}
-              autoComplete="new-password"
-            />
+            >
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={signupsDisabled}
+              />
+            </FormField>
+            <FormField label="Password" error={passwordError}>
+              <InputPassword
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+                disabled={signupsDisabled}
+              />
+            </FormField>
+            <FormField label="Repeat password" error={repeatPasswordError}>
+              <InputPassword
+                value={repeatPassword}
+                onChange={(e) => {
+                  setRepeatPassword(e.target.value);
+                }}
+                autoComplete="new-password"
+                disabled={signupsDisabled}
+              />
+            </FormField>
             {CAPTCHA_ENABLED && (
               <div style={{ margin: 0 }}>
                 <ReCAPTCHA
                   ref={captchaRef}
-                  sitekey={CONFIG.captchaSiteKey}
+                  sitekey={import.meta.env.VITE_CAPTCHASITEKEY}
                   onChange={handleCaptchaVerify}
                   size="invisible"
                   onError={handleCaptchaError}
                 />
               </div>
             )}
-            <p className="modal-signup-terms">
-              {'By creating an account, you agree to our '}
-              <a target="_blank" href="/terms">
-                Terms
-              </a>
-              {' and '}
-              <a target="_blank" href="/privacy-policy">
-                {' Privacy Policy'}
-              </a>
-              .
-            </p>
-            <p className="modal-signup-terms is-captcha">
-              This site is protected by reCAPTCHA and the Google{' '}
-              <a href="https://policies.google.com/privacy-policy" target="_blank">
-                Privacy Policy
-              </a>{' '}
-              and{' '}
-              <a href="https://policies.google.com/terms" target="_blank">
-                Terms of Service
-              </a>{' '}
-              apply.
-            </p>
-            <input type="submit" className="button button-main" value="Signup" />
-            <button className="button-link modal-alt-link" onClick={handleOnLogin}>
-              Already have an account? Login
-            </button>
-          </form>
+            <FormField>
+              <p className="modal-signup-terms">
+                {'By creating an account, you agree to our '}
+                <a target="_blank" href="/terms">
+                  Terms
+                </a>
+                {' and '}
+                <a target="_blank" href="/privacy-policy">
+                  {' Privacy Policy'}
+                </a>
+                .
+              </p>
+              <p className="modal-signup-terms is-captcha">
+                This site is protected by reCAPTCHA and the Google{' '}
+                <a href="https://policies.google.com/privacy-policy" target="_blank">
+                  Privacy Policy
+                </a>{' '}
+                and{' '}
+                <a href="https://policies.google.com/terms" target="_blank">
+                  Terms of Service
+                </a>{' '}
+                apply.
+              </p>
+            </FormField>
+            <FormField className="is-submit">
+              <input type="submit" className="button button-main" value="Signup" />
+              <button className="button-link" onClick={handleOnLogin} disabled={signupsDisabled}>
+                Already have an account? Login
+              </button>
+            </FormField>
+          </Form>
         </div>
       </Modal>
     </>

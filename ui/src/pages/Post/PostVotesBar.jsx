@@ -1,5 +1,5 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 import { stringCount } from '../../helper';
 
 const PostVotesBar = ({ up = 20000, down = 1000 }) => {

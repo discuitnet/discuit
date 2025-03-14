@@ -10,6 +10,7 @@ import (
 
 	"github.com/SherClockHolmes/webpush-go"
 	"github.com/discuitnet/discuit/core"
+	"github.com/discuitnet/discuit/core/sitesettings"
 	"github.com/discuitnet/discuit/internal/hcaptcha"
 	"github.com/discuitnet/discuit/internal/httperr"
 	"github.com/discuitnet/discuit/internal/httputil"
@@ -33,7 +34,19 @@ func (s *Server) getUser(w *responseWriter, r *request) error {
 		user.Username = username
 	}
 
-	if err := user.LoadModdingList(r.ctx); err != nil {
+	if err := user.LoadModdingList(r.ctx, s.db); err != nil {
+		return err
+	}
+
+	if r.urlQueryParamsValue("adminsView") == "true" {
+		if _, err = getLoggedInAdmin(s.db, r); err != nil {
+			return err
+		}
+		data, err := user.MarshalJSONForAdminViewer(r.ctx, s.db)
+		if err != nil {
+			return err
+		}
+		_, err = w.Write(data)
 		return err
 	}
 
@@ -98,7 +111,7 @@ func (s *Server) deleteUser(w *responseWriter, r *request) error {
 	}
 
 	// Finally, delete the user.
-	if err := toDelete.Delete(r.ctx); err != nil {
+	if err := toDelete.Delete(r.ctx, s.db); err != nil {
 		return err
 	}
 
@@ -110,14 +123,15 @@ func (s *Server) deleteUser(w *responseWriter, r *request) error {
 func (s *Server) initial(w *responseWriter, r *request) error {
 	var err error
 	response := struct {
-		ReportReasons  []core.ReportReason `json:"reportReasons"`
-		User           *core.User          `json:"user"`
-		Lists          []*core.List        `json:"lists"`
-		Communities    []*core.Community   `json:"communities"`
-		NoUsers        int                 `json:"noUsers"`
-		BannedFrom     []uid.ID            `json:"bannedFrom"`
-		VAPIDPublicKey string              `json:"vapidPublicKey"`
-		Mutes          struct {
+		SignupsDisabled bool                `json:"signupsDisabled"`
+		ReportReasons   []core.ReportReason `json:"reportReasons"`
+		User            *core.User          `json:"user"`
+		Lists           []*core.List        `json:"lists"`
+		Communities     []*core.Community   `json:"communities"`
+		NoUsers         int                 `json:"noUsers"`
+		BannedFrom      []uid.ID            `json:"bannedFrom"`
+		VAPIDPublicKey  string              `json:"vapidPublicKey"`
+		Mutes           struct {
 			CommunityMutes []*core.Mute `json:"communityMutes"`
 			UserMutes      []*core.Mute `json:"userMutes"`
 		} `json:"mutes"`
@@ -129,6 +143,12 @@ func (s *Server) initial(w *responseWriter, r *request) error {
 	response.Mutes.CommunityMutes = []*core.Mute{}
 	response.Mutes.UserMutes = []*core.Mute{}
 
+	siteSettings, err := sitesettings.GetSiteSettings(r.ctx, s.db)
+	if err != nil {
+		return err
+	}
+	response.SignupsDisabled = siteSettings.SignupsDisabled
+
 	if r.loggedIn {
 		if response.User, err = core.GetUser(r.ctx, s.db, *r.viewer, r.viewer); err != nil {
 			if httperr.IsNotFound(err) {
@@ -139,7 +159,7 @@ func (s *Server) initial(w *responseWriter, r *request) error {
 			}
 			return err
 		}
-		if response.BannedFrom, err = response.User.GetBannedFromCommunities(r.ctx); err != nil {
+		if response.BannedFrom, err = response.User.GetBannedFromCommunities(r.ctx, s.db); err != nil {
 			return err
 		}
 		if communityMutes, err := core.GetMutedCommunities(r.ctx, s.db, *r.viewer, true); err != nil {
@@ -238,6 +258,13 @@ func (s *Server) signup(w *responseWriter, r *request) error {
 		return httperr.NewBadRequest("already_logged_in", "You are already logged in")
 	}
 
+	// Verify that signups are not disabled.
+	if settings, err := sitesettings.GetSiteSettings(r.ctx, s.db); err != nil {
+		return err
+	} else if settings.SignupsDisabled {
+		return httperr.NewForbidden("signups-disabled", "Creating new accounts is disabled.")
+	}
+
 	values, err := r.unmarshalJSONBodyToStringsMap(true)
 	if err != nil {
 		return err
@@ -265,7 +292,7 @@ func (s *Server) signup(w *responseWriter, r *request) error {
 		return err
 	}
 
-	user, err := core.RegisterUser(r.ctx, s.db, username, email, password)
+	user, err := core.RegisterUser(r.ctx, s.db, username, email, password, httputil.GetIP(r.req))
 	if err != nil {
 		return err
 	}
@@ -288,7 +315,7 @@ func (s *Server) getLoggedInUser(w *responseWriter, r *request) error {
 		return err
 	}
 
-	if err := user.LoadModdingList(r.ctx); err != nil {
+	if err := user.LoadModdingList(r.ctx, s.db); err != nil {
 		return err
 	}
 
@@ -313,15 +340,15 @@ func (s *Server) updateNotifications(w *responseWriter, r *request) error {
 	query := r.urlQueryParams()
 	switch query.Get("action") {
 	case "resetNewCount":
-		if err = user.ResetNewNotificationsCount(r.ctx); err != nil {
+		if err = user.ResetNewNotificationsCount(r.ctx, s.db); err != nil {
 			return err
 		}
 	case "markAllAsSeen":
-		if err = user.MarkAllNotificationsAsSeen(r.ctx, core.NotificationType(query.Get("type"))); err != nil {
+		if err = user.MarkAllNotificationsAsSeen(r.ctx, s.db, core.NotificationType(query.Get("type"))); err != nil {
 			return err
 		}
 	case "deleteAll":
-		if err = user.DeleteAllNotifications(r.ctx); err != nil {
+		if err = user.DeleteAllNotifications(r.ctx, s.db); err != nil {
 			return err
 		}
 	default:
@@ -354,7 +381,7 @@ func (s *Server) getNotifications(w *responseWriter, r *request) error {
 	res.NewCount = user.NumNewNotifications
 
 	query := r.urlQueryParams()
-	if res.Items, res.Next, err = core.GetNotifications(r.ctx, s.db, user.ID, 10, query.Get("next")); err != nil {
+	if res.Items, res.Next, err = core.GetNotifications(r.ctx, s.db, user.ID, 10, query.Get("next"), query.Get("render") == "true", core.TextFormat(query.Get("format"))); err != nil {
 		return err
 	}
 
@@ -367,8 +394,10 @@ func (s *Server) getNotification(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
+	query := r.urlQueryParams()
+
 	notifID := r.muxVar("notificationID")
-	notif, err := core.GetNotification(r.ctx, s.db, notifID)
+	notif, err := core.GetNotification(r.ctx, s.db, notifID, query.Get("render") == "true", core.TextFormat(query.Get("format")))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return httperr.NewNotFound("notif_not_found", "Notification not found.")
@@ -380,7 +409,6 @@ func (s *Server) getNotification(w *responseWriter, r *request) error {
 		return httperr.NewForbidden("not_owner", "")
 	}
 
-	query := r.urlQueryParams()
 	if r.req.Method == "PUT" {
 		action := query.Get("action")
 		switch action {
@@ -405,8 +433,10 @@ func (s *Server) deleteNotification(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
+	query := r.urlQueryParams()
+
 	notifID := r.muxVar("notificationID")
-	notif, err := core.GetNotification(r.ctx, s.db, notifID)
+	notif, err := core.GetNotification(r.ctx, s.db, notifID, query.Get("render") == "true", core.TextFormat(query.Get("format")))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return httperr.NewNotFound("notif_not_found", "Notification not found.")
@@ -468,7 +498,7 @@ func (s *Server) updateUserSettings(w *responseWriter, r *request) error {
 			return err
 		}
 
-		if err = user.Update(r.ctx); err != nil {
+		if err = user.Update(r.ctx, s.db); err != nil {
 			return err
 		}
 	case "changePassword":
@@ -482,7 +512,7 @@ func (s *Server) updateUserSettings(w *responseWriter, r *request) error {
 		if newPassword != repeatPassword {
 			return httperr.NewBadRequest("password_not_match", "Passwords do not match.")
 		}
-		if err = user.ChangePassword(r.ctx, password, newPassword); err != nil {
+		if err = user.ChangePassword(r.ctx, s.db, password, newPassword); err != nil {
 			return err
 		}
 	default:
@@ -524,11 +554,11 @@ func (s *Server) handleUserProPic(w *responseWriter, r *request) error {
 		if err != nil {
 			return err
 		}
-		if err := user.UpdateProPic(r.ctx, data); err != nil {
+		if err := user.UpdateProPic(r.ctx, s.db, data); err != nil {
 			return err
 		}
 	} else if r.req.Method == "DELETE" {
-		if err := user.DeleteProPic(r.ctx); err != nil {
+		if err := user.DeleteProPic(r.ctx, s.db); err != nil {
 			return err
 		}
 	}
@@ -560,7 +590,7 @@ func (s *Server) deleteBadge(w *responseWriter, r *request) error {
 
 	byType := strings.ToLower(r.urlQueryParamsValue("byType")) == "true"
 	if byType {
-		if err = user.RemoveBadgesByType(badgeID); err != nil {
+		if err = user.RemoveBadgesByType(s.db, badgeID); err != nil {
 			return err
 		}
 	} else {
@@ -568,7 +598,7 @@ func (s *Server) deleteBadge(w *responseWriter, r *request) error {
 		if err != nil {
 			return httperr.NewBadRequest("bad_badge_id", "Bad badge id.")
 		}
-		if err := user.RemoveBadge(intID); err != nil {
+		if err := user.RemoveBadge(s.db, intID); err != nil {
 			return err
 		}
 	}
@@ -605,9 +635,57 @@ func (s *Server) addBadge(w *responseWriter, r *request) error {
 		return err
 	}
 
-	if err := user.AddBadge(r.ctx, reqBody.BadgeType); err != nil {
+	if err := user.AddBadge(r.ctx, s.db, reqBody.BadgeType); err != nil {
 		return err
 	}
 
 	return w.writeJSON(user.Badges)
+}
+
+func (s *Server) handleHiddenPosts(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
+	}
+
+	user, err := core.GetUser(r.ctx, s.db, *r.viewer, nil)
+	if err != nil {
+		return err
+	}
+
+	// The body of the incoming request must be of the JSON form:
+	body := struct {
+		PostID uid.ID `json:"postId"`
+	}{}
+
+	if err := r.unmarshalJSONBody(&body); err != nil {
+		return err
+	}
+
+	if err := user.HidePost(r.ctx, s.db, body.PostID); err != nil {
+		return err
+	}
+
+	return w.writeString(`{"success":true}`)
+}
+
+func (s *Server) unhidePost(w *responseWriter, r *request) error {
+	if !r.loggedIn {
+		return errNotLoggedIn
+	}
+
+	user, err := core.GetUser(r.ctx, s.db, *r.viewer, nil)
+	if err != nil {
+		return err
+	}
+
+	postID, err := uid.FromString(r.muxVar("postId"))
+	if err != nil {
+		return httperr.NewBadRequest("invalid-post-id", "Invalid post id.")
+	}
+
+	if err := user.UnhidePost(r.ctx, s.db, postID); err != nil {
+		return err
+	}
+
+	return w.writeString(`{"success":true}`)
 }

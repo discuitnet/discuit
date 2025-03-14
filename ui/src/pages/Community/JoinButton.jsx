@@ -1,9 +1,9 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { mfetchjson } from '../../helper';
-import { loginPromptToggled, snackAlertError } from '../../slices/mainSlice';
 import { communityAdded } from '../../slices/communitiesSlice';
+import { loginPromptToggled, snackAlertError } from '../../slices/mainSlice';
 
 const JoinButton = ({ className, community, ...rest }) => {
   const loggedIn = useSelector((state) => state.main.user) !== null;

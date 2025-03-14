@@ -10,7 +10,7 @@ import (
 )
 
 // /api/posts/:postID/comments [GET]
-func (s *Server) getComments(w *responseWriter, r *request) error {
+func (s *Server) getPostComments(w *responseWriter, r *request) error {
 	post, err := core.GetPost(r.ctx, s.db, nil, r.muxVar("postID"), r.viewer, true)
 	if err != nil {
 		return err
@@ -25,7 +25,7 @@ func (s *Server) getComments(w *responseWriter, r *request) error {
 		if err != nil {
 			return err
 		}
-		comments, err := post.GetCommentReplies(r.ctx, r.viewer, parentID)
+		comments, err := post.GetCommentReplies(r.ctx, s.db, r.viewer, parentID)
 		if err != nil {
 			return err
 		}
@@ -49,7 +49,7 @@ func (s *Server) getComments(w *responseWriter, r *request) error {
 		cursor.NextID = *nextID
 	}
 
-	if _, err = post.GetComments(r.ctx, r.viewer, cursor); err != nil {
+	if _, err = post.GetComments(r.ctx, s.db, r.viewer, cursor); err != nil {
 		return err
 	}
 
@@ -118,13 +118,13 @@ func (s *Server) addComment(w *responseWriter, r *request) error {
 		parentID = &req.ParentCommentID.ID
 	}
 
-	comment, err := post.AddComment(r.ctx, *r.viewer, as, parentID, req.Body)
+	comment, err := post.AddComment(r.ctx, s.db, *r.viewer, as, parentID, req.Body)
 	if err != nil {
 		return err
 	}
 
 	// +1 your own comment.
-	comment.Vote(r.ctx, *r.viewer, true)
+	comment.Vote(r.ctx, s.db, *r.viewer, true)
 
 	return w.writeJSON(comment)
 }
@@ -157,7 +157,7 @@ func (s *Server) updateComment(w *responseWriter, r *request) error {
 		}
 		// Override updatable fields.
 		comment.Body = tcom.Body
-		if err = comment.Save(r.ctx, *r.viewer); err != nil {
+		if err = comment.Save(r.ctx, s.db, *r.viewer); err != nil {
 			return err
 		}
 	} else {
@@ -167,7 +167,7 @@ func (s *Server) updateComment(w *responseWriter, r *request) error {
 			if err = g.UnmarshalText([]byte(query.Get("userGroup"))); err != nil {
 				return err
 			}
-			if err = comment.ChangeUserGroup(r.ctx, *r.viewer, g); err != nil {
+			if err = comment.ChangeUserGroup(r.ctx, s.db, *r.viewer, g); err != nil {
 				return err
 			}
 		default:
@@ -205,7 +205,7 @@ func (s *Server) deleteComment(w *responseWriter, r *request) error {
 		}
 	}
 
-	if err := comment.Delete(r.ctx, *r.viewer, deleteAs); err != nil {
+	if err := comment.Delete(r.ctx, s.db, *r.viewer, deleteAs); err != nil {
 		return err
 	}
 
@@ -237,12 +237,12 @@ func (s *Server) commentVote(w *responseWriter, r *request) error {
 
 	if comment.ViewerVoted.Bool {
 		if req.Up == comment.ViewerVotedUp.Bool {
-			err = comment.DeleteVote(r.ctx, *r.viewer)
+			err = comment.DeleteVote(r.ctx, s.db, *r.viewer)
 		} else {
-			err = comment.ChangeVote(r.ctx, *r.viewer, req.Up)
+			err = comment.ChangeVote(r.ctx, s.db, *r.viewer, req.Up)
 		}
 	} else {
-		err = comment.Vote(r.ctx, *r.viewer, req.Up)
+		err = comment.Vote(r.ctx, s.db, *r.viewer, req.Up)
 	}
 	if err != nil {
 		return err

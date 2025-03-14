@@ -24,51 +24,56 @@ func (s *Server) addPost(w *responseWriter, r *request) error {
 		return err
 	}
 
-	values, err := r.unmarshalJSONBodyToStringsMap(true)
-	if err != nil {
+	req := struct {
+		PostType  core.PostType       `json:"type"`
+		Title     string              `json:"title"`
+		URL       string              `json:"url"`
+		Body      string              `json:"body"`
+		Community string              `json:"community"`
+		UserGroup core.UserGroup      `json:"userGroup"`
+		ImageId   string              `json:"imageId"`
+		Images    []*core.ImageUpload `json:"images"`
+	}{
+		PostType:  core.PostTypeText,
+		UserGroup: core.UserGroupNormal,
+	}
+	if err := r.unmarshalJSONBody(&req); err != nil {
 		return err
 	}
 
-	var postType core.PostType = core.PostTypeText
-	if values["type"] != "" {
-		if err = postType.UnmarshalText([]byte(values["type"])); err != nil {
-			return err
-		}
-	}
-
-	if s.config.DisableImagePosts && postType == core.PostTypeImage {
-		// Disallow image post creation.
+	// Disallow image post creation if image posts are disabled in config.
+	if s.config.DisableImagePosts && req.PostType == core.PostTypeImage {
 		return httperr.NewForbidden("no_image_posts", "Image posts are not allowed")
 	}
 
-	title := values["title"] // required
-	body := values["body"]
-	commName := values["community"] // required
-
-	userGroup := core.UserGroupNormal
-	if text := values["userGroup"]; text != "" {
-		if err := userGroup.UnmarshalText([]byte(text)); err != nil {
-			return err
-		}
-	}
-
-	comm, err := core.GetCommunityByName(r.ctx, s.db, commName, nil)
+	comm, err := core.GetCommunityByName(r.ctx, s.db, req.Community, nil)
 	if err != nil {
 		return err
 	}
 
 	var post *core.Post
-	switch postType {
+	switch req.PostType {
 	case core.PostTypeText:
-		post, err = core.CreateTextPost(r.ctx, s.db, *r.viewer, comm.ID, title, body)
+		post, err = core.CreateTextPost(r.ctx, s.db, *r.viewer, comm.ID, req.Title, req.Body)
 	case core.PostTypeImage:
-		imageID, idErr := uid.FromString(values["imageId"])
-		if idErr != nil {
-			return httperr.NewBadRequest("invalid_image_id", "Invalid image ID.")
+		var images []*core.ImageUpload
+		if req.Images != nil {
+			images = req.Images
+		} else {
+			imageID, idErr := uid.FromString(req.ImageId)
+			if idErr != nil {
+				return httperr.NewBadRequest("invalid_image_id", "Invalid image ID.")
+			}
+			images = []*core.ImageUpload{
+				{ImageID: imageID},
+			}
 		}
-		post, err = core.CreateImagePost(r.ctx, s.db, *r.viewer, comm.ID, title, imageID)
+		if len(images) > s.config.MaxImagesPerPost {
+			return httperr.NewBadRequest("too-many-images", "Maximum images count exceeded.")
+		}
+		post, err = core.CreateImagePost(r.ctx, s.db, *r.viewer, comm.ID, req.Title, images)
 	case core.PostTypeLink:
-		post, err = core.CreateLinkPost(r.ctx, s.db, *r.viewer, comm.ID, title, values["url"])
+		post, err = core.CreateLinkPost(r.ctx, s.db, *r.viewer, comm.ID, req.Title, req.URL)
 	default:
 		return httperr.NewBadRequest("invalid_post_type", "Invalid post type.")
 	}
@@ -76,14 +81,14 @@ func (s *Server) addPost(w *responseWriter, r *request) error {
 		return err
 	}
 
-	if userGroup != core.UserGroupNormal {
-		if err := post.ChangeUserGroup(r.ctx, *r.viewer, userGroup); err != nil {
+	if req.UserGroup != core.UserGroupNormal {
+		if err := post.ChangeUserGroup(r.ctx, s.db, *r.viewer, req.UserGroup); err != nil {
 			return err
 		}
 	}
 
 	// +1 your own post.
-	post.Vote(r.ctx, *r.viewer, true)
+	post.Vote(r.ctx, s.db, *r.viewer, true)
 	return w.writeJSON(post)
 }
 
@@ -95,7 +100,7 @@ func (s *Server) getPost(w *responseWriter, r *request) error {
 		return err
 	}
 
-	if _, err = post.GetComments(r.ctx, r.viewer, nil); err != nil {
+	if _, err = post.GetComments(r.ctx, s.db, r.viewer, nil); err != nil {
 		return err
 	}
 
@@ -104,10 +109,10 @@ func (s *Server) getPost(w *responseWriter, r *request) error {
 		if err != nil {
 			return err
 		}
-		if err = comm.FetchRules(r.ctx); err != nil {
+		if err = comm.FetchRules(r.ctx, s.db); err != nil {
 			return err
 		}
-		if err = comm.PopulateMods(r.ctx); err != nil {
+		if err = comm.PopulateMods(r.ctx, s.db); err != nil {
 			return err
 		}
 		post.Community = comm
@@ -157,7 +162,7 @@ func (s *Server) updatePost(w *responseWriter, r *request) error {
 		}
 
 		if needSaving {
-			if err = post.Save(r.ctx, *r.viewer); err != nil {
+			if err = post.Save(r.ctx, s.db, *r.viewer); err != nil {
 				return err
 			}
 		}
@@ -169,9 +174,9 @@ func (s *Server) updatePost(w *responseWriter, r *request) error {
 				return err
 			}
 			if action == "lock" {
-				err = post.Lock(r.ctx, *r.viewer, as)
+				err = post.Lock(r.ctx, s.db, *r.viewer, as)
 			} else {
-				err = post.Unlock(r.ctx, *r.viewer)
+				err = post.Unlock(r.ctx, s.db, *r.viewer)
 			}
 			if err != nil {
 				return err
@@ -181,12 +186,16 @@ func (s *Server) updatePost(w *responseWriter, r *request) error {
 			if err = as.UnmarshalText([]byte(query.Get("userGroup"))); err != nil {
 				return err
 			}
-			if err = post.ChangeUserGroup(r.ctx, *r.viewer, as); err != nil {
+			if err = post.ChangeUserGroup(r.ctx, s.db, *r.viewer, as); err != nil {
 				return err
 			}
 		case "pin", "unpin":
 			siteWide := strings.ToLower(query.Get("siteWide")) == "true"
-			if err = post.Pin(r.ctx, *r.viewer, siteWide, action == "unpin", false); err != nil {
+			if err = post.Pin(r.ctx, s.db, *r.viewer, siteWide, action == "unpin", false); err != nil {
+				return err
+			}
+		case "announce":
+			if err := post.AnnounceToAllUsers(r.ctx, s.db, *r.viewer); err != nil {
 				return err
 			}
 		default:
@@ -226,7 +235,7 @@ func (s *Server) deletePost(w *responseWriter, r *request) error {
 			return httperr.NewBadRequest("", "deleteContent must be a bool.")
 		}
 	}
-	if err := post.Delete(r.ctx, *r.viewer, as, deleteContent); err != nil {
+	if err := post.Delete(r.ctx, s.db, *r.viewer, as, deleteContent, true); err != nil {
 		return err
 	}
 
@@ -258,12 +267,12 @@ func (s *Server) postVote(w *responseWriter, r *request) error {
 
 	if post.ViewerVoted.Bool {
 		if req.Up == post.ViewerVotedUp.Bool {
-			err = post.DeleteVote(r.ctx, *r.viewer)
+			err = post.DeleteVote(r.ctx, s.db, *r.viewer)
 		} else {
-			err = post.ChangeVote(r.ctx, *r.viewer, req.Up)
+			err = post.ChangeVote(r.ctx, s.db, *r.viewer, req.Up)
 		}
 	} else {
-		err = post.Vote(r.ctx, *r.viewer, req.Up)
+		err = post.Vote(r.ctx, s.db, *r.viewer, req.Up)
 	}
 	if err != nil {
 		return err
@@ -281,10 +290,10 @@ func (s *Server) imageUpload(w *responseWriter, r *request) error {
 		return errNotLoggedIn
 	}
 
-	if err := s.rateLimit(r, "uploads_1_"+r.viewer.String(), time.Second*2, 1); err != nil {
+	if err := s.rateLimit(r, "uploads_1_"+r.viewer.String(), time.Second*1, 5); err != nil {
 		return err
 	}
-	if err := s.rateLimit(r, "uploads_2_"+r.viewer.String(), time.Hour*24, 40); err != nil {
+	if err := s.rateLimit(r, "uploads_2_"+r.viewer.String(), time.Hour*24, 80); err != nil {
 		return err
 	}
 
