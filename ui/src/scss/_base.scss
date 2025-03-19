@@ -324,7 +324,7 @@ body {
     right: 0;
     background: var(--color-modal-overlay);
     backdrop-filter: var(--modal-bg-blur);
-    z-index: 2500;
+    z-index: 200000;
     opacity: 0;
     transition: all 0.175s;
 }

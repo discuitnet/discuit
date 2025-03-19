@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { Redirect, Route, Switch, useHistory, useLocation } from 'react-router-dom';
@@ -47,7 +47,6 @@ import {
   markNotificationAsSeen,
   signupModalOpened,
   snackAlert,
-  toggleSidebarOpen,
   userLoggedIn,
 } from './slices/mainSlice';
 import LoginForm from './views/LoginForm';
@@ -155,23 +154,6 @@ const App = () => {
 
   const width = useWindowWidth();
   const chatOpen = useSelector((state) => state.main.chatOpen);
-  const sidebarOpen = useSelector((state) => state.main.sidebarOpen);
-  const overlayRef = useCallback((node) => {
-    if (node !== null) {
-      setTimeout(() => {
-        node.style.opacity = 1;
-      }, 0);
-    }
-  }, []);
-  useEffect(() => {
-    if (sidebarOpen) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = prev;
-      };
-    }
-  }, [sidebarOpen]);
 
   const notifsNewCount = useSelector((state) => state.main.notifications.newCount);
   const notifsNewCountStr = notifsNewCount > 0 ? `(${notifsNewCount}) ` : '';
@@ -235,14 +217,7 @@ const App = () => {
       <Navbar />
       <AppUpdate />
       <PushNotifications />
-      {width <= tabletBreakpoint && <Sidebar isMobile />}
-      {sidebarOpen && (
-        <div
-          className="body-overlay"
-          onClick={() => dispatch(toggleSidebarOpen())}
-          ref={overlayRef}
-        ></div>
-      )}
+      {width <= tabletBreakpoint && <Sidebar mobile />}
       <AppSwitch />
       <Snacks />
       {import.meta.env.MODE !== 'production' && chatOpen && <Chat />}

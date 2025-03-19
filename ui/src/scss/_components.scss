@@ -672,7 +672,7 @@
 }
 
 .sidebar-left {
-    --m-width: 260px;
+    --m-width: 280px;
     .sidebar-top-m {
         display: none;
         align-items: center;
@@ -693,18 +693,18 @@
         left: 0;
         width: var(--m-width);
         background: var(--color-bg);
-        z-index: 100000;
+        z-index: 300000;
         box-shadow: 0 1px 1px 1px rgba(var(--base-fg), 0.2);
         padding: 7px;
         transform: translateX(calc(0px - var(--m-width)));
-        transition: all 0.175s;
+        transition: all 0.175s ease-out;
         @include mixins.tablet {
-            &.is-open {
-                display: flex !important;
-            }
-            &.is-visible {
-                transform: translateX(0px);
-            }
+            // &.is-open {
+            //     display: flex !important;
+            // }
+            // &.is-visible {
+            //     transform: translateX(0px);
+            // }
             .sidebar-top-m {
                 display: flex;
             }
