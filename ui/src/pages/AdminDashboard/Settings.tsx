@@ -6,7 +6,7 @@ import { Checkbox } from '../../components/Input';
 import PageLoading from '../../components/PageLoading';
 import { mfetch, mfetchjson } from '../../helper';
 import { SiteSettings } from '../../serverTypes';
-import { snackAlertError } from '../../slices/mainSlice';
+import { createCommunityModalOpened, snackAlertError } from '../../slices/mainSlice';
 
 export default function Settings() {
   const dispatch = useDispatch();
@@ -72,6 +72,16 @@ export default function Settings() {
                 }}
               />
             </FormField>
+            <FormSection>
+              <FormField>
+                <Button
+                  onClick={() => dispatch(createCommunityModalOpened())}
+                  className={'button button-main home-btn-new-post'}
+                >
+                  Create community
+                </Button>
+              </FormField>
+            </FormSection>
           </FormSection>
           <FormSection>
             <Button color="main" disabled={!changed} onClick={handleSave}>

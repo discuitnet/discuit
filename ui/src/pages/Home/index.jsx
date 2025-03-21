@@ -1,14 +1,13 @@
 import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import { ButtonClose } from '../../components/Button';
-import Link from '../../components/Link';
 import MiniFooter from '../../components/MiniFooter';
 import Modal from '../../components/Modal';
 import Sidebar from '../../components/Sidebar';
 import { isDeviceIos, isDeviceStandalone } from '../../helper';
-import { createCommunityModalOpened, showAppInstallButton } from '../../slices/mainSlice';
+import { showAppInstallButton } from '../../slices/mainSlice';
 import LoginForm from '../../views/LoginForm';
 import PostsFeed from '../../views/PostsFeed';
 import WelcomeBanner from '../../views/WelcomeBanner';
@@ -16,7 +15,6 @@ import WelcomeBanner from '../../views/WelcomeBanner';
 const Home = () => {
   const user = useSelector((state) => state.main.user);
   const loggedIn = user !== null;
-  const canCreateForum = loggedIn && (user.isAdmin || !import.meta.env.VITE_DISABLEFORUMCREATION);
 
   const location = useLocation();
   const feedType = (() => {
@@ -71,24 +69,9 @@ const Home = () => {
               <ButtonAppInstall className="banner-install-button" deferredPrompt={deferredPrompt}>
                 Install
               </ButtonAppInstall>
-              <ButtonClose onClick={handleNeverShowBanner} style={{ color: "inherit" }} />
+              <ButtonClose onClick={handleNeverShowBanner} style={{ color: 'inherit' }} />
             </div>
           </div>
-        )}
-        {loggedIn && (
-          <Link className="button button-main home-btn-new-post is-m" to="/new">
-            Create post
-          </Link>
-        )}
-        {canCreateForum && (
-          <>
-            <Link
-              onClick={() => dispatch(createCommunityModalOpened())}
-              className={'button button-main home-btn-new-post is-m'}
-            >
-              Create community
-            </Link>
-          </>
         )}
         <PostsFeed feedType={feedType} />
       </main>
