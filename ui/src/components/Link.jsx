@@ -1,30 +1,8 @@
 import PropTypes from 'prop-types';
-import React from 'react';
-import { useHistory, useLocation } from 'react-router';
-
-function locationToString(location) {
-  return `${location.pathname ?? ''}${location.search ?? ''}${location.hash ?? ''}`;
-}
+import { useLinkClick } from '../hooks';
 
 const Link = ({ to, replace = false, children, onClick, target, ...props }) => {
-  const history = useHistory();
-  const location = useLocation();
-
-  const handleClick = (event) => {
-    if (onClick) onClick();
-    if ((target ?? '_self') !== '_self') return;
-    event.preventDefault();
-    if (to === locationToString(location)) {
-      window.scrollTo(0, 0);
-      return;
-    }
-    if (replace) {
-      history.replace(to);
-    } else {
-      history.push(to);
-    }
-  };
-
+  const handleClick = useLinkClick(to, onClick, target, replace);
   return (
     <a href={to} onClick={handleClick} target={target} {...props}>
       {children}

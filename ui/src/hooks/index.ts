@@ -1,3 +1,4 @@
+import { Location } from 'history';
 import { useEffect, useInsertionEffect, useReducer, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useLocation } from 'react-router';
@@ -479,4 +480,35 @@ export function useFetchUsersLists(username: string, showSnackAlertOnError = tru
     loading: !(lists && !error),
     error,
   };
+}
+
+function locationToString<S = unknown>(location: Location<S>) {
+  return `${location.pathname ?? ''}${location.search ?? ''}${location.hash ?? ''}`;
+}
+
+export function useLinkClick(
+  to: string,
+  onClick?: (event: React.MouseEvent) => void,
+  target?: string,
+  replace = false
+): (event: React.MouseEvent) => void {
+  const history = useHistory();
+  const location = useLocation();
+
+  const handleClick = (event: React.MouseEvent) => {
+    if (onClick) onClick(event);
+    if ((target ?? '_self') !== '_self') return;
+    event.preventDefault();
+    if (to === locationToString(location)) {
+      window.scrollTo(0, 0);
+      return;
+    }
+    if (replace) {
+      history.replace(to);
+    } else {
+      history.push(to);
+    }
+  };
+
+  return handleClick;
 }
