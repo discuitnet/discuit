@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { Redirect, Route, Switch, useHistory, useLocation } from 'react-router-dom';
 import AppUpdate from './AppUpdate';
+import BottomNavbar from './components/BottomNavbar';
 import { ButtonClose } from './components/Button';
 import Chat from './components/Chat';
 import CreateCommunity from './components/CreateCommunity';
@@ -17,7 +18,7 @@ import Signup from './components/Signup';
 import Snacks from './components/Snacks';
 import Elements from './Elements';
 import { isDeviceStandalone, mfetchjson } from './helper';
-import { useCanonicalTag, useLoading, useWindowWidth } from './hooks';
+import { useCanonicalTag, useIsMobile, useLoading, useWindowWidth } from './hooks';
 import About from './pages/About';
 import AdminDashboard from './pages/AdminDashboard';
 import AllCommunities from './pages/AllCommunities';
@@ -194,6 +195,8 @@ const App = () => {
     }
   }, [location, dispatch]);
 
+  const isMobile = useIsMobile();
+
   if (!isOnline && showOfflinePage) {
     return <Offline />;
   }
@@ -215,6 +218,7 @@ const App = () => {
       <ScrollToTop />
       <CanonicalTag />
       <Navbar />
+      {isMobile && <BottomNavbar />}
       <AppUpdate />
       <PushNotifications />
       {width <= tabletBreakpoint && <Sidebar mobile />}

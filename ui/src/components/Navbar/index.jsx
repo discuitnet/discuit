@@ -147,7 +147,7 @@ const Navbar = ({ offline = false }) => {
           )}
           {/*<ButtonSearch />*/}
           {loggedIn && (
-            <Link to="/notifications" onClick={handleNotifIconClick}>
+            <Link className="is-no-m" to="/notifications" onClick={handleNotifIconClick}>
               <ButtonNotifications count={notifsNewCount} />
             </Link>
           )}
