@@ -274,7 +274,7 @@ export function useRemoveCanonicalTag(deps?: React.DependencyList) {
   }, deps);
 }
 
-export function useImageLoaded(imgSrc: string) {
+export function useImageLoaded(imgSrc: string): [boolean, () => void] {
   const [loaded, setLoaded] = useState(true);
   const timer = useRef<number | null>(null);
   useInsertionEffect(() => {

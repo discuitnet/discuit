@@ -1,8 +1,19 @@
-import PropTypes from 'prop-types';
 import { selectImageCopyURL } from '../helper';
 import { useImageLoaded } from '../hooks';
+import { Image } from '../serverTypes';
 
-const CommunityProPic = ({ className, name, proPic, size = 'small', ...rest }) => {
+const CommunityProPic = ({
+  className,
+  name,
+  proPic,
+  size = 'small',
+  ...rest
+}: {
+  className?: string;
+  name: string;
+  proPic: Image | null;
+  size: 'small' | 'standard' | 'large';
+}) => {
   const defaultFavicon = '/favicon-gray.png';
   let src = defaultFavicon;
   let averageColor = '#3d3d3d';
@@ -22,7 +33,7 @@ const CommunityProPic = ({ className, name, proPic, size = 'small', ...rest }) =
     }
   }
 
-  const [loaded, handleLoad] = useImageLoaded();
+  const [loaded, handleLoad] = useImageLoaded(src);
 
   return (
     <div
@@ -33,13 +44,6 @@ const CommunityProPic = ({ className, name, proPic, size = 'small', ...rest }) =
       <img alt={`${name}'s profile`} src={src} onLoad={handleLoad} />
     </div>
   );
-};
-
-CommunityProPic.propTypes = {
-  className: PropTypes.string,
-  name: PropTypes.string.isRequired,
-  proPic: PropTypes.object,
-  size: PropTypes.oneOf(['small', 'standard', 'large']),
 };
 
 export default CommunityProPic;
