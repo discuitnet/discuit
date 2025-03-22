@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import Link from '../components/Link';
+import Link from './Link';
 
 const Footer = () => {
   const className = 'footer';
@@ -8,13 +8,14 @@ const Footer = () => {
   // white bar on the bottom of the page. This useEffect hook gets rid of that
   // by making it the background color of the footer.
   useEffect(() => {
-    const background = document.documentElement.style.background;
-    document.documentElement.style.background = window.getComputedStyle(
-      document.querySelector(className)
-    ).background;
-    return () => {
-      document.documentElement.style.background = background;
-    };
+    const footerEl = document.querySelector(className);
+    if (footerEl) {
+      const background = document.documentElement.style.background;
+      document.documentElement.style.background = window.getComputedStyle(footerEl).background;
+      return () => {
+        document.documentElement.style.background = background;
+      };
+    }
   }, []);
 
   return (

@@ -1,5 +1,12 @@
 import { Location } from 'history';
-import { useEffect, useInsertionEffect, useReducer, useRef, useState } from 'react';
+import {
+  MouseEventHandler,
+  useEffect,
+  useInsertionEffect,
+  useReducer,
+  useRef,
+  useState,
+} from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useLocation } from 'react-router';
 import { APIError, mfetch, mfetchjson, usernameLegalLetters } from '../helper';
@@ -489,16 +496,16 @@ function locationToString<S = unknown>(location: Location<S>) {
   return `${location.pathname ?? ''}${location.search ?? ''}${location.hash ?? ''}`;
 }
 
-export function useLinkClick(
+export function useLinkClick<T = Element>(
   to: string,
-  onClick?: (event: React.MouseEvent) => void,
+  onClick?: React.MouseEventHandler<T>,
   target?: string,
   replace = false
-): (event: React.MouseEvent) => void {
+): React.MouseEventHandler<T> {
   const history = useHistory();
   const location = useLocation();
 
-  const handleClick = (event: React.MouseEvent) => {
+  const handleClick: MouseEventHandler<T> = (event) => {
     if (onClick) onClick(event);
     if ((target ?? '_self') !== '_self') return;
     event.preventDefault();
