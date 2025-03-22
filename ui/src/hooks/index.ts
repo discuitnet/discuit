@@ -43,7 +43,10 @@ export function useDelayedEffect(effect: () => void, delay = 1000) {
  * @param initialUsername Initial value of the username.
  * @returns
  */
-export function useInputUsername(maxLength: number, initialUsername = '') {
+export function useInputUsername(
+  maxLength: number,
+  initialUsername = ''
+): [string, React.ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>] {
   const [value, setValue] = useState(initialUsername);
   const handleChange: React.ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement> = (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
