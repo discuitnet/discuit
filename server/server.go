@@ -140,6 +140,7 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/posts/{postID}", s.withHandler(s.deletePost)).Methods("DELETE")
 	r.Handle("/api/_postVote", s.withHandler(s.postVote)).Methods("POST")
 	r.Handle("/api/_uploads", s.withHandler(s.imageUpload)).Methods("POST")
+	r.Handle("/api/images/{imageID}", s.withHandler(s.updateImage)).Methods("PUT")
 
 	r.Handle("/api/posts/{postID}/comments", s.withHandler(s.getPostComments)).Methods("GET")
 	r.Handle("/api/posts/{postID}/comments", s.withHandler(s.addComment)).Methods("POST")

@@ -751,6 +751,7 @@ type ImageOptions struct {
 	Width, Height int
 	Format        ImageFormat
 	Fit           ImageFit
+	AltText       string
 }
 
 // SaveImage saves the provided image in the image store with the name storeName

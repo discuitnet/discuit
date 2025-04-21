@@ -31,6 +31,7 @@ type ImageRecord struct {
 	AverageColor RGB         `json:"averageColor"`
 	CreatedAt    time.Time   `json:"createdAt"`
 	DeletedAt    *time.Time  `json:"deletedAt"`
+	AltText      *string     `json:"altText"`
 }
 
 // ImageRecordColumns returns the list of columns of the images table. Use this
@@ -49,6 +50,7 @@ func ImageRecordColumns() []string {
 		"images.average_color",
 		"images.created_at",
 		"images.deleted_at",
+		"images.alt_text",
 	}
 }
 
@@ -69,6 +71,7 @@ func (r *ImageRecord) ScanDestinations() []any {
 		&r.AverageColor,
 		&r.CreatedAt,
 		&r.DeletedAt,
+		&r.AltText,
 	}
 }
 
@@ -157,6 +160,7 @@ func (r *ImageRecord) Image() *Image {
 	*m.Height = r.Height
 	*m.Size = r.Size
 	*m.AverageColor = r.AverageColor
+	m.AltText = r.AltText
 	m.PostScan()
 	return m
 }
@@ -173,6 +177,7 @@ type Image struct {
 	AverageColor *RGB         `json:"averageColor"`
 	URL          *string      `json:"url"`
 	Copies       []*ImageCopy `json:"copies"`
+	AltText      *string      `json:"altText"`
 }
 
 // NewImage returns an Image with all pointer fields allocated and set to zero
@@ -188,6 +193,7 @@ func NewImage() *Image {
 	m.AverageColor = new(RGB)
 	m.URL = new(string)
 	m.Copies = make([]*ImageCopy, 0)
+	m.AltText = new(string)
 	return m
 }
 
