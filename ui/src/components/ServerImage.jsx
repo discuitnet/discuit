@@ -20,7 +20,7 @@ const ServerImage = ({ onLoad, image, sizes, style = {}, ...props }) => {
       srcSet={srcset}
       sizes={sizes}
       src={src}
-      alt=""
+      alt={image.altText || ''}
       style={style}
       backgroundColor={style.backgroundColor ?? image.averageColor}
       {...props}
