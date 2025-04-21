@@ -118,6 +118,25 @@ Note: Do not install the discuit binary using `go install` or move it somewhere 
 
 ### Source code layout
 
+### Running with Nix Flakes
+
+If you use [Nix](https://nixos.org/) or [NixOS](https://nixos.org/), you can get a fully reproducible dev environment with all dependencies using the included flake:
+
+```sh
+nix develop
+```
+
+This will:
+- Install all required packages.
+- Start local MariaDB and Redis servers (with logs in `.mysql/` and `.redis/` respectively).
+- Create the `discuit` database and user automatically.
+
+When you exit the shell, MariaDB and Redis will automatically stop.
+
+> [!IMPORTANT]
+> You'll need [Nix flakes enabled](https://nixos.wiki/wiki/Flakes) and a recent version of Nix to use this.
+
+
 In the root directory are these directories:
 
 - `cli`: Contains the command-line interface.
