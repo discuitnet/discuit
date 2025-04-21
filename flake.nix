@@ -25,6 +25,7 @@
             mariadb
             redis
             vips
+            pkg-config
 
             # extras
             gotools
