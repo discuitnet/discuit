@@ -100,6 +100,8 @@ type Comment struct {
 
 	ViewerVoted   msql.NullBool `json:"userVoted"`
 	ViewerVotedUp msql.NullBool `json:"userVotedUp"`
+	// The logged in user's last visit to the post.
+	ViewerLastVisit time.Time `json:"lastVisitAt,omitempty"`
 
 	PostTitle     string    `json:"postTitle,omitempty"`
 	PostDeleted   bool      `json:"postDeleted"`
@@ -131,10 +133,11 @@ func buildSelectCommentsQuery(loggedIn bool, where string) string {
 		"comments.deleted_at",
 		"comments.deleted_as",
 	}
+
 	var joins []string
 	if loggedIn {
-		cols := append(cols, "comment_votes.id IS NOT NULL", "comment_votes.up")
-		joins = []string{"LEFT OUTER JOIN comment_votes ON comments.id = comment_votes.comment_id AND comment_votes.user_id = ?"}
+		cols := append(cols, "comment_votes.id IS NOT NULL", "comment_votes.up", "post_visits.last_visited_at")
+		joins = []string{"LEFT OUTER JOIN comment_votes ON comments.id = comment_votes.comment_id AND comment_votes.user_id = ? LEFT OUTER JOIN post_visits ON comments.post_id = post_visits.post_id AND post_visits.user_id = ?"}
 		return msql.BuildSelectQuery("comments", cols, joins, where)
 	}
 	return msql.BuildSelectQuery("comments", cols, joins, where)
@@ -148,10 +151,11 @@ func GetComment(ctx context.Context, db *sql.DB, id uid.ID, viewer *uid.ID) (*Co
 		rows  *sql.Rows
 		err   error
 	)
+
 	if viewer == nil {
 		rows, err = db.QueryContext(ctx, query, id)
 	} else {
-		rows, err = db.QueryContext(ctx, query, viewer, id)
+		rows, err = db.QueryContext(ctx, query, viewer, viewer, id)
 	}
 	if err != nil {
 		return nil, err
@@ -219,7 +223,7 @@ func scanComments(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.I
 			&comment.DeletedAs,
 		}
 		if loggedIn {
-			dest = append(dest, &comment.ViewerVoted, &comment.ViewerVotedUp)
+			dest = append(dest, &comment.ViewerVoted, &comment.ViewerVotedUp, &comment.ViewerLastVisit)
 		}
 
 		if err := rows.Scan(dest...); err != nil {
