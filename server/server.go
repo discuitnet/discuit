@@ -778,7 +778,7 @@ func (s *Server) insertMetaTags(doc *html.Node, r *http.Request) {
 		}
 	} else if len(list) == 3 && list[1] == "post" {
 		// post page
-		post, err := core.GetPost(ctx, s.db, nil, list[2], nil, true)
+		post, err := core.GetPost(ctx, s.db, nil, list[2], nil, true, true)
 		if err == nil {
 			appendTitle(post.Title, "")
 			sep := " • "

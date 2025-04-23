@@ -158,6 +158,11 @@ type Post struct {
 	// Whether the logged in user have voted up.
 	ViewerVotedUp msql.NullBool `json:"userVotedUp"`
 
+	// The logged in user's last visit to the post.
+	ViewerLastVisit time.Time `json:"lastVisitAt,omitempty"`
+	// Number of new comments in post according to logged in user's last visit.
+	ViewerNewComments int `json:"newComments,omitempty"`
+
 	AuthorMutedByViewer    bool `json:"isAuthorMuted"`
 	CommunityMutedByViewer bool `json:"isCommunityMuted"`
 
@@ -227,8 +232,58 @@ func buildSelectPostQuery(loggedIn bool, where string) string {
 
 // GetPosts returns a post using publicID, if publicID is not an empty string,
 // or using postID.
-func GetPost(ctx context.Context, db *sql.DB, postID *uid.ID, publicID string, viewer *uid.ID, getDeleted bool) (*Post, error) {
+func GetPost(ctx context.Context, db *sql.DB, postID *uid.ID, publicID string, viewer *uid.ID, getDeleted bool, updateVisitTime bool) (*Post, error) {
 	loggedIn := viewer != nil
+	currTime, newComments := time.Now(), 0
+	var lastVisitedAt time.Time
+
+	if loggedIn {
+		fmt.Println("GetPost-------------------\n", "currTime", currTime, "\n--------------------")
+		id, tempPostID := 0, postID
+		if publicID != "" {
+			if err := db.QueryRowContext(ctx, "SELECT id FROM posts WHERE public_id = ?", publicID).Scan(&tempPostID); err != nil {
+				return nil, err
+			}
+		}
+		if err := db.QueryRowContext(ctx, "SELECT id, last_visited_at FROM post_visits WHERE post_id = ? AND user_id = ?", tempPostID, viewer).Scan(&id, &lastVisitedAt); err != nil {
+			if err != sql.ErrNoRows {
+				return nil, err
+			}
+			fmt.Println("GetPost-------------------\n", "lastVisitedAt on post_visits", lastVisitedAt, "\n--------------------")
+			// if it *is* sql.ErrNoRows, id will be 0 and can use that as a check value
+		}
+
+		// tempPostID is the post_id on comments table
+		if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM comments WHERE post_id = ? AND deleted_at IS NULL AND created_at > ?", tempPostID, lastVisitedAt).Scan(&newComments); err != nil {
+			if err != sql.ErrNoRows {
+				return nil, err
+			}
+			// if it *is* sql.ErrNoRows, newComments will be the initialised 0
+		}
+
+		if updateVisitTime {
+			tx, err := db.BeginTx(ctx, nil)
+			if err != nil {
+				return nil, err
+			}
+			if id == 0 {
+				// never visited this post: create a timestamp
+				_, err = tx.ExecContext(ctx, "INSERT INTO post_visits (post_id, user_id, last_visited_at) values (?, ?, ?)", tempPostID, viewer, currTime)
+				fmt.Println("GetPost creating timestamp----\n", tempPostID, viewer, currTime, "\n----------------------")
+			} else if currTime.After(lastVisitedAt) {
+				// visited, and current time is after last visit: update last visit time
+				_, err = tx.ExecContext(ctx, "UPDATE post_visits SET last_visited_at = ? WHERE id = ?", currTime, id)
+				fmt.Println("GetPost updating timestamp----\n", currTime, id, "\n----------------------")
+			}
+			if err != nil {
+				tx.Rollback()
+				return nil, err
+			}
+			if err = tx.Commit(); err != nil {
+				return nil, err
+			}
+		}
+	}
 
 	where := "WHERE "
 	if publicID != "" {
@@ -260,6 +315,12 @@ func GetPost(ctx context.Context, db *sql.DB, postID *uid.ID, publicID string, v
 	if err != nil {
 		return nil, err
 	}
+
+	post := posts[0]
+	post.ViewerLastVisit = lastVisitedAt
+	//// newComments
+	post.ViewerNewComments = 1
+	fmt.Println("GetPost-------------------\n", "post.ViewerLastVisit", post.ViewerLastVisit, "\n--------------------")
 	return posts[0], err
 }
 
@@ -720,7 +781,7 @@ func createPost(ctx context.Context, db *sql.DB, opts *createPostOpts) (*Post, e
 		return nil, err
 	}
 
-	return GetPost(ctx, db, &post.ID, "", nil, false)
+	return GetPost(ctx, db, &post.ID, "", nil, false, false)
 }
 
 func CreateTextPost(ctx context.Context, db *sql.DB, author, community uid.ID, title string, body string) (*Post, error) {
@@ -1408,11 +1469,13 @@ func getComments(ctx context.Context, db *sql.DB, viewer *uid.ID, where string, 
 	}
 
 	if loggedIn {
-		args2 := make([]interface{}, len(args)+1)
-		args2[0] = viewer
+		args2 := make([]interface{}, len(args)+2)
+		// logged-in viewer used to join two tables
+		args2[0], args2[1] = viewer, viewer
 		for i := range args {
-			args2[i+1] = args[i]
+			args2[i+2] = args[i]
 		}
+
 		rows, err = db.QueryContext(ctx, query, args2...)
 	} else {
 		rows, err = db.QueryContext(ctx, query, args...)

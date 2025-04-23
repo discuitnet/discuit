@@ -321,11 +321,20 @@ const Comment = ({
         noAtSign
         noLink={isUsernameHidden}
       />
-    );
+    ); 
   };
+
+  function CommentNewLabel({inline = true, comment, ...rest}) {
+    return React.createElement(
+        inline ? 'span' : 'div',
+        {...rest,},
+        `${(Date.parse(comment.lastVisitAt) < Date.parse(comment.createdAt)) && !comment.deleted ? '(new)' : '(new (remove this; test text))'}`
+      );
+  }
 
   const isAuthorSupporter = userHasSupporterBadge(comment.author);
   const topDivClassname = 'post-comment' + (showAuthorProPic ? ' has-propics' : '');
+  const isCommentNew = ((comment.lastVisitAt < comment.createdAt) && !comment.deleted);
   if (collapsed) {
     return (
       <div
@@ -349,6 +358,9 @@ const Comment = ({
               time={comment.createdAt}
               short={isMobile}
             />
+
+            <CommentNewLabel className="post-comment-head-item is-no-m" comment={comment} />
+
             {/*<div className="post-comment-head-item">{`${kRound(points)} ${stringCount(
               points,
               true,
@@ -506,6 +518,9 @@ const Comment = ({
               {`${toTitleCase(userGroupSingular(comment.userGroup, isMobile))}`}
             </div>
           )}
+
+          <CommentNewLabel className="post-comment-head-item is-no-m" comment={comment} />
+
           {showEditedSign && (
             <TimeAgo
               className="post-comment-head-item"

@@ -707,7 +707,7 @@ func (n NotificationNewComment) marshalJSONForAPI(ctx context.Context, db *sql.D
 		T: (T)(n),
 	}
 
-	post, err := GetPost(ctx, db, &n.PostID, "", nil, true)
+	post, err := GetPost(ctx, db, &n.PostID, "", nil, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -726,7 +726,7 @@ func encloseInBold(format TextFormat, text string) string {
 }
 
 func (n NotificationNewComment) view(ctx context.Context, db *sql.DB, format TextFormat) (*NotificationView, error) {
-	post, err := GetPost(ctx, db, &n.PostID, "", nil, true)
+	post, err := GetPost(ctx, db, &n.PostID, "", nil, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -818,7 +818,7 @@ func (n NotificationCommentReply) marshalJSONForAPI(ctx context.Context, db *sql
 		T: (T)(n),
 	}
 
-	post, err := GetPost(ctx, db, &n.PostID, "", nil, true)
+	post, err := GetPost(ctx, db, &n.PostID, "", nil, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -827,7 +827,7 @@ func (n NotificationCommentReply) marshalJSONForAPI(ctx context.Context, db *sql
 }
 
 func (n NotificationCommentReply) view(ctx context.Context, db *sql.DB, format TextFormat) (*NotificationView, error) {
-	post, err := GetPost(ctx, db, &n.PostID, "", nil, true)
+	post, err := GetPost(ctx, db, &n.PostID, "", nil, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -939,7 +939,7 @@ func (n NotificationNewVotes) marshalJSONForAPI(ctx context.Context, db *sql.DB)
 	}
 
 	if n.TargetType == "post" {
-		post, err := GetPost(ctx, db, &n.TargetID, "", nil, true)
+		post, err := GetPost(ctx, db, &n.TargetID, "", nil, true, false)
 		if err != nil {
 			return nil, err
 		}
@@ -951,7 +951,7 @@ func (n NotificationNewVotes) marshalJSONForAPI(ctx context.Context, db *sql.DB)
 		}
 		out.Comment = comment
 
-		post, err := GetPost(ctx, db, &comment.PostID, "", nil, true)
+		post, err := GetPost(ctx, db, &comment.PostID, "", nil, true, false)
 		if err != nil {
 			return nil, err
 		}
@@ -963,7 +963,7 @@ func (n NotificationNewVotes) marshalJSONForAPI(ctx context.Context, db *sql.DB)
 func (n NotificationNewVotes) view(ctx context.Context, db *sql.DB, format TextFormat) (*NotificationView, error) {
 	view := &NotificationView{}
 	if n.TargetType == "post" {
-		post, err := GetPost(ctx, db, &n.TargetID, "", nil, true)
+		post, err := GetPost(ctx, db, &n.TargetID, "", nil, true, false)
 		if err != nil {
 			return nil, err
 		}
@@ -975,7 +975,7 @@ func (n NotificationNewVotes) view(ctx context.Context, db *sql.DB, format TextF
 		if err != nil {
 			return nil, err
 		}
-		post, err := GetPost(ctx, db, &comment.PostID, "", nil, true)
+		post, err := GetPost(ctx, db, &comment.PostID, "", nil, true, false)
 		if err != nil {
 			return nil, err
 		}
@@ -1040,7 +1040,7 @@ func (n NotificationPostDeleted) marshalJSONForAPI(ctx context.Context, db *sql.
 	}
 
 	if n.TargetType == "post" {
-		post, err := GetPost(ctx, db, &n.TargetID, "", nil, true)
+		post, err := GetPost(ctx, db, &n.TargetID, "", nil, true, false)
 		if err != nil {
 			return nil, err
 		}
@@ -1056,7 +1056,7 @@ func (n NotificationPostDeleted) marshalJSONForAPI(ctx context.Context, db *sql.
 }
 
 func (n NotificationPostDeleted) view(ctx context.Context, db *sql.DB, format TextFormat) (*NotificationView, error) {
-	post, err := GetPost(ctx, db, &n.TargetID, "", nil, true)
+	post, err := GetPost(ctx, db, &n.TargetID, "", nil, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -1272,7 +1272,7 @@ func (n *NotificationAnnouncement) marshalJSONForAPI(ctx context.Context, db *sq
 		Community *Community `json:"community"`
 	}{T: (T)(*n)}
 
-	post, err := GetPost(ctx, db, &n.PostID, "", nil, true)
+	post, err := GetPost(ctx, db, &n.PostID, "", nil, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -1287,7 +1287,7 @@ func (n *NotificationAnnouncement) marshalJSONForAPI(ctx context.Context, db *sq
 }
 
 func (n NotificationAnnouncement) view(ctx context.Context, db *sql.DB, format TextFormat) (*NotificationView, error) {
-	post, err := GetPost(ctx, db, &n.PostID, "", nil, true)
+	post, err := GetPost(ctx, db, &n.PostID, "", nil, true, false)
 	if err != nil {
 		return nil, err
 	}
