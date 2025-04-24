@@ -52,6 +52,7 @@ const PostImage = ({ post }) => {
           height: imageSize.height ?? 0,
         }}
         loading="lazy"
+        showCaption={true}
       />
     </div>
   );
