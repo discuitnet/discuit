@@ -208,6 +208,7 @@ func ImageColumns(tableAlias string) []string {
 		tableAlias + ".height",
 		tableAlias + ".size",
 		tableAlias + ".average_color",
+		tableAlias + ".alt_text",
 	}
 }
 
@@ -219,6 +220,7 @@ func (m *Image) ScanDestinations() []any {
 		&m.Height,
 		&m.Size,
 		&m.AverageColor,
+		&m.AltText,
 	}
 }
 
