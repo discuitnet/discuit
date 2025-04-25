@@ -38,6 +38,7 @@ export interface Image {
   averageColor: string;
   url: string;
   copies: ImageCopy[] | null;
+  altText: string | null;
 }
 
 export interface ImageCopy {

@@ -2,7 +2,15 @@ import PropTypes from 'prop-types';
 import { selectImageCopyURL } from '../helper';
 import { useImageLoaded } from '../hooks';
 
-const CommunityProPic = ({ className, name, proPic, size = 'small', ...rest }) => {
+const CommunityProPic = ({
+  className,
+  name,
+  proPic,
+  size = 'small',
+  editable = false,
+  onEdit,
+  ...rest
+}) => {
   const defaultFavicon = '/favicon-gray.png';
   let src = defaultFavicon;
   let averageColor = '#3d3d3d';
@@ -24,13 +32,25 @@ const CommunityProPic = ({ className, name, proPic, size = 'small', ...rest }) =
 
   const [loaded, handleLoad] = useImageLoaded();
 
+  const altText = proPic?.altText || `${name}'s profile`;
+  const editableCls = editable ? ' comm-propic-editable' : '';
+
+  const handleClick = () => {
+    if (editable && onEdit) {
+      onEdit();
+    }
+  };
+
   return (
     <div
-      className={'profile-picture comm-propic' + (className ? ` ${className}` : '')}
+      className={'profile-picture comm-propic' + (className ? ` ${className}` : '') + editableCls}
       style={{ backgroundColor: averageColor, backgroundImage: loaded ? `url('${src}')` : 'none' }}
+      onClick={handleClick}
+      role={editable ? 'button' : undefined}
+      tabIndex={editable ? 0 : undefined}
       {...rest}
     >
-      <img alt={`${name}'s profile`} src={src} onLoad={handleLoad} />
+      <img alt={altText} src={src} onLoad={handleLoad} />
     </div>
   );
 };
@@ -40,6 +60,8 @@ CommunityProPic.propTypes = {
   name: PropTypes.string.isRequired,
   proPic: PropTypes.object,
   size: PropTypes.oneOf(['small', 'standard', 'large']),
+  editable: PropTypes.bool,
+  onEdit: PropTypes.func,
 };
 
 export default CommunityProPic;

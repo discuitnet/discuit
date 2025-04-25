@@ -34,13 +34,17 @@ const Image = ({
   if (isFullSize) cls += ' is-fullsize';
   if (!loaded) cls += ' is-loading';
 
-  return (
+  return showCaption ? (
     <figure className={cls + (className ? ` ${className}` : '')}>
       <div style={divStyle} className="image-container">
         <img alt={alt} style={imgStyle} onLoad={handleLoad} src={src} {...props} />
       </div>
-      {showCaption && alt && <figcaption className="image-caption">{alt}</figcaption>}
+      {alt && <figcaption className="image-caption">{alt}</figcaption>}
     </figure>
+  ) : (
+    <div style={divStyle} className={cls + (className ? ` ${className}` : '')}>
+      <img alt={alt} style={imgStyle} onLoad={handleLoad} src={src} {...props} />
+    </div>
   );
 };
 
