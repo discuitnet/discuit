@@ -116,8 +116,6 @@ Note: Do not install the discuit binary using `go install` or move it somewhere 
    docker start discuit
    ```
 
-### Source code layout
-
 ### Running with Nix Flakes
 
 If you use [Nix](https://nixos.org/) or [NixOS](https://nixos.org/), you can get a fully reproducible dev environment with all dependencies using the included flake:
@@ -136,6 +134,7 @@ When you exit the shell, MariaDB and Redis will automatically stop.
 > [!IMPORTANT]
 > You'll need [Nix flakes enabled](https://nixos.wiki/wiki/Flakes) and a recent version of Nix to use this.
 
+### Source code layout
 
 In the root directory are these directories:
 
