@@ -18,7 +18,7 @@ import { APIError, dateString1, mfetch, mfetchjson, stringCount } from '../../he
 import { useFetchUsersLists, useMuteUser } from '../../hooks';
 import type { Comment, Post, User } from '../../serverTypes';
 import { FeedItem } from '../../slices/feedsSlice';
-import { snackAlert, snackAlertError } from '../../slices/mainSlice';
+import { snackAlert, snackAlertError, userLoggedIn } from '../../slices/mainSlice';
 import { selectUser, userAdded } from '../../slices/usersSlice';
 import { RootState } from '../../store';
 import NotFound from '../NotFound';
@@ -29,6 +29,7 @@ import { MemorizedComment } from './Comment';
 import UserAdminsViewModal from './UserAdminsViewModal';
 import ImageEditModal from '../../components/ImageEditModal';
 import { selectImageCopyURL } from '../../helper';
+import { useImageEdit } from '../../hooks/useImageEdit';
 
 interface UserFeedAPIResponse {
   items: {
@@ -57,8 +58,27 @@ const User = () => {
   const loggedIn = viewer !== null;
 
   const [profilePicModalOpen, setProfilePicModalOpen] = useState(false);
-  const [isUploadingPic, setIsUploadingPic] = useState(false);
-  const [isDeletingPic, setIsDeletingPic] = useState(false);
+
+  const {
+    isUploading: isUploadingPic,
+    isDeleting: isDeletingPic,
+    handleUpload: handleUploadProfilePic,
+    handleDelete: handleDeleteProfilePic,
+    handleSaveAltText,
+  } = useImageEdit(`/api/users/${username}/pro_pic`, (res) => {
+    dispatch(userLoggedIn(res));
+  });
+
+  const handleSaveProfilePicAlt = (altText: string) => {
+    if (!user) return dispatch(snackAlert('No user to update.', null));
+    if (!user.proPic) return dispatch(snackAlert('No profile picture to update.', null));
+    handleSaveAltText(altText, user.proPic.id).then((success) => {
+      if (success) {
+        if (user.proPic) user.proPic.altText = altText;
+        setProfilePicModalOpen(false);
+      }
+    });
+  };
 
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
@@ -226,59 +246,6 @@ const User = () => {
       </div>
     );
   }
-
-  const handleUploadProfilePic = async (file: File) => {
-    if (isUploadingPic) return;
-
-    try {
-      setIsUploadingPic(true);
-      const formData = new FormData();
-      formData.append('image', file);
-
-      const ruser = await mfetchjson(`/api/users/${user.username}/pro_pic`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      dispatch(userAdded(ruser));
-    } catch (error) {
-      dispatch(snackAlertError(error));
-    } finally {
-      setIsUploadingPic(false);
-    }
-  };
-
-  const handleDeleteProfilePic = async () => {
-    if (isDeletingPic) return;
-
-    try {
-      setIsDeletingPic(true);
-      const ruser = await mfetchjson(`/api/users/${user.username}/pro_pic`, {});
-
-      dispatch(userAdded(ruser));
-    } catch (error) {
-      dispatch(snackAlertError(error));
-    } finally {
-      setIsDeletingPic(false);
-    }
-  };
-
-  const handleSaveProfilePicAlt = async (altText: string) => {
-    try {
-      if (!user.proPic) return dispatch(snackAlert('No profile picture to update.', null));
-      const proPicId = user.proPic.id;
-      await mfetchjson(`/api/images/${proPicId}`, {
-        method: 'PUT',
-        body: JSON.stringify({ altText }),
-      });
-
-      user.proPic.altText = altText;
-      dispatch(snackAlert('Alt text saved.', null));
-      setProfilePicModalOpen(false);
-    } catch (error) {
-      dispatch(snackAlertError(error));
-    }
-  };
 
   const hasFeed = isUserFeedAvailable(user, viewer);
   if (!hasFeed) {
