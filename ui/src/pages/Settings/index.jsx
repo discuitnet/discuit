@@ -6,7 +6,6 @@ import {
   getNotificationsPermissions,
   shouldAskForNotificationsPermissions,
 } from '../../PushNotifications';
-import { ButtonUpload } from '../../components/Button';
 import CommunityProPic from '../../components/CommunityProPic';
 import Dropdown from '../../components/Dropdown';
 import { FormField, FormSection } from '../../components/Form';
@@ -26,6 +25,8 @@ import {
 import ChangePassword from './ChangePassword';
 import DeleteAccount from './DeleteAccount';
 import { getDevicePreference, setDevicePreference } from './devicePrefs';
+import ImageEditModal from '../../components/ImageEditModal';
+import { selectImageCopyURL } from '../../helper';
 
 const Settings = () => {
   const dispatch = useDispatch();
@@ -155,51 +156,62 @@ const Settings = () => {
   };
 
   const proPicAPIEndpoint = `/api/users/${user.username}/pro_pic`;
-  const [isProPicUploading, setIsProPicUploading] = useState(false);
-  const handleProPicUpload = async (files) => {
-    if (isProPicUploading) {
-      return;
-    }
+  const [profilePicModalOpen, setProfilePicModalOpen] = useState(false);
+  const [isUploadingPic, setIsUploadingPic] = useState(false);
+  const [isDeletingPic, setIsDeletingPic] = useState(false);
+
+  const handleUploadProfilePic = async (file) => {
+    if (isUploadingPic) return;
+
     try {
+      setIsUploadingPic(true);
       const formData = new FormData();
-      formData.append('image', files[0]);
-      setIsProPicUploading(true);
-      const res = await mfetch(proPicAPIEndpoint, {
+      formData.append('image', file);
+
+      const ruser = await mfetchjson(proPicAPIEndpoint, {
         method: 'POST',
         body: formData,
       });
-      if (!res.ok) {
-        if (res.status === 400) {
-          const error = await res.json();
-          if (error.code === 'file_size_exceeded') {
-            dispatch(snackAlert('Maximum file size exceeded.'));
-            return;
-          } else if (error.code === 'unsupported_image') {
-            dispatch(snackAlert('Unsupported image.'));
-            return;
-          }
-          throw new APIError(res.status, await res.json());
-        }
-      }
-      const ruser = await res.json();
+
       dispatch(userLoggedIn(ruser));
     } catch (error) {
       dispatch(snackAlertError(error));
     } finally {
-      setIsProPicUploading(false);
+      setIsUploadingPic(false);
     }
   };
-  const handleProPicDelete = async () => {
-    if (isProPicUploading) {
-      return;
-    }
+
+  const handleDeleteProfilePic = async () => {
+    if (isDeletingPic) return;
+
     try {
-      const ruser = await mfetchjson(proPicAPIEndpoint, { method: 'DELETE' });
+      setIsDeletingPic(true);
+      const ruser = await mfetchjson(proPicAPIEndpoint, {
+        method: 'DELETE',
+      });
+
       dispatch(userLoggedIn(ruser));
     } catch (error) {
       dispatch(snackAlertError(error));
     } finally {
-      setIsProPicUploading(false);
+      setIsDeletingPic(false);
+    }
+  };
+
+  const handleSaveProfilePicAlt = async (altText) => {
+    try {
+      if (!user.proPic) return dispatch(snackAlert('No profile picture to update.'));
+      const proPicId = user.proPic.id;
+      await mfetchjson(`/api/images/${proPicId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ altText }),
+      });
+
+      user.proPic.altText = altText;
+      dispatch(snackAlert('Alt text saved.'));
+      setProfilePicModalOpen(false);
+    } catch (error) {
+      dispatch(snackAlertError(error));
     }
   };
 
@@ -290,12 +302,7 @@ const Settings = () => {
           <FormSection>
             <div className="settings-propic">
               <CommunityProPic name={user.username} proPic={user.proPic} size="standard" />
-              <ButtonUpload onChange={handleProPicUpload} disabled={isProPicUploading}>
-                Change
-              </ButtonUpload>
-              <button onClick={handleProPicDelete} disabled={isProPicUploading}>
-                Delete
-              </button>
+              <button onClick={() => setProfilePicModalOpen(true)}>Edit profile picture</button>
             </div>
           </FormSection>
           <FormField label="Username" description="Username cannot be changed.">
@@ -446,6 +453,19 @@ const Settings = () => {
           </button>
         </FormField>
       </div>
+
+      <ImageEditModal
+        open={profilePicModalOpen}
+        onClose={() => setProfilePicModalOpen(false)}
+        title="Edit profile picture"
+        imageUrl={user.proPic ? selectImageCopyURL('medium', user.proPic) : undefined}
+        altText={user.proPic?.altText}
+        onUpload={handleUploadProfilePic}
+        onDelete={handleDeleteProfilePic}
+        onSave={handleSaveProfilePicAlt}
+        uploading={isUploadingPic}
+        deleting={isDeletingPic}
+      />
     </div>
   );
 };
