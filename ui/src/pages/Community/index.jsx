@@ -297,9 +297,7 @@ const Community = () => {
                   onClick={() => setBannerModalOpen(true)}
                   title="Edit banner"
                 >
-                  <div className="banner-edit-icon">
-                    <SVGEdit />
-                  </div>
+                  <SVGEdit />
                 </button>
               )}
             </div>
