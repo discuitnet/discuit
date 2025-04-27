@@ -23,6 +23,7 @@ import { useIsMobile, useMuteCommunity } from '../../hooks';
 import { communityAdded, selectCommunity } from '../../slices/communitiesSlice';
 import { snackAlert, snackAlertError } from '../../slices/mainSlice';
 import { selectImageCopyURL } from '../../helper';
+import { SVGEdit } from '../../SVGs';
 
 import PostsFeed from '../../views/PostsFeed';
 import NotFound from '../NotFound';
@@ -296,7 +297,9 @@ const Community = () => {
                   onClick={() => setBannerModalOpen(true)}
                   title="Edit banner"
                 >
-                  ✏️
+                  <div className="banner-edit-icon">
+                    <SVGEdit />
+                  </div>
                 </button>
               )}
             </div>

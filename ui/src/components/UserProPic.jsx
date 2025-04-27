@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 import { selectImageCopyURL } from '../helper';
 import { useImageLoaded } from '../hooks';
+import { SVGEdit } from '../SVGs';
 import Link from './Link';
 
 const ProfilePicture = ({ name, proPic, size = 'small', ...rest }) => {
@@ -119,6 +120,11 @@ const UserProPic = ({
         <ProfilePicture name={username} proPic={proPic} size={size} />
       ) : (
         <DefaultProfilePicture name={username} />
+      )}
+      {editable && (
+        <div className="propic-edit-icon">
+          <SVGEdit />
+        </div>
       )}
     </div>
   );

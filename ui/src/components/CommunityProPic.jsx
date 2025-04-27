@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 import { selectImageCopyURL } from '../helper';
 import { useImageLoaded } from '../hooks';
+import { SVGEdit } from '../SVGs';
 
 const CommunityProPic = ({
   className,
@@ -51,6 +52,11 @@ const CommunityProPic = ({
       {...rest}
     >
       <img alt={altText} src={src} onLoad={handleLoad} />
+      {editable && (
+        <div className="propic-edit-icon">
+          <SVGEdit />
+        </div>
+      )}
     </div>
   );
 };

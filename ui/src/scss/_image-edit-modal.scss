@@ -78,45 +78,45 @@
     cursor: pointer;
     display: inline-block;
 
-    &::after {
-        content: '✏️';
+    .propic-edit-icon {
         position: absolute;
         bottom: 0;
         right: 0;
         width: 3rem;
         height: 3rem;
-
         display: flex;
         align-items: center;
         justify-content: center;
         border-radius: 50%;
-
         background-color: rgba(var(--base-bg), 0.875);
-        border: 1px solid rgba(var(--base-brand), 0.25);
-
+        border: var(--card-border);
+        color: var(--card-border);
         z-index: 1;
-        font-size: 20px;
+
+        svg {
+            width: 2rem;
+            height: 2rem;
+        }
     }
 
-    &:hover::after {
+    &:hover .propic-edit-icon {
         background-color: var(--color-bg);
-        border: 1px solid rgba(var(--base-brand), 0.5);
+        color: var(--color-fg);
     }
 
-    &:hover::before {
+    &:hover::before,
+    &:focus::before {
         content: 'Edit';
         position: absolute;
-
         display: flex;
         align-items: center;
         justify-content: center;
         border-radius: 50%;
-
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        background-color: rgba(var(--base-bg), 0.5);
+        background-color: rgba(var(--base-bg), 0.75);
         z-index: 1;
     }
 }
@@ -129,14 +129,24 @@
     border-radius: 50%;
     width: 4rem;
     height: 4rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+
     cursor: pointer;
     z-index: 5;
     backdrop-filter: blur(10px);
 
-    &:hover {
+    .banner-edit-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    &:hover,
+    &:focus {
         background: rgba(var(--base-bg), 0.9);
     }
 }
