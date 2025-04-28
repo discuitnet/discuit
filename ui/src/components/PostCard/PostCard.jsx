@@ -262,7 +262,8 @@ const PostCard = ({
                   fill="currentColor"
                 />
               </svg>
-              <span>{stringCount(post.noComments, false, 'comment')}|{post.newComments}|{post.newComments != null ? ` (${post.newComments} new)` : ' blahblahblah'}</span>
+              <span>{stringCount(post.noComments, false, 'comment')}</span>
+              <span className="post-new-comment-label">{post.newComments != 0 ? ` (${post.newComments} new)` : ''}</span>
             </Link>
           </div>
           <div className="right">
@@ -273,9 +274,6 @@ const PostCard = ({
     </div>
   );
 };
-
-              
-
 
 PostCard.propTypes = {
   index: PropTypes.number,

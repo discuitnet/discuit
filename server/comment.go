@@ -11,7 +11,7 @@ import (
 
 // /api/posts/:postID/comments [GET]
 func (s *Server) getPostComments(w *responseWriter, r *request) error {
-	post, err := core.GetPost(r.ctx, s.db, nil, r.muxVar("postID"), r.viewer, true, false)
+	post, err := core.GetPost(r.ctx, s.db, nil, r.muxVar("postID"), r.viewer, true)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (s *Server) addComment(w *responseWriter, r *request) error {
 	}
 
 	postID := r.muxVar("postID")
-	post, err := core.GetPost(r.ctx, s.db, nil, postID, nil, true, false)
+	post, err := core.GetPost(r.ctx, s.db, nil, postID, nil, true)
 	if err != nil {
 		return err
 	}

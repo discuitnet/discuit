@@ -159,9 +159,9 @@ type Post struct {
 	ViewerVotedUp msql.NullBool `json:"userVotedUp"`
 
 	// The logged in user's last visit to the post.
-	ViewerLastVisit time.Time `json:"lastVisitAt,omitempty"`
+	ViewerLastVisit msql.NullTime `json:"lastVisitAt"`
 	// Number of new comments in post according to logged in user's last visit.
-	ViewerNewComments int `json:"newComments,omitempty"`
+	ViewerNewComments int `json:"newComments"`
 
 	AuthorMutedByViewer    bool `json:"isAuthorMuted"`
 	CommunityMutedByViewer bool `json:"isCommunityMuted"`
@@ -223,67 +223,17 @@ func init() {
 
 func buildSelectPostQuery(loggedIn bool, where string) string {
 	if loggedIn {
-		joins := append(selectPostJoins, "LEFT OUTER JOIN post_votes ON posts.id = post_votes.post_id AND post_votes.user_id = ?")
-		cols := append(selectPostCols, "post_votes.id IS NOT NULL", "post_votes.up")
+		joins := append(selectPostJoins, "LEFT OUTER JOIN post_votes ON posts.id = post_votes.post_id AND post_votes.user_id = ? LEFT OUTER JOIN post_visits ON posts.id = post_visits.post_id AND post_visits.user_id = ?")
+		cols := append(selectPostCols, "post_votes.id IS NOT NULL", "post_votes.up", "post_visits.last_visited_at", "0") // select 0 as newComments--to be populated after
 		return msql.BuildSelectQuery("posts", cols, joins, where)
 	}
 	return msql.BuildSelectQuery("posts", selectPostCols, selectPostJoins, where)
 }
 
-// GetPosts returns a post using publicID, if publicID is not an empty string,
+// GetPost returns a post using publicID, if publicID is not an empty string,
 // or using postID.
-func GetPost(ctx context.Context, db *sql.DB, postID *uid.ID, publicID string, viewer *uid.ID, getDeleted bool, updateVisitTime bool) (*Post, error) {
+func GetPost(ctx context.Context, db *sql.DB, postID *uid.ID, publicID string, viewer *uid.ID, getDeleted bool) (*Post, error) {
 	loggedIn := viewer != nil
-	currTime, newComments := time.Now(), 0
-	var lastVisitedAt time.Time
-
-	if loggedIn {
-		fmt.Println("GetPost-------------------\n", "currTime", currTime, "\n--------------------")
-		id, tempPostID := 0, postID
-		if publicID != "" {
-			if err := db.QueryRowContext(ctx, "SELECT id FROM posts WHERE public_id = ?", publicID).Scan(&tempPostID); err != nil {
-				return nil, err
-			}
-		}
-		if err := db.QueryRowContext(ctx, "SELECT id, last_visited_at FROM post_visits WHERE post_id = ? AND user_id = ?", tempPostID, viewer).Scan(&id, &lastVisitedAt); err != nil {
-			if err != sql.ErrNoRows {
-				return nil, err
-			}
-			fmt.Println("GetPost-------------------\n", "lastVisitedAt on post_visits", lastVisitedAt, "\n--------------------")
-			// if it *is* sql.ErrNoRows, id will be 0 and can use that as a check value
-		}
-
-		// tempPostID is the post_id on comments table
-		if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM comments WHERE post_id = ? AND deleted_at IS NULL AND created_at > ?", tempPostID, lastVisitedAt).Scan(&newComments); err != nil {
-			if err != sql.ErrNoRows {
-				return nil, err
-			}
-			// if it *is* sql.ErrNoRows, newComments will be the initialised 0
-		}
-
-		if updateVisitTime {
-			tx, err := db.BeginTx(ctx, nil)
-			if err != nil {
-				return nil, err
-			}
-			if id == 0 {
-				// never visited this post: create a timestamp
-				_, err = tx.ExecContext(ctx, "INSERT INTO post_visits (post_id, user_id, last_visited_at) values (?, ?, ?)", tempPostID, viewer, currTime)
-				fmt.Println("GetPost creating timestamp----\n", tempPostID, viewer, currTime, "\n----------------------")
-			} else if currTime.After(lastVisitedAt) {
-				// visited, and current time is after last visit: update last visit time
-				_, err = tx.ExecContext(ctx, "UPDATE post_visits SET last_visited_at = ? WHERE id = ?", currTime, id)
-				fmt.Println("GetPost updating timestamp----\n", currTime, id, "\n----------------------")
-			}
-			if err != nil {
-				tx.Rollback()
-				return nil, err
-			}
-			if err = tx.Commit(); err != nil {
-				return nil, err
-			}
-		}
-	}
 
 	where := "WHERE "
 	if publicID != "" {
@@ -298,7 +248,7 @@ func GetPost(ctx context.Context, db *sql.DB, postID *uid.ID, publicID string, v
 
 	query, args := buildSelectPostQuery(loggedIn, where), []any{}
 	if loggedIn {
-		args = append(args, viewer)
+		args = append(args, viewer, viewer)
 	}
 	if postID != nil {
 		args = append(args, postID)
@@ -315,12 +265,6 @@ func GetPost(ctx context.Context, db *sql.DB, postID *uid.ID, publicID string, v
 	if err != nil {
 		return nil, err
 	}
-
-	post := posts[0]
-	post.ViewerLastVisit = lastVisitedAt
-	//// newComments
-	post.ViewerNewComments = 1
-	fmt.Println("GetPost-------------------\n", "post.ViewerLastVisit", post.ViewerLastVisit, "\n--------------------")
 	return posts[0], err
 }
 
@@ -341,7 +285,7 @@ func GetPostsByIDs(ctx context.Context, db *sql.DB, viewer *uid.ID, includeDelet
 		args  = []any{}
 	)
 	if loggedIn {
-		args = append(args, viewer)
+		args = append(args, viewer, viewer)
 	}
 	for _, id := range ids {
 		args = append(args, id)
@@ -411,7 +355,7 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 		dest = append(dest, proPic.ScanDestinations()...)
 		dest = append(dest, bannerImage.ScanDestinations()...)
 		if loggedIn {
-			dest = append(dest, &post.ViewerVoted, &post.ViewerVotedUp)
+			dest = append(dest, &post.ViewerVoted, &post.ViewerVotedUp, &post.ViewerLastVisit, &post.ViewerNewComments)
 		}
 
 		if err := rows.Scan(dest...); err != nil {
@@ -478,6 +422,12 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 
 	if err := populatePostsImages(ctx, db, posts); err != nil {
 		return nil, err
+	}
+
+	if loggedIn {
+		if err := populateNewCommentsCounts(ctx, db, posts, viewer); err != nil {
+			return nil, err
+		}
 	}
 
 	viewerAdmin, err := IsAdmin(db, viewer)
@@ -598,6 +548,63 @@ func populatePostsImages(ctx context.Context, db *sql.DB, posts []*Post) error {
 				img.AppendCopy("large", 2160, 4320, images.ImageFitContain, "")
 				post.Image = img
 				post.Images = append(post.Images, img)
+				break
+			}
+		}
+	}
+
+	if err = rows.Err(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// populateNewCommentsCounts goes through posts and fetches the number of new comments of the posts
+// and sets posts[i].newComments to a non-negative integer. Not-logged-in users/posts without comments
+// will retain initialized 0.
+func populateNewCommentsCounts(ctx context.Context, db *sql.DB, posts []*Post, viewer *uid.ID) error {
+	/*	select post_id, count(*)
+		from comments
+		where user_id != ? and ( (post_id = ? and created_at > ? and deleted_at IS MISSING) or (...) ... )
+		group by post_id*/
+	// check in the caller if the user is logged-in to avoid a function call
+	// given the viewer is logged in, get the number of new comments in the posts and update the initialised zero value
+	if len(posts) == 0 || viewer == nil {
+		return nil
+	}
+
+	args := make([]any, 1+2*len(posts))
+	args[0] = viewer
+	cols := []string{"post_id", "count(*)"}
+	where := ""
+
+	for i, post := range posts {
+		args[1+2*i] = post.ID
+		args[2+2*i] = post.ViewerLastVisit
+		if where == "" {
+			where += "WHERE user_id != ? AND ( (post_id = ? AND created_at >= ? AND deleted_at IS NULL)"
+		} else {
+			where += " OR (post_id = ? AND created_at >= ? AND deleted_at IS NULL)"
+		}
+	}
+	where += " )" // close final ( () or () or ... () )
+	where += " GROUP BY post_id"
+	query := msql.BuildSelectQuery("comments", cols, []string{}, where)
+
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		newComments, postID := 0, uid.ID{}
+		if err = rows.Scan(&postID, &newComments); err != nil {
+			return err
+		}
+		for _, post := range posts {
+			if post.ID == postID {
+				post.ViewerNewComments = newComments
 				break
 			}
 		}
@@ -781,7 +788,7 @@ func createPost(ctx context.Context, db *sql.DB, opts *createPostOpts) (*Post, e
 		return nil, err
 	}
 
-	return GetPost(ctx, db, &post.ID, "", nil, false, false)
+	return GetPost(ctx, db, &post.ID, "", nil, false)
 }
 
 func CreateTextPost(ctx context.Context, db *sql.DB, author, community uid.ID, title string, body string) (*Post, error) {
@@ -1469,13 +1476,11 @@ func getComments(ctx context.Context, db *sql.DB, viewer *uid.ID, where string, 
 	}
 
 	if loggedIn {
-		args2 := make([]interface{}, len(args)+2)
-		// logged-in viewer used to join two tables
-		args2[0], args2[1] = viewer, viewer
+		args2 := make([]interface{}, len(args)+1)
+		args2[0] = viewer
 		for i := range args {
-			args2[i+2] = args[i]
+			args2[i+1] = args[i]
 		}
-
 		rows, err = db.QueryContext(ctx, query, args2...)
 	} else {
 		rows, err = db.QueryContext(ctx, query, args...)
@@ -1503,6 +1508,7 @@ type CommentsCursor struct {
 // GetComments populates c.Comments and returns the next comment's cursor.
 func (p *Post) GetComments(ctx context.Context, db *sql.DB, viewer *uid.ID, cursor *CommentsCursor) (*CommentsCursor, error) {
 	var args []any
+	currTime := time.Now()
 	where := "WHERE comments.post_id = ? "
 	args = append(args, p.ID)
 	if cursor != nil {
@@ -1518,6 +1524,11 @@ func (p *Post) GetComments(ctx context.Context, db *sql.DB, viewer *uid.ID, curs
 	}
 
 	comments := all
+
+	// assume a page visit is an API call where cursor is nil
+	if cursor == nil && viewer != nil {
+		p.UpdateVisitTime(ctx, db, viewer, currTime)
+	}
 
 	var nextCursor *CommentsCursor
 	if len(all) >= commentsFetchLimit+1 {
@@ -1585,6 +1596,41 @@ func (p *Post) GetCommentReplies(ctx context.Context, db *sql.DB, viewer *uid.ID
 	}
 
 	return GetCommentsByIDs(ctx, db, viewer, ids...)
+}
+
+// UpdateVisitTime updates the logged-in viewer's last visit time to the post
+// using the last comment extraction (without cursor, without parent ID) as a proxy for page visit
+func (p *Post) UpdateVisitTime(ctx context.Context, db *sql.DB, viewer *uid.ID, currTime time.Time) error {
+	if viewer == nil {
+		return nil
+	}
+	id, lastVisitedAt := 0, msql.NullTime{}
+	if err := db.QueryRowContext(ctx, "SELECT id, last_visited_at FROM post_visits WHERE post_id = ? AND user_id = ?", p.ID, viewer).Scan(&id, &lastVisitedAt); err != nil {
+		if err != sql.ErrNoRows {
+			return err
+		}
+		// if it *is* sql.ErrNoRows, id will be 0 and can use that as a check value
+	}
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	if id == 0 {
+		// never visited this post: create a timestamp
+		_, err = tx.ExecContext(ctx, "INSERT INTO post_visits (post_id, user_id, last_visited_at) values (?, ?, ?)", p.ID, viewer, currTime)
+	} else if !lastVisitedAt.Valid || currTime.After(lastVisitedAt.Time) {
+		// visited, and current time is after last visit: update last visit time
+		_, err = tx.ExecContext(ctx, "UPDATE post_visits SET last_visited_at = ? WHERE id = ?", currTime, id)
+	}
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // AddComment adds a new comment to post.
@@ -1935,7 +1981,7 @@ func getPinnedPosts(ctx context.Context, db *sql.DB, viewer, community *uid.ID) 
 	var args []any
 	where := "WHERE posts.id "
 	if viewer != nil {
-		args = append(args, *viewer)
+		args = append(args, *viewer, *viewer)
 	}
 	if community != nil {
 		where += "IN (SELECT post_id FROM pinned_posts WHERE community_id = ?)"

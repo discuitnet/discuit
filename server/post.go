@@ -95,7 +95,7 @@ func (s *Server) addPost(w *responseWriter, r *request) error {
 // /api/posts/:postID [GET]
 func (s *Server) getPost(w *responseWriter, r *request) error {
 	postID := r.muxVar("postID") // public post id
-	post, err := core.GetPost(r.ctx, s.db, nil, postID, r.viewer, true, true)
+	post, err := core.GetPost(r.ctx, s.db, nil, postID, r.viewer, true)
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func (s *Server) updatePost(w *responseWriter, r *request) error {
 		return err
 	}
 
-	post, err := core.GetPost(r.ctx, s.db, nil, postID, r.viewer, true, false)
+	post, err := core.GetPost(r.ctx, s.db, nil, postID, r.viewer, true)
 	if err != nil {
 		return err
 	}
@@ -217,7 +217,7 @@ func (s *Server) deletePost(w *responseWriter, r *request) error {
 		return err
 	}
 
-	post, err := core.GetPost(r.ctx, s.db, nil, postID, r.viewer, true, false)
+	post, err := core.GetPost(r.ctx, s.db, nil, postID, r.viewer, true)
 	if err != nil {
 		return err
 	}
@@ -260,7 +260,7 @@ func (s *Server) postVote(w *responseWriter, r *request) error {
 		return err
 	}
 
-	post, err := core.GetPost(r.ctx, s.db, &req.PostID, "", r.viewer, true, false)
+	post, err := core.GetPost(r.ctx, s.db, &req.PostID, "", r.viewer, true)
 	if err != nil {
 		return err
 	}
