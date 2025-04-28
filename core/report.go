@@ -135,7 +135,7 @@ func NewReport(ctx context.Context, db *sql.DB, community uid.ID, post uid.NullI
 
 // NewPostReport creates a report on post.
 func NewPostReport(ctx context.Context, db *sql.DB, post uid.ID, reason int, createdBy uid.ID) (*Report, error) {
-	p, err := GetPost(ctx, db, &post, "", nil, true, false)
+	p, err := GetPost(ctx, db, &post, "", nil, true)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +221,7 @@ func GetReport(ctx context.Context, db *sql.DB, reportID int) (*Report, error) {
 // made.
 func (r *Report) FetchTarget(ctx context.Context, db *sql.DB) error {
 	if r.Type == ReportTypePost {
-		post, err := GetPost(ctx, db, &r.TargetID, "", nil, true, false)
+		post, err := GetPost(ctx, db, &r.TargetID, "", nil, true)
 		if err != nil {
 			return err
 		}

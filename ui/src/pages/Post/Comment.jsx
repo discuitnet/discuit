@@ -45,6 +45,7 @@ const Comment = ({
 
   const postId = post.publicId;
   const loggedIn = user !== null;
+  const postLastVisitAt = post.lastVisitAt;
 
   const { noRepliesRendered, children } = node;
   const [comment, _setComment] = useState(node.comment);
@@ -321,20 +322,22 @@ const Comment = ({
         noAtSign
         noLink={isUsernameHidden}
       />
-    ); 
+    );
   };
 
-  function CommentNewLabel({inline = true, comment, ...rest}) {
+  const CommentNewLabel = ({inline = true, comment, postLastVisitAt, ...rest}) => {
+    if (comment.username == user.username ) {
+      return '';
+    }
     return React.createElement(
-        inline ? 'span' : 'div',
-        {...rest,},
-        `${(Date.parse(comment.lastVisitAt) < Date.parse(comment.createdAt)) && !comment.deleted ? '(new)' : '(new (remove this; test text))'}`
-      );
+      inline ? 'span' : 'div',
+      {...rest,},
+      `${(Date.parse(postLastVisitAt) <= Date.parse(comment.createdAt)) && !comment.deleted ? '(new)' : ''}`
+    );
   }
 
   const isAuthorSupporter = userHasSupporterBadge(comment.author);
   const topDivClassname = 'post-comment' + (showAuthorProPic ? ' has-propics' : '');
-  const isCommentNew = ((comment.lastVisitAt < comment.createdAt) && !comment.deleted);
   if (collapsed) {
     return (
       <div
@@ -358,9 +361,9 @@ const Comment = ({
               time={comment.createdAt}
               short={isMobile}
             />
-
-            <CommentNewLabel className="post-comment-head-item is-no-m" comment={comment} />
-
+            {loggedIn && (
+              <CommentNewLabel className="post-comment-head-item post-new-comment-label" comment={comment} postLastVisitAt={postLastVisitAt} />
+            )}
             {/*<div className="post-comment-head-item">{`${kRound(points)} ${stringCount(
               points,
               true,
@@ -518,9 +521,9 @@ const Comment = ({
               {`${toTitleCase(userGroupSingular(comment.userGroup, isMobile))}`}
             </div>
           )}
-
-          <CommentNewLabel className="post-comment-head-item is-no-m" comment={comment} />
-
+          {loggedIn && (
+            <CommentNewLabel className="post-comment-head-item post-new-comment-label" comment={comment} postLastVisitAt={postLastVisitAt}/>
+          )}
           {showEditedSign && (
             <TimeAgo
               className="post-comment-head-item"

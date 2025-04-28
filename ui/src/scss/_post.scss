@@ -529,6 +529,9 @@
                 color: var(--color-brand);
                 font-weight: 600;
             }
+            .post-new-comment-label {
+                color: var(--color-green);
+            }
             .showmorebox {
                 &.is-overflowing {
                     .showmorebox-body {
