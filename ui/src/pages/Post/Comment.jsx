@@ -327,7 +327,7 @@ const Comment = ({
 
   const CommentNewLabel = ({inline = true, comment, postLastVisitAt, ...rest}) => {
     if (comment.username == user.username ) {
-      return '';
+      return null;
     }
     return React.createElement(
       inline ? 'span' : 'div',
@@ -751,6 +751,12 @@ const Comment = ({
       </div>
     </div>
   );
+};
+
+CommentNewLabel.propTypes = {
+  inline: PropTypes.bool.isRequired,
+  comment: PropTypes.object.isRequired,
+  postLastVisitAt: PropTypes.string.isRequired,
 };
 
 Comment.propTypes = {
