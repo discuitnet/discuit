@@ -370,9 +370,11 @@ const ScrollToTop = () => {
   const history = useHistory();
 
   useEffect(() => {
-    if (history.action !== 'POP') window.scrollTo(0, 0);
+    if (history.action !== 'POP' && !(location.state && location.state.fromBottomNav)) {
+      window.scrollTo(0, 0);
+    }
     window.appData.historyLength++;
-  }, [location.pathname]);
+  }, [location.pathname, history]);
 
   return null;
 };

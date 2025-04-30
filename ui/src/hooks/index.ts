@@ -500,7 +500,8 @@ export function useLinkClick<T = Element>(
   to: string,
   onClick?: React.MouseEventHandler<T>,
   target?: string,
-  replace = false
+  replace = false,
+  state?: unknown
 ): React.MouseEventHandler<T> {
   const history = useHistory();
   const location = useLocation();
@@ -514,9 +515,9 @@ export function useLinkClick<T = Element>(
       return;
     }
     if (replace) {
-      history.replace(to);
+      history.replace(to, state);
     } else {
-      history.push(to);
+      history.push(to, state);
     }
   };
 

@@ -1,7 +1,7 @@
 import clsx from 'clsx';
-import { cloneElement, useMemo } from 'react';
+import { cloneElement, useLayoutEffect, useMemo } from 'react';
 import { useSelector } from 'react-redux';
-import { useLocation } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 import { useLinkClick } from '../hooks';
 import { User } from '../serverTypes';
 import { RootState } from '../store';
@@ -9,16 +9,50 @@ import { SVGAdd, SVGCommunities, SVGHome } from '../SVGs';
 import Button, { ButtonNotifications } from './Button';
 import CommunityProPic from './CommunityProPic';
 
+const scrollPositions: { [key: string]: number | undefined } = {};
+
 export default function BottomNavbar() {
   const user = useSelector<RootState>((state) => state.main.user) as User;
+
+  const homePath = '/',
+    communitiesPath = '/communities',
+    newPath = '/new',
+    notificationsPath = '/notifications',
+    usernamePath = `/@${user.username}`;
+
+  const tabPaths = useMemo(() => {
+    return [homePath, communitiesPath, notificationsPath, usernamePath];
+  }, [usernamePath]);
+
+  const history = useHistory();
+  const location = useLocation();
+  useLayoutEffect(() => {
+    const state = location.state as { fromBottomNav: boolean };
+    if (
+      history.action !== 'POP' &&
+      tabPaths.includes(location.pathname) &&
+      state &&
+      state.fromBottomNav
+    ) {
+      const scrollY = scrollPositions[location.pathname] || 0;
+      console.log(`Scrolling to: ${scrollY}`);
+      window.scrollTo(0, scrollY);
+    }
+    return () => {
+      if (tabPaths.includes(location.pathname)) {
+        scrollPositions[location.pathname] = window.scrollY;
+      }
+    };
+  }, [location, history, tabPaths]);
+
   return (
     <div className="bottom-navbar">
-      <NavbarItem to="/" icon={{ hasVariants: true, icon: <SVGHome /> }} />
-      <NavbarItem to="/communities" icon={{ hasVariants: true, icon: <SVGCommunities /> }} />
-      <NavbarItem to="/new" icon={{ hasVariants: true, icon: <SVGAdd /> }} />
+      <NavbarItem to={homePath} icon={{ hasVariants: true, icon: <SVGHome /> }} />
+      <NavbarItem to={communitiesPath} icon={{ hasVariants: true, icon: <SVGCommunities /> }} />
+      <NavbarItem to={newPath} icon={{ hasVariants: true, icon: <SVGAdd /> }} />
       <NavbarNotificationsItem />
       <NavbarItem
-        to={`/@${user.username}`}
+        to={usernamePath}
         icon={{
           hasVariants: false,
           icon: <CommunityProPic proPic={user ? user.proPic : null} size="small" />,
@@ -85,7 +119,7 @@ function useNavbarItem(to: string): {
 } {
   const location = useLocation();
   const variant = location.pathname === to ? 'bold' : 'outline';
-  const onClick = useLinkClick(to);
+  const onClick = useLinkClick(to, undefined, undefined, false, { fromBottomNav: true });
   return {
     variant,
     onClick,
