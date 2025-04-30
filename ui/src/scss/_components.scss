@@ -1252,7 +1252,7 @@
     right: 0;
     border-top: 1px solid rgba(var(--base-fg), 0.05);
     z-index: 100000;
-    height: 58px;
+    height: 55px;
     display: flex;
     justify-content: space-around;
     align-items: center;
@@ -1274,5 +1274,13 @@
         svg {
             fill: currentColor;
         }
+    }
+    button.is-icon.is-bold {
+        .button-icon {
+            transform: scale(1.1);
+        }
+    }
+    button.notifications-button {
+        opacity: 1;
     }
 }

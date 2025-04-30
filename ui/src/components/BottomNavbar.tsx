@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { cloneElement, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
@@ -41,7 +42,15 @@ function NavbarItem({
     return icon.hasVariants ? cloneElement(icon.icon, { variant }) : icon.icon;
   }, [icon.hasVariants, icon.icon, variant]);
   return (
-    <div className="navbar-item">{children ?? <Button onClick={onClick} icon={iconElement} />}</div>
+    <div className="navbar-item">
+      {children ?? (
+        <Button
+          onClick={onClick}
+          icon={iconElement}
+          className={clsx(variant === 'bold' && 'is-bold')}
+        />
+      )}
+    </div>
   );
 }
 
