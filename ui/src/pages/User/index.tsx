@@ -510,15 +510,21 @@ const User = () => {
               Account deleted on {dateString1(user.deletedAt as string)}
             </div>
           )}
-          {loggedIn && !user.deleted && (
+          {loggedIn && (
             <div className="user-card-buttons">
               {viewer.id !== user.id && (
-                <button onClick={toggleMute}>{isMuted ? 'Unmute user' : 'Mute user'}</button>
+                <button onClick={toggleMute} disabled={user.deleted}>
+                  {isMuted ? 'Unmute user' : 'Mute user'}
+                </button>
               )}
               {viewerAdmin && (
                 <>
                   {viewer.id !== user.id && <BanUserButton user={user} />}
-                  <button className="button-green" onClick={handleGiveSupporterBadge}>
+                  <button
+                    className="button-green"
+                    onClick={handleGiveSupporterBadge}
+                    disabled={user.deleted}
+                  >
                     {hasSupporterBadge ? 'Remove supporter badge' : 'Give supporter badge'}
                   </button>
                   <Dropdown target={<ButtonMore />}>
