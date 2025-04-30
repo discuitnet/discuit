@@ -336,6 +336,13 @@ const Comment = ({
     );
   }
 
+  CommentNewLabel.propTypes = {
+    inline: PropTypes.bool.isRequired,
+    comment: PropTypes.object.isRequired,
+    postLastVisitAt: PropTypes.string.isRequired,
+  };
+  
+
   const isAuthorSupporter = userHasSupporterBadge(comment.author);
   const topDivClassname = 'post-comment' + (showAuthorProPic ? ' has-propics' : '');
   if (collapsed) {
@@ -522,7 +529,7 @@ const Comment = ({
             </div>
           )}
           {loggedIn && (
-            <CommentNewLabel className="post-comment-head-item post-new-comment-label" comment={comment} postLastVisitAt={postLastVisitAt}/>
+            <CommentNewLabel className="post-comment-head-item post-new-comment-label" comment={comment} postLastVisitAt={postLastVisitAt} />
           )}
           {showEditedSign && (
             <TimeAgo
@@ -751,12 +758,6 @@ const Comment = ({
       </div>
     </div>
   );
-};
-
-CommentNewLabel.propTypes = {
-  inline: PropTypes.bool.isRequired,
-  comment: PropTypes.object.isRequired,
-  postLastVisitAt: PropTypes.string.isRequired,
 };
 
 Comment.propTypes = {
