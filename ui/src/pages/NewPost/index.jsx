@@ -457,12 +457,21 @@ const NewPost = () => {
             {postType === 'image' && (
               <div className="page-new-image-upload">
                 {images.length > 0 &&
-                  images.map((image) => (
+                  images.map((image, idx) => (
                     <Image
                       key={image.id}
                       image={image}
                       onClose={() => deleteImage(image.id)}
                       disabled={isEditPost}
+                      onAltTextSave={(altText) => {
+                        SetImages((images) =>
+                          images.map((img, i) => (i === idx ? { ...img, altText } : img))
+                        );
+                        mfetch(`/api/images/${image.id}`, {
+                          method: 'PUT',
+                          body: JSON.stringify({ altText }),
+                        });
+                      }}
                     />
                   ))}
                 {!isEditPost && !(post && post.deletedContent) && (

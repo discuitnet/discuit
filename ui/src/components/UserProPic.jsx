@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 import { selectImageCopyURL } from '../helper';
 import { useImageLoaded } from '../hooks';
+import { SVGEdit } from '../SVGs';
 import Link from './Link';
 
 const ProfilePicture = ({ name, proPic, size = 'small', ...rest }) => {
@@ -24,13 +25,15 @@ const ProfilePicture = ({ name, proPic, size = 'small', ...rest }) => {
 
   const [loaded, handleLoad] = useImageLoaded();
 
+  const altText = proPic?.altText || `${name}'s profile`;
+
   return (
     <div
       className="profile-picture"
       style={{ backgroundColor: averageColor, backgroundImage: loaded ? `url('${src}')` : 'none' }}
       {...rest}
     >
-      <img alt={`${name}'s profile`} src={src} onLoad={handleLoad} />
+      <img alt={altText} src={src} onLoad={handleLoad} />
     </div>
   );
 };
@@ -88,13 +91,40 @@ DefaultProfilePicture.propTypes = {
   name: PropTypes.string.isRequired,
 };
 
-const UserProPic = ({ className = '', username, proPic, size = 'small', ...rest }) => {
+const UserProPic = ({
+  className = '',
+  username,
+  proPic,
+  size = 'small',
+  editable = false,
+  onEdit,
+  ...rest
+}) => {
+  const editableCls = editable ? ' user-propic-editable' : '';
+
+  const handleClick = () => {
+    if (editable && onEdit) {
+      onEdit();
+    }
+  };
+
   return (
-    <div className={'user-propic' + (className ? ` ${className}` : '')}>
+    <div
+      className={'user-propic' + (className ? ` ${className}` : '') + editableCls}
+      onClick={handleClick}
+      role={editable ? 'button' : undefined}
+      tabIndex={editable ? 0 : undefined}
+      {...rest}
+    >
       {proPic ? (
-        <ProfilePicture name={username} proPic={proPic} size={size} {...rest} />
+        <ProfilePicture name={username} proPic={proPic} size={size} />
       ) : (
-        <DefaultProfilePicture name={username} {...rest} />
+        <DefaultProfilePicture name={username} />
+      )}
+      {editable && (
+        <div className="propic-edit-icon">
+          <SVGEdit />
+        </div>
       )}
     </div>
   );
@@ -105,6 +135,8 @@ UserProPic.propTypes = {
   username: PropTypes.string.isRequired,
   proPic: PropTypes.object,
   size: PropTypes.oneOf(['small', 'standard', 'large']),
+  editable: PropTypes.bool,
+  onEdit: PropTypes.func,
 };
 
 export default UserProPic;

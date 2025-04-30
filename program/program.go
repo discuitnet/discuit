@@ -291,12 +291,12 @@ func openDatabase(addr, user, password, dbName string) (*sql.DB, error) {
 // migrations have not yet been run, the function exists silently without
 // returning an error
 func (pg *Program) createSentinelUsers() error {
-	if _, err := pg.MigrationsVersion(); err != nil {
+	if _, err := pg.MigrationsStatus(); err != nil {
 		if err == ErrMigrationsTableNotFound || err == sql.ErrNoRows {
 			log.Println("Skipping creating ghost user, as migrations are not yet run.")
 			return nil
 		}
-		log.Printf("Error creating the ghost user: %v\n", err)
+		log.Printf("Error creating sentinel users: %v\n", err)
 		return err
 	}
 
@@ -310,7 +310,7 @@ func (pg *Program) createSentinelUsers() error {
 		log.Println("User @ghost succesfully created.")
 	}
 
-	// Create the ghost user:
+	// Create the nobody user:
 	created, err = core.CreateNobodyUser(pg.db)
 	if err != nil {
 		log.Printf("Error creating the nobody user: %v\n", err)

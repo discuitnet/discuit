@@ -203,14 +203,14 @@
                 text-align: center;
                 padding: var(--gap);
             }
-            textarea {
+            textarea:not(.page-new-image-alt) {
                 padding: 0;
                 background-color: transparent;
                 border: none;
                 overflow: hidden;
                 margin: var(--form-padding);
             }
-            .page-new-post-title {
+            textarea.page-new-post-title {
                 font-size: var(--fs-xl);
                 font-weight: 600;
                 margin-bottom: 0;

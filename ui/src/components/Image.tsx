@@ -44,7 +44,7 @@ export default function Image({
 
   return (
     <div style={divStyle} className={cls + (className ? ` ${className}` : '')}>
-      <img alt={alt} style={imgStyle} onLoad={handleLoad} src={src} {...props} />
+      <img alt={alt} title={alt} style={imgStyle} onLoad={handleLoad} src={src} {...props} />
     </div>
   );
 }

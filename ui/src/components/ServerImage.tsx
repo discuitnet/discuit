@@ -23,7 +23,7 @@ function ServerImage({ onLoad, image, sizes, style = {}, src, ...props }: Server
       srcSet={srcset}
       sizes={sizes}
       src={image.url}
-      alt=""
+      alt={image.altText || ''}
       style={style}
       backgroundColor={style.backgroundColor ?? image.averageColor}
       {...props}
