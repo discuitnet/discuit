@@ -225,8 +225,7 @@ func buildSelectPostQuery(loggedIn bool, where string) string {
 	if loggedIn {
 		joins := append(selectPostJoins,
 			"LEFT OUTER JOIN post_votes ON posts.id = post_votes.post_id AND post_votes.user_id = ?",
-			"LEFT OUTER JOIN post_visits ON posts.id = post_visits.post_id AND post_visits.user_id = ?"
-		)
+			"LEFT OUTER JOIN post_visits ON posts.id = post_visits.post_id AND post_visits.user_id = ?")
 		cols := append(selectPostCols, "post_votes.id IS NOT NULL", "post_votes.up", "post_visits.last_visited_at", "0") // select 0 as newComments--to be populated after
 		return msql.BuildSelectQuery("posts", cols, joins, where)
 	}
@@ -1617,13 +1616,14 @@ func (p *Post) UpdateVisitTime(ctx context.Context, db *sql.DB, viewer *uid.ID, 
 	}
 	if id == 0 {
 		// never visited this post: create a timestamp
-		_, err = db.ExecContext(ctx, "INSERT INTO post_visits (post_id, user_id, last_visited_at) values (?, ?, ?)", p.ID, viewer, currTime)
+		if _, err := db.ExecContext(ctx, "INSERT INTO post_visits (post_id, user_id, last_visited_at) values (?, ?, ?)", p.ID, viewer, currTime); err != nil {
+			return err
+		}
 	} else if !lastVisitedAt.Valid || currTime.After(lastVisitedAt.Time) {
 		// visited, and current time is after last visit: update last visit time
-		_, err = db.ExecContext(ctx, "UPDATE post_visits SET last_visited_at = ? WHERE id = ?", currTime, id)
-	}
-	if err != nil {
-		return err
+		if _, err := db.ExecContext(ctx, "UPDATE post_visits SET last_visited_at = ? WHERE id = ?", currTime, id); err != nil {
+			return err
+		}
 	}
 	return nil
 }
