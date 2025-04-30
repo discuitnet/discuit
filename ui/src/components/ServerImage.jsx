@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import Image from './Image';
 
-const ServerImage = ({ onLoad, image, sizes, style = {}, showCaption = false, ...props }) => {
+const ServerImage = ({ onLoad, image, sizes, style = {}, ...props }) => {
   let src = image.url,
     srcset = '';
   if (image.copies) {
@@ -23,7 +23,6 @@ const ServerImage = ({ onLoad, image, sizes, style = {}, showCaption = false, ..
       alt={image.altText || ''}
       style={style}
       backgroundColor={style.backgroundColor ?? image.averageColor}
-      showCaption={showCaption}
       {...props}
     />
   );
@@ -34,7 +33,6 @@ ServerImage.propTypes = {
   image: PropTypes.object.isRequired,
   sizes: PropTypes.string,
   style: PropTypes.object,
-  showCaption: PropTypes.bool,
 };
 
 export default ServerImage;

@@ -32,7 +32,6 @@ const Banner = ({ community, className, editable, onEdit, ...rest }) => {
       tabIndex={editable ? 0 : undefined}
       {...rest}
       isFullSize
-      showCaption={false}
     />
   );
 };

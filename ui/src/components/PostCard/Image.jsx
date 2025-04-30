@@ -3,7 +3,7 @@ import React, { useLayoutEffect, useState } from 'react';
 import { getImageContainSize } from '../../helper';
 import ServerImage from '../ServerImage';
 
-const Image = ({ image, to, target, isMobile, showCaption = false, loading = 'lazy' }) => {
+const Image = ({ image, to, target, isMobile, loading = 'lazy' }) => {
   const maxImageHeight = 520;
   const maxImageHeightMobile = () => window.innerHeight * 0.8;
 
@@ -39,7 +39,6 @@ const Image = ({ image, to, target, isMobile, showCaption = false, loading = 'la
           width: imageSize.width ?? 0,
           height: imageSize.height ?? 0,
         }}
-        showCaption={showCaption}
         loading={loading}
       />
     </div>
@@ -52,7 +51,6 @@ Image.propTypes = {
   target: PropTypes.string.isRequired,
   isMobile: PropTypes.bool.isRequired,
   loading: PropTypes.string,
-  showCaption: PropTypes.bool,
 };
 
 export default Image;

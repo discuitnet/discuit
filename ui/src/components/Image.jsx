@@ -10,7 +10,6 @@ const Image = ({
   backgroundColor,
   style = {},
   isFullSize = false,
-  showCaption = false,
   ...props
 }) => {
   const [loaded, _handleLoad] = useImageLoaded(src);
@@ -34,18 +33,9 @@ const Image = ({
   if (isFullSize) cls += ' is-fullsize';
   if (!loaded) cls += ' is-loading';
 
-  return showCaption ? (
-    <figure className={cls + (className ? ` ${className}` : '')}>
-      <div style={divStyle} className="image-container">
-        <img alt={alt} style={imgStyle} onLoad={handleLoad} src={src} {...props} />
-      </div>
-      {alt && <figcaption className="image-caption">{alt}</figcaption>}
-    </figure>
-  ) : (
-    <div style={divStyle} className={cls + (className ? ` ${className}` : '')}>
-      <img alt={alt} style={imgStyle} onLoad={handleLoad} src={src} {...props} />
-    </div>
-  );
+  <div style={divStyle} className={cls + (className ? ` ${className}` : '')}>
+    <img alt={alt} title={alt} style={imgStyle} onLoad={handleLoad} src={src} {...props} />
+  </div>;
 };
 
 Image.propTypes = {
@@ -56,7 +46,6 @@ Image.propTypes = {
   backgroundColor: PropTypes.string,
   style: PropTypes.object,
   isFullSize: PropTypes.bool,
-  showCaption: PropTypes.bool,
 };
 
 export default Image;

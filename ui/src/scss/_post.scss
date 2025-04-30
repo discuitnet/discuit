@@ -152,24 +152,6 @@
             }
             .post-image {
                 margin-top: 0;
-                figure.image {
-                    display: flex;
-                    flex-direction: column;
-
-                    .image-container {
-                        width: 100%;
-                        text-align: center;
-                    }
-
-                    .image-caption {
-                        margin-top: 8px;
-                        padding: 0 5px;
-                        font-size: var(--fs-s);
-                        color: rgba(var(--base-fg), 0.7);
-                        text-align: center;
-                        margin-bottom: 1rem;
-                    }
-                }
             }
         }
         .post-card-bottom.has-no-img {
@@ -251,10 +233,6 @@
         .image-gallery-image {
             @include mixins.not-mobile {
                 height: 600px;
-            }
-            .image,
-            .image-container {
-                width: 100%;
             }
         }
     }
