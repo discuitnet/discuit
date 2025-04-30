@@ -8,6 +8,9 @@ import { APIError, mfetch, mfetchjson } from '../../helper';
 import { communityAdded } from '../../slices/communitiesSlice';
 import { snackAlert, snackAlertError } from '../../slices/mainSlice';
 import Banner from '../Community/Banner';
+import ImageEditModal from '../../components/ImageEditModal';
+import { selectImageCopyURL } from '../../helper';
+import { useImageEdit } from '../../hooks/useImageEdit';
 
 const descriptionMaxLength = 2000;
 
@@ -114,6 +117,51 @@ const Settings = ({ community }) => {
     }
   };
 
+  const [communityPicModalOpen, setCommunityPicModalOpen] = useState(false);
+  const [communityBannerModalOpen, setCommunityBannerModalOpen] = useState(false);
+
+  const {
+    isUploading: isUploadingPic,
+    isDeleting: isDeletingPic,
+    handleUpload: handleUploadCommunityPic,
+    handleDelete: handleDeleteCommunityPic,
+    handleSaveAltText: handleSaveCommunityPicAltText,
+  } = useImageEdit(`/api/communities/${community.id}/pro_pic`, (res) => {
+    dispatch(communityAdded(res));
+  });
+
+  const {
+    isUploading: isUploadingBanner,
+    isDeleting: isDeletingBanner,
+    handleUpload: handleUploadCommunityBanner,
+    handleDelete: handleDeleteCommunityBanner,
+    handleSaveAltText: handleSaveCommunityBannerAltText,
+  } = useImageEdit(`/api/communities/${community.id}/banner_image`, (res) => {
+    dispatch(communityAdded(res));
+  });
+
+  const handleSaveCommunityPicAlt = (altText) => {
+    if (!community) return dispatch(snackAlert('No community to update.', null));
+    if (!community.proPic) return dispatch(snackAlert('No profile picture to update.', null));
+    handleSaveCommunityPicAltText(altText, community.proPic.id).then((success) => {
+      if (success) {
+        if (community.proPic) community.proPic.altText = altText;
+        setCommunityPicModalOpen(false);
+      }
+    });
+  };
+
+  const handleSaveCommunityBannerAlt = (altText) => {
+    if (!community) return dispatch(snackAlert('No community to update.', null));
+    if (!community.bannerImage) return dispatch(snackAlert('No banner image to update.', null));
+    handleSaveCommunityBannerAltText(altText, community.bannerImage.id).then((success) => {
+      if (success) {
+        if (community.bannerImage) community.bannerImage.altText = altText;
+        setCommunityBannerModalOpen(false);
+      }
+    });
+  };
+
   const handleChangeDefault = async () => {
     try {
       const res = await mfetchjson(`/api/_admin`, {
@@ -148,12 +196,8 @@ const Settings = ({ community }) => {
           <div className=" modtools-change-propic">
             <div className="flex">
               <CommunityProPic name={community.name} proPic={community.proPic} size="standard" />
-              <button onClick={() => proPicFileInputRef.current.click()} disabled={isUploading}>
-                Change
-              </button>
-              <button onClick={handleDeleteProPic} disabled={isUploading}>
-                Delete
-              </button>
+              <button onClick={() => setCommunityPicModalOpen(true)}>Edit profile picture</button>
+
               <input
                 ref={proPicFileInputRef}
                 type="file"
@@ -169,12 +213,7 @@ const Settings = ({ community }) => {
           <div className="flex flex-column">
             <Banner className="modtools-banner" community={community} />
             <div className="flex modtools-change-banner-buttons">
-              <button onClick={() => bannerFileInputRef.current.click()} disabled={isUploading}>
-                Change
-              </button>
-              <button onClick={handleDeleteBannerImage} disabled={isUploading}>
-                Delete
-              </button>
+              <button onClick={() => setCommunityBannerModalOpen(true)}>Edit banner image</button>
             </div>
             <input
               ref={bannerFileInputRef}
@@ -224,6 +263,35 @@ const Settings = ({ community }) => {
           </button>
         </FormField>
       </div>
+
+      <ImageEditModal
+        open={communityPicModalOpen}
+        onClose={() => setCommunityPicModalOpen(false)}
+        title="Edit community icon"
+        imageUrl={community.proPic ? selectImageCopyURL('medium', community.proPic) : undefined}
+        altText={community.proPic?.altText}
+        onUpload={handleUploadCommunityPic}
+        onDelete={handleDeleteCommunityPic}
+        onSave={handleSaveCommunityPicAlt}
+        uploading={isUploadingPic}
+        deleting={isDeletingPic}
+      />
+
+      <ImageEditModal
+        open={communityBannerModalOpen}
+        onClose={() => setCommunityBannerModalOpen(false)}
+        title="Edit community banner"
+        imageUrl={
+          community.bannerImage ? selectImageCopyURL('medium', community.bannerImage) : undefined
+        }
+        altText={community.bannerImage?.altText}
+        onUpload={handleUploadCommunityBanner}
+        onDelete={handleDeleteCommunityBanner}
+        onSave={handleSaveCommunityBannerAlt}
+        uploading={isUploadingBanner}
+        deleting={isDeletingBanner}
+        isCircular={false}
+      />
     </div>
   );
 };

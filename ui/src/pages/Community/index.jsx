@@ -11,15 +11,26 @@ import MiniFooter from '../../components/MiniFooter';
 import PageLoading from '../../components/PageLoading';
 import ShowMoreBox from '../../components/ShowMoreBox';
 import Sidebar from '../../components/Sidebar';
-import { APIError, copyToClipboard, dateString1, mfetch, stringCount } from '../../helper';
+import {
+  APIError,
+  copyToClipboard,
+  dateString1,
+  mfetch,
+  stringCount,
+  mfetchjson,
+} from '../../helper';
 import { useIsMobile, useMuteCommunity } from '../../hooks';
 import { communityAdded, selectCommunity } from '../../slices/communitiesSlice';
 import { snackAlert, snackAlertError } from '../../slices/mainSlice';
+import { selectImageCopyURL } from '../../helper';
+import { SVGEdit } from '../../SVGs';
+
 import PostsFeed from '../../views/PostsFeed';
 import NotFound from '../NotFound';
 import Banner from './Banner';
 import JoinButton from './JoinButton';
 import Rules from './Rules';
+import ImageEditModal from '../../components/ImageEditModal';
 
 const Community = () => {
   const { name } = useParams();
@@ -65,6 +76,13 @@ const Community = () => {
   const isBanned =
     loggedIn && community && bannedFrom.find((id) => id === community.id) !== undefined;
 
+  const [communityPicModalOpen, setCommunityPicModalOpen] = useState(false);
+  const [bannerModalOpen, setBannerModalOpen] = useState(false);
+  const [isUploadingPic, setIsUploadingPic] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [isDeletingPic, setIsDeletingPic] = useState(false);
+  const [isDeletingBanner, setIsDeletingBanner] = useState(false);
+
   const isMobile = useIsMobile();
   const renderCommunityShareButton = () => {
     const useNavigatorShare = isMobile && Boolean(window.navigator.share);
@@ -105,6 +123,119 @@ const Community = () => {
     }
     return <PageLoading />;
   }
+
+  const handleUploadCommunityPic = async (file) => {
+    if (isUploadingPic) return;
+
+    try {
+      setIsUploadingPic(true);
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const res = await mfetch(`/api/communities/${community.id}/pro_pic`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        const rcomm = await res.json();
+        dispatch(communityAdded(rcomm));
+      } else {
+        throw new APIError(res.status, await res.json());
+      }
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    } finally {
+      setIsUploadingPic(false);
+    }
+  };
+
+  const handleDeleteCommunityPic = async () => {
+    if (isDeletingPic) return;
+
+    try {
+      setIsDeletingPic(true);
+      const rcomm = await mfetchjson(`/api/communities/${community.id}/pro_pic`, {
+        method: 'DELETE',
+      });
+
+      dispatch(communityAdded(rcomm));
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    } finally {
+      setIsDeletingPic(false);
+    }
+  };
+
+  const handleUploadBanner = async (file) => {
+    if (isUploadingBanner) return;
+
+    try {
+      setIsUploadingBanner(true);
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const res = await mfetch(`/api/communities/${community.id}/banner_image`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        const rcomm = await res.json();
+        dispatch(communityAdded(rcomm));
+      } else {
+        throw new APIError(res.status, await res.json());
+      }
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    } finally {
+      setIsUploadingBanner(false);
+    }
+  };
+
+  const handleDeleteBanner = async () => {
+    if (isDeletingBanner) return;
+
+    try {
+      setIsDeletingBanner(true);
+      const rcomm = await mfetchjson(`/api/communities/${community.id}/banner_image`, {
+        method: 'DELETE',
+      });
+
+      dispatch(communityAdded(rcomm));
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    } finally {
+      setIsDeletingBanner(false);
+    }
+  };
+
+  const handleSaveAltText = async (altText, imageId) => {
+    try {
+      await mfetchjson(`/api/images/${imageId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ altText }),
+      });
+
+      dispatch(snackAlert('Alt text saved.'));
+      setBannerModalOpen(false);
+      setCommunityPicModalOpen(false);
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    }
+  };
+
+  const handleSaveCommunityPicAlt = async (altText) => {
+    const communityPicId = community.proPic.id;
+    handleSaveAltText(altText, communityPicId);
+    community.proPic.altText = altText;
+  };
+
+  const handleSaveBannerAlt = async (altText) => {
+    const bannerId = community.bannerImage.id;
+    handleSaveAltText(altText, bannerId);
+    community.bannerImage.altText = altText;
+  };
 
   const renderRules = () => {
     if (community.rules) {
@@ -160,13 +291,25 @@ const Community = () => {
           <div className="comm-main-top">
             <div className="comm-main-bg">
               <Banner community={community} />
+              {(community.userMod || (user && user.isAdmin)) && (
+                <button
+                  className="banner-edit-button"
+                  onClick={() => setBannerModalOpen(true)}
+                  title="Edit banner"
+                >
+                  <SVGEdit />
+                </button>
+              )}
             </div>
             <CommunityProPic
               className="is-no-hover comm-main-profile"
               name={community.name}
               proPic={community.proPic}
               size="large"
+              editable={community.userMod || (user && user.isAdmin)}
+              onEdit={() => setCommunityPicModalOpen(true)}
             />
+
             <div className="comm-main-top-bar">
               <JoinButton className="comm-main-top-join-button" community={community} />
               {/*loggedIn && (
@@ -234,6 +377,35 @@ const Community = () => {
         {renderModeratorsList()}
         <MiniFooter />
       </aside>
+
+      <ImageEditModal
+        open={communityPicModalOpen}
+        onClose={() => setCommunityPicModalOpen(false)}
+        title="Edit community icon"
+        imageUrl={community.proPic ? selectImageCopyURL('medium', community.proPic) : undefined}
+        altText={community.proPic?.altText}
+        onUpload={handleUploadCommunityPic}
+        onDelete={handleDeleteCommunityPic}
+        onSave={handleSaveCommunityPicAlt}
+        uploading={isUploadingPic}
+        deleting={isDeletingPic}
+      />
+
+      <ImageEditModal
+        open={bannerModalOpen}
+        onClose={() => setBannerModalOpen(false)}
+        title="Edit community banner"
+        imageUrl={
+          community.bannerImage ? selectImageCopyURL('medium', community.bannerImage) : undefined
+        }
+        altText={community.bannerImage?.altText}
+        onUpload={handleUploadBanner}
+        onDelete={handleDeleteBanner}
+        onSave={handleSaveBannerAlt}
+        uploading={isUploadingBanner}
+        deleting={isDeletingBanner}
+        isCircular={false}
+      />
     </div>
   );
 };

@@ -18,7 +18,7 @@ import { APIError, dateString1, mfetch, mfetchjson, stringCount } from '../../he
 import { useFetchUsersLists, useMuteUser } from '../../hooks';
 import type { Comment, Post, User } from '../../serverTypes';
 import { FeedItem } from '../../slices/feedsSlice';
-import { snackAlertError } from '../../slices/mainSlice';
+import { snackAlert, snackAlertError, userLoggedIn } from '../../slices/mainSlice';
 import { selectUser, userAdded } from '../../slices/usersSlice';
 import { RootState } from '../../store';
 import NotFound from '../NotFound';
@@ -27,6 +27,9 @@ import BadgesList from './BadgesList';
 import BanUserButton from './BanUserButton';
 import { MemorizedComment } from './Comment';
 import UserAdminsViewModal from './UserAdminsViewModal';
+import ImageEditModal from '../../components/ImageEditModal';
+import { selectImageCopyURL } from '../../helper';
+import { useImageEdit } from '../../hooks/useImageEdit';
 
 interface UserFeedAPIResponse {
   items: {
@@ -53,6 +56,29 @@ const User = () => {
   const viewer = useSelector<RootState>((state) => state.main.user) as User | null;
   const viewerAdmin = viewer ? viewer.isAdmin : false;
   const loggedIn = viewer !== null;
+
+  const [profilePicModalOpen, setProfilePicModalOpen] = useState(false);
+
+  const {
+    isUploading: isUploadingPic,
+    isDeleting: isDeletingPic,
+    handleUpload: handleUploadProfilePic,
+    handleDelete: handleDeleteProfilePic,
+    handleSaveAltText,
+  } = useImageEdit(`/api/users/${username}/pro_pic`, (res) => {
+    dispatch(userLoggedIn(res));
+  });
+
+  const handleSaveProfilePicAlt = (altText: string) => {
+    if (!user) return dispatch(snackAlert('No user to update.', null));
+    if (!user.proPic) return dispatch(snackAlert('No profile picture to update.', null));
+    handleSaveAltText(altText, user.proPic.id).then((success) => {
+      if (success) {
+        if (user.proPic) user.proPic.altText = altText;
+        setProfilePicModalOpen(false);
+      }
+    });
+  };
 
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
@@ -476,7 +502,13 @@ const User = () => {
         <header className="user-card card card-padding">
           <div className="user-card-top">
             <div className="user-card-top-left">
-              <UserProPic username={username} proPic={user.proPic} size="large" />
+              <UserProPic
+                username={username}
+                proPic={user.proPic}
+                size="large"
+                editable={user.id === viewer?.id || (viewer?.isAdmin && !user.deleted)}
+                onEdit={() => setProfilePicModalOpen(true)}
+              />
               <h1
                 className={
                   'user-card-username' +
@@ -596,6 +628,19 @@ const User = () => {
         </div> */}
         <MiniFooter />
       </aside>
+
+      <ImageEditModal
+        open={profilePicModalOpen}
+        onClose={() => setProfilePicModalOpen(false)}
+        title="Edit profile picture"
+        imageUrl={user.proPic ? selectImageCopyURL('medium', user.proPic) : undefined}
+        altText={user.proPic?.altText}
+        onUpload={handleUploadProfilePic}
+        onDelete={handleDeleteProfilePic}
+        onSave={handleSaveProfilePicAlt}
+        uploading={isUploadingPic}
+        deleting={isDeletingPic}
+      />
     </div>
   );
 };

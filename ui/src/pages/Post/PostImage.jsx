@@ -45,6 +45,7 @@ const PostImage = ({ post }) => {
     <div className={'post-image' + (imageNoFit ? ' is-no-fit' : '')}>
       <ServerImage
         image={image}
+        alt={image.altText}
         sizes="(min-height: 1280px) 840px, 94vw"
         style={{
           width: imageSize.width ?? 0,
