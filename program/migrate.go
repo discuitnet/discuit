@@ -52,21 +52,27 @@ func (pg *Program) Migrate(log bool, steps int) error {
 	return err
 }
 
-// MigrationsVersion returns the last migration number (the value in the
-// schema_migrations table). If the migrations table is not found, then
-// errMigrationsTableNotFound is returned. If the migrations table is found but
-// empty, then sql.ErrNoRows is returned.
-func (pg *Program) MigrationsVersion() (int, error) {
+type MigrationsStatus struct {
+	Version int `json:"version"`
+	Dirty   int `json:"dirty"`
+}
+
+// MigrationsStatus returns the status of the current database migrations. If
+// the migrations table is not found, ErrMigrationsTableNotFound is returned. If
+// the migrations table is found but it's empty, sql.ErrNoRows is returned.
+func (pg *Program) MigrationsStatus() (MigrationsStatus, error) {
+	s := MigrationsStatus{}
+
 	if exists, err := mariadbTableExists(pg.db, "schema_migrations"); err != nil {
-		return -1, err
+		return s, err
 	} else if !exists {
-		return -1, ErrMigrationsTableNotFound
+		return s, ErrMigrationsTableNotFound
 	}
-	version := -1
-	if err := pg.db.QueryRow("SELECT version FROM schema_migrations").Scan(&version); err != nil {
-		return -1, err
+
+	if err := pg.db.QueryRow("SELECT version, dirty FROM schema_migrations").Scan(&s.Version, &s.Dirty); err != nil {
+		return s, err
 	}
-	return version, nil
+	return s, nil
 }
 
 func mariadbTableExists(db *sql.DB, name string) (bool, error) {

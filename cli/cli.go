@@ -362,7 +362,8 @@ var CommandMigrate = &cli.Command{
 	Usage: "Run database migrations",
 	Subcommands: []*cli.Command{
 		{
-			Name: "new",
+			Name:  "new",
+			Usage: "Create a new pair of migrations files",
 			Action: func(ctx *cli.Context) error {
 				folder, err := os.Open("./migrations/")
 				if err != nil {
@@ -426,6 +427,22 @@ var CommandMigrate = &cli.Command{
 				}
 				defer pg.Close()
 				return pg.Migrate(true, ctx.Int("steps"))
+			},
+		},
+		{
+			Name:  "status",
+			Usage: "Get the current migration status",
+			Action: func(ctx *cli.Context) error {
+				pg, err := program.NewProgram(true)
+				if err != nil {
+					return err
+				}
+				status, err := pg.MigrationsStatus()
+				if err != nil {
+					return err
+				}
+				fmt.Printf("version: %d, dirty: %d\n", status.Version, status.Dirty)
+				return nil
 			},
 		},
 	},
