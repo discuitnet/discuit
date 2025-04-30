@@ -33,9 +33,11 @@ const Image = ({
   if (isFullSize) cls += ' is-fullsize';
   if (!loaded) cls += ' is-loading';
 
-  <div style={divStyle} className={cls + (className ? ` ${className}` : '')}>
-    <img alt={alt} title={alt} style={imgStyle} onLoad={handleLoad} src={src} {...props} />
-  </div>;
+  return (
+    <div style={divStyle} className={cls + (className ? ` ${className}` : '')}>
+      <img alt={alt} title={'alt'} style={imgStyle} onLoad={handleLoad} src={src} {...props} />
+    </div>
+  );
 };
 
 Image.propTypes = {
