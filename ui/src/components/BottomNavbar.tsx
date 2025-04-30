@@ -5,9 +5,8 @@ import { useHistory, useLocation } from 'react-router-dom';
 import { useLinkClick } from '../hooks';
 import { User } from '../serverTypes';
 import { RootState } from '../store';
-import { SVGAdd, SVGCommunities, SVGHome } from '../SVGs';
+import { SVGAdd, SVGCommunities, SVGHome, SVGSearch } from '../SVGs';
 import Button, { ButtonNotifications } from './Button';
-import CommunityProPic from './CommunityProPic';
 
 const scrollPositions: { [key: string]: number | undefined } = {};
 
@@ -55,7 +54,7 @@ export default function BottomNavbar() {
         to={usernamePath}
         icon={{
           hasVariants: false,
-          icon: <CommunityProPic proPic={user ? user.proPic : null} size="small" />,
+          icon: <SVGSearch />,
         }}
       />
     </div>

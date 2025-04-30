@@ -8,7 +8,7 @@ export interface DropdownProps extends React.HTMLAttributes<HTMLDivElement> {
   style?: React.CSSProperties;
   target: React.ReactNode;
   children: React.ReactNode;
-  aligned: 'left' | 'right' | 'center' | 'none';
+  aligned?: 'left' | 'right' | 'center' | 'none';
   containerStyle?: React.CSSProperties;
   onActiveChange?: (active: boolean) => void;
 }
