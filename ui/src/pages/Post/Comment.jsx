@@ -341,7 +341,6 @@ const Comment = ({
     comment: PropTypes.object.isRequired,
     postLastVisitAt: PropTypes.string.isRequired,
   };
-  
 
   const isAuthorSupporter = userHasSupporterBadge(comment.author);
   const topDivClassname = 'post-comment' + (showAuthorProPic ? ' has-propics' : '');

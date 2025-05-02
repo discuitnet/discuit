@@ -263,7 +263,7 @@ const PostCard = ({
                 />
               </svg>
               <span>{stringCount(post.noComments, false, 'comment')}</span>
-              {post.newComments != 0 && <span className="post-new-comment-label">`(${post.newComments} new)`</span>}
+              {post.newComments != 0 && <span className="post-new-comment-label">({post.newComments} new)</span>}
             </Link>
           </div>
           <div className="right">
