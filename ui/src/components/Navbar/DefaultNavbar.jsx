@@ -1,0 +1,185 @@
+import { useDispatch, useSelector } from 'react-redux';
+import { useLocation } from 'react-router-dom';
+import { clearNotificationsLocalStorage } from '../../PushNotifications';
+import { kRound, mfetch, onKeyEnter, stringCount } from '../../helper';
+import { mobileBreakpointWidth, useTheme, useWindowSize } from '../../hooks';
+import {
+  chatOpenToggled,
+  loginModalOpened,
+  notificationsReloaded,
+  signupModalOpened,
+  snackAlert,
+  snackAlertError,
+  toggleSidebarOpen,
+} from '../../slices/mainSlice';
+import { homeReloaded } from '../../views/PostsFeed';
+import { ButtonHamburger, ButtonNotifications } from '../Button';
+import Dropdown from '../Dropdown';
+import Link from '../Link';
+import Search from './Search';
+
+export default function DefaultNavbar({ offline }) {
+  const dispatch = useDispatch();
+
+  const user = useSelector((state) => state.main.user);
+  const loggedIn = user !== null;
+
+  const homeFeed = loggedIn ? user.homeFeed : 'all';
+  const notifsNewCount = useSelector((state) => state.main.notifications.newCount);
+
+  const handleLogout = async () => {
+    clearNotificationsLocalStorage();
+    try {
+      const res = await mfetch('/api/_login?action=logout', {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        snackAlert('Failed to logout. Something went wrong.');
+        return;
+      }
+      window.location.reload();
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    }
+  };
+
+  const handleLogoClick = () => {
+    dispatch(homeReloaded(homeFeed, user && user.rememberFeedSort));
+    setTimeout(() => window.scrollTo(0, 0), 10);
+  };
+
+  const handleHamburgerClick = () => {
+    dispatch(toggleSidebarOpen());
+  };
+
+  const location = useLocation();
+  const handleNotifIconClick = () => {
+    if (location.pathname === '/notifications') {
+      dispatch(notificationsReloaded());
+    }
+  };
+
+  const { theme, setTheme } = useTheme();
+  const handleDarkModeChange = (e) => {
+    const checked = e.target.checked;
+    setTheme(checked ? 'dark' : 'light');
+  };
+
+  const windowWidth = useWindowSize();
+  const isMobile = windowWidth <= mobileBreakpointWidth;
+  return (
+    <>
+      <div className="left">
+        <div className="hamburger-m">
+          <ButtonHamburger onClick={handleHamburgerClick} />
+        </div>
+        <Link
+          to="/"
+          className="navbar-logo"
+          style={{ fontSize: '1.65rem' }}
+          onClick={handleLogoClick}
+        >
+          {import.meta.env.VITE_SITENAME}
+        </Link>
+        <Search />
+      </div>
+      <div className="right">
+        {import.meta.env.MODE !== 'production' && (
+          <button
+            className="button-text is-no-m"
+            onClick={() => dispatch(chatOpenToggled())}
+            disabled={offline}
+          >
+            Chat
+          </button>
+        )}
+        {import.meta.env.MODE !== 'production' && (
+          <Link className="is-no-m" to="/elements">
+            Elements
+          </Link>
+        )}
+        {!loggedIn && (
+          <>
+            <button
+              className="button-text"
+              onClick={() => dispatch(loginModalOpened())}
+              disabled={offline}
+            >
+              Login
+            </button>
+            <button
+              className="button-main"
+              onClick={() => dispatch(signupModalOpened())}
+              disabled={offline}
+            >
+              Create account
+            </button>
+          </>
+        )}
+        {/*<ButtonSearch />*/}
+        {loggedIn && (
+          <Link className="is-no-m" to="/notifications" onClick={handleNotifIconClick}>
+            <ButtonNotifications count={notifsNewCount} />
+          </Link>
+        )}
+        {loggedIn && (
+          <Dropdown
+            className="navbar-profile"
+            target={
+              <div className="navbar-profile-target">
+                <span className="navbar-points">{`${kRound(user.points)} ${stringCount(
+                  user.points,
+                  true
+                )}`}</span>
+                <span className="navbar-name">
+                  @
+                  {windowWidth < 400 || (isMobile && user.username.length > 10)
+                    ? 'me'
+                    : user.username}
+                </span>
+              </div>
+            }
+            aligned="right"
+          >
+            <div className="dropdown-list">
+              <Link className="link-reset dropdown-item" to="/settings">
+                Settings
+              </Link>
+              <Link className="link-reset dropdown-item" to={`/@${user.username}`}>
+                Profile
+              </Link>
+              {user.isAdmin && (
+                <Link className="link-reset dropdown-item" to={`/admin`}>
+                  Admin dashboard
+                </Link>
+              )}
+              {/*<div className="dropdown-item">Darkmode</div>*/}
+              <div className="dropdown-item is-non-reactive">
+                <div className="checkbox">
+                  <input
+                    id={'ch-nav-dark'}
+                    className="switch"
+                    type="checkbox"
+                    checked={theme === 'dark'}
+                    onChange={handleDarkModeChange}
+                  />
+                  <label htmlFor={'ch-nav-dark'}>Dark mode</label>
+                </div>
+              </div>
+              <div className="dropdown-list-sep"></div>
+              <div
+                role="button"
+                tabIndex="0"
+                className="dropdown-item"
+                onClick={handleLogout}
+                onKeyUp={(e) => onKeyEnter(e, handleLogout)}
+              >
+                Logout
+              </div>
+            </div>
+          </Dropdown>
+        )}
+      </div>
+    </>
+  );
+}

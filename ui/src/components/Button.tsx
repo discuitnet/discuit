@@ -11,6 +11,12 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   color?: ButtonColor;
   icon?: React.ReactElement;
   loading?: boolean;
+
+  /**
+   * If true, the button will have no background, even on hover and active
+   * states. Works only with 'text' button variants.
+   */
+  noBackground?: boolean;
 }
 
 const defaultButtonVariant: ButtonVariant = 'normal';
@@ -26,6 +32,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       loading = false,
       children,
       disabled,
+      noBackground = false,
       ...props
     }: ButtonProps,
     ref
@@ -37,7 +44,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     } else if (color === 'red') {
       colorClsName = 'is-red';
     }
-    const cls = clsx(className, variantClsName, colorClsName, icon && !children ? 'is-icon' : null);
+    const cls = clsx(
+      className,
+      variantClsName,
+      colorClsName,
+      icon && !children ? 'is-icon' : null,
+      variant === 'text' && noBackground && 'is-no-bg'
+    );
 
     return (
       <button className={cls ? cls : undefined} ref={ref} {...props} disabled={loading || disabled}>

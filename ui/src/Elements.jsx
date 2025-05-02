@@ -141,6 +141,9 @@ function Elements() {
           <Button variant="text" icon={icons.bubbles} color="red">
             Button with icon
           </Button>
+          <Button variant="text" icon={icons.bubbles} color="red" noBackground>
+            Button with icon (but no background even on hover)
+          </Button>
         </Section>
         <Section title="Link elements as buttons">
           <a className="button" href="https://www.google.com/">
