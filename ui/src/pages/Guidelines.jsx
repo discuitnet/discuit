@@ -8,7 +8,7 @@ const Guidelines = () => {
         <p>
           For the purpose of keeping this place civil and friendly, Discuit will have certain
           restrictions on what is and isn't allowed on this platform. But these restrictions will
-          still allow a wide rage of opinions and different communities to exist. We have no desire
+          still allow a wide range of opinions and different communities to exist. We have no desire
           to moderate people's opinions or censor dissenting views. We enjoy good-faith, respectful
           discussions on (sometimes controversial) subjects with people whose opinions differ. After
           all, no one learns anything if they only talk to people that always agree with them.

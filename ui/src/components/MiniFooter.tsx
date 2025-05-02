@@ -11,7 +11,9 @@ const MiniFooter = () => {
         Docs
       </a>
       <a href={`mailto:${import.meta.env.VITE_EMAILCONTACT}`}>Contact</a>
-      <span>© 2024 {import.meta.env.VITE_SITENAME}.</span>
+      <span>
+        © {new Date().getFullYear()} {import.meta.env.VITE_SITENAME}.
+      </span>
     </footer>
   );
 };
