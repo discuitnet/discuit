@@ -50,34 +50,37 @@ const Navbar = ({ offline = false }) => {
   const windowWidth = useWindowWidth();
   const isMobile = windowWidth <= mobileBreakpointWidth;
 
-  // Auto-hide the navbar when scrolling down (only on mobile).
-  useEffect(() => {
-    if (!isMobile) {
-      return;
-    }
-    let prevScrollY = window.scrollY;
-    let navPos = 0;
-    const navHeight = parseInt(
-      window.getComputedStyle(document.body).getPropertyValue('--navbar-height')
-    );
-    const listener = () => {
-      const dy = window.scrollY - prevScrollY;
-      let newNavPos = navPos - dy;
-      if (newNavPos < -1 * navHeight) {
-        newNavPos = -1 * navHeight;
-      }
-      if (newNavPos > 0) {
-        newNavPos = 0;
-      }
-      navPos = newNavPos;
-      navbarRef.current.style.transform = `translateY(${navPos}px)`;
-      prevScrollY = window.scrollY;
-    };
-    document.addEventListener('scroll', listener);
-    return () => {
-      document.removeEventListener('scroll', listener);
-    };
-  }, [isMobile, navbarRef]);
+  // This is disabled for now because there's a slight jitteryness when
+  // transitioning between the pages sometimes.
+  //
+  // // Auto-hide the navbar when scrolling down (only on mobile).
+  // useEffect(() => {
+  //   if (!isMobile) {
+  //     return;
+  //   }
+  //   let prevScrollY = window.scrollY;
+  //   let navPos = 0;
+  //   const navHeight = parseInt(
+  //     window.getComputedStyle(document.body).getPropertyValue('--navbar-height')
+  //   );
+  //   const listener = () => {
+  //     const dy = window.scrollY - prevScrollY;
+  //     let newNavPos = navPos - dy;
+  //     if (newNavPos < -1 * navHeight) {
+  //       newNavPos = -1 * navHeight;
+  //     }
+  //     if (newNavPos > 0) {
+  //       newNavPos = 0;
+  //     }
+  //     navPos = newNavPos;
+  //     navbarRef.current.style.transform = `translateY(${navPos}px)`;
+  //     prevScrollY = window.scrollY;
+  //   };
+  //   document.addEventListener('scroll', listener);
+  //   return () => {
+  //     document.removeEventListener('scroll', listener);
+  //   };
+  // }, [isMobile, navbarRef]);
 
   const [bottomNavbarNavigation, setBottomNavbarNavigation] = useState(true);
 
