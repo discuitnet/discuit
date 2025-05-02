@@ -217,6 +217,7 @@ html.theme-dark {
 @include mixins.mobile {
     :root {
         --card-shadow: var(--card-shadow-style-1);
+        --navbar-height: 56px;
     }
 }
 
