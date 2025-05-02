@@ -50,7 +50,7 @@ func (s *Server) adminActions(w *responseWriter, r *request) error {
 		if !ok {
 			return invalidJSONErr
 		}
-		user, err := core.GetUserByUsername(r.ctx, s.db, username, nil)
+		user, err := core.GetUserByUsername(r.ctx, s.db, username, r.viewer)
 		if err != nil {
 			return err
 		}
@@ -83,7 +83,7 @@ func (s *Server) adminActions(w *responseWriter, r *request) error {
 		if !ok {
 			return invalidJSONErr
 		}
-		user, err := core.GetUserByUsername(r.ctx, s.db, username, nil)
+		user, err := core.GetUserByUsername(r.ctx, s.db, username, r.viewer)
 		if err != nil {
 			return err
 		}

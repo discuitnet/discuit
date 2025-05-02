@@ -829,10 +829,6 @@ func (u *User) DeleteContent(ctx context.Context, db *sql.DB, n int, admin uid.I
 //
 // Note: An admin can be banned.
 func (u *User) Ban(ctx context.Context, db *sql.DB) error {
-	if u.Deleted {
-		return ErrUserDeleted
-	}
-
 	t := time.Now()
 	_, err := db.ExecContext(ctx, "UPDATE users SET banned_at = ? WHERE id = ?", t, u.ID)
 	if err == nil {
@@ -843,10 +839,6 @@ func (u *User) Ban(ctx context.Context, db *sql.DB) error {
 }
 
 func (u *User) Unban(ctx context.Context, db *sql.DB) error {
-	if u.Deleted {
-		return ErrUserDeleted
-	}
-
 	_, err := db.ExecContext(ctx, "UPDATE users SET banned_at = NULL WHERE id = ?", u.ID)
 	return err
 }

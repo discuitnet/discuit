@@ -5,6 +5,7 @@ import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
 import { ButtonMore } from '../../components/Button';
 import Dropdown from '../../components/Dropdown';
 import Feed from '../../components/Feed';
+import ImageEditModal from '../../components/ImageEditModal';
 import MarkdownBody from '../../components/MarkdownBody';
 import MiniFooter from '../../components/MiniFooter';
 import PageLoading from '../../components/PageLoading';
@@ -14,8 +15,16 @@ import SelectBar from '../../components/SelectBar';
 import ShowMoreBox from '../../components/ShowMoreBox';
 import Sidebar from '../../components/Sidebar';
 import UserProPic from '../../components/UserProPic';
-import { APIError, dateString1, mfetch, mfetchjson, stringCount } from '../../helper';
+import {
+  APIError,
+  dateString1,
+  mfetch,
+  mfetchjson,
+  selectImageCopyURL,
+  stringCount,
+} from '../../helper';
 import { useFetchUsersLists, useMuteUser } from '../../hooks';
+import { useImageEdit } from '../../hooks/useImageEdit';
 import type { Comment, Post, User } from '../../serverTypes';
 import { FeedItem } from '../../slices/feedsSlice';
 import { snackAlert, snackAlertError, userLoggedIn } from '../../slices/mainSlice';
@@ -27,9 +36,6 @@ import BadgesList from './BadgesList';
 import BanUserButton from './BanUserButton';
 import { MemorizedComment } from './Comment';
 import UserAdminsViewModal from './UserAdminsViewModal';
-import ImageEditModal from '../../components/ImageEditModal';
-import { selectImageCopyURL } from '../../helper';
-import { useImageEdit } from '../../hooks/useImageEdit';
 
 interface UserFeedAPIResponse {
   items: {
@@ -542,15 +548,21 @@ const User = () => {
               Account deleted on {dateString1(user.deletedAt as string)}
             </div>
           )}
-          {loggedIn && !user.deleted && (
+          {loggedIn && (
             <div className="user-card-buttons">
               {viewer.id !== user.id && (
-                <button onClick={toggleMute}>{isMuted ? 'Unmute user' : 'Mute user'}</button>
+                <button onClick={toggleMute} disabled={user.deleted}>
+                  {isMuted ? 'Unmute user' : 'Mute user'}
+                </button>
               )}
               {viewerAdmin && (
                 <>
                   {viewer.id !== user.id && <BanUserButton user={user} />}
-                  <button className="button-green" onClick={handleGiveSupporterBadge}>
+                  <button
+                    className="button-green"
+                    onClick={handleGiveSupporterBadge}
+                    disabled={user.deleted}
+                  >
                     {hasSupporterBadge ? 'Remove supporter badge' : 'Give supporter badge'}
                   </button>
                   <Dropdown target={<ButtonMore />}>
