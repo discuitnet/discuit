@@ -49,7 +49,6 @@
         .wrap {
             @include mixins.mobile() {
                 padding-left: 0;
-                padding-right: 0;
             }
         }
     }
