@@ -41,7 +41,7 @@ const Navbar = ({ offline = false }) => {
 
   const isMobile = useIsMobile();
 
-  const renderGoBackNavbar = isMobile && !bottomNavbarNavigation;
+  const renderGoBackNavbar = isMobile && !bottomNavbarNavigation && location.pathname !== '/';
 
   // <header className={'navbar' + (blur ? ' is-blured' : '')} ref={navbarRef}></header>
   return (
