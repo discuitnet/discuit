@@ -177,7 +177,7 @@ export const UserLink = ({
   const cls = 'user-link' + (className ? ` ${className}` : '') + supporterCls;
   return (
     <El className={cls} {...rest} to={`/@${username}`}>
-      {showProPic && !proPicGhost && <UserProPic name={username} proPic={proPic} />}
+      {showProPic && !proPicGhost && <UserProPic username={username} proPic={proPic} />}
       {showProPic && proPicGhost && <GhostUserProPic />}
       <div className={'user-link-name' + supporterCls}>{name}</div>
     </El>
