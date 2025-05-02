@@ -18,7 +18,7 @@
     flex-direction: column;
     overflow-y: scroll;
     @include mixins.mobile {
-        padding-bottom: 6rem;
+        padding-bottom: var(--gap);
         .card,
         .card-sub {
             border-left: var(--card-border-left);

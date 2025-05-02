@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import PropTypes from 'prop-types';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router';
@@ -102,13 +102,6 @@ const NewPost = () => {
       setLoading('loaded');
     }
   }, [editPostId]);
-
-  useLayoutEffect(() => {
-    document.body.style.overflowY = 'hidden';
-    return () => {
-      document.body.style.overflowY = 'scroll';
-    };
-  }, []);
 
   const [isUploading, setIsUploading] = useState(false);
   const abortController = useRef(new AbortController());

@@ -143,6 +143,7 @@
     --post-card-margin-left: var(--gap);
 
     --navbar-height: 50px;
+    --bottom-navbar-height: 58px;
     --page-top-margin: var(--gap); // calc(var(--navbar-height) + var(--gap));
     --sidebar-left-width: 180px;
     --grid-home: minmax(var(--sidebar-left-width), max-content) 9fr 4fr;
@@ -314,6 +315,7 @@ body {
     // overflow-x: auto; // is-sticky doesn't work with this
     @include mixins.mobile() {
         overflow-x: auto;
+        padding-bottom: var(--bottom-navbar-height);
     }
 }
 
@@ -1021,6 +1023,7 @@ html.no-wrap {
         }
     }
     @include mixins.mobile {
+        min-height: calc(100vh - var(--navbar-height) - var(--bottom-navbar-height));
         .mini-footer,
         .sidebar-left,
         .sidebar-right {

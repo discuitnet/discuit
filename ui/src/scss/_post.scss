@@ -4,7 +4,6 @@
     display: grid;
     grid-template-columns: 8fr 3fr;
     grid-gap: var(--gap);
-    --mobile-post-card-bottom-height: 50px;
     .sidebar-left {
         display: none;
     }
@@ -28,8 +27,6 @@
         flex-direction: column;
         margin: 0;
         padding: 0;
-        // padding-top: var(--navbar-height);
-        padding-bottom: calc(var(--mobile-post-card-bottom-height));
         .card {
             border-radius: 0;
         }
