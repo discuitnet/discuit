@@ -1,9 +1,10 @@
 import PropTypes from 'prop-types';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { Redirect, Route, Switch, useHistory, useLocation } from 'react-router-dom';
 import AppUpdate from './AppUpdate';
+import BottomNavbar from './components/BottomNavbar';
 import { ButtonClose } from './components/Button';
 import Chat from './components/Chat';
 import CreateCommunity from './components/CreateCommunity';
@@ -17,7 +18,7 @@ import Signup from './components/Signup';
 import Snacks from './components/Snacks';
 import Elements from './Elements';
 import { isDeviceStandalone, mfetchjson } from './helper';
-import { useCanonicalTag, useLoading, useWindowWidth } from './hooks';
+import { useCanonicalTag, useIsMobile, useLoading, useWindowWidth } from './hooks';
 import About from './pages/About';
 import AdminDashboard from './pages/AdminDashboard';
 import AllCommunities from './pages/AllCommunities';
@@ -47,7 +48,6 @@ import {
   markNotificationAsSeen,
   signupModalOpened,
   snackAlert,
-  toggleSidebarOpen,
   userLoggedIn,
 } from './slices/mainSlice';
 import LoginForm from './views/LoginForm';
@@ -155,23 +155,6 @@ const App = () => {
 
   const width = useWindowWidth();
   const chatOpen = useSelector((state) => state.main.chatOpen);
-  const sidebarOpen = useSelector((state) => state.main.sidebarOpen);
-  const overlayRef = useCallback((node) => {
-    if (node !== null) {
-      setTimeout(() => {
-        node.style.opacity = 1;
-      }, 0);
-    }
-  }, []);
-  useEffect(() => {
-    if (sidebarOpen) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = prev;
-      };
-    }
-  }, [sidebarOpen]);
 
   const notifsNewCount = useSelector((state) => state.main.notifications.newCount);
   const notifsNewCountStr = notifsNewCount > 0 ? `(${notifsNewCount}) ` : '';
@@ -212,6 +195,8 @@ const App = () => {
     }
   }, [location, dispatch]);
 
+  const isMobile = useIsMobile();
+
   if (!isOnline && showOfflinePage) {
     return <Offline />;
   }
@@ -233,16 +218,10 @@ const App = () => {
       <ScrollToTop />
       <CanonicalTag />
       <Navbar />
+      {isMobile && <BottomNavbar />}
       <AppUpdate />
       <PushNotifications />
-      {width <= tabletBreakpoint && <Sidebar isMobile />}
-      {sidebarOpen && (
-        <div
-          className="body-overlay"
-          onClick={() => dispatch(toggleSidebarOpen())}
-          ref={overlayRef}
-        ></div>
-      )}
+      {width <= tabletBreakpoint && <Sidebar mobile />}
       <AppSwitch />
       <Snacks />
       {import.meta.env.MODE !== 'production' && chatOpen && <Chat />}
@@ -391,9 +370,11 @@ const ScrollToTop = () => {
   const history = useHistory();
 
   useEffect(() => {
-    if (history.action !== 'POP') window.scrollTo(0, 0);
+    if (history.action !== 'POP' && !(location.state && location.state.fromBottomNav)) {
+      window.scrollTo(0, 0);
+    }
     window.appData.historyLength++;
-  }, [location.pathname]);
+  }, [location.pathname, history]);
 
   return null;
 };

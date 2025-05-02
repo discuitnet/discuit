@@ -5,19 +5,23 @@ import { useHistory } from 'react-router-dom';
 import { communityAboutMaxLength, communityNameMaxLength } from '../config';
 import { mfetch } from '../helper';
 import { useInputUsername } from '../hooks';
+import { Community } from '../serverTypes';
 import { sidebarCommunitiesUpdated, snackAlertError } from '../slices/mainSlice';
+import { RootState } from '../store';
 import { ButtonClose } from './Button';
 import { FormField } from './Form';
 import { InputWithCount, useInputMaxLength } from './Input';
 import Modal from './Modal';
 
-const CreateCommunity = ({ open, onClose }) => {
+const CreateCommunity = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
   const [name, handleNameChange] = useInputUsername(communityNameMaxLength);
   const [description, handleDescChange] = useInputMaxLength(communityAboutMaxLength);
 
-  const communities = useSelector((state) => state.main.sidebarCommunities);
-  const dispatch = useDispatch();
+  const communities = useSelector<RootState>(
+    (state) => state.main.sidebarCommunities
+  ) as Community[];
 
+  const dispatch = useDispatch();
   const history = useHistory();
 
   const [formError, setFormError] = useState('');
@@ -83,7 +87,7 @@ const CreateCommunity = ({ open, onClose }) => {
               value={description}
               onChange={handleDescChange}
               textarea
-              rows="4"
+              rows={4}
               maxLength={communityAboutMaxLength}
             />
           </FormField>

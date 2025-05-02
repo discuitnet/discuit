@@ -1,6 +1,6 @@
-import PropTypes from 'prop-types';
 import { selectImageCopyURL } from '../helper';
 import { useImageLoaded } from '../hooks';
+import { Image } from '../serverTypes';
 import { SVGEdit } from '../SVGs';
 
 const CommunityProPic = ({
@@ -11,6 +11,13 @@ const CommunityProPic = ({
   editable = false,
   onEdit,
   ...rest
+}: {
+  className?: string;
+  name: string;
+  proPic: Image | null;
+  size: 'small' | 'standard' | 'large';
+  editable: boolean;
+  onEdit: () => void;
 }) => {
   const defaultFavicon = '/favicon-gray.png';
   let src = defaultFavicon;
@@ -31,7 +38,7 @@ const CommunityProPic = ({
     }
   }
 
-  const [loaded, handleLoad] = useImageLoaded();
+  const [loaded, handleLoad] = useImageLoaded(src);
 
   const altText = proPic?.altText || `${name}'s profile`;
   const editableCls = editable ? ' comm-propic-editable' : '';
@@ -59,15 +66,6 @@ const CommunityProPic = ({
       )}
     </div>
   );
-};
-
-CommunityProPic.propTypes = {
-  className: PropTypes.string,
-  name: PropTypes.string.isRequired,
-  proPic: PropTypes.object,
-  size: PropTypes.oneOf(['small', 'standard', 'large']),
-  editable: PropTypes.bool,
-  onEdit: PropTypes.func,
 };
 
 export default CommunityProPic;

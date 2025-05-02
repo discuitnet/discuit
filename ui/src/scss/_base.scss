@@ -143,6 +143,7 @@
     --post-card-margin-left: var(--gap);
 
     --navbar-height: 50px;
+    --bottom-navbar-height: 58px;
     --page-top-margin: var(--gap); // calc(var(--navbar-height) + var(--gap));
     --sidebar-left-width: 180px;
     --grid-home: minmax(var(--sidebar-left-width), max-content) 9fr 4fr;
@@ -217,6 +218,7 @@ html.theme-dark {
 @include mixins.mobile {
     :root {
         --card-shadow: var(--card-shadow-style-1);
+        --navbar-height: 56px;
     }
 }
 
@@ -313,6 +315,7 @@ body {
     // overflow-x: auto; // is-sticky doesn't work with this
     @include mixins.mobile() {
         overflow-x: auto;
+        padding-bottom: var(--bottom-navbar-height);
     }
 }
 
@@ -324,7 +327,7 @@ body {
     right: 0;
     background: var(--color-modal-overlay);
     backdrop-filter: var(--modal-bg-blur);
-    z-index: 2500;
+    z-index: 200000;
     opacity: 0;
     transition: all 0.175s;
 }
@@ -761,6 +764,12 @@ button,
         .disabled {
             text-decoration: none;
         }
+        &.is-no-bg {
+            &:hover,
+            &.is-active {
+                background: transparent !important;
+            }
+        }
     }
     &.button-main /* Deprecated */,
     &.is-main {
@@ -819,12 +828,6 @@ button,
             height: 100%;
         }
     }
-    &.button-icon /* Deprecated */ {
-        &:hover,
-        &.is-active {
-            background: var(--color-button-hover);
-        }
-    }
     &.button-icon-simple /* Deprecated */ {
         padding: 5px;
         color: var(--color-gray);
@@ -845,9 +848,6 @@ button,
             margin-right: 8px;
             &:last-of-type {
                 margin-right: 0;
-            }
-            &:first-of-type {
-                margin-right: 8px;
             }
         }
     }
@@ -1023,6 +1023,7 @@ html.no-wrap {
         }
     }
     @include mixins.mobile {
+        min-height: calc(100vh - var(--navbar-height) - var(--bottom-navbar-height));
         .mini-footer,
         .sidebar-left,
         .sidebar-right {

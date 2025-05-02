@@ -1,10 +1,13 @@
-import PropTypes from 'prop-types';
-import React from 'react';
+export interface PaginationProps {
+  onClick: (page: number) => void;
+  noPages: number;
+  current: number;
+}
 
-const Pagination = ({ onClick, noPages, current }) => {
+function Pagination({ onClick, noPages, current }: PaginationProps) {
   const renderItems = () => {
-    const items = [];
-    const pushButton = (page) => {
+    const items: React.ReactNode[] = [];
+    const pushButton = (page: number) => {
       items.push(
         <button
           key={`btn-${page}`}
@@ -60,12 +63,6 @@ const Pagination = ({ onClick, noPages, current }) => {
       </div>
     </div>
   );
-};
-
-Pagination.propTypes = {
-  onClick: PropTypes.func.isRequired,
-  noPages: PropTypes.number.isRequired,
-  current: PropTypes.number.isRequired,
-};
+}
 
 export default Pagination;

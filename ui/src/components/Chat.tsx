@@ -1,18 +1,18 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { chatOpenToggled } from '../slices/mainSlice';
 import { ButtonClose } from './Button';
 
 const Chat = () => {
-  const msgsRef = useRef(null);
+  const msgsRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    msgsRef.current.scrollTo(0, msgsRef.current.scrollHeight);
+    msgsRef.current!.scrollTo(0, msgsRef.current!.scrollHeight);
   }, []);
 
-  const textareaRef = useRef(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const handleReplyInput = () => {
-    const height = textareaRef.current.scrollHeight;
-    textareaRef.current.style.height = `${height}px`;
+    const height = textareaRef.current!.scrollHeight;
+    textareaRef.current!.style.height = `${height}px`;
   };
 
   const dispatch = useDispatch();
@@ -63,7 +63,7 @@ const Chat = () => {
               ref={textareaRef}
               name=""
               id=""
-              rows="1"
+              rows={1}
               onInput={handleReplyInput}
             ></textarea>
             <button className="button-main">Send</button>

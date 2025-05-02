@@ -1,14 +1,21 @@
-import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 
-const ImageGallery = ({
+export interface ImageGalleryProps extends React.HTMLAttributes<HTMLDivElement> {
+  className?: string;
+  children: React.ReactNode;
+  startIndex?: number;
+  onIndexChange?: (index: number) => void;
+  keyboardControlsOn?: boolean;
+}
+
+export default function ImageGallery({
   className,
   children,
   startIndex = 0,
   onIndexChange,
   keyboardControlsOn = false,
   ...props
-}) => {
+}: ImageGalleryProps) {
   const numImages = Array.isArray(children) ? children.length : 1;
 
   const nextIcon = (
@@ -68,11 +75,15 @@ const ImageGallery = ({
 
   useEffect(() => {
     if (keyboardControlsOn) {
-      const f = (event) => {
+      const onkeydown = (event: KeyboardEvent) => {
+        if (!event.target) {
+          return;
+        }
+        const target = event.target as Element & { isContentEditable: boolean };
         if (
-          event.target.nodeName === 'TEXTAREA' ||
-          event.target.nodeName === 'INPUT' ||
-          event.target.isContentEditable
+          target.nodeName === 'TEXTAREA' ||
+          target.nodeName === 'INPUT' ||
+          target.isContentEditable
         ) {
           return;
         }
@@ -83,9 +94,9 @@ const ImageGallery = ({
           setCurrentImageIndex((n) => n + 1);
         }
       };
-      window.addEventListener('keydown', f);
+      window.addEventListener('keydown', onkeydown);
       return () => {
-        window.removeEventListener('keydown', f);
+        window.removeEventListener('keydown', onkeydown);
       };
     }
   }, [showLeftArrow, showRightArrow, keyboardControlsOn]);
@@ -108,14 +119,4 @@ const ImageGallery = ({
       {renderDots()}
     </div>
   );
-};
-
-ImageGallery.propTypes = {
-  className: PropTypes.string,
-  children: PropTypes.arrayOf(PropTypes.element),
-  onIndexChange: PropTypes.func,
-  startIndex: PropTypes.number,
-  keyboardControlsOn: PropTypes.bool,
-};
-
-export default ImageGallery;
+}

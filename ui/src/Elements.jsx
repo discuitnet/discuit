@@ -10,6 +10,7 @@ import MarkdownTextarea from './components/MarkdownTextarea';
 import Modal from './components/Modal';
 import ModalConfirm from './components/Modal/ModalConfirm';
 import Spinner from './components/Spinner';
+import { FadeInAndOut } from './components/Transition';
 import { snackAlert } from './slices/mainSlice';
 import { SVGSettings } from './SVGs';
 
@@ -36,6 +37,8 @@ function Elements() {
       setButtonLoading(false);
     }, 2 * 1000);
   };
+
+  const [fadeInOutElVisible, setFadeInOutElVisible] = useState(false);
 
   const icons = {
     trash: (
@@ -137,6 +140,9 @@ function Elements() {
           </Button>
           <Button variant="text" icon={icons.bubbles} color="red">
             Button with icon
+          </Button>
+          <Button variant="text" icon={icons.bubbles} color="red" noBackground>
+            Button with icon (but no background even on hover)
           </Button>
         </Section>
         <Section title="Link elements as buttons">
@@ -380,6 +386,16 @@ function Elements() {
           autoFocus
         />
         <Button onClick={null}>Clear text</Button>
+      </div>
+      <div>
+        <Button onClick={() => setFadeInOutElVisible((x) => !x)}>Toggle</Button>
+        <FadeInAndOut
+          display={fadeInOutElVisible}
+          visibleStyle={{ opacity: '1' }}
+          hiddenStyle={{ opacity: '0' }}
+        >
+          <h2>whatever</h2>
+        </FadeInAndOut>
       </div>
     </div>
   );

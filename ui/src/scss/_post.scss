@@ -4,7 +4,6 @@
     display: grid;
     grid-template-columns: 8fr 3fr;
     grid-gap: var(--gap);
-    --mobile-post-card-bottom-height: 50px;
     .sidebar-left {
         display: none;
     }
@@ -28,8 +27,6 @@
         flex-direction: column;
         margin: 0;
         padding: 0;
-        // padding-top: var(--navbar-height);
-        padding-bottom: calc(var(--mobile-post-card-bottom-height));
         .card {
             border-radius: 0;
         }
@@ -41,7 +38,7 @@
 
 @supports (backdrop-filter: blur(10px)) {
     .post .post-card-bottom.is-m {
-        background: var(--color-background-blur) !important;
+        // background: var(--color-background-blur) !important;
     }
 }
 
@@ -160,12 +157,8 @@
         }
         .post-card-bottom.is-m {
             display: none;
-            position: fixed;
-            bottom: 0;
-            background: var(--color-bg);
-            z-index: 1000;
-            width: 100%;
             flex-direction: row;
+            background-color: rgba(var(--base-fg), 0.02);
             height: var(--mobile-post-card-bottom-height);
             @include mixins.background-blur;
         }

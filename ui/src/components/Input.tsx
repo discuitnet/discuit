@@ -19,37 +19,62 @@ export const InputWithCount = ({
   textarea = false,
   type = 'text',
   maxLength = 100,
-  error = false,
+  /* error = false, */
   value,
   onChange,
+  style,
+  autoFocus,
+  rows,
   ...props
 }: {
   className?: string;
-  textarea: boolean;
-  type: string;
-  maxLength: number;
-  error: boolean;
+  textarea?: boolean;
+  type?: string;
+  maxLength?: number;
+  /* error: boolean; */
   value?: string;
+  style?: React.CSSProperties;
+  autoFocus?: boolean;
+  rows?: number;
   onChange?: React.ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
 }) => {
   const length = value ? value.length : 0;
   return (
     <div className={clsx('input-with-limit', className)}>
       {textarea ? (
-        <textarea value={value} onChange={onChange} {...props}></textarea>
+        <textarea
+          value={value}
+          onChange={onChange}
+          style={style}
+          autoFocus={autoFocus}
+          rows={rows}
+          {...props}
+        ></textarea>
       ) : (
-        <input type={type} value={value} onChange={onChange} {...props} />
+        <input
+          type={type}
+          value={value}
+          onChange={onChange}
+          style={style}
+          autoFocus={autoFocus}
+          {...props}
+        />
       )}
       <div className="input-count">{`${length} / ${maxLength}`}</div>
     </div>
   );
 };
 
-export function useInputMaxLength(maxLength: number, initial = '') {
+export type InputMaxLengthChangeEventHandler = (
+  event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | string
+) => void;
+
+export function useInputMaxLength(
+  maxLength: number,
+  initial = ''
+): [string, InputMaxLengthChangeEventHandler] {
   const [value, setValue] = useState(initial);
-  const handleChange = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | string
-  ) => {
+  const handleChange: InputMaxLengthChangeEventHandler = (event) => {
     let value = '';
     if (typeof event === 'string') {
       value = event;

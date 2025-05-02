@@ -1,8 +1,17 @@
-import PropTypes from 'prop-types';
 import { useEffect, useRef, useState } from 'react';
 import { onEscapeKey } from '../helper';
 import { useIsMobile } from '../hooks';
 import Modal from './Modal';
+
+export interface DropdownProps extends React.HTMLAttributes<HTMLDivElement> {
+  className?: string;
+  style?: React.CSSProperties;
+  target: React.ReactNode;
+  children: React.ReactNode;
+  aligned?: 'left' | 'right' | 'center' | 'none';
+  containerStyle?: React.CSSProperties;
+  onActiveChange?: (active: boolean) => void;
+}
 
 const Dropdown = ({
   className = '',
@@ -11,22 +20,22 @@ const Dropdown = ({
   children,
   aligned = 'left',
   containerStyle = {},
-  onActiveChange = null,
+  onActiveChange, // = null,
   ...rest
-}) => {
+}: DropdownProps) => {
   const [active, setActive] = useState(false);
   const toggleActive = () => {
     setActive((act) => !act);
   };
 
-  const ref = useRef(null); // .dropdown element
-  const targetRef = useRef(null);
-  const handleDocumentClick = (e) => {
-    if (targetRef.current.contains(e.target)) return;
-    const items = Array.from(ref.current.querySelectorAll('.is-non-reactive, .is-topic'));
+  const ref = useRef<HTMLDivElement>(null); // .dropdown element
+  const targetRef = useRef<HTMLDivElement>(null);
+  const handleDocumentClick = (event: MouseEvent) => {
+    if (targetRef.current!.contains(event.target as Node)) return;
+    const items = Array.from(ref.current!.querySelectorAll('.is-non-reactive, .is-topic'));
     let nonReactive = false;
     for (let i = 0; i < items.length; i++) {
-      if (items[i].contains(e.target)) {
+      if (items[i].contains(event.target as Node)) {
         nonReactive = true;
         break;
       }
@@ -41,7 +50,7 @@ const Dropdown = ({
         document.removeEventListener('click', handleDocumentClick);
       };
     }
-  }, [active]);
+  }, [active, onActiveChange]);
 
   const menuCls = { ...style };
   if (aligned === 'left') {
@@ -55,8 +64,8 @@ const Dropdown = ({
 
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
-  const handleModalClick = (e) => {
-    let target = e.target;
+  const handleModalClick: React.MouseEventHandler<HTMLDivElement> = (event) => {
+    let target = event.target as HTMLElement | null;
     let found = false;
     while (target && !target.classList.contains('modal-dropdown')) {
       if (target.classList.contains('is-non-reactive') || target.classList.contains('is-topic')) {
@@ -119,19 +128,9 @@ const Dropdown = ({
   );
 };
 
-Dropdown.propTypes = {
-  target: PropTypes.element,
-  children: PropTypes.element.isRequired,
-  className: PropTypes.string,
-  aligned: PropTypes.oneOf(['left', 'right', 'center', 'none']),
-  style: PropTypes.object,
-  containerStyle: PropTypes.object,
-  onActiveChange: PropTypes.func,
-};
-
 export default Dropdown;
 
-export const DropdownDefaultTarget = ({ children }) => {
+export const DropdownDefaultTarget = ({ children }: { children: React.ReactNode }) => {
   return (
     <button className="button-with-icon is-text-first">
       <svg
@@ -149,8 +148,4 @@ export const DropdownDefaultTarget = ({ children }) => {
       <span>{children}</span>
     </button>
   );
-};
-
-DropdownDefaultTarget.propTypes = {
-  children: PropTypes.element.isRequired,
 };

@@ -1,8 +1,17 @@
-import PropTypes from 'prop-types';
 import React from 'react';
 import { useImageLoaded } from '../hooks';
 
-const Image = ({
+export interface ImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+  className?: string;
+  alt?: string;
+  src?: string;
+  onLoad?: () => void;
+  backgroundColor?: string;
+  style?: React.CSSProperties;
+  isFullSize?: boolean;
+}
+
+export default function Image({
   className,
   alt,
   src,
@@ -11,10 +20,10 @@ const Image = ({
   style = {},
   isFullSize = false,
   ...props
-}) => {
+}: ImageProps) {
   const [loaded, _handleLoad] = useImageLoaded(src);
-  const divStyle = {},
-    imgStyle = { ...style };
+  const divStyle: React.CSSProperties = {},
+    imgStyle: React.CSSProperties = { ...style };
   if (!loaded) {
     if (backgroundColor) {
       divStyle.background = backgroundColor;
@@ -38,16 +47,4 @@ const Image = ({
       <img alt={alt} title={alt} style={imgStyle} onLoad={handleLoad} src={src} {...props} />
     </div>
   );
-};
-
-Image.propTypes = {
-  className: PropTypes.string,
-  src: PropTypes.string,
-  alt: PropTypes.string,
-  onLoad: PropTypes.func,
-  backgroundColor: PropTypes.string,
-  style: PropTypes.object,
-  isFullSize: PropTypes.bool,
-};
-
-export default Image;
+}

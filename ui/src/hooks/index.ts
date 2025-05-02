@@ -1,4 +1,12 @@
-import { useEffect, useInsertionEffect, useReducer, useRef, useState } from 'react';
+import { Location } from 'history';
+import {
+  MouseEventHandler,
+  useEffect,
+  useInsertionEffect,
+  useReducer,
+  useRef,
+  useState,
+} from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useLocation } from 'react-router';
 import { APIError, mfetch, mfetchjson, usernameLegalLetters } from '../helper';
@@ -42,7 +50,10 @@ export function useDelayedEffect(effect: () => void, delay = 1000) {
  * @param initialUsername Initial value of the username.
  * @returns
  */
-export function useInputUsername(maxLength: number, initialUsername = '') {
+export function useInputUsername(
+  maxLength: number,
+  initialUsername = ''
+): [string, React.ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>] {
   const [value, setValue] = useState(initialUsername);
   const handleChange: React.ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement> = (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -273,7 +284,7 @@ export function useRemoveCanonicalTag(deps?: React.DependencyList) {
   }, deps);
 }
 
-export function useImageLoaded(imgSrc: string) {
+export function useImageLoaded(imgSrc?: string): [boolean, () => void] {
   const [loaded, setLoaded] = useState(true);
   const timer = useRef<number | null>(null);
   useInsertionEffect(() => {
@@ -479,4 +490,36 @@ export function useFetchUsersLists(username: string, showSnackAlertOnError = tru
     loading: !(lists && !error),
     error,
   };
+}
+
+function locationToString<S = unknown>(location: Location<S>) {
+  return `${location.pathname ?? ''}${location.search ?? ''}${location.hash ?? ''}`;
+}
+
+export function useLinkClick<T = Element>(
+  to: string,
+  onClick?: React.MouseEventHandler<T>,
+  target?: string,
+  replace = false,
+  state?: unknown
+): React.MouseEventHandler<T> {
+  const history = useHistory();
+  const location = useLocation();
+
+  const handleClick: MouseEventHandler<T> = (event) => {
+    if (onClick) onClick(event);
+    if ((target ?? '_self') !== '_self') return;
+    event.preventDefault();
+    if (to === locationToString(location)) {
+      window.scrollTo(0, 0);
+      return;
+    }
+    if (replace) {
+      history.replace(to, state);
+    } else {
+      history.push(to, state);
+    }
+  };
+
+  return handleClick;
 }
