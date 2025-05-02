@@ -5,7 +5,6 @@ import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router';
 import { useLocation } from 'react-router-dom/cjs/react-router-dom.min';
-import { ButtonClose } from '../../components/Button';
 import Link from '../../components/Link';
 import MarkdownTextarea from '../../components/MarkdownTextarea';
 import PageLoading from '../../components/PageLoading';
@@ -343,14 +342,10 @@ const NewPost = () => {
   const isImagePostsDisabled = import.meta.env.VITE_DISABLEIMAGEPOSTS === true;
 
   return (
-    <div className="page-new">
+    <div className="page-content page-new">
       <Helmet>
         <title>{isEditPost ? 'Edit Post' : 'New Post'}</title>
       </Helmet>
-      <div className="page-new-topbar">
-        <div className="page-new-topbar-title">{isEditPost ? 'Edit post' : 'Create a post'}</div>
-        <ButtonClose onClick={handleCancel} />
-      </div>
       <div className="page-new-content">
         <div className="page-new-content-post">
           <SelectCommunity

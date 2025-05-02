@@ -13,14 +13,7 @@
 }
 
 .page-new {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
-    // min-height: 100vh;
     background-color: var(--color-body);
-    z-index: 30000;
     display: flex;
     flex-direction: column;
     overflow-y: scroll;
@@ -31,20 +24,6 @@
             border-left: var(--card-border-left);
             border-right: var(--card-border-right);
             border-radius: var(--border-radius);
-        }
-    }
-    .page-new-topbar {
-        width: 100%;
-        padding: var(--gap) calc(3 * var(--gap));
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        .page-new-topbar-title {
-            font-size: var(--fs-l);
-            font-weight: 600;
-        }
-        @include mixins.tablet() {
-            padding: var(--gap);
         }
     }
     .page-new-content {

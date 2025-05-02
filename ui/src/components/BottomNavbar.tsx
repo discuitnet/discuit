@@ -3,7 +3,6 @@ import { cloneElement, useLayoutEffect, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useLinkClick } from '../hooks';
-import { User } from '../serverTypes';
 import { RootState } from '../store';
 import { SVGProps } from '../SVGs';
 import Button, { ButtonNotifications } from './Button';
@@ -11,17 +10,15 @@ import Button, { ButtonNotifications } from './Button';
 const scrollPositions: { [key: string]: number | undefined } = {};
 
 export default function BottomNavbar() {
-  const user = useSelector<RootState>((state) => state.main.user) as User;
-
   const homePath = '/',
     communitiesPath = '/communities',
     newPath = '/new',
     notificationsPath = '/notifications',
-    usernamePath = `/@${user.username}`;
+    searchPath = '/search';
 
   const tabPaths = useMemo(() => {
-    return [homePath, communitiesPath, notificationsPath, usernamePath];
-  }, [usernamePath]);
+    return [homePath, communitiesPath, notificationsPath, searchPath];
+  }, []);
 
   const history = useHistory();
   const location = useLocation();
@@ -49,14 +46,15 @@ export default function BottomNavbar() {
       <NavbarItem to={homePath} icon={{ hasVariants: true, icon: <SVGHome /> }} />
       <NavbarItem to={communitiesPath} icon={{ hasVariants: true, icon: <SVGCommunities /> }} />
       <NavbarItem to={newPath} icon={{ hasVariants: true, icon: <SVGAdd /> }} />
-      <NavbarNotificationsItem />
       <NavbarItem
-        to={usernamePath}
+        to={searchPath}
         icon={{
           hasVariants: false,
           icon: <SVGSearch />,
         }}
+        disabled
       />
+      <NavbarNotificationsItem />
     </div>
   );
 }
@@ -65,10 +63,12 @@ function NavbarItem({
   icon,
   to,
   children,
+  disabled = false,
 }: {
   icon: { icon: React.ReactElement; hasVariants: boolean };
   to: string;
   children?: React.ReactNode;
+  disabled?: boolean;
 }) {
   const { variant, onClick } = useNavbarItem(to);
   const iconElement = useMemo(() => {
@@ -81,6 +81,7 @@ function NavbarItem({
           onClick={onClick}
           icon={iconElement}
           className={clsx(variant === 'bold' && 'is-bold')}
+          disabled={disabled}
         />
       )}
     </div>

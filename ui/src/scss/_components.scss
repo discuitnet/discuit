@@ -1275,6 +1275,9 @@
         button {
             color: inherit;
             opacity: 1;
+            &:disabled {
+                opacity: var(--disabled-opacity);
+            }
         }
     }
     .notifications-button {
