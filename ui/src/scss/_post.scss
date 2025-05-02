@@ -41,7 +41,7 @@
 
 @supports (backdrop-filter: blur(10px)) {
     .post .post-card-bottom.is-m {
-        background: var(--color-background-blur) !important;
+        // background: var(--color-background-blur) !important;
     }
 }
 
@@ -160,12 +160,8 @@
         }
         .post-card-bottom.is-m {
             display: none;
-            position: fixed;
-            bottom: 0;
-            background: var(--color-bg);
-            z-index: 1000;
-            width: 100%;
             flex-direction: row;
+            background-color: rgba(var(--base-fg), 0.02);
             height: var(--mobile-post-card-bottom-height);
             @include mixins.background-blur;
         }
