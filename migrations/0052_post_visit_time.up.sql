@@ -2,6 +2,7 @@ create table if not exists post_visits (
 	id bigint unsigned not null auto_increment,
 	post_id binary (12) not null,
 	user_id binary (12) not null,
+	first_visited_at datetime not null default current_timestamp(),
 	last_visited_at datetime not null default current_timestamp(),
 
 	primary key (id),

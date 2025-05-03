@@ -1616,7 +1616,7 @@ func (p *Post) UpdateVisitTime(ctx context.Context, db *sql.DB, viewer *uid.ID, 
 	}
 	if id == 0 {
 		// never visited this post: create a timestamp
-		if _, err := db.ExecContext(ctx, "INSERT INTO post_visits (post_id, user_id, last_visited_at) values (?, ?, ?)", p.ID, viewer, currTime); err != nil {
+		if _, err := db.ExecContext(ctx, "INSERT INTO post_visits (post_id, user_id, last_visited_at, first_visited_at) values (?, ?, ?, ?)", p.ID, viewer, currTime, currTime); err != nil {
 			return err
 		}
 	} else if !lastVisitedAt.Valid || currTime.After(lastVisitedAt.Time) {
