@@ -1064,7 +1064,7 @@ func (n NotificationPostDeleted) view(ctx context.Context, db *sql.DB, format Te
 	if n.DeletedAs == UserGroupMods {
 		part = fmt.Sprintf("moderators of %s", encloseInBold(format, post.CommunityName))
 	} else {
-		part = "the adminds"
+		part = "the admins"
 	}
 	view := &NotificationView{
 		ToURL: fmt.Sprintf("/%s/post/%s", post.CommunityName, post.PublicID),

@@ -294,7 +294,7 @@ func getPostsLatest(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedRe
 	loggedIn := opts.Viewer != nil
 
 	if loggedIn {
-		args = append(args, opts.Viewer)
+		args = append(args, opts.Viewer, opts.Viewer)
 	}
 	where := "WHERE posts.deleted = FALSE "
 	if opts.Homefeed {
@@ -429,7 +429,7 @@ func getPostsHot(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedResul
 	loggedIn := opts.Viewer != nil
 
 	if loggedIn {
-		args = append(args, opts.Viewer)
+		args = append(args, opts.Viewer, opts.Viewer)
 	}
 	where := "WHERE posts.deleted = FALSE "
 	if opts.Homefeed {
@@ -483,7 +483,7 @@ func getPostsTopAll(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedRe
 	loggedIn := opts.Viewer != nil
 	var args []any
 	if loggedIn {
-		args = append(args, *opts.Viewer)
+		args = append(args, *opts.Viewer, *opts.Viewer)
 	}
 
 	where := "WHERE deleted = FALSE "
@@ -603,7 +603,7 @@ func getPostsActivity(ctx context.Context, db *sql.DB, opts *FeedOptions) (*Feed
 	loggedIn := opts.Viewer != nil
 
 	if loggedIn {
-		args = append(args, opts.Viewer)
+		args = append(args, opts.Viewer, opts.Viewer)
 	}
 	where := "WHERE posts.deleted = FALSE "
 	if opts.Homefeed {
@@ -660,7 +660,7 @@ func getPostsList(ctx context.Context, db *sql.DB, viewer *uid.ID, ids ...uid.ID
 
 	var args []any
 	if loggedIn {
-		args = append(args, *viewer)
+		args = append(args, *viewer, *viewer)
 	}
 	for _, id := range ids {
 		args = append(args, id)

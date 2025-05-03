@@ -45,6 +45,7 @@ const Comment = ({
 
   const postId = post.publicId;
   const loggedIn = user !== null;
+  const postLastVisitAt = post.lastVisitAt;
 
   const { noRepliesRendered, children } = node;
   const [comment, _setComment] = useState(node.comment);
@@ -324,6 +325,23 @@ const Comment = ({
     );
   };
 
+  const CommentNewLabel = ({ inline = true, comment, postLastVisitAt, ...rest }) => {
+    if (comment.username == user.username) {
+      return null;
+    }
+    return React.createElement(
+      inline ? 'span' : 'div',
+      { ...rest },
+      `${Date.parse(postLastVisitAt) <= Date.parse(comment.createdAt) && !comment.deleted ? '(new)' : ''}`
+    );
+  };
+
+  CommentNewLabel.propTypes = {
+    inline: PropTypes.bool.isRequired,
+    comment: PropTypes.object.isRequired,
+    postLastVisitAt: PropTypes.string.isRequired,
+  };
+
   const isAuthorSupporter = userHasSupporterBadge(comment.author);
   const topDivClassname = 'post-comment' + (showAuthorProPic ? ' has-propics' : '');
   if (collapsed) {
@@ -349,6 +367,13 @@ const Comment = ({
               time={comment.createdAt}
               short={isMobile}
             />
+            {loggedIn && (
+              <CommentNewLabel
+                className="post-comment-head-item post-new-comment-label"
+                comment={comment}
+                postLastVisitAt={postLastVisitAt}
+              />
+            )}
             {/*<div className="post-comment-head-item">{`${kRound(points)} ${stringCount(
               points,
               true,
@@ -505,6 +530,13 @@ const Comment = ({
             <div className="post-comment-head-item post-comment-user-group">
               {`${toTitleCase(userGroupSingular(comment.userGroup, isMobile))}`}
             </div>
+          )}
+          {loggedIn && (
+            <CommentNewLabel
+              className="post-comment-head-item post-new-comment-label"
+              comment={comment}
+              postLastVisitAt={postLastVisitAt}
+            />
           )}
           {showEditedSign && (
             <TimeAgo
