@@ -1529,7 +1529,7 @@ func (p *Post) GetComments(ctx context.Context, db *sql.DB, viewer *uid.ID, curs
 	if cursor == nil && viewer != nil {
 		err := p.UpdateVisitTime(ctx, db, viewer, currTime)
 		if err != nil {
-			log.Printf("could not update post's last visit time", err)
+			log.Println("Could not update post's last visit time: ", err)
 		}
 	}
 

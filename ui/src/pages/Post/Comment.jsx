@@ -325,16 +325,16 @@ const Comment = ({
     );
   };
 
-  const CommentNewLabel = ({inline = true, comment, postLastVisitAt, ...rest}) => {
-    if (comment.username == user.username ) {
+  const CommentNewLabel = ({ inline = true, comment, postLastVisitAt, ...rest }) => {
+    if (comment.username == user.username) {
       return null;
     }
     return React.createElement(
       inline ? 'span' : 'div',
-      {...rest,},
-      `${(Date.parse(postLastVisitAt) <= Date.parse(comment.createdAt)) && !comment.deleted ? '(new)' : ''}`
+      { ...rest },
+      `${Date.parse(postLastVisitAt) <= Date.parse(comment.createdAt) && !comment.deleted ? '(new)' : ''}`
     );
-  }
+  };
 
   CommentNewLabel.propTypes = {
     inline: PropTypes.bool.isRequired,
@@ -368,7 +368,11 @@ const Comment = ({
               short={isMobile}
             />
             {loggedIn && (
-              <CommentNewLabel className="post-comment-head-item post-new-comment-label" comment={comment} postLastVisitAt={postLastVisitAt} />
+              <CommentNewLabel
+                className="post-comment-head-item post-new-comment-label"
+                comment={comment}
+                postLastVisitAt={postLastVisitAt}
+              />
             )}
             {/*<div className="post-comment-head-item">{`${kRound(points)} ${stringCount(
               points,
@@ -528,7 +532,11 @@ const Comment = ({
             </div>
           )}
           {loggedIn && (
-            <CommentNewLabel className="post-comment-head-item post-new-comment-label" comment={comment} postLastVisitAt={postLastVisitAt} />
+            <CommentNewLabel
+              className="post-comment-head-item post-new-comment-label"
+              comment={comment}
+              postLastVisitAt={postLastVisitAt}
+            />
           )}
           {showEditedSign && (
             <TimeAgo
