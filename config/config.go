@@ -59,7 +59,7 @@ type Config struct {
 	DisableForumCreation        bool `yaml:"disableForumCreation"`   // If true, only admins can create communities.
 	ForumCreationRequiredPoints int  `yaml:"forumCreationReqPoints"` // Minimum points required for non-admins to create community, Required non-empty config field.
 	MaxForumsPerUser            int  `yaml:"maxForumsPerUser"`       // Max forums one user can moderate, Required non-empty config field.
-	MediaUploadRequiredPoints   int  `yaml:"imagePostingReqPoints"`  // User points needed to submit an image post. A value less than 1 indicates that there is no limit.
+	MediaUploadRequiredPoints   int  `yaml:"mediaUploadReqPoints"`   // User points needed to submit an image post. A value less than 1 indicates that there is no limit.
 
 	// If a user has less karma than this value, then that user is considered a
 	// new user, and not all the privileges available to old and trusted users
