@@ -576,22 +576,35 @@ func MatchLoginCredentials(ctx context.Context, db *sql.DB, username, password s
 }
 
 // incrementUserPoints adds amount to user's points.
-func incrementUserPoints(ctx context.Context, db *sql.DB, user uid.ID, amount int) error {
-	_, err := db.ExecContext(ctx, "UPDATE users SET points = points + ? WHERE id = ?", amount, user)
+func incrementUserPoints(ctx context.Context, tx *sql.Tx, user uid.ID, amount int) error {
+	_, err := tx.ExecContext(ctx, "UPDATE users SET points = points + ? WHERE id = ?", amount, user)
 	return err
 }
 
-func getUserPointsAndCreatedAt(ctx context.Context, db *sql.DB, user uid.ID) (int, time.Time, error) {
-	var points int
-	var t time.Time
-	if err := db.QueryRowContext(ctx, "SELECT points, created_at FROM users WHERE users.id = ?", user).Scan(&points, &t); err != nil {
+// If db is nil, tx is used for the query execution.
+func getUserPointsAndCreatedAt(ctx context.Context, db *sql.DB, tx *sql.Tx, user uid.ID) (int, time.Time, error) {
+	var (
+		points int
+		t      time.Time
+		row    *sql.Row
+		query  = "SELECT points, created_at FROM users WHERE users.id = ?"
+		args   = []any{user}
+	)
+
+	if db != nil {
+		row = db.QueryRowContext(ctx, query, args...)
+	} else {
+		row = tx.QueryRowContext(ctx, query, args...)
+	}
+
+	if err := row.Scan(&points, &t); err != nil {
 		return 0, t, err
 	}
 	return points, t, nil
 }
 
-func userAllowedToIncrementPoints(ctx context.Context, db *sql.DB, user uid.ID, requiredPoints int, requiredAge time.Duration) (bool, error) {
-	points, createdAt, err := getUserPointsAndCreatedAt(ctx, db, user)
+func userAllowedToIncrementPoints(ctx context.Context, tx *sql.Tx, user uid.ID, requiredPoints int, requiredAge time.Duration) (bool, error) {
+	points, createdAt, err := getUserPointsAndCreatedAt(ctx, nil, tx, user)
 	if err != nil {
 		return false, err
 	}
@@ -599,7 +612,7 @@ func userAllowedToIncrementPoints(ctx context.Context, db *sql.DB, user uid.ID, 
 }
 
 func UserAllowedToPostImages(ctx context.Context, db *sql.DB, user uid.ID, requiredPoints int) (bool, error) {
-	points, _, err := getUserPointsAndCreatedAt(ctx, db, user)
+	points, _, err := getUserPointsAndCreatedAt(ctx, db, nil, user)
 	if err != nil {
 		return false, err
 	}

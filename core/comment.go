@@ -583,13 +583,12 @@ func (c *Comment) Vote(ctx context.Context, db *sql.DB, user uid.ID, up bool, ne
 		return errPostLocked
 	}
 
-	canUserIncrementPoints, err := userAllowedToIncrementPoints(ctx, db, user, newUserPointsThreshold, newUserAgeThreshold)
-	if err != nil {
-		return err
-	}
-
 	point := 1
-	err = msql.Transact(ctx, db, func(tx *sql.Tx) error {
+	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
+		canUserIncrementPoints, err := userAllowedToIncrementPoints(ctx, tx, user, newUserPointsThreshold, newUserAgeThreshold)
+		if err != nil {
+			return err
+		}
 		if _, err := tx.ExecContext(ctx, "INSERT INTO comment_votes (comment_id, user_id, up, is_user_new) VALUES (?, ?, ?, ?)", c.ID, user, up, !canUserIncrementPoints); err != nil {
 			if msql.IsErrDuplicateErr(err) {
 				return httperr.NewBadRequest("already-voted", "You've already voted on the comment.")
@@ -607,6 +606,11 @@ func (c *Comment) Vote(ctx context.Context, db *sql.DB, user uid.ID, up bool, ne
 		if _, err := tx.ExecContext(ctx, query, point, c.ID); err != nil {
 			return err
 		}
+		if up && !c.AuthorID.EqualsTo(user) && canUserIncrementPoints {
+			if err := incrementUserPoints(ctx, tx, c.AuthorID, 1); err != nil {
+				return err
+			}
+		}
 		return nil
 	})
 	if err != nil {
@@ -622,11 +626,6 @@ func (c *Comment) Vote(ctx context.Context, db *sql.DB, user uid.ID, up bool, ne
 	c.ViewerVoted = msql.NewNullBool(true)
 	c.ViewerVotedUp.Valid = true
 	c.ViewerVotedUp.Bool = up
-
-	// Attempt to update user's points.
-	if up && !c.AuthorID.EqualsTo(user) && canUserIncrementPoints {
-		incrementUserPoints(ctx, db, c.AuthorID, 1)
-	}
 
 	// Attempt to create a notification (only for upvotes).
 	if !c.AuthorID.EqualsTo(user) && up {
@@ -677,6 +676,11 @@ func (c *Comment) DeleteVote(ctx context.Context, db *sql.DB, user uid.ID) error
 		if _, err := tx.ExecContext(ctx, query, point, c.ID); err != nil {
 			return err
 		}
+		if up && !c.AuthorID.EqualsTo(user) && !userNew {
+			if err := incrementUserPoints(ctx, tx, c.AuthorID, -1); err != nil {
+				return err
+			}
+		}
 		return nil
 	})
 	if err != nil {
@@ -691,11 +695,6 @@ func (c *Comment) DeleteVote(ctx context.Context, db *sql.DB, user uid.ID) error
 	c.Points += point
 	c.ViewerVoted.Valid = false
 	c.ViewerVotedUp.Valid = false
-
-	// Attempt to update user's points.
-	if up && !c.AuthorID.EqualsTo(user) && !userNew {
-		incrementUserPoints(ctx, db, c.AuthorID, -1)
-	}
 
 	return nil
 }
@@ -742,6 +741,15 @@ func (c *Comment) ChangeVote(ctx context.Context, db *sql.DB, user uid.ID, up bo
 		if _, err := tx.ExecContext(ctx, query, points, c.ID); err != nil {
 			return err
 		}
+		if !c.AuthorID.EqualsTo(user) && !userNew {
+			points := 1
+			if dbUp {
+				points = -1
+			}
+			if err := incrementUserPoints(ctx, tx, c.AuthorID, points); err != nil {
+				return err
+			}
+		}
 		return nil
 	})
 	if err != nil {
@@ -760,15 +768,6 @@ func (c *Comment) ChangeVote(ctx context.Context, db *sql.DB, user uid.ID, up bo
 	}
 	c.Points += points
 	c.ViewerVotedUp = msql.NewNullBool(up)
-
-	// Attemp to update user's points.
-	if !c.AuthorID.EqualsTo(user) && !userNew {
-		points := 1
-		if dbUp {
-			points = -1
-		}
-		incrementUserPoints(ctx, db, c.AuthorID, points)
-	}
 
 	return nil
 }

@@ -1264,12 +1264,11 @@ func (p *Post) Vote(ctx context.Context, db *sql.DB, user uid.ID, up bool, newUs
 		return errPostLocked
 	}
 
-	canUserIncrementPoints, err := userAllowedToIncrementPoints(ctx, db, user, newUserPointsThreshold, newUserAgeThreshold)
-	if err != nil {
-		return err
-	}
-
-	err = msql.Transact(ctx, db, func(tx *sql.Tx) error {
+	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
+		canUserIncrementPoints, err := userAllowedToIncrementPoints(ctx, tx, user, newUserPointsThreshold, newUserAgeThreshold)
+		if err != nil {
+			return err
+		}
 		if _, err := tx.ExecContext(ctx, "INSERT INTO post_votes (post_id, user_id, up, is_user_new) VALUES (?, ?, ?, ?)", p.ID, user, up, !canUserIncrementPoints); err != nil {
 			if msql.IsErrDuplicateErr(err) {
 				return &httperr.Error{
@@ -1297,6 +1296,11 @@ func (p *Post) Vote(ctx context.Context, db *sql.DB, user uid.ID, up bool, newUs
 		if _, err := tx.ExecContext(ctx, query, point, PostHotness(newUpvotes, newDownvotes, p.CreatedAt), p.ID); err != nil {
 			return err
 		}
+		if up && !p.AuthorID.EqualsTo(user) && canUserIncrementPoints {
+			if err := incrementUserPoints(ctx, tx, p.AuthorID, 1); err != nil {
+				return err
+			}
+		}
 		p.Upvotes = newUpvotes
 		p.Downvotes = newDownvotes
 		p.Points += point
@@ -1306,11 +1310,6 @@ func (p *Post) Vote(ctx context.Context, db *sql.DB, user uid.ID, up bool, newUs
 	})
 	if err != nil {
 		return err
-	}
-
-	// Attempt to update user's points.
-	if up && !p.AuthorID.EqualsTo(user) && canUserIncrementPoints {
-		incrementUserPoints(ctx, db, p.AuthorID, 1)
 	}
 
 	// Attempt to create a notification (only for upvotes).
@@ -1358,6 +1357,11 @@ func (p *Post) DeleteVote(ctx context.Context, db *sql.DB, user uid.ID) error {
 		if _, err := tx.ExecContext(ctx, query, point, PostHotness(newUpvotes, newDownvotes, p.CreatedAt), p.ID); err != nil {
 			return err
 		}
+		if up && !p.AuthorID.EqualsTo(user) && !userNew {
+			if err := incrementUserPoints(ctx, tx, p.AuthorID, -1); err != nil {
+				return err
+			}
+		}
 		p.Upvotes = newUpvotes
 		p.Downvotes = newDownvotes
 		p.Points += point
@@ -1367,11 +1371,6 @@ func (p *Post) DeleteVote(ctx context.Context, db *sql.DB, user uid.ID) error {
 	})
 	if err != nil {
 		return err
-	}
-
-	// Attempt to update user's points.
-	if up && !p.AuthorID.EqualsTo(user) && !userNew {
-		incrementUserPoints(ctx, db, p.AuthorID, -1)
 	}
 
 	return p.updatePostsTablesPoints(ctx, db)
@@ -1417,6 +1416,15 @@ func (p *Post) ChangeVote(ctx context.Context, db *sql.DB, user uid.ID, up bool)
 		if _, err := tx.ExecContext(ctx, query, points, PostHotness(newUpvotes, newDownvotes, p.CreatedAt), p.ID); err != nil {
 			return err
 		}
+		if !p.AuthorID.EqualsTo(user) && !userNew {
+			point := 1
+			if dbUp {
+				point = -1
+			}
+			if err := incrementUserPoints(ctx, tx, p.AuthorID, point); err != nil {
+				return err
+			}
+		}
 		p.Upvotes = newUpvotes
 		p.Downvotes = newDownvotes
 		p.Points += points
@@ -1428,15 +1436,6 @@ func (p *Post) ChangeVote(ctx context.Context, db *sql.DB, user uid.ID, up bool)
 	}
 	if exit {
 		return nil
-	}
-
-	// Attempt to update user's points.
-	if !p.AuthorID.EqualsTo(user) && !userNew {
-		point := 1
-		if dbUp {
-			point = -1
-		}
-		incrementUserPoints(ctx, db, p.AuthorID, point)
 	}
 
 	return p.updatePostsTablesPoints(ctx, db)
