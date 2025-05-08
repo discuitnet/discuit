@@ -56,6 +56,16 @@ func (s *Server) addPost(w *responseWriter, r *request) error {
 		return err
 	}
 
+	if req.PostType == core.PostTypeImage || req.PostType == core.PostTypeLink {
+		allowed, err := core.UserAllowedToPostImages(r.ctx, s.db, *r.viewer, s.config.MediaUploadRequiredPoints)
+		if err != nil {
+			return err
+		}
+		if !allowed {
+			return httperr.NewForbidden("not_enough_points", "Not enough points to post image or link posts.")
+		}
+	}
+
 	var post *core.Post
 	switch req.PostType {
 	case core.PostTypeText:
@@ -93,7 +103,7 @@ func (s *Server) addPost(w *responseWriter, r *request) error {
 	}
 
 	// +1 your own post.
-	post.Vote(r.ctx, s.db, *r.viewer, true)
+	post.Vote(r.ctx, s.db, *r.viewer, true, s.config.NewUserPointsThreshold, time.Second*time.Duration(s.config.NewUserAgeThreshold))
 	return w.writeJSON(post)
 }
 
@@ -277,7 +287,7 @@ func (s *Server) postVote(w *responseWriter, r *request) error {
 			err = post.ChangeVote(r.ctx, s.db, *r.viewer, req.Up)
 		}
 	} else {
-		err = post.Vote(r.ctx, s.db, *r.viewer, req.Up)
+		err = post.Vote(r.ctx, s.db, *r.viewer, req.Up, s.config.NewUserPointsThreshold, time.Second*time.Duration(s.config.NewUserAgeThreshold))
 	}
 	if err != nil {
 		return err

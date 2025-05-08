@@ -56,9 +56,20 @@ type Config struct {
 
 	DisableImagePosts bool `yaml:"disableImagePosts"`
 
-	DisableForumCreation   bool `yaml:"disableForumCreation"`   // If true, only admins can create communities.
-	ForumCreationReqPoints int  `yaml:"forumCreationReqPoints"` // Minimum points required for non-admins to create community, Required non-empty config field.
-	MaxForumsPerUser       int  `yaml:"maxForumsPerUser"`       // Max forums one user can moderate, Required non-empty config field.
+	DisableForumCreation        bool `yaml:"disableForumCreation"`   // If true, only admins can create communities.
+	ForumCreationRequiredPoints int  `yaml:"forumCreationReqPoints"` // Minimum points required for non-admins to create community, Required non-empty config field.
+	MaxForumsPerUser            int  `yaml:"maxForumsPerUser"`       // Max forums one user can moderate, Required non-empty config field.
+	MediaUploadRequiredPoints   int  `yaml:"imagePostingReqPoints"`  // User points needed to submit an image post. A value less than 1 indicates that there is no limit.
+
+	// If a user has less karma than this value, then that user is considered a
+	// new user, and not all the privileges available to old and trusted users
+	// are available to that user.
+	NewUserPointsThreshold int `yaml:"newUserPointsThreshold"`
+
+	// If a user is newer than this value (which is in seconds), then that user
+	// is considered a new user, and not all the privileges available to old and
+	// trusted users are available to that user.
+	NewUserAgeThreshold int `yaml:"newUserAgeThreshold"`
 
 	// The location where images are saved on disk.
 	ImagesFolderPath string `yaml:"imagesFolderPath"`
@@ -93,8 +104,8 @@ func Parse(path string) (*Config, error) {
 		MaxImagesPerPost:   10,
 
 		// Required fields:
-		ForumCreationReqPoints: -1,
-		MaxForumsPerUser:       -1,
+		ForumCreationRequiredPoints: -1,
+		MaxForumsPerUser:            -1,
 	}
 
 	var envConfigMap = map[string]interface{}{
@@ -141,7 +152,7 @@ func Parse(path string) (*Config, error) {
 		"DISCUIT_DISABLE_IMAGE_POSTS": &c.DisableImagePosts,
 
 		"DISCUIT_DISABLE_FORUM_CREATION":    &c.DisableForumCreation,
-		"DISCUIT_FORUM_CREATION_REQ_POINTS": &c.ForumCreationReqPoints,
+		"DISCUIT_FORUM_CREATION_REQ_POINTS": &c.ForumCreationRequiredPoints,
 		"DISCUIT_MAX_FORUMS_PER_USER":       &c.MaxForumsPerUser,
 
 		// The location where images are saved on disk.
@@ -199,7 +210,7 @@ func Parse(path string) (*Config, error) {
 	}
 
 	// Validation for required fields
-	if c.ForumCreationReqPoints == -1 {
+	if c.ForumCreationRequiredPoints == -1 {
 		return nil, errors.New("ForumCreationReqPoints cannot be (-1)")
 	}
 	if c.MaxForumsPerUser == -1 {

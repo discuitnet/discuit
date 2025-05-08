@@ -324,6 +324,11 @@ const NewPost = () => {
     }
   };
 
+  const imagePostSubmitReqPoints = useSelector((state) => state.main.imagePostSubmitReqPoints);
+  const linkPostSubmitReqPoints = useSelector((state) => state.main.linkPostSubmitReqPoints);
+  const imageSubmitAllowed = imagePostSubmitReqPoints < 1 || user.points > imagePostSubmitReqPoints,
+    linkSubmitAllowed = linkPostSubmitReqPoints < 1 || user.points > linkPostSubmitReqPoints;
+
   if (loading !== 'loaded') {
     return (
       <div className="page-new">
@@ -443,7 +448,7 @@ const NewPost = () => {
               />
             )}
             {postType === 'image' && (
-              <div className="page-new-image-upload">
+              <div className={clsx('page-new-image-upload', !imageSubmitAllowed && 'is-disabled')}>
                 {images.length > 0 &&
                   images.map((image, idx) => (
                     <Image
@@ -466,7 +471,12 @@ const NewPost = () => {
                   <ImageUploadArea
                     isUploading={isUploading}
                     onImagesUpload={handleImagesUpload}
-                    disabled={images.length >= maxNumOfImages}
+                    disabled={!imageSubmitAllowed || images.length >= maxNumOfImages}
+                    disabledMessage={
+                      !imageSubmitAllowed
+                        ? "You don't have enough points to submit images yet."
+                        : 'Maximum number of images reached.'
+                    }
                   />
                 )}
                 {post && post.deletedContent && (
@@ -489,12 +499,16 @@ const NewPost = () => {
             {postType === 'link' && (
               <Textarea
                 className="page-new-post-body"
-                placeholder="Paste URL here..."
+                placeholder={
+                  !linkSubmitAllowed
+                    ? "You don't have enough points to submit link posts yet."
+                    : 'Paste URL here...'
+                }
                 value={link}
                 onChange={handleLinkChange}
                 onPaste={handleLinkPaste}
                 adjustable
-                disabled={isEditPost}
+                disabled={!linkSubmitAllowed || isEditPost}
               />
             )}
           </div>
@@ -538,10 +552,18 @@ const NewPost = () => {
 
 export default NewPost;
 
-const ImageUploadArea = ({ isUploading, onImagesUpload, disabled = false }) => {
+const ImageUploadArea = ({
+  isUploading,
+  onImagesUpload,
+  disabled = false,
+  disabledMessage = 'Maximum number of images reached.',
+}) => {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const dropzoneRef = useRef();
   const handleOnDrop = (e) => {
+    if (disabled) {
+      return;
+    }
     const dt = e.dataTransfer;
     if (dt.files.length > 0) {
       onImagesUpload(dt.files);
@@ -574,11 +596,11 @@ const ImageUploadArea = ({ isUploading, onImagesUpload, disabled = false }) => {
   return (
     <div
       ref={dropzoneRef}
-      className={
-        'page-new-image-drop' +
-        (isDraggingOver ? ' is-dropping' : '') +
-        (disabled ? +' is-disabled' : '')
-      }
+      className={clsx(
+        'page-new-image-drop',
+        isDraggingOver && 'is-dropping',
+        disabled && 'is-disabled'
+      )}
       onClick={handleAddPhoto}
       onDragEnter={() => {
         setIsDraggingOver(true);
@@ -611,10 +633,10 @@ const ImageUploadArea = ({ isUploading, onImagesUpload, disabled = false }) => {
               disabled={disabled}
             />
             <div>Add photo</div>
-            <div>Or drag and drop</div>
+            <div className="is-small">Or drag and drop</div>
           </>
         )}
-        {disabled && <div>Maximum number of images reached.</div>}
+        {disabled && <div>{disabledMessage}</div>}
         {isUploading && (
           <div className="flex flex-center page-new-image-uploading">
             <div className="page-new-uploading-text">Uploading image</div>
@@ -630,4 +652,5 @@ ImageUploadArea.propTypes = {
   isUploading: PropTypes.bool.isRequired,
   onImagesUpload: PropTypes.func.isRequired,
   disabled: PropTypes.bool,
+  disabledMessage: PropTypes.string,
 };

@@ -124,7 +124,7 @@ func (s *Server) addComment(w *responseWriter, r *request) error {
 	}
 
 	// +1 your own comment.
-	comment.Vote(r.ctx, s.db, *r.viewer, true)
+	comment.Vote(r.ctx, s.db, *r.viewer, true, s.config.NewUserPointsThreshold, time.Second*time.Duration(s.config.NewUserAgeThreshold))
 
 	return w.writeJSON(comment)
 }
@@ -242,7 +242,7 @@ func (s *Server) commentVote(w *responseWriter, r *request) error {
 			err = comment.ChangeVote(r.ctx, s.db, *r.viewer, req.Up)
 		}
 	} else {
-		err = comment.Vote(r.ctx, s.db, *r.viewer, req.Up)
+		err = comment.Vote(r.ctx, s.db, *r.viewer, req.Up, s.config.NewUserPointsThreshold, time.Second*time.Duration(s.config.NewUserAgeThreshold))
 	}
 	if err != nil {
 		return err

@@ -47,7 +47,7 @@ func (s *Server) createCommunity(w *responseWriter, r *request) error {
 
 	name := values["name"]
 	about := values["about"]
-	comm, err := core.CreateCommunity(r.ctx, s.db, *r.viewer, s.config.ForumCreationReqPoints, s.config.MaxForumsPerUser, name, about)
+	comm, err := core.CreateCommunity(r.ctx, s.db, *r.viewer, s.config.ForumCreationRequiredPoints, s.config.MaxForumsPerUser, name, about)
 	if err != nil {
 		return err
 	}

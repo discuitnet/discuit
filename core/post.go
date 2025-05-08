@@ -1259,63 +1259,57 @@ func (p *Post) updatePostsTablesPoints(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
-func (p *Post) Vote(ctx context.Context, db *sql.DB, user uid.ID, up bool) error {
+func (p *Post) Vote(ctx context.Context, db *sql.DB, user uid.ID, up bool, newUserPointsThreshold int, newUserAgeThreshold time.Duration) error {
 	if p.Locked {
 		return errPostLocked
 	}
 
-	tx, err := db.BeginTx(ctx, nil)
+	canUserIncrementPoints, err := userAllowedToIncrementPoints(ctx, db, user, newUserPointsThreshold, newUserAgeThreshold)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, "INSERT INTO post_votes (post_id, user_id, up) VALUES (?, ?, ?)", p.ID, user, up)
-	if err != nil {
-		tx.Rollback()
-		if msql.IsErrDuplicateErr(err) {
-			return &httperr.Error{
-				HTTPStatus: http.StatusConflict,
-				Code:       "already-voted",
-				Message:    "User has already voted.",
+	err = msql.Transact(ctx, db, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx, "INSERT INTO post_votes (post_id, user_id, up, is_user_new) VALUES (?, ?, ?, ?)", p.ID, user, up, !canUserIncrementPoints); err != nil {
+			if msql.IsErrDuplicateErr(err) {
+				return &httperr.Error{
+					HTTPStatus: http.StatusConflict,
+					Code:       "already-voted",
+					Message:    "User has already voted.",
+				}
 			}
+			return err
 		}
-		return err
-	}
-
-	point := 1
-	if !up {
-		point = -1
-	}
-
-	query := "UPDATE posts SET points = points + ?, hotness = ?"
-	newUpvotes, newDownvotes := p.Upvotes, p.Downvotes
-	if up {
-		query += ", upvotes = upvotes + 1"
-		newUpvotes++
-	} else {
-		query += ", downvotes = downvotes + 1"
-		newDownvotes++
-	}
-	query += " WHERE id = ?"
-
-	_, err = tx.ExecContext(ctx, query, point, PostHotness(newUpvotes, newDownvotes, p.CreatedAt), p.ID)
+		point := 1
+		if !up {
+			point = -1
+		}
+		query := "UPDATE posts SET points = points + ?, hotness = ?"
+		newUpvotes, newDownvotes := p.Upvotes, p.Downvotes
+		if up {
+			query += ", upvotes = upvotes + 1"
+			newUpvotes++
+		} else {
+			query += ", downvotes = downvotes + 1"
+			newDownvotes++
+		}
+		query += " WHERE id = ?"
+		if _, err := tx.ExecContext(ctx, query, point, PostHotness(newUpvotes, newDownvotes, p.CreatedAt), p.ID); err != nil {
+			return err
+		}
+		p.Upvotes = newUpvotes
+		p.Downvotes = newDownvotes
+		p.Points += point
+		p.ViewerVoted = msql.NewNullBool(true)
+		p.ViewerVotedUp = msql.NewNullBool(up)
+		return nil
+	})
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
-
-	if err = tx.Commit(); err != nil {
-		return err
-	}
-
-	p.Upvotes = newUpvotes
-	p.Downvotes = newDownvotes
-	p.Points += point
-	p.ViewerVoted = msql.NewNullBool(true)
-	p.ViewerVotedUp = msql.NewNullBool(up)
 
 	// Attempt to update user's points.
-	if up && !p.AuthorID.EqualsTo(user) {
+	if up && !p.AuthorID.EqualsTo(user) && canUserIncrementPoints {
 		incrementUserPoints(ctx, db, p.AuthorID, 1)
 	}
 
@@ -1337,54 +1331,46 @@ func (p *Post) DeleteVote(ctx context.Context, db *sql.DB, user uid.ID) error {
 		return errPostLocked
 	}
 
-	id, up := 0, false
-	row := db.QueryRowContext(ctx, "SELECT id, up FROM post_votes WHERE post_id = ? AND user_id = ?", p.ID, user)
-	if err := row.Scan(&id, &up); err != nil {
-		return err
-	}
-
-	tx, err := db.BeginTx(ctx, nil)
+	var (
+		id      = 0
+		up      = false
+		userNew = false
+	)
+	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
+		if err := tx.QueryRowContext(ctx, "SELECT id, up, is_user_new FROM post_votes WHERE post_id = ? AND user_id = ?", p.ID, user).Scan(&id, &up, &userNew); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, "DELETE FROM post_votes WHERE id = ?", id); err != nil {
+			return err
+		}
+		query := "UPDATE posts SET points = points + ?, hotness = ?"
+		point := 1
+		newUpvotes, newDownvotes := p.Upvotes, p.Downvotes
+		if up {
+			point = -1
+			query += ", upvotes = upvotes - 1"
+			newUpvotes--
+		} else {
+			query += ", downvotes = downvotes -1"
+			newDownvotes--
+		}
+		query += " WHERE id = ?"
+		if _, err := tx.ExecContext(ctx, query, point, PostHotness(newUpvotes, newDownvotes, p.CreatedAt), p.ID); err != nil {
+			return err
+		}
+		p.Upvotes = newUpvotes
+		p.Downvotes = newDownvotes
+		p.Points += point
+		p.ViewerVoted.Valid = false
+		p.ViewerVotedUp.Valid = false
+		return nil
+	})
 	if err != nil {
 		return err
 	}
-
-	_, err = tx.ExecContext(ctx, "DELETE FROM post_votes WHERE id = ?", id)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	query := "UPDATE posts SET points = points + ?, hotness = ?"
-	point := 1
-	newUpvotes, newDownvotes := p.Upvotes, p.Downvotes
-	if up {
-		point = -1
-		query += ", upvotes = upvotes - 1"
-		newUpvotes--
-	} else {
-		query += ", downvotes = downvotes -1"
-		newDownvotes--
-	}
-	query += " WHERE id = ?"
-
-	_, err = tx.ExecContext(ctx, query, point, PostHotness(newUpvotes, newDownvotes, p.CreatedAt), p.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if err = tx.Commit(); err != nil {
-		return err
-	}
-
-	p.Upvotes = newUpvotes
-	p.Downvotes = newDownvotes
-	p.Points += point
-	p.ViewerVoted.Valid = false
-	p.ViewerVotedUp.Valid = false
 
 	// Attempt to update user's points.
-	if up && !p.AuthorID.EqualsTo(user) {
+	if up && !p.AuthorID.EqualsTo(user) && !userNew {
 		incrementUserPoints(ctx, db, p.AuthorID, -1)
 	}
 
@@ -1397,59 +1383,55 @@ func (p *Post) ChangeVote(ctx context.Context, db *sql.DB, user uid.ID, up bool)
 		return errPostLocked
 	}
 
-	id, dbUp := 0, false
-	row := db.QueryRowContext(ctx, "SELECT id, up FROM post_votes WHERE post_id = ? AND user_id = ?", p.ID, user)
-	if err := row.Scan(&id, &dbUp); err != nil {
+	var (
+		id      = 0
+		dbUp    = false
+		userNew = false
+		exit    = false
+	)
+	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
+		if err := tx.QueryRowContext(ctx, "SELECT id, up, is_user_new FROM post_votes WHERE post_id = ? AND user_id = ?", p.ID, user).Scan(&id, &dbUp, &userNew); err != nil {
+			return err
+		}
+		if dbUp == up {
+			exit = true
+			return nil
+		}
+		if _, err := tx.ExecContext(ctx, "UPDATE post_votes SET up = ? WHERE id = ?", up, id); err != nil {
+			return err
+		}
+		query := "UPDATE posts SET points = points + ?, hotness = ?"
+		points := 2
+		newUpvotes, newDownvotes := p.Upvotes, p.Downvotes
+		if dbUp {
+			points = -2
+			query += ", upvotes = upvotes - 1, downvotes = downvotes + 1"
+			newUpvotes--
+			newDownvotes++
+		} else {
+			query += ", upvotes = upvotes + 1, downvotes = downvotes - 1"
+			newUpvotes++
+			newDownvotes--
+		}
+		query += " WHERE id = ?"
+		if _, err := tx.ExecContext(ctx, query, points, PostHotness(newUpvotes, newDownvotes, p.CreatedAt), p.ID); err != nil {
+			return err
+		}
+		p.Upvotes = newUpvotes
+		p.Downvotes = newDownvotes
+		p.Points += points
+		p.ViewerVotedUp = msql.NewNullBool(up)
+		return nil
+	})
+	if err != nil {
 		return err
 	}
-
-	if dbUp == up {
+	if exit {
 		return nil
 	}
 
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.ExecContext(ctx, "UPDATE post_votes SET up = ? WHERE id = ?", up, id)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	query := "UPDATE posts SET points = points + ?, hotness = ?"
-	points := 2
-	newUpvotes, newDownvotes := p.Upvotes, p.Downvotes
-	if dbUp {
-		points = -2
-		query += ", upvotes = upvotes - 1, downvotes = downvotes + 1"
-		newUpvotes--
-		newDownvotes++
-	} else {
-		query += ", upvotes = upvotes + 1, downvotes = downvotes - 1"
-		newUpvotes++
-		newDownvotes--
-	}
-	query += " WHERE id = ?"
-
-	_, err = tx.ExecContext(ctx, query, points, PostHotness(newUpvotes, newDownvotes, p.CreatedAt), p.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if err = tx.Commit(); err != nil {
-		return err
-	}
-
-	p.Upvotes = newUpvotes
-	p.Downvotes = newDownvotes
-	p.Points += points
-	p.ViewerVotedUp = msql.NewNullBool(up)
-
 	// Attempt to update user's points.
-	if !p.AuthorID.EqualsTo(user) {
+	if !p.AuthorID.EqualsTo(user) && !userNew {
 		point := 1
 		if dbUp {
 			point = -1

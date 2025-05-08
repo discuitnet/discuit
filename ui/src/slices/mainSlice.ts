@@ -28,6 +28,8 @@ export interface InitialValues {
   bannedFrom: string[];
   vapidPublicKey: string;
   mutes: Mutes;
+  imagePostSubmitReqPoints: number;
+  linkPostSubmitReqPoints: number;
 }
 
 export interface MainState {
@@ -70,6 +72,8 @@ export interface MainState {
   feedLayout: string;
   allCommunitiesSort: CommunitiesSort;
   allCommunitiesSearchQuery: string;
+  imagePostSubmitReqPoints: number;
+  linkPostSubmitReqPoints: number;
 }
 
 const initialNotifications = {
@@ -136,6 +140,8 @@ export default function mainReducer(
         vapidPublicKey: payload.vapidPublicKey,
         noUsers: payload.noUsers,
         signupsDisabled: payload.signupsDisabled,
+        imagePostSubmitReqPoints: payload.imagePostSubmitReqPoints,
+        linkPostSubmitReqPoints: payload.linkPostSubmitReqPoints,
       };
       return {
         ...state,

@@ -572,7 +572,7 @@ func (c *Comment) StripContent() {
 }
 
 // Vote votes on comment (if the comment is not deleted or the post locked).
-func (c *Comment) Vote(ctx context.Context, db *sql.DB, user uid.ID, up bool) error {
+func (c *Comment) Vote(ctx context.Context, db *sql.DB, user uid.ID, up bool, newUserPointsThreshold int, newUserAgeThreshold time.Duration) error {
 	if c.Deleted {
 		return errCommentDeleted
 	}
@@ -583,9 +583,14 @@ func (c *Comment) Vote(ctx context.Context, db *sql.DB, user uid.ID, up bool) er
 		return errPostLocked
 	}
 
+	canUserIncrementPoints, err := userAllowedToIncrementPoints(ctx, db, user, newUserPointsThreshold, newUserAgeThreshold)
+	if err != nil {
+		return err
+	}
+
 	point := 1
-	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(ctx, "INSERT INTO comment_votes (comment_id, user_id, up) VALUES (?, ?, ?)", c.ID, user, up); err != nil {
+	err = msql.Transact(ctx, db, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx, "INSERT INTO comment_votes (comment_id, user_id, up, is_user_new) VALUES (?, ?, ?, ?)", c.ID, user, up, !canUserIncrementPoints); err != nil {
 			if msql.IsErrDuplicateErr(err) {
 				return httperr.NewBadRequest("already-voted", "You've already voted on the comment.")
 			}
@@ -619,7 +624,7 @@ func (c *Comment) Vote(ctx context.Context, db *sql.DB, user uid.ID, up bool) er
 	c.ViewerVotedUp.Bool = up
 
 	// Attempt to update user's points.
-	if up && !c.AuthorID.EqualsTo(user) {
+	if up && !c.AuthorID.EqualsTo(user) && canUserIncrementPoints {
 		incrementUserPoints(ctx, db, c.AuthorID, 1)
 	}
 
@@ -648,14 +653,16 @@ func (c *Comment) DeleteVote(ctx context.Context, db *sql.DB, user uid.ID) error
 		return errPostLocked
 	}
 
-	id, up := 0, false
-	row := db.QueryRowContext(ctx, "SELECT id, up FROM comment_votes WHERE comment_id = ? AND user_id = ?", c.ID, user)
-	if err := row.Scan(&id, &up); err != nil {
-		return err
-	}
-
-	point := 1
+	var (
+		id      = 0
+		up      = false
+		userNew = false
+		point   = 1
+	)
 	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
+		if err := tx.QueryRowContext(ctx, "SELECT id, up, is_user_new FROM comment_votes WHERE comment_id = ? AND user_id = ?", c.ID, user).Scan(&id, &up, &userNew); err != nil {
+			return err
+		}
 		if _, err := tx.ExecContext(ctx, "DELETE FROM comment_votes WHERE id = ?", id); err != nil {
 			return err
 		}
@@ -686,7 +693,7 @@ func (c *Comment) DeleteVote(ctx context.Context, db *sql.DB, user uid.ID) error
 	c.ViewerVotedUp.Valid = false
 
 	// Attempt to update user's points.
-	if up && !c.AuthorID.EqualsTo(user) {
+	if up && !c.AuthorID.EqualsTo(user) && !userNew {
 		incrementUserPoints(ctx, db, c.AuthorID, -1)
 	}
 
@@ -706,18 +713,21 @@ func (c *Comment) ChangeVote(ctx context.Context, db *sql.DB, user uid.ID, up bo
 		return errPostLocked
 	}
 
-	id, dbUp := 0, false
-	row := db.QueryRowContext(ctx, "SELECT id, up FROM comment_votes WHERE comment_id = ? AND user_id = ?", c.ID, user)
-	if err := row.Scan(&id, &dbUp); err != nil {
-		return err
-	}
-
-	if dbUp == up {
-		return nil
-	}
-
-	points := 2
+	var (
+		id      = 0
+		dbUp    = false
+		userNew = false
+		points  = 2
+		exit    = false // if true, exit clean after the transaction
+	)
 	err := msql.Transact(ctx, db, func(tx *sql.Tx) error {
+		if err := tx.QueryRowContext(ctx, "SELECT id, up, is_user_new FROM comment_votes WHERE comment_id = ? AND user_id = ?", c.ID, user).Scan(&id, &dbUp, &userNew); err != nil {
+			return err
+		}
+		if dbUp == up {
+			exit = true
+			return nil
+		}
 		if _, err := tx.ExecContext(ctx, "UPDATE comment_votes SET up = ? WHERE id = ?", up, id); err != nil {
 			return err
 		}
@@ -737,6 +747,9 @@ func (c *Comment) ChangeVote(ctx context.Context, db *sql.DB, user uid.ID, up bo
 	if err != nil {
 		return err
 	}
+	if exit {
+		return nil
+	}
 
 	if dbUp {
 		c.Upvotes--
@@ -749,7 +762,7 @@ func (c *Comment) ChangeVote(ctx context.Context, db *sql.DB, user uid.ID, up bo
 	c.ViewerVotedUp = msql.NewNullBool(up)
 
 	// Attemp to update user's points.
-	if !c.AuthorID.EqualsTo(user) {
+	if !c.AuthorID.EqualsTo(user) && !userNew {
 		points := 1
 		if dbUp {
 			points = -1

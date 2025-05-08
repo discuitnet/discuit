@@ -135,9 +135,13 @@ func (s *Server) initial(w *responseWriter, r *request) error {
 			CommunityMutes []*core.Mute `json:"communityMutes"`
 			UserMutes      []*core.Mute `json:"userMutes"`
 		} `json:"mutes"`
+		ImagePostSubmitReqPoints int `json:"imagePostSubmitReqPoints"`
+		LinkPostSubmitReqPoints  int `json:"linkPostSubmitReqPoints"`
 	}{
-		Lists:          []*core.List{},
-		VAPIDPublicKey: s.webPushVAPIDKeys.Public,
+		Lists:                    []*core.List{},
+		VAPIDPublicKey:           s.webPushVAPIDKeys.Public,
+		ImagePostSubmitReqPoints: s.config.MediaUploadRequiredPoints,
+		LinkPostSubmitReqPoints:  s.config.MediaUploadRequiredPoints,
 	}
 
 	response.Mutes.CommunityMutes = []*core.Mute{}

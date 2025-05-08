@@ -581,6 +581,31 @@ func incrementUserPoints(ctx context.Context, db *sql.DB, user uid.ID, amount in
 	return err
 }
 
+func getUserPointsAndCreatedAt(ctx context.Context, db *sql.DB, user uid.ID) (int, time.Time, error) {
+	var points int
+	var t time.Time
+	if err := db.QueryRowContext(ctx, "SELECT points, created_at FROM users WHERE users.id = ?", user).Scan(&points, &t); err != nil {
+		return 0, t, err
+	}
+	return points, t, nil
+}
+
+func userAllowedToIncrementPoints(ctx context.Context, db *sql.DB, user uid.ID, requiredPoints int, requiredAge time.Duration) (bool, error) {
+	points, createdAt, err := getUserPointsAndCreatedAt(ctx, db, user)
+	if err != nil {
+		return false, err
+	}
+	return points >= requiredPoints && time.Since(createdAt) > requiredAge, nil
+}
+
+func UserAllowedToPostImages(ctx context.Context, db *sql.DB, user uid.ID, requiredPoints int) (bool, error) {
+	points, _, err := getUserPointsAndCreatedAt(ctx, db, user)
+	if err != nil {
+		return false, err
+	}
+	return points >= requiredPoints, nil
+}
+
 // Update updates the user's updatable fields.
 func (u *User) Update(ctx context.Context, db *sql.DB) error {
 	if u.Deleted {
@@ -851,10 +876,6 @@ func (u *User) MakeAdmin(ctx context.Context, db *sql.DB, isAdmin bool) error {
 		u.Admin = isAdmin
 	}
 	return err
-}
-
-func (u *User) incrementPoints(ctx context.Context, db *sql.DB, amount int) error {
-	return incrementUserPoints(ctx, db, u.ID, amount)
 }
 
 func (u *User) ChangePassword(ctx context.Context, db *sql.DB, previousPass, newPass string) error {
