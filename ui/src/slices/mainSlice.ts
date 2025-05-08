@@ -127,6 +127,8 @@ const initialState: MainState = {
   feedLayout: (getDevicePreference('feed_layout') ?? 'card') as string,
   allCommunitiesSort: 'size',
   allCommunitiesSearchQuery: '',
+  imagePostSubmitReqPoints: 0,
+  linkPostSubmitReqPoints: 0,
 };
 
 export default function mainReducer(
