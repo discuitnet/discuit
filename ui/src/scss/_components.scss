@@ -25,7 +25,7 @@
     height: var(--navbar-height);
     display: flex;
     align-items: center;
-    // transition: background 300ms;
+    // transition: transform 200ms ease-in;
     &.is-blured {
         background: var(--color-background-blur);
     }

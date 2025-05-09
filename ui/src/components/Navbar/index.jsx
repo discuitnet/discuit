@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import PropTypes from 'prop-types';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useLocation } from 'react-router-dom';
 import { clearNotificationsLocalStorage } from '../../PushNotifications';
@@ -50,44 +50,71 @@ const Navbar = ({ offline = false }) => {
   const windowWidth = useWindowWidth();
   const isMobile = windowWidth <= mobileBreakpointWidth;
 
-  // This is disabled for now because there's a slight jitteryness when
-  // transitioning between the pages sometimes.
-  //
-  // // Auto-hide the navbar when scrolling down (only on mobile).
-  // useEffect(() => {
-  //   if (!isMobile) {
-  //     return;
-  //   }
-  //   let prevScrollY = window.scrollY;
-  //   let navPos = 0;
-  //   const navHeight = parseInt(
-  //     window.getComputedStyle(document.body).getPropertyValue('--navbar-height')
-  //   );
-  //   const listener = () => {
-  //     const dy = window.scrollY - prevScrollY;
-  //     let newNavPos = navPos - dy;
-  //     if (newNavPos < -1 * navHeight) {
-  //       newNavPos = -1 * navHeight;
-  //     }
-  //     if (newNavPos > 0) {
-  //       newNavPos = 0;
-  //     }
-  //     navPos = newNavPos;
-  //     navbarRef.current.style.transform = `translateY(${navPos}px)`;
-  //     prevScrollY = window.scrollY;
-  //   };
-  //   document.addEventListener('scroll', listener);
-  //   return () => {
-  //     document.removeEventListener('scroll', listener);
-  //   };
-  // }, [isMobile, navbarRef]);
+  // Auto-hide the navbar when scrolling down (only on mobile).
+  const recentLocationChange = useRef(false);
+  useLayoutEffect(() => {
+    if (!isMobile) {
+      return;
+    }
+    let prevScrollY = window.scrollY;
+    let tdy = 0;
+    const navHeight = parseInt(
+      window.getComputedStyle(document.body).getPropertyValue('--navbar-height')
+    );
+    const buffer = 20;
+    let transitioning = false;
+    const navbarShouldBeInView = () => {
+      return window.scrollY <= navHeight;
+    };
+    const setTransform = (height) => {
+      if (recentLocationChange.current) {
+        if (navbarShouldBeInView()) {
+          navbarRef.current.style.transform = `translateY(0)`;
+        }
+        return;
+      }
+      if (transitioning) {
+        return;
+      }
+      navbarRef.current.style.transition = 'transform 200ms ease-in';
+      transitioning = true;
+      setTimeout(() => {
+        navbarRef.current.style.transform = `translateY(${height}px)`;
+        setTimeout(() => {
+          navbarRef.current.style.transition = 'none';
+          transitioning = false;
+        }, 210);
+      }, 10);
+    };
+    const listener = () => {
+      const dy = window.scrollY - prevScrollY;
+      tdy = tdy + dy;
+      if (tdy > buffer) {
+        setTransform(-1 * navHeight);
+        tdy = buffer;
+      }
+      if (tdy < -1 * buffer) {
+        setTransform(0);
+        tdy = -1 * buffer;
+      }
+      prevScrollY = window.scrollY;
+    };
+    document.addEventListener('scroll', listener);
+    return () => {
+      document.removeEventListener('scroll', listener);
+    };
+  }, [isMobile, navbarRef]);
 
   const [bottomNavbarNavigation, setBottomNavbarNavigation] = useState(true);
 
   const location = useLocation();
-  useEffect(() => {
+  useLayoutEffect(() => {
+    recentLocationChange.current = true;
+    setTimeout(() => {
+      recentLocationChange.current = false;
+    }, 50);
     setBottomNavbarNavigation(Boolean(location.state && location.state.fromBottomNav));
-  }, [location]);
+  }, [location, recentLocationChange]);
 
   const renderGoBackNavbar = isMobile && !bottomNavbarNavigation && location.pathname !== '/';
 
