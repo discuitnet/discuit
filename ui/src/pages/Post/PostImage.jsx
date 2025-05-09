@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import ServerImage from '../../components/ServerImage';
 import { getImageContainSize } from '../../helper';
 import { useIsMobile } from '../../hooks';

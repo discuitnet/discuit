@@ -16,21 +16,21 @@ import {
   copyToClipboard,
   dateString1,
   mfetch,
-  stringCount,
   mfetchjson,
+  selectImageCopyURL,
+  stringCount,
 } from '../../helper';
 import { useIsMobile, useMuteCommunity } from '../../hooks';
 import { communityAdded, selectCommunity } from '../../slices/communitiesSlice';
 import { snackAlert, snackAlertError } from '../../slices/mainSlice';
-import { selectImageCopyURL } from '../../helper';
 import { SVGEdit } from '../../SVGs';
 
+import ImageEditModal from '../../components/ImageEditModal';
 import PostsFeed from '../../views/PostsFeed';
 import NotFound from '../NotFound';
 import Banner from './Banner';
 import JoinButton from './JoinButton';
 import Rules from './Rules';
-import ImageEditModal from '../../components/ImageEditModal';
 
 const Community = () => {
   const { name } = useParams();
@@ -83,7 +83,7 @@ const Community = () => {
   const [isDeletingPic, setIsDeletingPic] = useState(false);
   const [isDeletingBanner, setIsDeletingBanner] = useState(false);
 
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobile(true);
   const renderCommunityShareButton = () => {
     const useNavigatorShare = isMobile && Boolean(window.navigator.share);
     const handleClick = async () => {

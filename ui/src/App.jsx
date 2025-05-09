@@ -195,7 +195,7 @@ const App = () => {
     }
   }, [location, dispatch]);
 
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobile(true);
 
   if (!isOnline && showOfflinePage) {
     return <Offline />;

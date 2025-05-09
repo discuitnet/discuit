@@ -101,8 +101,11 @@ export function useWindowHeight() {
 
 export const mobileBreakpointWidth = 768;
 
-export function useIsMobile(breakpoint = mobileBreakpointWidth) {
-  return useWindowWidth() <= breakpoint;
+export function useIsMobile(includeTablets = false, breakpoint = mobileBreakpointWidth) {
+  return (
+    useWindowWidth() <= breakpoint ||
+    (includeTablets && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
+  );
 }
 
 export type LoadingState = 'initial' | 'loading' | 'loaded' | 'error';

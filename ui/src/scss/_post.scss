@@ -155,7 +155,7 @@
             border-top: var(--seperator);
             background-color: rgba(var(--base-fg), 0.02);
         }
-        .post-card-bottom.is-m {
+        .post-card-bottom.is-t {
             display: none;
             flex-direction: row;
             background-color: rgba(var(--base-fg), 0.02);
@@ -198,11 +198,7 @@
         @include mixins.tablet() {
             .post-card-bottom {
                 flex-direction: row;
-            }
-        }
-        @include mixins.mobile() {
-            .post-card-bottom {
-                &:not(.is-m) {
+                &:not(.is-t) {
                     .left {
                         width: 100%;
                     }
@@ -210,7 +206,7 @@
                         display: none;
                     }
                 }
-                &.is-m {
+                &.is-t {
                     border-top: var(--seperator);
                     display: flex;
                     .post-votes-m {

@@ -57,7 +57,7 @@ function AppUpdate() {
 
   const [modalOpen, setModalOpen] = useState(true);
   const handleClose = () => setModalOpen(false);
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobile(true);
 
   const [showPrompt, setShowPrompt] = useState(false);
   useEffect(() => {

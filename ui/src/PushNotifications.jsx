@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { ButtonClose } from './components/Button';
 import Modal from './components/Modal';
@@ -105,7 +105,7 @@ const PushNotifications = () => {
 
   const applicationServerKey = useSelector((state) => state.main.vapidPublicKey);
 
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobile(true);
 
   const [askModalOpen, setAskModalOpen] = useState(false);
   const handleAskModalClose = () => setAskModalOpen(false);

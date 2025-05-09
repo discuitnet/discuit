@@ -406,7 +406,7 @@ const Post = () => {
                 </div>
               )}
             </div>
-            <div className="post-card-bottom is-m">
+            <div className="post-card-bottom is-t">
               <div className="left">
                 <PostVotes post={post} mobile disabled={!canVote} />
               </div>
