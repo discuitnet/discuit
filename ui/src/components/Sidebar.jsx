@@ -165,7 +165,10 @@ const Sidebar = ({ mobile = false }) => {
       if (x > 0) {
         x = 0;
       }
-      if (!touchState.current.open && touchState.current.startPos.x > 100) {
+      if (
+        !touchState.current.open &&
+        (touchState.current.startPos.x > 200 || touchState.current.startPos.x < 35)
+      ) {
         return;
       }
       if (touchState.current.mouseMovements === 0) {
@@ -175,10 +178,8 @@ const Sidebar = ({ mobile = false }) => {
         };
       }
       touchState.current.mouseMovements++;
-      if (
-        touchState.current.open &&
-        angleBetweenPoints(touchState.current.startPos, touchState.current.secondPos) > 0.5
-      ) {
+      const t0 = angleBetweenPoints(touchState.current.startPos, touchState.current.secondPos);
+      if ((touchState.current.open && t0 > 0.5) || (!touchState.current.open && t0 > 0.3)) {
         return;
       }
       setIsDragging(true);
