@@ -537,8 +537,8 @@ func (s *Server) handleUserProPic(w *responseWriter, r *request) error {
 		return err
 	}
 
-	// Only the owner of the account and admins can proceed.
-	if !(user.ID == *r.viewer || user.Admin) {
+	// Only the owner of the account can proceed.
+	if user.ID != *r.viewer {
 		return httperr.NewForbidden("not_owner", "")
 	}
 

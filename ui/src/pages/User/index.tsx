@@ -512,7 +512,7 @@ const User = () => {
                 username={username}
                 proPic={user.proPic}
                 size="large"
-                editable={user.id === viewer?.id || (viewer?.isAdmin && !user.deleted)}
+                editable={user.id === viewer?.id}
                 onEdit={() => setProfilePicModalOpen(true)}
               />
               <h1
