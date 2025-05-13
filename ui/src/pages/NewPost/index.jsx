@@ -244,7 +244,7 @@ const NewPost = () => {
         if (!res.ok) {
           if (res.status === 400) {
             const error = await res.json();
-            if (error.code === 'invalid_url') {
+            if (error.code === 'invalid-url') {
               dispatch(snackAlert('The URL you provided is not a valid URL.'));
               return;
             }
