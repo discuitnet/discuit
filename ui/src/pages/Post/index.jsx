@@ -219,13 +219,11 @@ const Post = () => {
         );
         if (!res.ok) {
           let handledError = false;
-          if (res.status === 400) {
+          if (res.status === 403) {
             const error = await res.json();
-            if (error.code === 'max_pinned_count_reached') {
-              dispatch(snackAlert('Max pinned posts count reached.'));
-              set(checkedBefore);
-              handledError = true;
-            }
+            dispatch(snackAlert(error.message));
+            set(checkedBefore);
+            handledError = true;
           }
           if (!handledError) {
             throw new Error(await res.text());
