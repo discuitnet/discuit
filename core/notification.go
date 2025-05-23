@@ -201,6 +201,7 @@ const (
 	NotificationTypeNewBadge     = NotificationType("new_badge")
 	NotificationTypeWelcome      = NotificationType("welcome")
 	NotificationTypeAnnouncement = NotificationType("announcement")
+	NotificationTypeDeniedComm   = NotificationType("denied_comm")
 )
 
 func (t NotificationType) Valid() bool {
@@ -213,6 +214,7 @@ func (t NotificationType) Valid() bool {
 		NotificationTypeNewBadge,
 		NotificationTypeWelcome,
 		NotificationTypeAnnouncement,
+		NotificationTypeDeniedComm,
 	}, t)
 }
 
@@ -428,6 +430,8 @@ func scanNotifications(ctx context.Context, db *sql.DB, rows *sql.Rows, render b
 			nc = &NotificationWelcome{}
 		case NotificationTypeAnnouncement:
 			nc = &NotificationAnnouncement{}
+		case NotificationTypeDeniedComm:
+			nc = &NotificationDeniedComm{}
 		default:
 			return nil, fmt.Errorf("unknown notification type: %s", string(notif.Type))
 		}
@@ -1416,4 +1420,42 @@ func SendAnnouncementNotifications(ctx context.Context, db *sql.DB, post uid.ID)
 		}
 	}
 	return nil
+}
+
+//// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+// clicking notification goes to homepage; make them unclickable?
+
+type NotificationDeniedComm struct {
+	Body string `json:"body"`
+}
+
+func (n NotificationDeniedComm) marshalJSONForAPI(ctx context.Context, db *sql.DB) ([]byte, error) {
+	out := struct {
+		Body string `json:"body"`
+	}{
+		Body: n.Body,
+	}
+	return json.Marshal(out)
+}
+
+func (n NotificationDeniedComm) view(ctx context.Context, db *sql.DB, format TextFormat) (*NotificationView, error) {
+	view := &NotificationView{
+		Title: n.Body,
+		ToURL: "#",
+	}
+	view.setIcon(nil)
+	return view, nil
+}
+
+// // inserts into notifications
+func CreateDeniedCommNotification(ctx context.Context, db *sql.DB, user uid.ID, body string) error {
+	// if body is empty string (e.g., hit send too early), populate with generic denial text
+	if body == "" {
+		body = "Your community creation request was denied. Please contact the admin team for more details."
+	}
+	n := NotificationDeniedComm{
+		Body: body,
+	}
+	return CreateNotification(ctx, db, user, NotificationTypeDeniedComm, n)
 }

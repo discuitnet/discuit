@@ -199,7 +199,8 @@ export type NotificationType =
   | 'mod_add'
   | 'new_badge'
   | 'welcome'
-  | 'announcement';
+  | 'announcement'
+  | 'denied_comm';
 
 export interface Notification {
   id: number;

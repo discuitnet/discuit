@@ -58,6 +58,7 @@ export interface MainState {
   loginModalOpen: boolean;
   signupModalOpen: boolean;
   createCommunityModalOpen: boolean;
+  denyCommunityModalOpen: boolean;
   mutes: Mutes;
   lists: {
     loading: boolean;
@@ -110,6 +111,7 @@ const initialState: MainState = {
   loginModalOpen: false,
   signupModalOpen: false,
   createCommunityModalOpen: false,
+  denyCommunityModalOpen: false,
   mutes: {
     userMutes: [],
     communityMutes: [],
@@ -355,6 +357,12 @@ export default function mainReducer(
         ...state,
         createCommunityModalOpen: action.payload as boolean,
       };
+    }
+    case 'main/denyCommunityModalOpened': {
+      return {
+        ...state,
+        denyCommunityModalOpen: action.payload as boolean,
+      }
     }
     case 'main/appInstallButtonUpdate': {
       return {
@@ -637,6 +645,10 @@ export const loginModalOpened = (open = true) => {
 
 export const createCommunityModalOpened = (open = true) => {
   return { type: 'main/createCommunityModalOpened', payload: open };
+};
+
+export const denyCommunityModalOpened = (open = true) => {
+  return { type: 'main/denyCommunityModalOpened', payload: open };
 };
 
 export const showAppInstallButton = (show: boolean, deferredPrompt: unknown) => {

@@ -6,7 +6,10 @@ import SimpleFeed, { SimpleFeedItem } from '../../components/SimpleFeed';
 import { TableRow } from '../../components/Table';
 import { mfetchjson } from '../../helper';
 import { useLoading } from '../../hooks';
-import { snackAlertError } from '../../slices/mainSlice';
+import { denyCommunityModalOpened, snackAlertError } from '../../slices/mainSlice';
+//import { mfetch } from '../../helper';
+import Button from '../../components/Button';
+//import DenyCommunity from '../../components/DenyCommunity';
 
 interface CommunityRequest {
   id: number;
@@ -51,7 +54,7 @@ export default function NewCommunityRequests() {
       to: item.communityExists ? `/${item.communityName}` : '',
     };
     return (
-      <TableRow columns={4}>
+      <TableRow columns={5}>
         <div className="table-column">{item.createdAt.toLocaleString()}</div>
         <div className="table-column">
           <Link to={`/@${item.byUser}`}>@{item.byUser}</Link>
@@ -60,10 +63,18 @@ export default function NewCommunityRequests() {
           <El {...elProps}>+{item.communityName}</El>
         </div>
         <div className="table-column">{item.note}</div>
+        <div className="table-column">
+          <Button
+            onClick={() => dispatch(denyCommunityModalOpened())}
+            className={'button button-main'}
+          >
+            Deny
+          </Button>
+        </div>
       </TableRow>
     );
   };
-
+        //dispatch(createCommunityModalOpened())}
   const handleRenderHead = () => {
     return (
       <TableRow columns={4} head>
@@ -71,12 +82,47 @@ export default function NewCommunityRequests() {
         <div className="table-column">By user</div>
         <div className="table-column">Community name</div>
         <div className="table-column">Note</div>
+        <div className="table-column">Action</div>
       </TableRow>
     );
   };
 
   const feedItems: SimpleFeedItem<CommunityRequest>[] = [];
   requests?.forEach((req) => feedItems.push({ item: req, key: req.id.toString() }));
+
+  /*const handleDeclineRequest = async (item: CommunityRequest) => {
+     	<DenyCommunity
+    	open={denyCommunityModalOpened}
+    	onClose={() => dispatch(denyCommunityModalOpened(false))}
+  	/>
+
+<div className="form modal-card-content flex-column inner-gap-1">
+  <FormField label="Community name" description="Community name cannot be changed.">
+    <InputWithCount
+      value={name}
+      onChange={handleNameChange}
+      maxLength={communityNameMaxLength}
+      style={{ marginBottom: '0' }}
+      autoFocus
+    />
+  </FormField>
+  </div>
+    const body = {
+      action: 'deny_comm',
+      name: item.byUser,
+      id : item.id,
+      body: `${item.communityName} denied!`,
+    };
+    const res = await mfetch(`/api/_admin`, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+    if (res.ok) {
+      alert('Disc denied.');
+    } else {
+      alert('Error denying disc.');
+    }
+  }*/
 
   return (
     <div className="dashboard-page-requests document">

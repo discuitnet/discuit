@@ -2,6 +2,7 @@ package server
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 
 	"github.com/discuitnet/discuit/core"
@@ -100,6 +101,30 @@ func (s *Server) adminActions(w *responseWriter, r *request) error {
 			return err
 		}
 		if err = comm.SetDefault(r.ctx, s.db, action == "add_default_forum"); err != nil {
+			return err
+		}
+	case "deny_comm":
+		name, ok := reqBody["name"].(string)
+		if !ok {
+			return invalidJSONErr
+		}
+		user, err := core.GetUserByUsername(r.ctx, s.db, name, r.viewer)
+		if err != nil {
+			return err
+		}
+		id, ok := reqBody["id"].(float64)
+		if !ok {
+			return invalidJSONErr
+		}
+
+		body, ok := reqBody["body"].(string)
+		if !ok {
+			body = ""
+		}
+		//// >>>>>>>>>>> update requests table to deny (need new columns for text, denial flag)
+		//// should check it is not already denied to prevent multiple denials
+		fmt.Println(">>>>>>>>>>>>>>>>>>>", id)
+		if err = core.CreateDeniedCommNotification(r.ctx, s.db, user.ID, body); err != nil {
 			return err
 		}
 	default:
