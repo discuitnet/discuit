@@ -3,6 +3,17 @@ import React from 'react';
 import Modal from '.';
 import { ButtonClose } from '../Button';
 
+export interface ModalConfirmProps {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title?: string;
+  yesText?: string;
+  noText?: string;
+  children: React.ReactNode;
+  disableEnter?: boolean;
+}
+
 const ModalConfirm = ({
   open,
   onClose,
@@ -12,9 +23,9 @@ const ModalConfirm = ({
   noText = 'No',
   children,
   disableEnter = false,
-}) => {
-  const handleKeyDown = (e) => {
-    if (!disableEnter && e.key === 'Enter') {
+}: ModalConfirmProps) => {
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (!disableEnter && event.key === 'Enter') {
       onConfirm();
     }
   };
