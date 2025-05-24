@@ -75,14 +75,6 @@ const Home = () => {
         )}
         <PostsFeed feedType={feedType} />
       </main>
-      {/*
-      <div className="posts">
-        <div className="post-card-compact-list">
-          <PostCard initialPost={templatePost} compact={true} />
-          <PostCard initialPost={templatePost} compact={true} />
-          <PostCard initialPost={templatePost} compact={true} />
-        </div>
-      </div>*/}
       <aside className="sidebar-right is-custom-scrollbar is-v2'">
         {!loggedIn && (
           <div className="card card-sub card-padding">

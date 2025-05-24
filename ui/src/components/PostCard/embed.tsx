@@ -1,8 +1,9 @@
 import PropTypes from 'prop-types';
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
+import { Post } from '../../serverTypes';
 
-const YoutubeEmbed = ({ url }) => {
+const YoutubeEmbed = ({ url }: { url: string }) => {
   // Render only if the div is in view.
   const [ref, inView] = useInView({
     rootMargin: '200px 0px',
@@ -17,14 +18,16 @@ const YoutubeEmbed = ({ url }) => {
   }, [inView]);
 
   // Set component width and height.
-  const calcSize = (width) => {
+  const calcSize = (width: number) => {
     return { width: width, height: width / 1.777 };
   };
   const [size, setSize] = useState(calcSize(500));
-  const outerRef = useRef(null);
+  const outerRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
-    const { width } = outerRef.current.getBoundingClientRect();
-    setSize(calcSize(width));
+    if (outerRef.current) {
+      const { width } = outerRef.current.getBoundingClientRect();
+      setSize(calcSize(width));
+    }
   }, []);
 
   // To prevent the white-flash you see while an iframe is loading.
@@ -38,12 +41,12 @@ const YoutubeEmbed = ({ url }) => {
   const u = new URL(url);
   if (['youtube.com', 'www.youtube.com', 'm.youtube.com'].includes(u.hostname)) {
     // fix embeds for shorts/live, which seem to only appear on youtube.com and not youtu.be
-    let pathArray = u.pathname.split('/');
+    const pathArray = u.pathname.split('/');
     if (pathArray.includes('shorts') || pathArray.includes('live')) {
       videoId = pathArray[2];
     } else {
       const params = new URLSearchParams(u.search);
-      videoId = params.get('v');
+      videoId = params.get('v') || '';
     }
   } else if (u.hostname === 'youtu.be' || u.hostname === 'www.youtu.be') {
     videoId = u.pathname;
@@ -75,24 +78,29 @@ YoutubeEmbed.propTypes = {
   url: PropTypes.string.isRequired,
 };
 
-export default function getEmbedComponent(link) {
-  const ret = {
+export default function embeddedElement(link: Post['link']) {
+  const ret: {
+    isEmbed: boolean;
+    element: React.ReactNode;
+  } = {
     isEmbed: false,
-    render: null,
-    hostnames: [],
-    url: '',
+    element: null,
   };
   if (!link) {
     return ret;
   }
-  const mapping = {
+
+  type Mapping = {
+    [key: string]: {
+      hostnames: string[];
+      render: (url: string) => React.ReactNode;
+    };
+  };
+  const mapping: Mapping = {
     youtube: {
       hostnames: ['youtube.com', 'www.youtube.com', 'youtu.be', 'm.youtube.com'],
-      render: YoutubeEmbed,
+      render: (url: string) => <YoutubeEmbed url={url} />,
     },
-    // vimeo: {
-    //   hostnames: [],
-    // },
   };
 
   let match;
@@ -106,9 +114,7 @@ export default function getEmbedComponent(link) {
   }
   if (match) {
     ret.isEmbed = true;
-    ret.render = match.render;
-    ret.hostnames = match.hostnames;
-    ret.url = link.url;
+    ret.element = match.render(link.url);
   }
   return ret;
 }

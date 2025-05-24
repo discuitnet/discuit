@@ -1,22 +1,20 @@
-import PropTypes from 'prop-types';
 import { useImageLoaded } from '../../hooks';
+import { Image } from '../../serverTypes';
 
-const LinkImage = ({ image, loading = 'lazy', isImagePost = false }) => {
-  // let size;
-  // if (window.innerWidth > 768) {
-  //   size = { width: 325, height: 250 }; // desktop
-  // } else {
-  //   size = { width: 875, height: 500 }; //mobile
-  // }
-  // const src = image.url + `?size=${size.width}x${size.height}&fit=cover`; // desktop
+export interface LinkImageProps {
+  image: Image;
+  loading?: React.ImgHTMLAttributes<HTMLImageElement>['loading'];
+  isImagePost?: boolean;
+}
 
+const LinkImage = ({ image, loading = 'lazy', isImagePost = false }: LinkImageProps) => {
   const { src, size } = (() => {
     const imageCopyName = isImagePost ? 'tiny' : window.innerWidth > 768 ? 'desktop' : 'mobile';
-    const matches = image.copies.filter((copy) => copy.name === imageCopyName);
+    const matches = (image.copies || []).filter((copy) => copy.name === imageCopyName);
     let copy;
     if (matches.length === 0) {
       copy = image;
-      console.error(`LinkImage.jsx: No matching image copy found (for image: ${image.url})`);
+      console.error(`No matching image copy found for image: ${image.url}`);
     } else {
       copy = matches[0];
     }
@@ -50,12 +48,6 @@ const LinkImage = ({ image, loading = 'lazy', isImagePost = false }) => {
       />
     </div>
   );
-};
-
-LinkImage.propTypes = {
-  image: PropTypes.object.isRequired,
-  loading: PropTypes.string,
-  isImagePost: PropTypes.bool,
 };
 
 export default LinkImage;

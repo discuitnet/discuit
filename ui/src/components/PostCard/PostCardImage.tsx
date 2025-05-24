@@ -1,17 +1,28 @@
-import PropTypes from 'prop-types';
-import React, { useLayoutEffect, useState } from 'react';
+import clsx from 'clsx';
+import { useCallback, useLayoutEffect, useState } from 'react';
 import { getImageContainSize } from '../../helper';
+import { Image } from '../../serverTypes';
 import ServerImage from '../ServerImage';
 
-const Image = ({ image, to, target, isMobile, loading = 'lazy' }) => {
+export interface ImageProps {
+  image: Image;
+  isMobile: boolean;
+  loading?: React.ImgHTMLAttributes<HTMLImageElement>['loading'];
+}
+
+const PostCardImage = ({ image, isMobile, loading = 'lazy' }: ImageProps) => {
   const maxImageHeight = 520;
   const maxImageHeightMobile = () => window.innerHeight * 0.8;
 
-  const [imageSize, setImageSize] = useState({ width: undefined, height: undefined });
+  const [imageSize, setImageSize] = useState<{ width?: number; height?: number }>({
+    width: undefined,
+    height: undefined,
+  });
   const [cardWidth, setCardWidth] = useState(0);
-  const updateImageSize = () => {
-    let w = document.querySelector('.post-card-body').clientWidth;
-    let h = isMobile ? maxImageHeightMobile() : maxImageHeight;
+  const updateImageSize = useCallback(() => {
+    const w = document.querySelector('.post-card-body')?.clientWidth as number;
+    const h = isMobile ? maxImageHeightMobile() : maxImageHeight;
+    // eslint-disable-next-line prefer-const
     let { width, height } = getImageContainSize(image.width, image.height, w, h);
     if (w - width < 35 && width / height < 1.15 && width / height > 0.85) {
       // Cover image to fit card if the image is only slightly not fitting.
@@ -20,19 +31,15 @@ const Image = ({ image, to, target, isMobile, loading = 'lazy' }) => {
     }
     setCardWidth(w);
     setImageSize({ width, height });
-  };
+  }, [image.height, image.width, isMobile]);
   useLayoutEffect(() => {
     updateImageSize();
-  }, [image.id]);
+  }, [updateImageSize]);
 
   const isImageFittingCard = imageSize.width !== Math.round(cardWidth);
 
   return (
-    <div
-      className={'post-image' + (isImageFittingCard ? ' is-no-fit' : '')}
-      to={to}
-      target={target}
-    >
+    <div className={clsx('post-image', isImageFittingCard && 'is-no-fit')}>
       <ServerImage
         image={image}
         style={{
@@ -45,12 +52,4 @@ const Image = ({ image, to, target, isMobile, loading = 'lazy' }) => {
   );
 };
 
-Image.propTypes = {
-  image: PropTypes.object.isRequired,
-  to: PropTypes.string.isRequired,
-  target: PropTypes.string.isRequired,
-  isMobile: PropTypes.bool.isRequired,
-  loading: PropTypes.string,
-};
-
-export default Image;
+export default PostCardImage;

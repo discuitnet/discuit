@@ -135,6 +135,8 @@ export interface Post {
   commentsNext?: string | null;
   userVoted: boolean | null;
   userVotedUp: boolean | null;
+  lastVisitedAt: string | null;
+  newComments: number;
   isAuthorMuted: boolean;
   isCommunityMuted: boolean;
   community?: Community;

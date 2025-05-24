@@ -6,10 +6,10 @@ import { getScrollbarWidth } from '../../helper';
 export interface ModalProps {
   open: boolean;
   onClose: () => void;
-  noEscapeClose?: false;
-  noOuterClickClose?: false;
+  noEscapeClose?: boolean;
+  noOuterClickClose?: boolean;
   children: React.ReactNode;
-  onKeyDown: (event: KeyboardEvent) => void;
+  onKeyDown?: (event: KeyboardEvent) => void;
 }
 
 const Modal = ({

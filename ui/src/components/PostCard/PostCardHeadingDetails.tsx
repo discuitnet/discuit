@@ -1,32 +1,45 @@
-import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import { toTitleCase, userGroupSingular } from '../../helper';
 import { useIsMobile, useMuteCommunity, useMuteUser } from '../../hooks';
 import { userHasSupporterBadge } from '../../pages/User';
-import { saveToListModalOpened } from '../../slices/mainSlice';
+import { Post, UserGroup } from '../../serverTypes';
+import { MainState, saveToListModalOpened } from '../../slices/mainSlice';
+import { RootState } from '../../store';
 import { ButtonMore } from '../Button';
 import Dropdown from '../Dropdown';
 import TimeAgo from '../TimeAgo';
 import { UserLink } from '../UserProPic';
 import CommunityLink from './CommunityLink';
 
+export interface PostCardHeadingDetailsProps {
+  post: Post;
+  userGroup?: UserGroup;
+  showEdited?: boolean;
+  showAuthorProPic?: boolean;
+  onRemoveFromList?: (postId: string) => void;
+  compact?: boolean;
+  onHidePost?: () => void;
+}
+
 const PostCardHeadingDetails = ({
   post,
   userGroup,
   showEdited = false,
   showAuthorProPic = false,
-  onRemoveFromList = null,
+  onRemoveFromList,
   compact = false,
   onHidePost,
-}) => {
-  // const userURL = `/@${post.username}`;
+}: PostCardHeadingDetailsProps) => {
   userGroup = userGroup ?? post.userGroup;
-  // Show if post was edited less than 5 mins ago.
+
+  // Show the edited sign if the post was edited less than 5 mins ago.
   const showEditedSign =
     showEdited &&
-    (post.editedAt ? new Date(post.editedAt) - new Date(post.createdAt) > 5 * 60000 : false);
+    (post.editedAt
+      ? new Date(post.editedAt).valueOf() - new Date(post.createdAt).valueOf() > 5 * 60000
+      : false);
 
-  const viewer = useSelector((state) => state.main.user);
+  const viewer = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const viewerAdmin = viewer ? viewer.isAdmin : false;
   const loggedIn = viewer !== null;
 
@@ -56,7 +69,7 @@ const PostCardHeadingDetails = ({
     communityName: post.communityName,
   });
 
-  const isAuthorSupporter = userHasSupporterBadge(post.author);
+  const isAuthorSupporter = userHasSupporterBadge(post.author || null);
   const isUsernameGhost = post.userDeleted && !viewerAdmin;
 
   return (
@@ -130,16 +143,6 @@ const PostCardHeadingDetails = ({
       {/*<div className="right">172k views</div>*/}
     </div>
   );
-};
-
-PostCardHeadingDetails.propTypes = {
-  post: PropTypes.object.isRequired,
-  userGroup: PropTypes.string,
-  showEdited: PropTypes.bool,
-  showAuthorProPic: PropTypes.bool,
-  onRemoveFromList: PropTypes.func,
-  compact: PropTypes.bool,
-  onHidePost: PropTypes.func,
 };
 
 export default PostCardHeadingDetails;

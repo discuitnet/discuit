@@ -1,35 +1,47 @@
-import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import { mfetchjson, omitWWWFromHostname, stringCount } from '../../helper';
 import { useIsMobile } from '../../hooks';
 import { snackAlertError } from '../../slices/mainSlice';
-import { postHidden } from '../../slices/postsSlice';
+import { Post, postHidden } from '../../slices/postsSlice';
 import { SVGExternalLink } from '../../SVGs';
 import Button from '../Button';
 import Link from '../Link';
 import MarkdownBody from '../MarkdownBody';
 import PostImageGallery from '../PostImageGallery';
 import ShowMoreBox from '../ShowMoreBox';
-import getEmbedComponent from './embed';
-import Image from './Image';
+import embeddedElement from './embed';
 import LinkImage from './LinkImage';
 import PostCardHeadingDetails from './PostCardHeadingDetails';
+import PostCardImage from './PostCardImage';
 import PostVotes from './PostVotes';
 
+export interface PostCardProps {
+  index?: number; // Index in the feed.
+  initialPost: Post;
+  hideVoting?: boolean;
+  openInTab?: boolean;
+  compact?: boolean;
+  inModTools?: boolean;
+  disableEmbeds?: boolean;
+  onRemoveFromList?: (postId: string) => void;
+  feedItemKey: string;
+  canHideFromFeed?: boolean;
+}
+
 const PostCard = ({
-  index = 100, // index in feed
+  index = 100,
   initialPost,
   hideVoting = false,
   openInTab = false,
   compact = true,
   inModTools = false,
   disableEmbeds = false,
-  onRemoveFromList = null,
+  onRemoveFromList,
   feedItemKey,
   canHideFromFeed = false,
-}) => {
+}: PostCardProps) => {
   const history = useHistory();
 
   const [post, setPost] = useState(initialPost);
@@ -41,16 +53,15 @@ const PostCard = ({
   const target = openInTab ? '_blank' : '_self';
   const disabled = inModTools || post.locked;
 
-  const handlePostCardClick = (e, target = '_blank') => {
+  const handlePostCardClick = (event: React.MouseEvent, target = '_blank') => {
     let isButtonClick = false;
-    let el = e.target;
+    let el = event.target as Element | null;
     while (el && !el.classList.contains('post-card-card')) {
       if (el.nodeName === 'BUTTON' || el.nodeName === 'A' || el.classList.contains('is-button')) {
         isButtonClick = true;
         break;
       }
       el = el.parentElement;
-      if (!el.parentElement) isButtonClick = true; // Clicked somewhere outside .post-card-card.
     }
     if (!isButtonClick) {
       if (target !== '_self') {
@@ -61,10 +72,9 @@ const PostCard = ({
     }
   };
 
-  const handleAuxClick = (e) => {
-    // mouse middle button
-    if (e.button === 1) {
-      handlePostCardClick(e, '_blank');
+  const handleAuxClick = (event: React.MouseEvent) => {
+    if (event.button === 1) {
+      handlePostCardClick(event, '_blank');
     }
   };
 
@@ -96,7 +106,7 @@ const PostCard = ({
   const isPinned = post.isPinned || post.isPinnedSite;
   const showLink = !post.deletedContent && post.type === 'link';
 
-  const { isEmbed: _isEmbed, render: Embed, url: embedURL } = getEmbedComponent(post.link);
+  const { isEmbed: _isEmbed, element: embeddedReactElement } = embeddedElement(post.link);
   const isEmbed = !disableEmbeds && _isEmbed;
 
   const showImage = !compact && !post.deletedContent && post.type === 'image' && post.image;
@@ -141,8 +151,6 @@ const PostCard = ({
       }
     } else if (post.type === 'image') {
       image = post.image;
-    } else if (post.type === 'images') {
-      image = post.images[0];
     }
     if (!image) {
       return null;
@@ -182,7 +190,6 @@ const PostCard = ({
         <div className="post-card-heading">
           <PostCardHeadingDetails
             post={post}
-            target={target}
             onRemoveFromList={onRemoveFromList}
             compact={compact}
             onHidePost={canHideFromFeed ? handleHidePost : undefined}
@@ -194,7 +201,7 @@ const PostCard = ({
               <Link className="post-card-title-main" to={postURL} target={target}>
                 {post.title}
               </Link>
-              {showLink && (
+              {showLink && post.link && (
                 <a
                   className="post-card-link-domain"
                   href={post.link.url}
@@ -218,7 +225,7 @@ const PostCard = ({
             </div>
             {renderThumbnail()}
           </div>
-          {!compact && isEmbed && <Embed url={embedURL} />}
+          {!compact && isEmbed && embeddedReactElement}
           {!compact && post.type === 'text' && (
             <div className="post-card-text">
               <ShowMoreBox maxHeight="200px">
@@ -226,18 +233,10 @@ const PostCard = ({
               </ShowMoreBox>
             </div>
           )}
-          {showImage && post.images.length === 1 && (
-            <Image
-              image={post.images[0]}
-              to={postURL}
-              target={target}
-              isMobile={isMobile}
-              loading={imageLoadingStyle}
-            />
+          {showImage && post.images && post.images.length === 1 && (
+            <PostCardImage image={post.images[0]} isMobile={isMobile} loading={imageLoadingStyle} />
           )}
-          {showImage && post.images.length > 1 && (
-            <PostImageGallery post={post} isMobile={isMobile} />
-          )}
+          {showImage && post.images && post.images.length > 1 && <PostImageGallery post={post} />}
         </div>
         <div className="post-card-bottom">
           <div className="left">
@@ -275,19 +274,6 @@ const PostCard = ({
       </div>
     </div>
   );
-};
-
-PostCard.propTypes = {
-  index: PropTypes.number,
-  initialPost: PropTypes.object,
-  hideVoting: PropTypes.bool,
-  openInTab: PropTypes.bool,
-  compact: PropTypes.bool,
-  inModTools: PropTypes.bool,
-  disableEmbeds: PropTypes.bool,
-  onRemoveFromList: PropTypes.func,
-  feedItemKey: PropTypes.string,
-  canHideFromFeed: PropTypes.bool,
 };
 
 export default PostCard;

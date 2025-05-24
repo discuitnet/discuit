@@ -1,10 +1,18 @@
+import clsx from 'clsx';
 import PropTypes from 'prop-types';
 import { selectImageCopyURL } from '../helper';
 import { useImageLoaded } from '../hooks';
+import { Image } from '../serverTypes';
 import { SVGEdit } from '../SVGs';
 import Link from './Link';
 
-const ProfilePicture = ({ name, proPic, size = 'small', ...rest }) => {
+export interface ProfilePictureProps extends React.HTMLAttributes<HTMLDivElement> {
+  name: string;
+  proPic?: Image;
+  size?: 'small' | 'standard' | 'large';
+}
+
+const ProfilePicture = ({ name, proPic, size = 'small', ...rest }: ProfilePictureProps) => {
   let src;
   let averageColor = '#3d3d3d';
   if (proPic) {
@@ -44,9 +52,13 @@ ProfilePicture.propTypes = {
   size: PropTypes.string,
 };
 
-const DefaultProfilePicture = ({ name, ...rest }) => {
+export interface DefaultProfilePictureProps extends React.HTMLAttributes<HTMLDivElement> {
+  name: string;
+}
+
+const DefaultProfilePicture = ({ name, ...rest }: DefaultProfilePictureProps) => {
   const letter = name[0].toUpperCase();
-  const color = (letter) => {
+  const color = (letter: string) => {
     const n = letter.charCodeAt(0) % 8;
     switch (n) {
       case 0:
@@ -91,6 +103,14 @@ DefaultProfilePicture.propTypes = {
   name: PropTypes.string.isRequired,
 };
 
+export interface UserProPicProps extends React.HTMLAttributes<HTMLDivElement> {
+  username: string;
+  proPic: Image | null;
+  size?: ProfilePictureProps['size'];
+  editable?: boolean;
+  onEdit?: () => void; //todo
+}
+
 const UserProPic = ({
   className = '',
   username,
@@ -99,18 +119,15 @@ const UserProPic = ({
   editable = false,
   onEdit,
   ...rest
-}) => {
-  const editableCls = editable ? ' user-propic-editable' : '';
-
+}: UserProPicProps) => {
   const handleClick = () => {
     if (editable && onEdit) {
       onEdit();
     }
   };
-
   return (
     <div
-      className={'user-propic' + (className ? ` ${className}` : '') + editableCls}
+      className={clsx('user-propic', className, editable && 'user-propic-editable')}
       onClick={handleClick}
       role={editable ? 'button' : undefined}
       tabIndex={editable ? 0 : undefined}
@@ -130,20 +147,11 @@ const UserProPic = ({
   );
 };
 
-UserProPic.propTypes = {
-  className: PropTypes.string,
-  username: PropTypes.string.isRequired,
-  proPic: PropTypes.object,
-  size: PropTypes.oneOf(['small', 'standard', 'large']),
-  editable: PropTypes.bool,
-  onEdit: PropTypes.func,
-};
-
 export default UserProPic;
 
-export const GhostUserProPic = ({ className, ...rest }) => {
+export const GhostUserProPic = ({ className, ...rest }: React.HTMLAttributes<HTMLDivElement>) => {
   return (
-    <div className={'user-propic' + (className ? ` ${className}` : '')} {...rest}>
+    <div className={clsx('user-propic', className)} {...rest}>
       <div className="profile-picture is-ghost" style={{ backgroundColor: 'gray', opacity: '0.3' }}>
         <svg
           viewBox="-50 -50 100 100"
@@ -156,41 +164,36 @@ export const GhostUserProPic = ({ className, ...rest }) => {
   );
 };
 
-GhostUserProPic.propTypes = {
-  className: PropTypes.string,
-};
+export interface UserLinkProps {
+  className?: string;
+  username: string;
+  proPic: Image | null;
+  proPicGhost?: boolean;
+  isSupporter?: boolean;
+  showProPic?: boolean;
+  noLink?: boolean;
+  noAtSign?: boolean;
+}
 
 export const UserLink = ({
   className,
   username,
-  proPic = null,
+  proPic,
   proPicGhost = false,
   isSupporter = false,
   showProPic = true,
   noLink = false,
   noAtSign = false,
-  ...rest
-}) => {
+}: UserLinkProps) => {
   const El = noLink ? 'div' : Link;
   const name = showProPic || noAtSign ? username : `@${username}`;
   const supporterCls = isSupporter ? ' is-supporter' : '';
   const cls = 'user-link' + (className ? ` ${className}` : '') + supporterCls;
   return (
-    <El className={cls} {...rest} to={`/@${username}`}>
+    <El className={cls} to={`/@${username}`}>
       {showProPic && !proPicGhost && <UserProPic username={username} proPic={proPic} />}
       {showProPic && proPicGhost && <GhostUserProPic />}
       <div className={'user-link-name' + supporterCls}>{name}</div>
     </El>
   );
-};
-
-UserLink.propTypes = {
-  className: PropTypes.string,
-  username: PropTypes.string.isRequired,
-  proPic: PropTypes.object,
-  proPicGhost: PropTypes.bool,
-  isSupporter: PropTypes.bool,
-  showProPic: PropTypes.bool,
-  noLink: PropTypes.bool,
-  noAtSign: PropTypes.bool,
 };

@@ -1,15 +1,30 @@
-import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import { kRound, mfetchjson } from '../../helper';
 import { useVoting } from '../../hooks';
+import { Post } from '../../serverTypes';
 import { loginPromptToggled, snackAlertError } from '../../slices/mainSlice';
 import { postAdded } from '../../slices/postsSlice';
+import { RootState } from '../../store';
 
-const PostVotes = ({ className = '', post, sticky = false, disabled = false, mobile = false }) => {
-  const loggedIn = useSelector((state) => state.main.user) !== null;
+export interface PostVotesProps {
+  className?: string;
+  post: Post;
+  sticky?: boolean;
+  disabled?: boolean;
+  mobile?: boolean;
+}
+
+const PostVotes = ({
+  className = '',
+  post,
+  sticky = false,
+  disabled = false,
+  mobile = false,
+}: PostVotesProps) => {
+  const loggedIn = useSelector<RootState>((state) => state.main.user) !== null;
   const dispatch = useDispatch();
 
-  const { upvotes, downvotes, vote, doVote } = useVoting(
+  const { upvotes, downvotes, vote, doVote } = useVoting<Post>(
     post.userVoted ? (post.userVotedUp ? true : false) : null,
     post.upvotes,
     post.downvotes
@@ -127,15 +142,6 @@ const PostVotes = ({ className = '', post, sticky = false, disabled = false, mob
       </div>
     </div>
   );
-};
-
-PostVotes.propTypes = {
-  className: PropTypes.string,
-  post: PropTypes.object,
-  onVote: PropTypes.func,
-  sticky: PropTypes.bool,
-  disabled: PropTypes.bool,
-  mobile: PropTypes.bool,
 };
 
 export default PostVotes;

@@ -15,9 +15,9 @@ const CommunityProPic = ({
   className?: string;
   name: string;
   proPic: Image | null;
-  size: 'small' | 'standard' | 'large';
-  editable: boolean;
-  onEdit: () => void;
+  size?: 'small' | 'standard' | 'large';
+  editable?: boolean;
+  onEdit?: () => void;
 }) => {
   const defaultFavicon = '/favicon-gray.png';
   let src = defaultFavicon;

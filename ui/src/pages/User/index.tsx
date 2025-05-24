@@ -25,9 +25,10 @@ import {
 } from '../../helper';
 import { useFetchUsersLists, useMuteUser } from '../../hooks';
 import { useImageEdit } from '../../hooks/useImageEdit';
-import type { Comment, Post, User } from '../../serverTypes';
+import type { Comment, User } from '../../serverTypes';
 import { FeedItem } from '../../slices/feedsSlice';
 import { snackAlert, snackAlertError, userLoggedIn } from '../../slices/mainSlice';
+import { Post } from '../../slices/postsSlice';
 import { selectUser, userAdded } from '../../slices/usersSlice';
 import { RootState } from '../../store';
 import NotFound from '../NotFound';
@@ -274,6 +275,7 @@ const User = () => {
           initialPost={item.item as Post}
           disableEmbeds={user && user.embedsOff}
           compact={compact}
+          feedItemKey={item.key}
         />
       );
     }
@@ -659,6 +661,8 @@ const User = () => {
 
 export default User;
 
-export function userHasSupporterBadge(user: User | null) {
-  return user && (user.badges || []).find((badge) => badge.type === 'supporter') !== undefined;
+export function userHasSupporterBadge(user: User | null): boolean {
+  return Boolean(
+    user && (user.badges || []).find((badge) => badge.type === 'supporter') !== undefined
+  );
 }
