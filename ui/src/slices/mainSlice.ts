@@ -1,7 +1,16 @@
 import { ThunkDispatch } from 'redux-thunk';
 import { APIError, mfetch, mfetchjson } from '../helper';
 import { getDevicePreference, setDevicePreference } from '../pages/Settings/devicePrefs';
-import { CommunitiesSort, Community, List, Mute, Mutes, Notification, User } from '../serverTypes';
+import {
+  CommunitiesSort,
+  Community,
+  List,
+  Mute,
+  Mutes,
+  Notification,
+  NotificationView,
+  User,
+} from '../serverTypes';
 import { AppDispatch, RootState, UnknownAction } from '../store';
 import { communitiesAdded } from './communitiesSlice';
 
@@ -14,7 +23,7 @@ export interface Alert {
 export interface NotificationsResponse {
   count: number;
   newCount: number;
-  items: Notification[] | null;
+  items: (Notification | NotificationView)[] | null;
   next: string;
 }
 
@@ -281,7 +290,7 @@ export default function mainReducer(
     }
     case 'main/notificationSeen': {
       const { notifId, seen } = action.payload as { notifId: number; seen: boolean };
-      const newItems: Notification[] = [];
+      const newItems: (Notification | NotificationView)[] = [];
       state.notifications.items!.forEach((item) => {
         if (item.id === notifId) {
           newItems.push({
@@ -587,7 +596,7 @@ const closePushNotification = async (notifId: string | number) => {
 };
 
 export const markNotificationAsSeen =
-  (notif: Notification | string | number, seen = true) =>
+  (notif: Notification | NotificationView | string | number, seen = true) =>
   async (dispatch: AppDispatch) => {
     const notifId = typeof notif === 'object' ? notif.id : notif;
     const errMsg = 'Error marking notification as seen: ';
@@ -619,7 +628,7 @@ export const notificationsAllDeleted = () => {
   return { type: 'main/notificationsAllDeleted' };
 };
 
-export const notificationsDeleted = (notification: Notification) => {
+export const notificationsDeleted = (notification: Notification | NotificationView) => {
   return { type: 'main/notificationsDeleted', payload: notification };
 };
 

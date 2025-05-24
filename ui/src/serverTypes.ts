@@ -276,6 +276,23 @@ export interface NotificationAnnouncement {
   community: Community;
 }
 
+export type TextFormat = 'html' | 'md';
+
+export interface NotificationView {
+  id: number;
+  version: number;
+  type: NotificationType;
+  textFormat: TextFormat;
+  title: string;
+  body: string;
+  icons: string[];
+  toURL: string;
+  seen: boolean;
+  seenAt: string | null; // A datetime.
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Mute {
   id: string;
   type: 'user' | 'community';

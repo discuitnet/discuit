@@ -1,8 +1,8 @@
-import PropTypes from 'prop-types';
 import { useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useHistory } from 'react-router';
 import { mfetchjson } from '../../helper';
+import { NotificationView } from '../../serverTypes';
 import {
   markNotificationAsSeen,
   notificationsDeleted,
@@ -13,9 +13,12 @@ import Dropdown from '../Dropdown';
 import Image from '../Image';
 import TimeAgo from '../TimeAgo';
 
-const NotificationItem = ({ notification, ...rest }) => {
-  const { seen, createdAt, notif } = notification;
-  // const viewer = useSelector((state) => state.main.user);
+export interface NotificationItemProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
+  notification: NotificationView;
+}
+
+const NotificationItem = ({ notification, ...rest }: NotificationItemProps) => {
+  const { seen, createdAt } = notification;
 
   const [actionBtnHovering, setActionBtnHovering] = useState(false);
   const [dropdownActive, setDropdownActive] = useState(false);
@@ -33,13 +36,15 @@ const NotificationItem = ({ notification, ...rest }) => {
     }
   };
 
-  const actionsRef = useRef();
+  const actionsRef = useRef<HTMLDivElement>(null);
   const history = useHistory();
-  const handleClick = (event, to) => {
+  const handleClick = (event: React.MouseEvent, to: string) => {
     event.preventDefault();
+    const target = event.target as Node | null;
     if (
-      !actionsRef.current.contains(event.target) &&
-      !document.querySelector('#modal-root').contains(event.target)
+      actionsRef.current &&
+      !actionsRef.current.contains(target) &&
+      !document.querySelector('#modal-root')?.contains(target)
     ) {
       if (!seen) handleMarkAsSeen();
       history.push(to, {
@@ -48,18 +53,9 @@ const NotificationItem = ({ notification, ...rest }) => {
     }
   };
 
-  if (notif === null) {
-    return (
-      <div className="notif" style={{ cursor: 'initial' }}>
-        <div className="notif-icon"></div>
-        <div className="notif-body">Error rendering notification item</div>
-      </div>
-    );
-  }
-
-  let html = { __html: notification.title };
-  let to = notification.toURL;
-  let image = {
+  const html = { __html: notification.title };
+  const to = notification.toURL;
+  const image = {
     url: notification.icons[0],
     backgroundColor: 'transparent',
   };
@@ -72,7 +68,7 @@ const NotificationItem = ({ notification, ...rest }) => {
         (seen ? ' is-seen' : '') +
         (actionBtnHovering ? ' is-btn-hovering' : '')
       }
-      onClick={(e) => handleClick(e, to)}
+      onClick={(event) => handleClick(event, to)}
       {...rest}
     >
       <div className="notif-icon">
@@ -107,10 +103,6 @@ const NotificationItem = ({ notification, ...rest }) => {
       </div>
     </a>
   );
-};
-
-NotificationItem.propTypes = {
-  notification: PropTypes.object.isRequired,
 };
 
 export default NotificationItem;

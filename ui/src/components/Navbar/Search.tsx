@@ -1,19 +1,18 @@
-import PropTypes from 'prop-types';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { onKeyEnter } from '../../helper';
 import { ButtonClose, ButtonSearch } from '../Button';
 import Modal from '../Modal';
 
-const Search = ({ autoFocus = false }) => {
+const Search = ({ autoFocus = false }: { autoFocus?: boolean }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
-  const inputRef = useRef(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    const onKeyDown = (e) => {
+    const onKeyDown = (event: KeyboardEvent) => {
       const active = document.activeElement;
-      if (active.nodeName === 'BODY' && e.key === '/') {
+      if (active && inputRef.current && active.nodeName === 'BODY' && event.key === '/') {
         inputRef.current.focus();
-        e.preventDefault();
+        event.preventDefault();
       }
     };
     document.addEventListener('keydown', onKeyDown);
@@ -23,7 +22,7 @@ const Search = ({ autoFocus = false }) => {
   }, []);
 
   const [searchModalOpen, setSearchModalOpen] = useState(false);
-  const getGoogleURL = (query) => {
+  const getGoogleURL = (query: string) => {
     const q = encodeURIComponent(`${query} site:${window.location.hostname}`);
     return `https://www.google.com/search?q=${q}`;
   };
@@ -31,13 +30,10 @@ const Search = ({ autoFocus = false }) => {
   const handleSearch = () => {
     const win = window.open(getGoogleURL(searchQuery), '_blank');
     if (!win || win.closed || typeof win.closed === 'undefined') {
-      // poppup was blocked
+      // Poppup was blocked. Open the modal.
       setSearchModalOpen(true);
     }
   };
-  const linkRef = useCallback((node) => {
-    if (node !== null) setTimeout(() => node.focus(), 10);
-  });
 
   return (
     <>
@@ -57,7 +53,6 @@ const Search = ({ autoFocus = false }) => {
               href={getGoogleURL(searchQuery)}
               target="_blank"
               rel="noreferrer"
-              ref={linkRef}
               onClick={() => setSearchModalOpen(false)}
             >
               Search on Google for now
@@ -80,10 +75,6 @@ const Search = ({ autoFocus = false }) => {
       </div>
     </>
   );
-};
-
-Search.propTypes = {
-  autoFocus: PropTypes.bool,
 };
 
 export default Search;

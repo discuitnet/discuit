@@ -2,7 +2,9 @@ import { useEffect, useRef } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useDispatch, useSelector } from 'react-redux';
 import { APIError, mfetch, mfetchjson } from '../../helper';
+import { NotificationType, NotificationView } from '../../serverTypes';
 import {
+  MainState,
   notificationsAllDeleted,
   notificationsAllSeen,
   notificationsLoaded,
@@ -11,19 +13,27 @@ import {
   snackAlert,
   snackAlertError,
 } from '../../slices/mainSlice';
+import { RootState } from '../../store';
 import { ButtonMore } from '../Button';
 import Dropdown from '../Dropdown';
 import NotificationItem from './NotificationItem';
 
 const NotificationsView = () => {
-  const notifications = useSelector((state) => state.main.notifications);
-  const { loaded, next, items, count, newCount } = notifications;
+  const notifications = useSelector<RootState>(
+    (state) => state.main.notifications
+  ) as MainState['notifications'];
+  const { loaded, next, count, newCount } = notifications;
+  const items = notifications.items as NotificationView[];
 
   const dispatch = useDispatch();
   const apiEndpoint = '/api/notifications?render=true&format=html';
 
-  // type is the type of notifications. Empty string means all notifications.
-  const markAsSeen = async (type = '') => {
+  /**
+   *
+   * @param type - The type of the notifications to be marked as seen. Empty
+   * string captures all notifications.
+   */
+  const markAsSeen = async (type: NotificationType | '' = '') => {
     const res = await mfetch(`${apiEndpoint}&action=markAllAsSeen&type=${type}`, {
       method: 'POST',
     });
@@ -36,28 +46,14 @@ const NotificationsView = () => {
     (async () => {
       try {
         dispatch(notificationsLoaded(await mfetchjson(apiEndpoint)));
-
         const res = await mfetch(`${apiEndpoint}&action=resetNewCount`, { method: 'POST' });
         if (!res.ok) throw new APIError(res.status, await res.text());
-
         dispatch(notificationsNewCountReset());
-
-        // Mark upvote notifications as seen.
-        // let voteNotifsMarked = false;
-        // (async () => {
-        //   try {
-        //     await markAsSeen('new_votes');
-        //     voteNotifsMarked = true;
-        //   } catch (error) {
-        //     console.error(error);
-        //   }
-        // })();
-        // return () => voteNotifsMarked && dispatch(notificationsAllSeen('new_votes'));
       } catch (error) {
         dispatch(snackAlertError(error));
       }
     })();
-  }, [loaded]);
+  }, [loaded, newCount, dispatch]);
 
   const [ref, inView] = useInView();
   const nextItemsLoading = useRef(false);
@@ -75,18 +71,15 @@ const NotificationsView = () => {
         }
       })();
     }
-  }, [inView]);
+  }, [inView, next, dispatch]);
 
-  // Don't pass this function as is to an event handler because then type will
-  // be set to e.
-  const handleMarkAllAsSeen = async (type = '') => {
+  const handleMarkAllAsSeen = async (type: NotificationType | '' = '') => {
     try {
       await markAsSeen(type);
       dispatch(notificationsAllSeen(type));
-
       let text = 'All notifications are marked as seen.';
       if (type === 'new_votes') text = 'All upvote notifications are marked as seen.';
-      dispatch(snackAlert(text));
+      dispatch(snackAlert(text, 'notifs_marked_seen'));
     } catch (error) {
       dispatch(snackAlertError(error));
     }
@@ -98,7 +91,7 @@ const NotificationsView = () => {
       });
       if (!res.ok) throw new APIError(res.status, await res.text());
       dispatch(notificationsAllDeleted());
-      dispatch(snackAlert('All notifications are deleted.'));
+      dispatch(snackAlert('All notifications are deleted.', 'all_notifs_deleted'));
     } catch (error) {
       dispatch(snackAlertError(error));
     }
@@ -107,7 +100,7 @@ const NotificationsView = () => {
   const className = 'notifs is-custom-scrollbar is-v2 is-non-reactive';
   if (!loaded) {
     const renderSkeletons = () => {
-      let items = [];
+      const items = [];
       for (let i = 0; i < 10; i++)
         items.push(
           <div className="notif-skeleton" key={i}>
