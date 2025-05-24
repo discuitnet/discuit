@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types';
 import { useDispatch } from 'react-redux';
 import { feedLayoutChanged } from '../slices/mainSlice';
 import { SVGSettings } from '../SVGs';
@@ -10,21 +9,28 @@ const layoutOptions = [
   { text: 'Compact', id: 'compact' },
 ];
 
-const SelectBar = ({ name, options, value, onChange }) => {
-  const handleClick = (value) => {
+export interface SelectBarProps {
+  name?: string;
+  onChange?: (optionId: string) => void;
+  options: ({ id: string; text: string } & unknown)[];
+  value?: number | string;
+}
+
+const SelectBar = ({ name, options, value, onChange }: SelectBarProps) => {
+  const handleClick = (optionId: string) => {
     if (onChange) {
-      onChange(value);
+      onChange(optionId);
     }
   };
-  const handleMouseUp = (event, value) => {
+  const handleMouseUp = (event: React.MouseEvent, value: string | number) => {
     if (event.button === 1) {
-      // Third mouse button click
+      // Third mouse button click.
       window.open(`/?sort=${value}`, '_blank');
     }
   };
 
   const dispatch = useDispatch();
-  const handleLayoutClick = (value) => {
+  const handleLayoutClick = (value: string) => {
     dispatch(feedLayoutChanged(value));
   };
 
@@ -65,13 +71,6 @@ const SelectBar = ({ name, options, value, onChange }) => {
       </div>
     </nav>
   );
-};
-
-SelectBar.propTypes = {
-  name: PropTypes.string,
-  onChange: PropTypes.func,
-  options: PropTypes.array.isRequired,
-  value: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
 };
 
 export default SelectBar;

@@ -1,7 +1,21 @@
-import PropTypes from 'prop-types';
-import { useState, useRef, useEffect } from 'react';
-import Modal from './Modal';
+import { useEffect, useRef, useState } from 'react';
 import { ButtonClose } from './Button';
+import Modal from './Modal';
+
+export interface ImageEditModalProps {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  imageUrl?: string;
+  altText?: string;
+  onUpload: (file: File) => void;
+  onDelete: () => void;
+  onSave: (altText: string) => void;
+  uploading?: boolean;
+  deleting?: boolean;
+  canDelete?: boolean;
+  isCircular?: boolean;
+}
 
 const ImageEditModal = ({
   open,
@@ -16,21 +30,21 @@ const ImageEditModal = ({
   deleting,
   canDelete = true,
   isCircular = true,
-}) => {
+}: ImageEditModalProps) => {
   const [altText, setAltText] = useState(initialAltText || '');
-  const [_file, setFile] = useState(null);
+  // const [_file, setFile] = useState<File | null>(null);
 
   useEffect(() => {
     setAltText(initialAltText || '');
-    setFile(null);
+    // setFile(null);
   }, [open, initialAltText]);
 
-  const fileInputRef = useRef();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e) => {
-    if (e.target.files.length > 0) {
-      setFile(e.target.files[0]);
-      onUpload(e.target.files[0]);
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      // setFile(event.target.files[0]);
+      onUpload(event.target.files[0]);
     }
   };
 
@@ -60,7 +74,7 @@ const ImageEditModal = ({
             )}
           </div>
           <div className="image-edit-actions">
-            <button onClick={() => fileInputRef.current.click()} disabled={uploading}>
+            <button onClick={() => fileInputRef.current?.click()} disabled={uploading}>
               {uploading ? <>Uploading...</> : 'Upload new'}
             </button>
             <input
@@ -95,21 +109,6 @@ const ImageEditModal = ({
       </div>
     </Modal>
   );
-};
-
-ImageEditModal.propTypes = {
-  open: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-  title: PropTypes.string.isRequired,
-  imageUrl: PropTypes.string,
-  altText: PropTypes.string,
-  onUpload: PropTypes.func.isRequired,
-  onDelete: PropTypes.func.isRequired,
-  onSave: PropTypes.func.isRequired,
-  uploading: PropTypes.bool,
-  deleting: PropTypes.bool,
-  canDelete: PropTypes.bool,
-  isCircular: PropTypes.bool,
 };
 
 export default ImageEditModal;

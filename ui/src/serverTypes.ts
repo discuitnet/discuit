@@ -323,3 +323,9 @@ export interface AnalyticsEvent {
 }
 
 export type CommunitiesSort = 'new' | 'old' | 'size' | 'name_asc' | 'name_dsc';
+
+export interface ReportReason {
+  id: number;
+  title: string;
+  description: string | null;
+}

@@ -9,6 +9,7 @@ import {
   Mutes,
   Notification,
   NotificationView,
+  ReportReason,
   User,
 } from '../serverTypes';
 import { AppDispatch, RootState, UnknownAction } from '../store';
@@ -29,7 +30,7 @@ export interface NotificationsResponse {
 
 export interface InitialValues {
   signupsDisabled: boolean;
-  reportReasons: unknown;
+  reportReasons: ReportReason[] | null;
   user: User | null;
   lists: List[];
   communities: Community[];

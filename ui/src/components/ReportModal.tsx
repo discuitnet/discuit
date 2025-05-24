@@ -1,10 +1,20 @@
-import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { APIError, mfetch } from '../helper';
-import { snackAlert, snackAlertError } from '../slices/mainSlice';
+import { MainState, snackAlert, snackAlertError } from '../slices/mainSlice';
+import { RootState } from '../store';
 import { ButtonClose } from './Button';
 import Modal from './Modal';
+
+export interface ReportModalProps {
+  target: { id: unknown } & unknown;
+  targetType: string;
+  noButton?: boolean;
+  buttonClassName?: string;
+  disabled?: boolean;
+  open?: boolean;
+  onClose?: () => void;
+}
 
 const ReportModal = ({
   target,
@@ -12,12 +22,14 @@ const ReportModal = ({
   buttonClassName = 'button-text',
   disabled = false,
   noButton,
-  open: outerOpen = null,
+  open: outerOpen,
   onClose,
-}) => {
+}: ReportModalProps) => {
   const dispatch = useDispatch();
-  const reasons = useSelector((state) => state.main.reportReasons);
-  const [selected, setSelected] = useState(null);
+  const reasons = useSelector<RootState>(
+    (state) => state.main.reportReasons
+  ) as MainState['reportReasons'];
+  const [selected, setSelected] = useState<string | null>(null);
 
   const [innerOpen, setInnerOpen] = useState(false);
   const open = outerOpen ?? innerOpen;
@@ -27,8 +39,8 @@ const ReportModal = ({
     if (open) setSelected(null);
   }, [open]);
 
-  const handleRadioChange = (e) => {
-    setSelected(e.target.value);
+  const handleRadioChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSelected(event.target.value);
   };
 
   const handleReport = async () => {
@@ -44,13 +56,20 @@ const ReportModal = ({
         });
         if (!res.ok) {
           if (res.status === 409) {
-            dispatch(snackAlert('You have already reported this ' + targetType));
+            dispatch(
+              snackAlert(`You have already reported this ${targetType}`, `report_${targetType}`)
+            );
             return;
           } else {
             throw new APIError(res.status, await res.json());
           }
         }
-        dispatch(snackAlert(`${targetType[0].toUpperCase() + targetType.slice(1)} reported.`));
+        dispatch(
+          snackAlert(
+            `${targetType[0].toUpperCase() + targetType.slice(1)} reported.`,
+            `reported_${targetType}`
+          )
+        );
       } catch (error) {
         dispatch(snackAlertError(error));
       } finally {
@@ -78,10 +97,15 @@ const ReportModal = ({
               onChange={handleRadioChange}
               style={{ minWidth: '340px' }}
             >
-              {reasons.map((r) => (
-                <div key={r.id} className="radio" style={{ margin: '0.7rem 0' }}>
-                  <input id={'report-reason' + r.id} type="radio" name="reason" value={r.id} />
-                  <label htmlFor={'report-reason' + r.id}>{r.title}</label>
+              {(reasons || []).map((reason) => (
+                <div key={reason.id} className="radio" style={{ margin: '0.7rem 0' }}>
+                  <input
+                    id={'report-reason' + reason.id}
+                    type="radio"
+                    name="reason"
+                    value={reason.id}
+                  />
+                  <label htmlFor={'report-reason' + reason.id}>{reason.title}</label>
                 </div>
               ))}
             </div>
@@ -96,16 +120,6 @@ const ReportModal = ({
       </Modal>
     </>
   );
-};
-
-ReportModal.propTypes = {
-  target: PropTypes.object.isRequired,
-  targetType: PropTypes.string.isRequired,
-  noButton: PropTypes.bool,
-  buttonClassName: PropTypes.string,
-  disabled: PropTypes.bool,
-  open: PropTypes.bool,
-  onClose: PropTypes.func,
 };
 
 export default ReportModal;

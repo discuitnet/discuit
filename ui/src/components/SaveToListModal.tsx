@@ -1,15 +1,19 @@
 import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { mfetchjson } from '../helper';
 import { EditListForm } from '../pages/Lists/List';
-import { saveToListModalClosed, snackAlert, snackAlertError } from '../slices/mainSlice';
+import { List } from '../serverTypes';
+import { MainState, saveToListModalClosed, snackAlert, snackAlertError } from '../slices/mainSlice';
+import { RootState } from '../store';
 import { ButtonClose } from './Button';
 import Modal from './Modal';
 
 const SaveToListModal = () => {
   const dispatch = useDispatch();
-  const { open, toSaveItemId, toSaveItemType } = useSelector((state) => state.main.saveToListModal);
+  const { open, toSaveItemId, toSaveItemType } = useSelector<RootState>(
+    (state) => state.main.saveToListModal
+  ) as MainState['saveToListModal'];
   const handleClose = () => dispatch(saveToListModalClosed());
 
   if (open) {
@@ -26,15 +30,21 @@ const SaveToListModal = () => {
   return null;
 };
 
-const TheModal = ({ open, onClose, toSaveItemId, toSaveItemType }) => {
+interface TheModalProps {
+  open: boolean;
+  onClose: () => void;
+  toSaveItemId: unknown;
+  toSaveItemType: unknown;
+}
+
+const TheModal = ({ open, onClose, toSaveItemId, toSaveItemType }: TheModalProps) => {
   const handleClose = onClose;
 
   const dispatch = useDispatch();
 
-  const user = useSelector((state) => state.main.user);
-  const [page, setPage] = useState('list'); // One of: list, new.
+  const [page, setPage] = useState<'list' | 'new'>('list');
 
-  const [prevCheckedLists, setPrevCheckedLists] = useState(null); // List of list ids.
+  const [prevCheckedLists, setPrevCheckedLists] = useState<number[] | null>(null); // List of list ids.
   useEffect(() => {
     const f = async () => {
       try {
@@ -47,16 +57,27 @@ const TheModal = ({ open, onClose, toSaveItemId, toSaveItemType }) => {
       }
     };
     f();
-  }, [toSaveItemId, toSaveItemType]);
+  }, [toSaveItemId, toSaveItemType, dispatch]);
 
-  const lists = useSelector((state) => state.main.lists.lists);
-  const [listState, setListState] = useState({});
-  const listsLoading = lists && listState && lists.length !== Object.keys(listState).length;
+  type ListState = {
+    checked?: boolean;
+    requestInProgress?: boolean;
+  };
+
+  type ListsState = {
+    [key: number]: ListState;
+  };
+
+  const lists = useSelector<RootState>(
+    (state) => state.main.lists.lists
+  ) as MainState['lists']['lists'];
+  const [listsState, setListsState] = useState<ListsState>({});
+  const listsLoading = lists && listsState && lists.length !== Object.keys(listsState).length;
   useEffect(() => {
     if (prevCheckedLists === null) {
       return;
     }
-    setListState((prev) => {
+    setListsState((prev) => {
       const newState = {
         ...prev,
       };
@@ -71,8 +92,8 @@ const TheModal = ({ open, onClose, toSaveItemId, toSaveItemType }) => {
       return newState;
     });
   }, [lists, prevCheckedLists]);
-  const setListItemState = (listId, state) => {
-    setListState((prev) => {
+  const setListItemState = (listId: number, state: ListState) => {
+    setListsState((prev) => {
       return {
         ...prev,
         [listId]: {
@@ -82,7 +103,7 @@ const TheModal = ({ open, onClose, toSaveItemId, toSaveItemType }) => {
       };
     });
   };
-  const handleItemClick = async (list, event) => {
+  const handleItemClick = async (list: List, event: React.ChangeEvent<HTMLInputElement>) => {
     const checked = event.target.checked;
     setListItemState(list.id, {
       checked,
@@ -127,7 +148,7 @@ const TheModal = ({ open, onClose, toSaveItemId, toSaveItemType }) => {
     }
 
     const renderList = () => {
-      const renderItem = (list) => {
+      const renderItem = (list: List) => {
         const { name, displayName } = list;
         const htmlFor = `ch-${name}`;
         return (
@@ -137,8 +158,8 @@ const TheModal = ({ open, onClose, toSaveItemId, toSaveItemType }) => {
               className="checkbox"
               id={htmlFor}
               type="checkbox"
-              checked={listState[list.id].checked}
-              disabled={listState[list.id].requestInProgress}
+              checked={listsState[list.id].checked}
+              disabled={listsState[list.id].requestInProgress}
               onChange={(event) => handleItemClick(list, event)}
             />
           </div>
