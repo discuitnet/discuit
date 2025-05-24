@@ -7,7 +7,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { usernameMaxLength } from '../config';
 import { APIError, mfetch, validEmail } from '../helper';
 import { useDelayedEffect, useInputUsername } from '../hooks';
-import { loginModalOpened, snackAlert, snackAlertError } from '../slices/mainSlice';
+import { loginModalOpened, snackAlertError } from '../slices/mainSlice';
+import { RootState } from '../store';
 import { ButtonClose } from './Button';
 import { Form, FormField } from './Form';
 import Input, { InputPassword, InputWithCount } from './Input';
@@ -23,13 +24,13 @@ const errors = [
   'Passwords do not match.',
 ];
 
-const Signup = ({ open, onClose }) => {
+const Signup = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
   const dispatch = useDispatch();
 
-  const signupsDisabled = useSelector((state) => state.main.signupsDisabled);
+  const signupsDisabled = useSelector<RootState>((state) => state.main.signupsDisabled) as boolean;
 
   const [username, handleUsernameChange] = useInputUsername(usernameMaxLength);
-  const [usernameError, setUsernameError] = useState(null);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
   const checkUsernameExists = useCallback(async () => {
     if (username === '') return true;
     try {
@@ -50,33 +51,38 @@ const Signup = ({ open, onClose }) => {
   useDelayedEffect(checkUsernameExists);
 
   const [email, setEmail] = useState('');
-  const [emailError, setEmailError] = useState(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   useEffect(() => {
     setEmailError(null);
   }, [email]);
 
   const [password, setPassword] = useState('');
-  const [passwordError, setPasswordError] = useState(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   useEffect(() => {
     setPasswordError(null);
   }, [password]);
 
   const [repeatPassword, setRepeatPassword] = useState('');
-  const [repeatPasswordError, setRepeatPasswordError] = useState(null);
+  const [repeatPasswordError, setRepeatPasswordError] = useState<string | null>(null);
   useEffect(() => {
     setRepeatPasswordError(null);
   }, [repeatPassword]);
 
   const CAPTCHA_ENABLED = import.meta.env.VITE_CAPTCHASITEKEY ? true : false;
-  const captchaRef = useRef();
-  const handleCaptchaVerify = (token) => {
+  const captchaRef = useRef<ReCAPTCHA>(null);
+  const handleCaptchaVerify = (token: string | null) => {
     if (!token) {
-      dispatch(snackAlert('Something went wrong. Try again.'));
+      dispatch(snackAlertError(new Error('Empty captcha token')));
       return;
     }
     signInUser(username, email, password, token);
   };
-  const signInUser = async (username, email, password, captchaToken) => {
+  const signInUser = async (
+    username: string,
+    email: string,
+    password: string,
+    captchaToken?: string
+  ) => {
     try {
       const res = await mfetch('/api/_signup', {
         method: 'POST',
@@ -88,12 +94,12 @@ const Signup = ({ open, onClose }) => {
       dispatch(snackAlertError(error));
     }
   };
-  const handleCaptchaError = (error) => {
+  const handleCaptchaError = (error: unknown) => {
     dispatch(snackAlertError(error));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     let errFound = false;
     if (!username) {
       errFound = true;
@@ -138,8 +144,8 @@ const Signup = ({ open, onClose }) => {
     captchaRef.current.execute();
   };
 
-  const handleOnLogin = (e) => {
-    e.preventDefault();
+  const handleOnLogin = (event: React.MouseEvent) => {
+    event.preventDefault();
     onClose();
     dispatch(loginModalOpened());
   };
@@ -163,7 +169,7 @@ const Signup = ({ open, onClose }) => {
               className="is-username"
               label="Username"
               description="The name you will use when interacting with the community."
-              error={usernameError}
+              error={usernameError || undefined}
             >
               <InputWithCount
                 maxLength={usernameMaxLength}
@@ -178,7 +184,7 @@ const Signup = ({ open, onClose }) => {
             <FormField
               label="Email (optional)"
               description="Without an email address, there's no way to recover your account if you lose your password."
-              error={emailError}
+              error={emailError || undefined}
             >
               <Input
                 type="email"
@@ -187,7 +193,7 @@ const Signup = ({ open, onClose }) => {
                 disabled={signupsDisabled}
               />
             </FormField>
-            <FormField label="Password" error={passwordError}>
+            <FormField label="Password" error={passwordError || undefined}>
               <InputPassword
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -195,7 +201,7 @@ const Signup = ({ open, onClose }) => {
                 disabled={signupsDisabled}
               />
             </FormField>
-            <FormField label="Repeat password" error={repeatPasswordError}>
+            <FormField label="Repeat password" error={repeatPasswordError || undefined}>
               <InputPassword
                 value={repeatPassword}
                 onChange={(e) => {
