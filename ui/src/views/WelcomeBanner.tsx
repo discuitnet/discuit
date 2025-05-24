@@ -1,16 +1,25 @@
-import PropTypes from 'prop-types';
-import React from 'react';
+import clsx from 'clsx';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { createCommunityModalOpened, signupModalOpened } from '../slices/mainSlice';
+import { createCommunityModalOpened, MainState, signupModalOpened } from '../slices/mainSlice';
+import { RootState } from '../store';
 
-const WelcomeBanner = ({ className, children, hideIfMember = false, ...props }) => {
+export interface WelcomeBannerProps extends React.HTMLAttributes<HTMLDivElement> {
+  hideIfMember?: boolean;
+}
+
+const WelcomeBanner = ({
+  className,
+  children,
+  hideIfMember = false,
+  ...props
+}: WelcomeBannerProps) => {
   const dispatch = useDispatch();
 
-  const user = useSelector((state) => state.main.user);
+  const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const loggedIn = user !== null;
 
-  const usersCount = useSelector((state) => state.main.noUsers);
+  const usersCount = useSelector<RootState>((state) => state.main.noUsers) as MainState['noUsers'];
 
   if (hideIfMember && loggedIn) {
     return null;
@@ -20,11 +29,11 @@ const WelcomeBanner = ({ className, children, hideIfMember = false, ...props }) 
 
   return (
     <div
-      className={
-        'card card-sub card-padding home-welcome' +
-        (!loggedIn ? ' is-guest' : '') +
-        (className ? ` ${className}` : '')
-      }
+      className={clsx(
+        'card card-sub card-padding home-welcome',
+        !loggedIn && 'is-guest',
+        className
+      )}
       {...props}
     >
       <div className="home-welcome-text">
@@ -57,12 +66,6 @@ const WelcomeBanner = ({ className, children, hideIfMember = false, ...props }) 
       </div>
     </div>
   );
-};
-
-WelcomeBanner.propTypes = {
-  className: PropTypes.string,
-  children: PropTypes.element,
-  hideIfMember: PropTypes.bool,
 };
 
 export default WelcomeBanner;

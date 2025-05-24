@@ -1,10 +1,9 @@
 import clsx from 'clsx';
-import PropTypes from 'prop-types';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
-import Link from '../components/Link';
-import { sidebarScrollYUpdated, toggleSidebarOpen } from '../slices/mainSlice';
+import { MainState, sidebarScrollYUpdated, toggleSidebarOpen } from '../slices/mainSlice';
+import { RootState } from '../store';
 import {
   SVGCommunities,
   SVGDiscord,
@@ -18,25 +17,35 @@ import {
 import WelcomeBanner from '../views/WelcomeBanner';
 import { ButtonClose } from './Button';
 import CommunityProPic from './CommunityProPic';
+import Link from './Link';
 import Search from './Navbar/Search';
 import { MountTransition } from './Transition';
 
-const Sidebar = ({ mobile = false }) => {
+type Point = {
+  x: number;
+  y: number;
+};
+
+const Sidebar = ({ mobile = false }: { mobile?: boolean }) => {
   const dispatch = useDispatch();
 
-  const user = useSelector((state) => state.main.user);
+  const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const loggedIn = user !== null;
 
   const homeFeed = loggedIn ? user.homeFeed : 'all';
-  const communities = useSelector((state) => state.main.sidebarCommunities);
+  const communities = useSelector<RootState>(
+    (state) => state.main.sidebarCommunities
+  ) as MainState['sidebarCommunities'];
 
-  const open = useSelector((state) => state.main.sidebarOpen);
+  const open = useSelector<RootState>(
+    (state) => state.main.sidebarOpen
+  ) as MainState['sidebarOpen'];
   const handleClose = () => {
     if (open) dispatch(toggleSidebarOpen());
   };
 
   const location = useLocation();
-  const homePageLink = (to) => {
+  const homePageLink = (to: string) => {
     const params = new URLSearchParams(location.search);
     if (params.has('sort')) {
       return `${to}?sort=${params.get('sort')}`;
@@ -44,7 +53,9 @@ const Sidebar = ({ mobile = false }) => {
     return to;
   };
 
-  const expanded = useSelector((state) => state.main.sidebarCommunitiesExpanded);
+  const expanded = useSelector<RootState>(
+    (state) => state.main.sidebarCommunitiesExpanded
+  ) as MainState['sidebarCommunitiesExpanded'];
   const renderCommunitiesList = () => {
     const renderInitially = 10,
       length = communities ? communities.length : 0,
@@ -96,10 +107,12 @@ const Sidebar = ({ mobile = false }) => {
     );
   };
 
-  const ref = useRef(null);
-  const scrollY = useSelector((state) => state.main.sidebarScrollY);
+  const ref = useRef<HTMLElement>(null);
+  const scrollY = useSelector<RootState>(
+    (state) => state.main.sidebarScrollY
+  ) as MainState['sidebarScrollY'];
   useLayoutEffect(() => {
-    const el = ref.current;
+    const el = ref.current as HTMLElement;
     el.scrollTo(0, scrollY);
     return () => {
       if (el) {
@@ -108,11 +121,13 @@ const Sidebar = ({ mobile = false }) => {
     };
   }, [dispatch, scrollY]);
 
-  const lists = useSelector((state) => state.main.lists.lists);
+  const lists = useSelector<RootState>(
+    (state) => state.main.lists.lists
+  ) as MainState['lists']['lists'];
 
   const sidebarWidth = 300;
   const closedXPos = -1 * sidebarWidth - 1; // Sidebar's translateX when it's closed.
-  const [position, _setPosition] = useState({ x: open ? 0 : closedXPos, y: 0 });
+  const [position, _setPosition] = useState<Point>({ x: open ? 0 : closedXPos, y: 0 });
   const [isDragging, _setIsDragging] = useState(false);
   const touchState = useRef({
     position: { x: position.x, y: position.y },
@@ -123,7 +138,7 @@ const Sidebar = ({ mobile = false }) => {
     open: open,
     mouseMovements: 0,
   });
-  const setPosition = (pos) => {
+  const setPosition = (pos: Point) => {
     touchState.current = {
       ...touchState.current,
       position: pos,
@@ -144,24 +159,24 @@ const Sidebar = ({ mobile = false }) => {
   }, [open, closedXPos]);
 
   useEffect(() => {
-    const setOffset = (offset) => {
+    const setOffset = (offset: Point) => {
       touchState.current = {
         ...touchState.current,
         offset: offset,
       };
     };
-    const setIsDragging = (is) => {
+    const setIsDragging = (is: boolean) => {
       touchState.current = {
         ...touchState.current,
         isDragging: is,
       };
       _setIsDragging(is);
     };
-    const touchMove = (event) => {
-      const clientX = event.clientX || event.touches[0].clientX;
-      const clientY = event.clientY || event.touches[0].clientY;
+    const touchMove = (event: MouseEvent | TouchEvent) => {
+      const clientX = event instanceof MouseEvent ? event.clientX : event.touches[0].clientX;
+      const clientY = event instanceof MouseEvent ? event.clientY : event.touches[0].clientY;
       let x = clientX - touchState.current.offset.x;
-      let y = clientY - touchState.current.offset.y;
+      const y = clientY - touchState.current.offset.y;
       if (x > 0) {
         x = 0;
       }
@@ -185,9 +200,9 @@ const Sidebar = ({ mobile = false }) => {
       setIsDragging(true);
       setPosition({ x, y });
     };
-    const touchStart = (event) => {
-      const clientX = event.clientX || event.touches[0].clientX;
-      const clientY = event.clientY || event.touches[0].clientY;
+    const touchStart = (event: MouseEvent | TouchEvent) => {
+      const clientX = event instanceof MouseEvent ? event.clientX : event.touches[0].clientX;
+      const clientY = event instanceof MouseEvent ? event.clientY : event.touches[0].clientY;
       setOffset({
         x: clientX - touchState.current.position.x,
         y: clientY - touchState.current.position.y,
@@ -560,13 +575,9 @@ const Sidebar = ({ mobile = false }) => {
   );
 };
 
-Sidebar.propTypes = {
-  mobile: PropTypes.bool,
-};
-
 export default Sidebar;
 
-function angleBetweenPoints(p1, p2) {
+function angleBetweenPoints(p1: Point, p2: Point) {
   const { x: x0, y: y0 } = p1;
   const { x: x1, y: y1 } = p2;
   const dx = Math.abs(x1 - x0);
