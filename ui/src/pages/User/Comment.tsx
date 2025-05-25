@@ -5,8 +5,15 @@ import MarkdownBody from '../../components/MarkdownBody';
 import ShowMoreBox from '../../components/ShowMoreBox';
 import TimeAgo from '../../components/TimeAgo';
 import { kRound, stringCount } from '../../helper';
+import { Comment as CommentType } from '../../serverTypes';
 
-const Comment = ({ comment, onRemoveFromList = null }) => {
+const Comment = ({
+  comment,
+  onRemoveFromList,
+}: {
+  comment: CommentType;
+  onRemoveFromList?: (commentId: string) => void;
+}) => {
   return (
     <div className="comment">
       <div className="comment-head">

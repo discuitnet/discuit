@@ -10,15 +10,22 @@ import PageLoading from '../../components/PageLoading';
 import Sidebar from '../../components/Sidebar';
 import { mfetchjson, stringCount, timeAgo } from '../../helper';
 import { useFetchUser, useFetchUsersLists } from '../../hooks';
-import { listsFilterChanged, listsOrderChanged } from '../../slices/listsSlice';
-import { snackAlert } from '../../slices/mainSlice';
+import { List } from '../../serverTypes';
+import {
+  ListsFilter,
+  listsFilterChanged,
+  ListsOrder,
+  listsOrderChanged,
+} from '../../slices/listsSlice';
+import { MainState, snackAlert } from '../../slices/mainSlice';
+import { RootState } from '../../store';
 import NotFound from '../NotFound';
 import { EditListForm } from './List';
 
 const Lists = () => {
   const dispatch = useDispatch();
   const [isNewListOpen, setIsNewListOpen] = useState(false);
-  const [lists, setLists] = useState([]);
+  const [lists, setLists] = useState<List[]>([]);
 
   const toggleNewListForm = () => {
     setIsNewListOpen(!isNewListOpen);
@@ -40,7 +47,7 @@ const Lists = () => {
     };
   }, []);
 
-  const { username } = useParams();
+  const { username } = useParams<{ [key: string]: string }>();
   const { user, loading: userLoading, error: userError } = useFetchUser(username);
   const { order, filter, loading: listsLoading, error: listsError } = useFetchUsersLists(username);
 
@@ -54,7 +61,7 @@ const Lists = () => {
     fetchLists();
   }, [username, order, filter]);
 
-  const authedUser = useSelector((state) => state.main.user);
+  const authedUser = useSelector<RootState>((state) => state.main.user) as MainState['user'];
 
   if (userLoading || listsLoading) {
     return <PageLoading />;
@@ -84,7 +91,7 @@ const Lists = () => {
         <div
           key={key}
           className="dropdown-item"
-          onClick={() => dispatch(listsOrderChanged(username, key))}
+          onClick={() => dispatch(listsOrderChanged(username, key as ListsOrder))}
         >
           {value}
         </div>
@@ -109,7 +116,7 @@ const Lists = () => {
         <div
           key={key}
           className="dropdown-item"
-          onClick={() => dispatch(listsFilterChanged(username, key))}
+          onClick={() => dispatch(listsFilterChanged(username, key as ListsFilter))}
         >
           {value}
         </div>
@@ -162,7 +169,7 @@ const Lists = () => {
 
 export default Lists;
 
-const ListThumbnail = ({ list }) => {
+const ListThumbnail = ({ list }: { list: List }) => {
   // TODO: Display list private status.
   const { username, name, displayName } = list;
   return (

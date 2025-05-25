@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
@@ -17,17 +16,20 @@ import Sidebar from '../../components/Sidebar';
 import { usernameMaxLength } from '../../config';
 import { APIError, dateString1, mfetch, mfetchjson, stringCount, timeAgo } from '../../helper';
 import { useInputUsername } from '../../hooks';
+import { Comment, ListItem, List as ListType, Post as ServerPost } from '../../serverTypes';
 import { FeedItem, feedReloaded } from '../../slices/feedsSlice';
 import { listAdded, selectList } from '../../slices/listsSlice';
-import { listsAdded, snackAlertError } from '../../slices/mainSlice';
+import { listsAdded, MainState, snackAlertError } from '../../slices/mainSlice';
+import { Post } from '../../slices/postsSlice';
 import { selectUser } from '../../slices/usersSlice';
+import { RootState } from '../../store';
 import NotFound from '../NotFound';
 import { isInfiniteScrollingDisabled } from '../Settings/devicePrefs';
 import { MemorizedComment } from '../User/Comment';
 
 const List = () => {
   const dispatch = useDispatch();
-  const { username, listName: listname } = useParams();
+  const { username, listName: listname } = useParams<{ [key: string]: string }>();
 
   const [editModalOpen, setEditModalOpen] = useState(false);
 
@@ -57,7 +59,7 @@ const List = () => {
       }
     };
     f();
-  }, [listLoading]);
+  }, [listLoading, dispatch, listEndpoint, username]);
   useEffect(() => {
     if (!list || list.name !== listname || list.username !== username) {
       setListLoading('loading');
@@ -65,11 +67,14 @@ const List = () => {
   }, [list, username, listname]);
 
   const feedEndpoint = `${listEndpoint}/items`;
-  const handleFeedFetch = async (next = null) => {
+  const handleFeedFetch = async (next: string | null = null) => {
     const url = next === null ? feedEndpoint : `${feedEndpoint}?next=${next}`;
-    const res = await mfetchjson(url);
+    const res = (await mfetchjson(url)) as {
+      items: ListItem[] | null;
+      next: string | null;
+    };
     const items = (res.items || []).map(
-      (item) => new FeedItem(item.targetItem, item.targetType, item.id)
+      (item) => new FeedItem<ServerPost | Comment>(item.targetItem, item.targetType, `${item.id}`)
     );
     return {
       items,
@@ -77,12 +82,12 @@ const List = () => {
     };
   };
 
-  const handleRemoveFromList = async (item, type) => {
-    const endpoint = `/api/lists/${list.id}/items`;
+  const handleRemoveFromList = async (itemId: string, type: string) => {
+    const endpoint = `/api/lists/${list?.id}/items`;
     try {
       await mfetchjson(endpoint, {
         method: 'DELETE',
-        body: JSON.stringify({ targetId: item.id, targetType: type }),
+        body: JSON.stringify({ targetId: itemId, targetType: type }),
       });
       dispatch(feedReloaded(feedEndpoint));
     } catch (error) {
@@ -90,27 +95,32 @@ const List = () => {
     }
   };
 
-  const viewer = useSelector((state) => state.main.user);
+  const viewer = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const viewerListOwner = viewer && list && viewer.id === list.userId;
 
   const user = useSelector(selectUser(username));
-  const handleRenderItem = (item) => {
+  const handleRenderItem = (item: FeedItem<Post | Comment>) => {
     if (item.type === 'post') {
+      const post = item.item as Post;
       return (
         <MemorizedPostCard
-          initialPost={item.item}
+          initialPost={post}
           disableEmbeds={user && user.embedsOff}
-          onRemoveFromList={viewerListOwner ? () => handleRemoveFromList(item.item, 'post') : null}
+          onRemoveFromList={
+            viewerListOwner ? () => handleRemoveFromList(post.id, 'post') : undefined
+          }
           compact={compact}
+          feedItemKey={item.key}
         />
       );
     }
     if (item.type === 'comment') {
+      const comment = item.item as Comment;
       return (
         <MemorizedComment
-          comment={item.item}
+          comment={comment}
           onRemoveFromList={
-            viewerListOwner ? () => handleRemoveFromList(item.item, 'comment') : null
+            viewerListOwner ? () => handleRemoveFromList(comment.id, 'comment') : undefined
           }
         />
       );
@@ -138,13 +148,15 @@ const List = () => {
       await mfetchjson(listEndpoint, { method: 'DELETE' });
       const res = await mfetchjson('/api/_initial');
       dispatch(listsAdded(res.lists));
-      history.replace(`/@${list.username}/lists/${name}`);
+      history.replace(`/@${list?.username}/lists/${name}`);
     } catch (error) {
       dispatch(snackAlertError(error));
     }
   };
 
-  const layout = useSelector((state) => state.main.feedLayout);
+  const layout = useSelector<RootState>(
+    (state) => state.main.feedLayout
+  ) as MainState['feedLayout'];
   const compact = layout === 'compact';
 
   if (listLoading !== 'loaded' || !list) {
@@ -191,8 +203,7 @@ const List = () => {
         </header>
         <div className="lists-feed">
           {/*<PostsFeed feedType="all" />*/}
-
-          <Feed
+          <Feed<Post | Comment>
             className="posts-feed"
             feedId={feedEndpoint}
             onFetch={handleFeedFetch}
@@ -230,7 +241,15 @@ const List = () => {
 
 export default List;
 
-const EditListModal = ({ list, open, onClose }) => {
+const EditListModal = ({
+  list,
+  open,
+  onClose,
+}: {
+  list: ListType;
+  open: boolean;
+  onClose: () => void;
+}) => {
   return (
     <Modal open={open} onClose={onClose}>
       <div className="modal-card edit-list-modal is-compact-mobile">
@@ -242,12 +261,6 @@ const EditListModal = ({ list, open, onClose }) => {
       </div>
     </Modal>
   );
-};
-
-EditListModal.propTypes = {
-  list: PropTypes.object.isRequired,
-  open: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
 };
 
 const SVGs = {
@@ -345,21 +358,29 @@ const SVGs = {
   ),
 };
 
-export const EditListForm = ({ list, onCancel, onSuccess }) => {
-  const user = useSelector((state) => state.main.user);
+export const EditListForm = ({
+  list,
+  onCancel,
+  onSuccess,
+}: {
+  list?: ListType;
+  onCancel: () => void;
+  onSuccess?: () => void;
+}) => {
+  const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const dispatch = useDispatch();
 
   const [isPublic, setIsPublic] = useState(list ? list.public : false);
 
   const [name, handleNameChange] = useInputUsername(usernameMaxLength, list ? list.name : '');
-  const [nameError, setNameError] = useState(null);
+  const [nameError, setNameError] = useState<string | null>(null);
   const handleNameBlur = async () => {
     if (list && list.name === name) {
       setNameError(null);
       return;
     }
     try {
-      const res = await mfetch(`/api/users/${user.username}/lists/${name}`);
+      const res = await mfetch(`/api/users/${user?.username}/lists/${name}`);
       if (!res.ok) {
         if (res.status === 404) {
           setNameError(null);
@@ -377,7 +398,7 @@ export const EditListForm = ({ list, onCancel, onSuccess }) => {
   const [description, setDescription] = useState(list ? list.description : '');
 
   const createNewList = async () => {
-    const newLists = await mfetchjson(`/api/users/${user.username}/lists`, {
+    const newLists = await mfetchjson(`/api/users/${user?.username}/lists`, {
       method: 'POST',
       body: JSON.stringify({
         name,
@@ -391,6 +412,9 @@ export const EditListForm = ({ list, onCancel, onSuccess }) => {
 
   const history = useHistory();
   const updateList = async () => {
+    if (!list) {
+      return;
+    }
     const newList = await mfetchjson(`/api/lists/${list.id}`, {
       method: 'PUT',
       body: JSON.stringify({
@@ -407,7 +431,7 @@ export const EditListForm = ({ list, onCancel, onSuccess }) => {
   };
 
   const [formDisabled, setFormDisabled] = useState(false);
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     if (event) {
       event.preventDefault();
     }
@@ -441,7 +465,7 @@ export const EditListForm = ({ list, onCancel, onSuccess }) => {
           <FormField
             label="Name"
             description="Name will be part of the URL of the list."
-            error={nameError}
+            error={nameError || undefined}
             style={{ marginBottom: '5px' }}
           >
             <InputWithCount
@@ -466,9 +490,9 @@ export const EditListForm = ({ list, onCancel, onSuccess }) => {
           </FormField>
           <FormField label="Description">
             <textarea
-              rows="5"
+              rows={5}
               placeholder=""
-              value={description}
+              value={description || ''}
               onChange={(e) => setDescription(e.target.value)}
             />
           </FormField>
@@ -482,10 +506,4 @@ export const EditListForm = ({ list, onCancel, onSuccess }) => {
       </div>
     </>
   );
-};
-
-EditListForm.propTypes = {
-  list: PropTypes.object,
-  onCancel: PropTypes.func.isRequired,
-  onSuccess: PropTypes.func,
 };

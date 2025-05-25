@@ -193,6 +193,15 @@ export interface List {
   lastUpdatedAt: string; // A datetime.
 }
 
+export interface ListItem {
+  id: number;
+  listId: number;
+  targetType: 'post' | 'comment';
+  targetId: string;
+  createdAt: string; // A datetime
+  targetItem: Post | Comment;
+}
+
 export type NotificationType =
   | 'new_comment'
   | 'comment_reply'
