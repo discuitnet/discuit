@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { ButtonClose } from '../../components/Button';
@@ -7,13 +6,14 @@ import Input from '../../components/Input';
 import Modal from '../../components/Modal';
 import { APIError, mfetch, mfetchjson } from '../../helper';
 import { useLoading } from '../../hooks';
+import { Community, User } from '../../serverTypes';
 import { snackAlert, snackAlertError } from '../../slices/mainSlice';
 
-const Banned = ({ community }) => {
+const Banned = ({ community }: { community: Community }) => {
   const dispatch = useDispatch();
 
   const baseURL = `/api/communities/${community.id}`;
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useLoading();
   useEffect(() => {
     (async () => {
@@ -21,15 +21,15 @@ const Banned = ({ community }) => {
         const banned = await mfetchjson(`${baseURL}/banned`);
         setUsers(banned);
         setLoading('loaded');
-      } catch (error) {
-        setLoading('failed');
+      } catch {
+        setLoading('error');
       }
     })();
-  }, [community.id]);
+  }, [community.id, baseURL, setLoading]);
 
   const [modalError, setModalError] = useState('');
   const [username, _setUsername] = useState('');
-  const setUsername = (name) => {
+  const setUsername = (name: string) => {
     if (name === '') setModalError('');
     _setUsername(name);
   };
@@ -67,7 +67,7 @@ const Banned = ({ community }) => {
     }
   };
 
-  const handleUnbanClick = async (username) => {
+  const handleUnbanClick = async (username: string) => {
     try {
       const user = await mfetchjson(`${baseURL}/banned`, {
         method: 'DELETE',
@@ -133,10 +133,6 @@ const Banned = ({ community }) => {
       </div>
     </div>
   );
-};
-
-Banned.propTypes = {
-  community: PropTypes.object.isRequired,
 };
 
 export default Banned;

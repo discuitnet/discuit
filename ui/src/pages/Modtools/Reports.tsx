@@ -1,22 +1,23 @@
-import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Link from '../../components/Link';
 import Pagination from '../../components/Pagination';
 import PostCard from '../../components/PostCard';
 import { mfetchjson, timeAgo, userGroupSingular } from '../../helper';
 import { useLoading, usePagination } from '../../hooks';
+import { Comment, Community, CommunityReportDetails, Report } from '../../serverTypes';
 import { snackAlert, snackAlertError } from '../../slices/mainSlice';
+import { Post } from '../../slices/postsSlice';
 import ReportsView from './ReportsView';
 
-const Reports = ({ community }) => {
+const Reports = ({ community }: { community: Community }) => {
   const dispatch = useDispatch();
 
   const [page, setPage] = usePagination();
   const limit = 10;
 
-  const [details, setDetails] = useState(null);
-  const [reports, setReports] = useState([]);
+  const [details, setDetails] = useState<CommunityReportDetails | null>(null);
+  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useLoading();
   const [filter, setFilter] = useState('all');
   useEffect(() => {
@@ -28,13 +29,13 @@ const Reports = ({ community }) => {
         setReports(json.reports);
         setDetails(json.details);
         setLoading('loaded');
-      } catch (error) {
-        setLoading('failed');
+      } catch {
+        setLoading('error');
       }
     })();
-  }, [filter, community.id, page]);
+  }, [filter, community.id, page, setLoading]);
 
-  const handleIgnore = async (report) => {
+  const handleIgnore = async (report: Report) => {
     try {
       await mfetchjson(`/api/communities/${community.id}/reports/${report.id}`, {
         method: 'DELETE',
@@ -46,7 +47,7 @@ const Reports = ({ community }) => {
     }
   };
 
-  if (loading !== 'loaded') {
+  if (loading !== 'loaded' || !details) {
     return <div className="modtools-content"></div>;
   }
 
@@ -70,17 +71,17 @@ const Reports = ({ community }) => {
             let item;
             let handleURL = '';
             let removed = false;
-            let removedUser;
+            let removedUser = '';
             if (report.type === 'post') {
-              const post = report.target;
+              const post = report.target as Post;
               handleURL = `/${post.communityName}/post/${post.publicId}`;
               item = <PostCard initialPost={post} compact inModTools />;
               if (post.deletedAt) {
                 removed = true;
-                removedUser = userGroupSingular(post.deletedAs);
+                removedUser = userGroupSingular(post.deletedAs!);
               }
             } else {
-              const comment = report.target;
+              const comment = report.target as Comment;
               handleURL = `/${community.name}/post/${comment.postPublicId}/${comment.id}`;
               item = (
                 <div>
@@ -109,10 +110,6 @@ const Reports = ({ community }) => {
       <Pagination current={page} noPages={noPages} onClick={(n) => setPage(n)} />
     </ReportsView>
   );
-};
-
-Reports.propTypes = {
-  community: PropTypes.object.isRequired,
 };
 
 export default Reports;

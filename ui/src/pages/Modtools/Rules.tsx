@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { ButtonClose } from '../../components/Button';
@@ -7,12 +6,13 @@ import { InputWithCount, useInputMaxLength } from '../../components/Input';
 import Modal from '../../components/Modal';
 import { mfetchjson } from '../../helper';
 import { useLoading } from '../../hooks';
+import { Community, CommunityRule } from '../../serverTypes';
 import { snackAlertError } from '../../slices/mainSlice';
 
-const Rules = ({ community }) => {
+const Rules = ({ community }: { community: Community }) => {
   const dispatch = useDispatch();
-  const [rules, _setRules] = useState([]);
-  const setRules = (rules) => {
+  const [rules, _setRules] = useState<CommunityRule[]>([]);
+  const setRules = (rules: CommunityRule[]) => {
     _setRules(rules.sort((a, b) => a.zIndex - b.zIndex));
   };
 
@@ -28,10 +28,10 @@ const Rules = ({ community }) => {
         setLoading('loaded');
       } catch (error) {
         dispatch(snackAlertError(error));
-        setLoading('failed');
+        setLoading('error');
       }
     })();
-  }, []);
+  }, [community.id, dispatch, setLoading]);
 
   const ruleMaxLength = 512;
   const [rule, setRule] = useInputMaxLength(ruleMaxLength);
@@ -49,8 +49,8 @@ const Rules = ({ community }) => {
     setEditOpen(true);
   };
 
-  const [ruleEditing, setRuleEditing] = useState(null);
-  const handleEditRule = (rule) => {
+  const [ruleEditing, setRuleEditing] = useState<CommunityRule | null>(null);
+  const handleEditRule = (rule: CommunityRule) => {
     setRuleEditing(rule);
     setIsEditRule(true);
     setRule(rule.rule);
@@ -59,6 +59,9 @@ const Rules = ({ community }) => {
   };
 
   const handleSave = async () => {
+    if (!ruleEditing) {
+      return;
+    }
     try {
       if (isEditRule) {
         const rrule = await mfetchjson(`/api/communities/${community.id}/rules/${ruleEditing.id}`, {
@@ -83,7 +86,7 @@ const Rules = ({ community }) => {
     }
   };
 
-  const handleDeleteRule = async (rule) => {
+  const handleDeleteRule = async (rule: CommunityRule) => {
     if (confirm('Are you certain?')) {
       try {
         await mfetchjson(`/api/communities/${community.id}/rules/${rule.id}`, {
@@ -124,7 +127,7 @@ const Rules = ({ community }) => {
             <FormField label="Description">
               <InputWithCount
                 textarea
-                rows="5"
+                rows={5}
                 maxLength={descriptionMaxLength}
                 value={description}
                 onChange={setDescription}
@@ -188,7 +191,3 @@ const Rules = ({ community }) => {
 };
 
 export default Rules;
-
-Rules.propTypes = {
-  community: PropTypes.object.isRequired,
-};

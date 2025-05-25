@@ -1,8 +1,23 @@
-import PropTypes from 'prop-types';
 import React from 'react';
 import Dropdown from '../../components/Dropdown';
 
-const ReportsView = ({ title, noPosts, noComments, filter, setFilter, children }) => {
+export interface ReportsViewProps {
+  title: string;
+  noPosts?: number;
+  noComments?: number;
+  filter?: string;
+  setFilter?: (filter: string) => void;
+  children: React.ReactNode;
+}
+
+const ReportsView = ({
+  title,
+  noPosts = 0,
+  noComments = 0,
+  filter,
+  setFilter,
+  children,
+}: ReportsViewProps) => {
   const noAll = typeof noPosts === 'number' ? noPosts + noComments : null;
   const filterButtons = [
     {
@@ -35,7 +50,7 @@ const ReportsView = ({ title, noPosts, noComments, filter, setFilter, children }
                 style={{ width: '100%', justifyContent: 'flex-start' }}
                 className={'button-text' + (active ? ' is-active' : '') + ' modtools-reports-type'}
               >
-                {active.text}
+                {active?.text}
               </button>
             }
           >
@@ -46,7 +61,7 @@ const ReportsView = ({ title, noPosts, noComments, filter, setFilter, children }
                   <button
                     key={item.filter}
                     className="button-clear dropdown-item"
-                    onClick={() => setFilter(item.filter)}
+                    onClick={() => setFilter && setFilter(item.filter)}
                   >
                     {item.text}
                   </button>
@@ -59,16 +74,6 @@ const ReportsView = ({ title, noPosts, noComments, filter, setFilter, children }
       <div className="modtools-reports-content">{children}</div>
     </div>
   );
-};
-
-ReportsView.propTypes = {
-  title: PropTypes.string.isRequired,
-  noPosts: PropTypes.number,
-  noComments: PropTypes.number,
-  filter: PropTypes.string,
-  setFilter: PropTypes.func,
-  children: PropTypes.oneOfType([PropTypes.element, PropTypes.arrayOf(PropTypes.element)])
-    .isRequired,
 };
 
 export default ReportsView;

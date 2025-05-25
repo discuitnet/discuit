@@ -6,10 +6,12 @@ import { FormField } from '../../components/Form';
 import Input from '../../components/Input';
 import Modal from '../../components/Modal';
 import { mfetch } from '../../helper';
-import { snackAlertError } from '../../slices/mainSlice';
+import { Community } from '../../serverTypes';
+import { MainState, snackAlertError } from '../../slices/mainSlice';
+import { RootState } from '../../store';
 
-const Mods = ({ community }) => {
-  const user = useSelector((state) => state.main.user);
+const Mods = ({ community }: { community: Community }) => {
+  const user = (useSelector<RootState>((state) => state.main.user) as MainState['user'])!;
   const dispatch = useDispatch();
 
   const [addModOpen, setAddModOpen] = useState(false);
@@ -18,9 +20,9 @@ const Mods = ({ community }) => {
 
   const baseURL = `/api/communities/${community.id}/mods`;
 
-  const handleAddMod = async (e) => {
-    if (e) {
-      e.preventDefault();
+  const handleAddMod = async (event?: React.FormEvent | React.MouseEvent) => {
+    if (event) {
+      event.preventDefault();
     }
     try {
       const res = await mfetch(baseURL, {
@@ -42,7 +44,7 @@ const Mods = ({ community }) => {
     }
   };
 
-  const handleRemoveMod = async (username) => {
+  const handleRemoveMod = async (username: string) => {
     if (
       !confirm(`Are you sure you want to remove ${username} as a moderator of ${community.name}?`)
     ) {
@@ -63,8 +65,8 @@ const Mods = ({ community }) => {
     }
   };
 
-  const { mods } = community;
-  let myPos;
+  const mods = community.mods || [];
+  let myPos = 0;
   mods.forEach((mod, index) => {
     if (mod.id === user.id) {
       myPos = index;
@@ -80,7 +82,7 @@ const Mods = ({ community }) => {
             <ButtonClose onClick={handleAddModClose} />
           </div>
           <form className="modal-card-content" onSubmit={handleAddMod}>
-            <FormField label="Username" errors={null}>
+            <FormField label="Username">
               <Input value={newModName} onChange={(e) => setNewModName(e.target.value)} autoFocus />
             </FormField>
           </form>

@@ -1,21 +1,31 @@
 import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Pagination from '../../components/Pagination';
 import PostCard from '../../components/PostCard';
 import { mfetchjson, timeAgo } from '../../helper';
 import { useLoading, usePagination } from '../../hooks';
+import { Community } from '../../serverTypes';
 import { snackAlertError } from '../../slices/mainSlice';
+import { Post } from '../../slices/postsSlice';
 import ReportsView from './ReportsView';
 
-const Removed = ({ community, filter, title }) => {
+const Removed = ({
+  community,
+  filter,
+  title,
+}: {
+  community: Community;
+  filter: string;
+  title: string;
+}) => {
   const dispatch = useDispatch();
   const [loading, setLoading] = useLoading();
 
   const limit = 10;
   const [page, setPage] = usePagination();
   const [noPosts, setNoPosts] = useState(0);
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const noPages = Math.ceil(noPosts / limit);
 
   useEffect(() => {
@@ -28,11 +38,11 @@ const Removed = ({ community, filter, title }) => {
         setNoPosts(json.noPosts);
         setLoading('loaded');
       } catch (error) {
-        setLoading('failed');
+        setLoading('error');
         dispatch(snackAlertError(error));
       }
     })();
-  }, [community.id, filter, page, limit]);
+  }, [community.id, filter, page, limit, dispatch, setLoading]);
 
   if (loading !== 'loaded') return null;
 

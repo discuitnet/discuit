@@ -132,7 +132,9 @@ export function useLoading(
   return [loading, setLoading];
 }
 
-export function usePagination(initial = 1) {
+export function usePagination(
+  initial = 1
+): [number, (n: number, clearOtherParms?: boolean) => void] {
   const history = useHistory();
 
   const query = useQuery();

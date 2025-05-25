@@ -13,7 +13,8 @@ import {
 import Sidebar from '../../components/Sidebar';
 import { APIError, mfetch } from '../../helper';
 import { communityAdded, selectCommunity } from '../../slices/communitiesSlice';
-import { snackAlertError } from '../../slices/mainSlice';
+import { MainState, snackAlertError } from '../../slices/mainSlice';
+import { RootState } from '../../store';
 import Forbidden from '../Forbidden';
 import PageNotLoaded from '../PageNotLoaded';
 import Banned from './Banned';
@@ -23,15 +24,16 @@ import Reports from './Reports';
 import Rules from './Rules';
 import Settings from './Settings';
 
-function isActiveCls(className, isActive, activeClass = 'is-active') {
+function isActiveCls(className: string, isActive: boolean, activeClass = 'is-active') {
   return className + (isActive ? ` ${activeClass}` : '');
 }
 
 const Modtools = () => {
   const dispatch = useDispatch();
-  const { name: communityName } = useParams();
+  const { name: communityName } = useParams<{ [key: string]: string }>();
 
-  const user = useSelector((state) => state.main.user);
+  // Modtools resides in a protected router; hence there is always a logged in user.
+  const user = (useSelector<RootState>((state) => state.main.user) as MainState['user'])!;
 
   const community = useSelector(selectCommunity(communityName));
   const [loading, setLoading] = useState(community ? 'loaded' : 'loading');
@@ -56,9 +58,9 @@ const Modtools = () => {
         dispatch(snackAlertError(error));
       }
     })();
-  }, [name, community]);
+  }, [communityName, community, dispatch]);
 
-  let { path } = useRouteMatch();
+  const { path } = useRouteMatch();
   const { pathname } = useLocation();
 
   if (loading !== 'loaded') {

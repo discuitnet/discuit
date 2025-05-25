@@ -333,8 +333,30 @@ export interface AnalyticsEvent {
 
 export type CommunitiesSort = 'new' | 'old' | 'size' | 'name_asc' | 'name_dsc';
 
+export interface Report {
+  id: number;
+  communityId: string;
+  postId: string;
+  reason: string;
+  description: string | null;
+  reasonId: number;
+  type: 'post' | 'comment';
+  targetId: string;
+  actionTaken: string | null;
+  dealtAt: string | null; // A datetime
+  dealtBy: string | null; // A user id
+  createdAt: string; // A datetime
+  target: Post | Comment;
+}
+
 export interface ReportReason {
   id: number;
   title: string;
   description: string | null;
+}
+
+export interface CommunityReportDetails {
+  noReports: number;
+  noPostReports: number;
+  noCommentReports: number;
 }

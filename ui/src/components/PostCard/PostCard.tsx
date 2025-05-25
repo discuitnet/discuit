@@ -26,7 +26,7 @@ export interface PostCardProps {
   inModTools?: boolean;
   disableEmbeds?: boolean;
   onRemoveFromList?: (postId: string) => void;
-  feedItemKey: string;
+  feedItemKey?: string;
   canHideFromFeed?: boolean;
 }
 
