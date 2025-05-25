@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types';
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useLocation } from 'react-router-dom';
@@ -7,17 +6,17 @@ import Input, { InputPassword } from '../components/Input';
 import { APIError, mfetch } from '../helper';
 import { loginModalOpened, signupModalOpened, snackAlertError } from '../slices/mainSlice';
 
-const LoginForm = ({ isModal = false }) => {
+const LoginForm = ({ isModal = false }: { isModal?: boolean }) => {
   const dispatch = useDispatch();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
   useEffect(() => {
     setLoginError(null);
   }, [username, password]);
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault();
+  const handleLoginSubmit: React.FormEventHandler = async (event) => {
+    event.preventDefault();
     if (username === '' && password === '') {
       setLoginError('Username and password empty.');
       return;
@@ -29,7 +28,7 @@ const LoginForm = ({ isModal = false }) => {
       return;
     }
     try {
-      let res = await mfetch('/api/_login', {
+      const res = await mfetch('/api/_login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json; charset=utf-8',
@@ -57,16 +56,16 @@ const LoginForm = ({ isModal = false }) => {
     }
   };
 
-  const usernameRef = useRef();
+  const usernameRef = useRef<HTMLInputElement>(null);
   const { pathname } = useLocation();
   useEffect(() => {
     if (pathname === '/login') {
-      usernameRef.current.focus();
+      usernameRef.current?.focus();
     }
   }, [pathname]);
 
-  const handleOnSignup = (e) => {
-    e.preventDefault();
+  const handleOnSignup: React.MouseEventHandler = (event) => {
+    event.preventDefault();
     dispatch(loginModalOpened(false));
     dispatch(signupModalOpened());
   };
@@ -102,10 +101,6 @@ const LoginForm = ({ isModal = false }) => {
       </FormField>
     </Form>
   );
-};
-
-LoginForm.propTypes = {
-  isModal: PropTypes.bool,
 };
 
 export default LoginForm;

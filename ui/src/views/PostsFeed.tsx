@@ -1,8 +1,6 @@
-import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useLocation } from 'react-router';
-import { useHistory } from 'react-router-dom/cjs/react-router-dom.min';
+import { useHistory, useLocation } from 'react-router';
 import Feed from '../components/Feed';
 import { MemorizedPostCard } from '../components/PostCard/PostCard';
 import SelectBar from '../components/SelectBar';
@@ -10,9 +8,18 @@ import { mfetchjson } from '../helper';
 import { useCanonicalTag } from '../hooks';
 import { isInfiniteScrollingDisabled } from '../pages/Settings/devicePrefs';
 import { FeedItem, feedReloaded } from '../slices/feedsSlice';
+import { MainState } from '../slices/mainSlice';
+import { Post } from '../slices/postsSlice';
+import { RootState } from '../store';
 import WelcomeBanner from './WelcomeBanner';
 
-const sortOptions = [
+type SortOption = {
+  text: string;
+  id: string;
+  to?: string;
+};
+
+const sortOptions: SortOption[] = [
   { text: 'Hot', id: 'hot' },
   { text: 'Activity', id: 'activity' },
   { text: 'New', id: 'latest' },
@@ -36,10 +43,10 @@ export const homeReloaded = (homeFeed = 'all', rememberFeedSort = false) => {
   return feedReloaded(`${baseURL}?${params.toString()}`);
 };
 
-function useFeedSort(rememberLastSort = false) {
+function useFeedSort(rememberLastSort = false): [string | null, (newSort: string) => void] {
   const location = useLocation();
 
-  let sortSaved;
+  let sortSaved: string | null = null;
   if (rememberLastSort) {
     sortSaved = window.localStorage.getItem('feedSort');
   } else {
@@ -64,13 +71,15 @@ function useFeedSort(rememberLastSort = false) {
   const history = useHistory();
   const [sort, _setSort] = useState(sortSaved);
 
-  const setSort = (newSort) => {
+  const setSort = (newSort: string) => {
     _setSort(newSort);
     if (rememberLastSort) {
       window.localStorage.setItem('feedSort', newSort);
     } else {
       let to = '#';
-      sortOptions.filter((option) => option.id === newSort).forEach((option) => (to = option.to));
+      sortOptions
+        .filter((option) => option.id === newSort)
+        .forEach((option) => (to = option.to || ''));
       history.replace(to);
     }
   };
@@ -80,27 +89,30 @@ function useFeedSort(rememberLastSort = false) {
       const params = new URLSearchParams(location.search);
       _setSort(params.get('sort') || sortDefault);
     }
-  }, [location]);
+  }, [location, rememberLastSort]);
 
   return [sort, setSort];
 }
 
-const PostsFeed = ({ feedType = 'all', communityId = null }) => {
+const PostsFeed = ({
+  feedType = 'all',
+  communityId = null,
+}: {
+  feedType: 'all' | 'subscriptions' | 'community';
+  communityId: string | null;
+}) => {
   const dispatch = useDispatch();
-  // const history = useHistory();
 
-  const user = useSelector((state) => state.main.user);
+  const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const loggedIn = user !== null;
 
   const location = useLocation();
-  // const params = new URLSearchParams(location.search);
-  // const sort = params.get('sort') || sortDefault;
-  const [sort, setSort] = useFeedSort(user && user.rememberFeedSort);
+  const [sort, setSort] = useFeedSort(Boolean(user && user.rememberFeedSort));
 
   // The ordering of the urlparams here is important because the items are
   // stored by the url as the key.
   const urlParams = new URLSearchParams();
-  urlParams.set('sort', sort);
+  urlParams.set('sort', sort || '');
   if (loggedIn && feedType === 'subscriptions') {
     urlParams.set('feed', 'home');
   }
@@ -108,20 +120,22 @@ const PostsFeed = ({ feedType = 'all', communityId = null }) => {
   const feedId = `${baseURL}?${urlParams.toString()}`; // api endpoint.
 
   // Only called on button clicks (not history API changes)
-  const handleSortChange = (value) => {
-    setSort(value);
+  const handleSortChange = (optionId: string) => {
+    setSort(optionId);
     dispatch(feedReloaded(feedId));
   };
 
-  const layout = useSelector((state) => state.main.feedLayout);
+  const layout = useSelector<RootState>(
+    (state) => state.main.feedLayout
+  ) as MainState['feedLayout'];
   const compact = layout === 'compact';
 
-  const handleRenderItem = (item, index) => {
+  const handleRenderItem = (item: FeedItem<Post>, index: number) => {
     return (
       <MemorizedPostCard
         initialPost={item.item}
         index={index}
-        disableEmbeds={user && user.embedsOff}
+        disableEmbeds={Boolean(user && user.embedsOff)}
         compact={compact}
         feedItemKey={item.key}
         canHideFromFeed
@@ -147,14 +161,16 @@ const PostsFeed = ({ feedType = 'all', communityId = null }) => {
     }
   }
 
-  const handleFetch = async (next) => {
+  const handleFetch = async (next?: string | null) => {
     const params = new URLSearchParams(urlParams.toString());
     if (next) {
       params.set('next', next);
     }
     const url = `${baseURL}?${params.toString()}`;
-    const res = await mfetchjson(url);
-    const feedItems = (res.posts ?? []).map((post) => new FeedItem(post, 'post', post.publicId));
+    const res = (await mfetchjson(url)) as { posts: Post[] | null; next: string | null };
+    const feedItems: FeedItem<Post>[] = (res.posts ?? []).map(
+      (post) => new FeedItem(post, 'post', post.publicId)
+    );
     return {
       items: feedItems,
       next: res.next,
@@ -163,9 +179,8 @@ const PostsFeed = ({ feedType = 'all', communityId = null }) => {
 
   return (
     <div className="posts-feed">
-      {/*<PostsFilterBar name={name} sort={sort} onChange={handleSortChange} />*/}
-      <SelectBar name={name} options={sortOptions} value={sort} onChange={handleSortChange} />
-      <Feed
+      <SelectBar name={name} options={sortOptions} value={sort || ''} onChange={handleSortChange} />
+      <Feed<Post>
         feedId={feedId}
         compact={compact}
         onFetch={handleFetch}
@@ -177,22 +192,4 @@ const PostsFeed = ({ feedType = 'all', communityId = null }) => {
   );
 };
 
-PostsFeed.propTypes = {
-  communityId: PropTypes.string,
-  feedType: PropTypes.oneOf(['all', 'subscriptions', 'community']),
-};
-
 export default PostsFeed;
-
-const PostsFilterBar = ({ name, sort = 'latest', onChange, rememberLastSort = false }) => {
-  const location = useLocation();
-
-  return <SelectBar name={name} options={sortOptions} value={sort} onChange={onChange} />;
-};
-
-PostsFilterBar.propTypes = {
-  name: PropTypes.string,
-  sort: PropTypes.string,
-  onChange: PropTypes.func,
-  rememberLastSort: PropTypes.bool,
-};

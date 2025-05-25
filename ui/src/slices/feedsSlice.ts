@@ -134,22 +134,24 @@ export default function feedsReducer(
   }
 }
 
-export const selectFeed = (url: string) => (state: RootState) => {
-  if (!state.feeds.feeds[url]) return undefined;
-  if (state.feeds.feeds[url].loading) {
-    return { loading: true, items: [], next: undefined };
-  }
-  const { keys, next, loading } = state.feeds.feeds[url];
-  const items = keys
-    .map((key) => state.feeds.feedItems[key])
-    .map((item) => {
-      return {
-        ...item,
-        item: item.type === 'post' ? state.posts.items[item.item as string] : item.item,
-      };
-    });
-  return { items, next, loading };
-};
+export const selectFeed =
+  <T = unknown>(url: string) =>
+  (state: RootState) => {
+    if (!state.feeds.feeds[url]) return undefined;
+    if (state.feeds.feeds[url].loading) {
+      return { loading: true, items: [], next: undefined };
+    }
+    const { keys, next, loading } = state.feeds.feeds[url];
+    const items = keys
+      .map((key) => state.feeds.feedItems[key])
+      .map((item) => {
+        return {
+          ...item,
+          item: (item.type === 'post' ? state.posts.items[item.item as string] : item.item) as T,
+        };
+      });
+    return { items, next, loading };
+  };
 
 export const selectFeedInViewItems = (url: string) => (state: RootState) => {
   if (!state.feeds.feeds[url]) return [];
