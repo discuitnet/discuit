@@ -22,10 +22,11 @@ import {
 } from '../../helper';
 import { useIsMobile, useMuteCommunity } from '../../hooks';
 import { communityAdded, selectCommunity } from '../../slices/communitiesSlice';
-import { snackAlert, snackAlertError } from '../../slices/mainSlice';
+import { MainState, snackAlert, snackAlertError } from '../../slices/mainSlice';
 import { SVGEdit } from '../../SVGs';
 
 import ImageEditModal from '../../components/ImageEditModal';
+import { RootState } from '../../store';
 import PostsFeed from '../../views/PostsFeed';
 import NotFound from '../NotFound';
 import Banner from './Banner';
@@ -33,7 +34,7 @@ import JoinButton from './JoinButton';
 import Rules from './Rules';
 
 const Community = () => {
-  const { name } = useParams();
+  const { name } = useParams<{ [key: string]: string }>();
 
   const history = useHistory();
   const location = useLocation();
@@ -41,7 +42,7 @@ const Community = () => {
 
   const community = useSelector(selectCommunity(name));
   const loading = !(community && Array.isArray(community.mods) && Array.isArray(community.rules));
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     if (!loading) return;
     setError(null);
@@ -64,17 +65,14 @@ const Community = () => {
           history.replace(`${pathname}${location.search}${location.hash}`);
         }
       } catch (error) {
-        setError(error.toString());
+        setError((error as Error).toString());
         dispatch(snackAlertError(error));
       }
     })();
-  }, [name, loading, location]);
+  }, [name, loading, location, dispatch, history]);
 
-  const user = useSelector((state) => state.main.user);
+  const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const loggedIn = user !== null;
-  const bannedFrom = useSelector((state) => state.main.bannedFrom);
-  const isBanned =
-    loggedIn && community && bannedFrom.find((id) => id === community.id) !== undefined;
 
   const [communityPicModalOpen, setCommunityPicModalOpen] = useState(false);
   const [bannerModalOpen, setBannerModalOpen] = useState(false);
@@ -114,7 +112,9 @@ const Community = () => {
   }, [location]);
 
   const { toggleMute: toggleCommunityMute, displayText: muteDisplayText } = useMuteCommunity(
-    community ? { communityId: community.id, communityName: community.name } : {}
+    community
+      ? { communityId: community.id, communityName: community.name }
+      : { communityId: '', communityName: '' }
   );
 
   if (loading) {
@@ -124,7 +124,7 @@ const Community = () => {
     return <PageLoading />;
   }
 
-  const handleUploadCommunityPic = async (file) => {
+  const handleUploadCommunityPic = async (file: File) => {
     if (isUploadingPic) return;
 
     try {
@@ -167,7 +167,7 @@ const Community = () => {
     }
   };
 
-  const handleUploadBanner = async (file) => {
+  const handleUploadBanner = async (file: File) => {
     if (isUploadingBanner) return;
 
     try {
@@ -210,7 +210,7 @@ const Community = () => {
     }
   };
 
-  const handleSaveAltText = async (altText, imageId) => {
+  const handleSaveAltText = async (altText: string, imageId: string) => {
     try {
       await mfetchjson(`/api/images/${imageId}`, {
         method: 'PUT',
@@ -225,21 +225,25 @@ const Community = () => {
     }
   };
 
-  const handleSaveCommunityPicAlt = async (altText) => {
-    const communityPicId = community.proPic.id;
-    handleSaveAltText(altText, communityPicId);
-    community.proPic.altText = altText;
+  const handleSaveCommunityPicAlt = async (altText: string) => {
+    if (community.proPic) {
+      const communityPicId = community.proPic.id;
+      handleSaveAltText(altText, communityPicId);
+      community.proPic.altText = altText;
+    }
   };
 
-  const handleSaveBannerAlt = async (altText) => {
-    const bannerId = community.bannerImage.id;
-    handleSaveAltText(altText, bannerId);
-    community.bannerImage.altText = altText;
+  const handleSaveBannerAlt = async (altText: string) => {
+    if (community.bannerImage) {
+      const bannerId = community.bannerImage.id;
+      handleSaveAltText(altText, bannerId);
+      community.bannerImage.altText = altText;
+    }
   };
 
   const renderRules = () => {
     if (community.rules) {
-      return <Rules rules={community.rules} communityName={community.name} />;
+      return <Rules rules={community.rules} />;
     }
     return null;
   };
@@ -306,7 +310,7 @@ const Community = () => {
               name={community.name}
               proPic={community.proPic}
               size="large"
-              editable={community.userMod || (user && user.isAdmin)}
+              editable={Boolean(community.userMod || (user && user.isAdmin))}
               onEdit={() => setCommunityPicModalOpen(true)}
             />
 

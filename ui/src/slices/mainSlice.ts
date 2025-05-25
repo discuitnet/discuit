@@ -531,7 +531,7 @@ export const allCommunitiesUpdated =
   };
 
 export const snackAlert =
-  (text: string, id: string | number | null, timeout = 3000) =>
+  (text: string, id?: string | number | null, timeout = 3000) =>
   (dispatch: AppDispatch) => {
     const alert: Alert = { id: id || Date.now(), text: text };
     dispatch({ type: 'main/alertAdded', payload: alert });

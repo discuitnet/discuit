@@ -1,15 +1,22 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 import MarkdownBody from '../../components/MarkdownBody';
+import { CommunityRule } from '../../serverTypes';
 
-export const RulesItems = ({ rules, unordered = false }) => {
+export const RulesItems = ({
+  rules,
+  unordered = false,
+}: {
+  rules: CommunityRule[];
+  unordered?: boolean;
+}) => {
   let orules = rules;
   if (unordered) {
     orules = [...rules];
-    orules.sort((a, b) => a > b);
+    orules.sort((a, b) => a.id - b.id);
   }
 
-  const renderText = (markdown) => {
+  const renderText = (markdown?: string | null) => {
     return <MarkdownBody veryBasic>{markdown}</MarkdownBody>;
   };
 
@@ -32,7 +39,7 @@ RulesItems.propTypes = {
   unordered: PropTypes.bool,
 };
 
-const Rules = ({ rules, unordered = false }) => {
+const Rules = ({ rules, unordered = false }: { rules: CommunityRule[]; unordered?: boolean }) => {
   if (!rules) {
     return null;
   }
@@ -49,11 +56,6 @@ const Rules = ({ rules, unordered = false }) => {
       </div>
     </div>
   );
-};
-
-Rules.propTypes = {
-  rules: PropTypes.arrayOf(PropTypes.object).isRequired,
-  unordered: PropTypes.bool,
 };
 
 export default Rules;

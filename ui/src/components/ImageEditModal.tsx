@@ -7,7 +7,7 @@ export interface ImageEditModalProps {
   onClose: () => void;
   title: string;
   imageUrl?: string;
-  altText?: string;
+  altText?: string | null;
   onUpload: (file: File) => void;
   onDelete: () => void;
   onSave: (altText: string) => void;

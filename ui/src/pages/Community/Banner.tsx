@@ -1,8 +1,15 @@
-import PropTypes from 'prop-types';
-import Image from '../../components/Image';
+import clsx from 'clsx';
+import Image, { ImageProps } from '../../components/Image';
 import { selectImageCopyURL } from '../../helper';
+import { Community } from '../../serverTypes';
 
-const Banner = ({ community, className, editable, onEdit, ...rest }) => {
+export interface BannerProps extends ImageProps {
+  community: Community;
+  className?: string;
+  editable?: boolean;
+}
+
+const Banner = ({ community, className, editable, ...rest }: BannerProps) => {
   let src = '';
   let alt = `${community.name}'s banner`;
 
@@ -15,32 +22,18 @@ const Banner = ({ community, className, editable, onEdit, ...rest }) => {
 
   const editableCls = editable ? ' banner-editable' : '';
 
-  const handleClick = () => {
-    if (editable && onEdit) {
-      onEdit();
-    }
-  };
-
   return (
     <Image
       src={src}
       alt={alt}
       backgroundColor={community.bannerImage ? community.bannerImage.averageColor : '#eee'}
-      className={editableCls + (className ? ` ${className}` : '')}
-      onClick={handleClick}
+      className={clsx(editableCls, className)}
       role={editable ? 'button' : undefined}
       tabIndex={editable ? 0 : undefined}
       {...rest}
       isFullSize
     />
   );
-};
-
-Banner.propTypes = {
-  community: PropTypes.object.isRequired,
-  className: PropTypes.string,
-  editable: PropTypes.bool,
-  onEdit: PropTypes.func,
 };
 
 export default Banner;
