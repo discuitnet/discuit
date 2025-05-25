@@ -327,7 +327,7 @@ export default function mainReducer(
     case 'main/reportReasonsUpdated': {
       return {
         ...state,
-        reportReasons: action.payload,
+        reportReasons: action.payload as ReportReason[],
       };
     }
     case 'main/toggleSidebarOpen': {
@@ -557,7 +557,7 @@ export const loginPromptToggled = () => {
   return { type: 'main/loginPromptToggled' };
 };
 
-export const reportReasonsUpdated = (reasons: unknown) => {
+export const reportReasonsUpdated = (reasons: ReportReason[] | null) => {
   return { type: 'main/reportReasonsUpdated', payload: reasons || [] };
 };
 
@@ -649,7 +649,7 @@ export const createCommunityModalOpened = (open = true) => {
   return { type: 'main/createCommunityModalOpened', payload: open };
 };
 
-export const showAppInstallButton = (show: boolean, deferredPrompt: unknown) => {
+export const showAppInstallButton = (show: boolean, deferredPrompt?: unknown) => {
   return {
     type: 'main/appInstallButtonUpdate',
     payload: {

@@ -94,11 +94,13 @@ function useFeedSort(rememberLastSort = false): [string | null, (newSort: string
   return [sort, setSort];
 }
 
+export type PostsFeedType = 'all' | 'subscriptions' | 'community';
+
 const PostsFeed = ({
   feedType = 'all',
   communityId = null,
 }: {
-  feedType: 'all' | 'subscriptions' | 'community';
+  feedType: PostsFeedType;
   communityId: string | null;
 }) => {
   const dispatch = useDispatch();

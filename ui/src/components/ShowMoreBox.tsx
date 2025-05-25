@@ -21,7 +21,6 @@ const ShowMoreBox = ({
   }, [childrenHash]);
   const divRef: React.RefCallback<HTMLDivElement> = useCallback(
     (node) => {
-      console.log('from callback');
       if (node !== null) {
         const overflowing = node.scrollHeight > node.clientHeight;
         setOverflowing(overflowing);
