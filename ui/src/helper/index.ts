@@ -246,10 +246,8 @@ export function toTitleCase(str: string): string {
   return s;
 }
 
-export function adjustTextareaHeight(event: React.FormEvent<HTMLTextAreaElement>, plus = 0) {
-  const target = event.target as HTMLTextAreaElement;
-
-  let scrollingElement = target.parentElement;
+export function adjustTextareaHeight(element: HTMLElement, plus = 0) {
+  let scrollingElement = element.parentElement;
   while (scrollingElement) {
     if (scrollingElement.clientHeight < scrollingElement.scrollHeight) break;
     scrollingElement = scrollingElement.parentElement;
@@ -262,8 +260,8 @@ export function adjustTextareaHeight(event: React.FormEvent<HTMLTextAreaElement>
     scrollTop = scrollingElement.scrollTop;
   }
 
-  target.style.height = 'auto';
-  target.style.height = `${target.scrollHeight + plus}px`;
+  element.style.height = 'auto';
+  element.style.height = `${element.scrollHeight + plus}px`;
 
   if (scrollingElement) {
     scrollingElement.scrollTo(scrollLeft, scrollTop);

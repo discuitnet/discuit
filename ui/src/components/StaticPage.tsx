@@ -1,9 +1,15 @@
-import PropTypes from 'prop-types';
+import clsx from 'clsx';
 import React, { useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import Footer from './Footer';
 
-const StaticPage = ({ className, children, title, noWrap = false, ...props }) => {
+export interface StaticPageProps extends React.HTMLAttributes<HTMLDivElement> {
+  children: React.ReactNode;
+  title?: string;
+  noWrap?: boolean;
+}
+
+const StaticPage = ({ className, children, title, noWrap = false, ...props }: StaticPageProps) => {
   useEffect(() => {
     document.body.classList.add('is-not-gray');
     return () => {
@@ -11,7 +17,7 @@ const StaticPage = ({ className, children, title, noWrap = false, ...props }) =>
     };
   }, []);
   return (
-    <div className={'page-content page-static' + (className ? ` ${className}` : '')} {...props}>
+    <div className={clsx('page-content page-static', className)} {...props}>
       <Helmet>
         <title>{title}</title>
       </Helmet>
@@ -19,14 +25,6 @@ const StaticPage = ({ className, children, title, noWrap = false, ...props }) =>
       <Footer />
     </div>
   );
-};
-
-StaticPage.propTypes = {
-  className: PropTypes.string,
-  children: PropTypes.oneOfType([PropTypes.node, PropTypes.arrayOf(PropTypes.node)]).isRequired,
-  title: PropTypes.string,
-  noWrap: PropTypes.bool,
-  description: PropTypes.string,
 };
 
 export default StaticPage;

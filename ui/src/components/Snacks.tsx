@@ -1,13 +1,16 @@
-import React from 'react';
 import ReactDOM from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { MainState } from '../slices/mainSlice';
+import { RootState } from '../store';
 import { ButtonClose } from './Button';
 
 const Snacks = () => {
-  const alerts = useSelector((state) => state.main.alerts);
+  const alerts = useSelector<RootState>((state) => state.main.alerts) as MainState['alerts'];
+
+  type Alert = (typeof alerts)[number];
 
   const dispatch = useDispatch();
-  const handleClose = (id) => {
+  const handleClose = (id: Alert['id']) => {
     dispatch({ type: 'main/alertRemoved', payload: id });
   };
 
@@ -24,7 +27,7 @@ const Snacks = () => {
         </div>
       ))}
     </div>,
-    document.getElementById('snacks-root')
+    document.getElementById('snacks-root')!
   );
 };
 

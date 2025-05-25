@@ -385,7 +385,7 @@ function Elements() {
           onChange={(e) => setTextareaValue(e.target.value)}
           autoFocus
         />
-        <Button onClick={null}>Clear text</Button>
+        <Button onClick={() => setTextareaValue('')}>Clear text</Button>
       </div>
       <div>
         <Button onClick={() => setFadeInOutElVisible((x) => !x)}>Toggle</Button>
