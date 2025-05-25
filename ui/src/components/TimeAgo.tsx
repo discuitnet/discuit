@@ -1,9 +1,23 @@
-import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
 import { timeAgo } from '../helper';
 
-const TimeAgo = ({ time, inline = true, prefix = '', suffix = ' ago', short = false, ...rest }) => {
-  const t = time instanceof Date ? time : new Date(time);
+export interface TimeAgoProps extends React.HTMLAttributes<HTMLElement> {
+  time: string | Date;
+  inline?: boolean;
+  prefix?: string;
+  suffix?: string;
+  short?: boolean;
+}
+
+const TimeAgo = ({
+  time,
+  inline = true,
+  prefix = '',
+  suffix = ' ago',
+  short = false,
+  ...rest
+}: TimeAgoProps) => {
+  const _time = time instanceof Date ? time : new Date(time);
 
   const [, setCounter] = useState(0);
   useEffect(() => {
@@ -18,7 +32,7 @@ const TimeAgo = ({ time, inline = true, prefix = '', suffix = ' ago', short = fa
   return React.createElement(
     inline ? 'span' : 'div',
     {
-      title: t.toLocaleString('en-US', {
+      title: _time.toLocaleString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -27,16 +41,8 @@ const TimeAgo = ({ time, inline = true, prefix = '', suffix = ' ago', short = fa
       }),
       ...rest,
     },
-    `${prefix}${timeAgo(t, suffix, true, short)}`
+    `${prefix}${timeAgo(_time, suffix, true, short)}`
   );
-};
-
-TimeAgo.propTypes = {
-  time: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
-  inline: PropTypes.bool,
-  short: PropTypes.bool,
-  prefix: PropTypes.string,
-  suffix: PropTypes.string,
 };
 
 export default TimeAgo;
