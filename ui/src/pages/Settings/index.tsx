@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router-dom/cjs/react-router-dom.min';
+import { Link } from 'react-router-dom';
 import {
   getNotificationsPermissions,
   shouldAskForNotificationsPermissions,
@@ -9,11 +9,14 @@ import {
 import CommunityProPic from '../../components/CommunityProPic';
 import Dropdown from '../../components/Dropdown';
 import { FormField, FormSection } from '../../components/Form';
+import ImageEditModal from '../../components/ImageEditModal';
 import Input, { Checkbox } from '../../components/Input';
 import CommunityLink from '../../components/PostCard/CommunityLink';
-import { APIError, mfetch, mfetchjson, validEmail } from '../../helper';
+import { mfetchjson, selectImageCopyURL, validEmail } from '../../helper';
 import { useIsChanged } from '../../hooks';
+import { Mute, Mutes, MuteType } from '../../serverTypes';
 import {
+  MainState,
   mutesAdded,
   settingsChanged,
   snackAlert,
@@ -22,18 +25,17 @@ import {
   unmuteUser,
   userLoggedIn,
 } from '../../slices/mainSlice';
+import { RootState } from '../../store';
 import ChangePassword from './ChangePassword';
 import DeleteAccount from './DeleteAccount';
 import { getDevicePreference, setDevicePreference } from './devicePrefs';
-import ImageEditModal from '../../components/ImageEditModal';
-import { selectImageCopyURL } from '../../helper';
 
 const Settings = () => {
   const dispatch = useDispatch();
-  const user = useSelector((state) => state.main.user);
+  const user = (useSelector<RootState>((state) => state.main.user) as MainState['user'])!;
   const loggedIn = user !== null;
 
-  const mutes = useSelector((state) => state.main.mutes);
+  const mutes = useSelector<RootState>((state) => state.main.mutes) as MainState['mutes'];
   const [aboutMe, setAboutMe] = useState(user.aboutMe || '');
   const [email, setEmail] = useState(user.email || '');
 
@@ -41,7 +43,7 @@ const Settings = () => {
     upvoteNotifs: !user.upvoteNotificationsOff,
     replyNotifs: !user.replyNotificationsOff,
   });
-  const setNotifsSettings = (key, val) => {
+  const setNotifsSettings = (key: string, val: unknown) => {
     _setNotifsSettings((prev) => {
       return {
         ...prev,
@@ -54,6 +56,7 @@ const Settings = () => {
     all: 'All',
     subscriptions: 'Subscriptions',
   };
+
   const [homeFeed, setHomeFeed] = useState(user.homeFeed);
 
   const [rememberFeedSort, setRememberFeedSort] = useState(user.rememberFeedSort);
@@ -62,12 +65,15 @@ const Settings = () => {
     !user.hideUserProfilePictures
   );
 
-  // Per-device preferences:
-  const [font, setFont] = useState(getDevicePreference('font') ?? 'custom');
   const fontOptions = {
     custom: 'Custom', // value -> display name
     system: 'System',
   };
+
+  // Per-device preferences:
+  const [font, setFont] = useState(
+    (getDevicePreference('font') ?? 'custom') as keyof typeof fontOptions
+  );
   const [infiniteScrollingDisabed, setInfinitedScrollingDisabled] = useState(
     getDevicePreference('infinite_scrolling_disabled') === 'true'
   );
@@ -84,12 +90,14 @@ const Settings = () => {
     infiniteScrollingDisabed,
   ]);
 
-  const applicationServerKey = useSelector((state) => state.main.vapidPublicKey);
-  const [notificationsPermissions, setNotificationsPermissions] = useState(
+  const applicationServerKey = useSelector<RootState>(
+    (state) => state.main.vapidPublicKey
+  ) as MainState['vapidPublicKey'];
+  const [notificationsPermissions, setNotificationsPermissions] = useState<string>(
     window.Notification && Notification.permission
   );
   useEffect(() => {
-    let cleanupFunc,
+    let cleanupFunc: () => void,
       cancelled = false;
     const f = async () => {
       if ('permissions' in navigator) {
@@ -121,8 +129,6 @@ const Settings = () => {
   const handleEnablePushNotifications = async () => {
     await getNotificationsPermissions(loggedIn, applicationServerKey);
   };
-
-  const handleDisablePushNotifications = () => {};
 
   const handleSave = async () => {
     if (email !== '' && !validEmail(email)) {
@@ -160,7 +166,7 @@ const Settings = () => {
   const [isUploadingPic, setIsUploadingPic] = useState(false);
   const [isDeletingPic, setIsDeletingPic] = useState(false);
 
-  const handleUploadProfilePic = async (file) => {
+  const handleUploadProfilePic = async (file: File) => {
     if (isUploadingPic) return;
 
     try {
@@ -198,7 +204,7 @@ const Settings = () => {
     }
   };
 
-  const handleSaveProfilePicAlt = async (altText) => {
+  const handleSaveProfilePicAlt = async (altText: string) => {
     try {
       if (!user.proPic) return dispatch(snackAlert('No profile picture to update.'));
       const proPicId = user.proPic.id;
@@ -215,7 +221,7 @@ const Settings = () => {
     }
   };
 
-  const handleUnmute = async (mute) => {
+  const handleUnmute = async (mute: Mute) => {
     // try {
     //   await mfetchjson(`/api/mutes/${mute.id}`, {
     //     method: 'DELETE',
@@ -239,39 +245,36 @@ const Settings = () => {
     //   dispatch(snackAlertError(error));
     // }
     if (mute.type === 'community') {
-      const community = mute.mutedCommunity;
+      const community = mute.mutedCommunity!;
       dispatch(unmuteCommunity(community.id, community.name));
     } else {
-      const user = mute.mutedUser;
+      const user = mute.mutedUser!;
       dispatch(unmuteUser(user.id, user.username));
     }
   };
 
-  const handleUnmuteAll = async (type = '') => {
+  const handleUnmuteAll = async (type: MuteType) => {
     try {
-      await mfetchjson(`/api/mutes?type=${type}`, {
+      await mfetchjson(`/api/mutes?type=${type || ''}`, {
         method: 'DELETE',
       });
-      // setMutes((mutes) => {
-      //   const fieldName = type === 'community' ? 'communityMutes' : 'userMutes';
-      //   return {
-      //     ...mutes,
-      //     [fieldName]: [],
-      //   };
-      // });
-      const newMutes = {
+      const newMutes: Mutes = {
         ...mutes,
       };
-      newMutes[`${type}Mutes`] = [];
+      if (type === 'user') {
+        newMutes.userMutes = [];
+      } else if (type === 'community') {
+        newMutes.communityMutes = [];
+      }
       dispatch(mutesAdded(newMutes));
     } catch (error) {
       dispatch(snackAlertError(error));
     }
   };
 
-  const renderMute = (mute) => {
+  const renderMute = (mute: Mute) => {
     if (mute.type === 'community') {
-      const community = mute.mutedCommunity;
+      const community = mute.mutedCommunity!;
       return (
         <div className="mute-list-item">
           <CommunityLink name={community.name} proPic={community.proPic} />
@@ -280,7 +283,7 @@ const Settings = () => {
       );
     }
     if (mute.type === 'user') {
-      const user = mute.mutedUser;
+      const user = mute.mutedUser!;
       return (
         <div>
           <Link to={`/@${user.username}`}>@{user.username}</Link>
@@ -290,6 +293,9 @@ const Settings = () => {
     }
     return 'Unkonwn muting type.';
   };
+
+  const communityMutes = mutes.communityMutes || [];
+  const userMutes = mutes.userMutes || [];
 
   return (
     <div className="page-content wrap page-settings">
@@ -313,7 +319,7 @@ const Settings = () => {
           </FormField>
           <FormField label="About me">
             <textarea
-              rows="5"
+              rows={5}
               placeholder="Write something about yourself..."
               value={aboutMe}
               onChange={(e) => setAboutMe(e.target.value)}
@@ -335,11 +341,14 @@ const Settings = () => {
               <div className="dropdown-list">
                 {Object.keys(homeFeedOptions)
                   .filter((key) => key != homeFeed)
-                  .map((key) => (
-                    <div key={key} className="dropdown-item" onClick={() => setHomeFeed(key)}>
-                      {homeFeedOptions[key]}
-                    </div>
-                  ))}
+                  .map((_key) => {
+                    const key = _key as keyof typeof homeFeedOptions;
+                    return (
+                      <div key={key} className="dropdown-item" onClick={() => setHomeFeed(key)}>
+                        {homeFeedOptions[key]}
+                      </div>
+                    );
+                  })}
               </div>
             </Dropdown>
           </FormField>
@@ -375,11 +384,14 @@ const Settings = () => {
               target={<button className="select-bar-dp-target">{fontOptions[font]}</button>}
             >
               <div className="dropdown-list">
-                {Object.keys(fontOptions).map((key) => (
-                  <div key={key} className="dropdown-item" onClick={() => setFont(key)}>
-                    {fontOptions[key]}
-                  </div>
-                ))}
+                {Object.keys(fontOptions).map((_key) => {
+                  const key = _key as keyof typeof fontOptions;
+                  return (
+                    <div key={key} className="dropdown-item" onClick={() => setFont(key)}>
+                      {fontOptions[key]}
+                    </div>
+                  );
+                })}
               </div>
             </Dropdown>
           </FormField>
@@ -419,9 +431,9 @@ const Settings = () => {
         </FormSection>
         <FormSection heading="Muted communities">
           <div className="mutes-list">
-            {mutes.communityMutes.length === 0 && <div>None</div>}
-            {mutes.communityMutes.map((mute) => renderMute(mute))}
-            {mutes.communityMutes.length > 0 && (
+            {communityMutes.length === 0 && <div>None</div>}
+            {communityMutes.map((mute) => renderMute(mute))}
+            {communityMutes.length > 0 && (
               <button
                 style={{ alignSelf: 'flex-end' }}
                 onClick={() => handleUnmuteAll('community')}
@@ -433,9 +445,9 @@ const Settings = () => {
         </FormSection>
         <FormSection heading="Muted users">
           <div className="mutes-list">
-            {mutes.userMutes.length === 0 && <div>None</div>}
-            {mutes.userMutes.map((mute) => renderMute(mute))}
-            {mutes.userMutes.length > 0 && (
+            {userMutes.length === 0 && <div>None</div>}
+            {userMutes.map((mute) => renderMute(mute))}
+            {userMutes.length > 0 && (
               <button style={{ alignSelf: 'flex-end' }} onClick={() => handleUnmuteAll('user')}>
                 Unmute all
               </button>

@@ -304,9 +304,11 @@ export interface NotificationView {
   updatedAt: string;
 }
 
+export type MuteType = 'user' | 'community';
+
 export interface Mute {
   id: string;
-  type: 'user' | 'community';
+  type: MuteType;
   mutedUserId?: string;
   mutedCommunityId?: string;
   createdAt: string; // A datetime.

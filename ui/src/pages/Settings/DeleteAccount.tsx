@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { ButtonClose } from '../../components/Button';
@@ -6,9 +5,10 @@ import { FormField } from '../../components/Form';
 import Input, { InputPassword } from '../../components/Input';
 import Modal from '../../components/Modal';
 import { APIError, mfetch } from '../../helper';
+import { User } from '../../serverTypes';
 import { snackAlertError } from '../../slices/mainSlice';
 
-const DeleteAccount = ({ user }) => {
+const DeleteAccount = ({ user }: { user: User }) => {
   const dispatch = useDispatch();
 
   const [open, setOpen] = useState(false);
@@ -17,8 +17,8 @@ const DeleteAccount = ({ user }) => {
   const [confirm, setConfirm] = useState('');
   const [password, _setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
-  const setPassword = (pass) => {
-    _setPassword(pass);
+  const setPassword = (password: string) => {
+    _setPassword(password);
     setPasswordError(false);
   };
   const handleOnDelete = async () => {
@@ -74,10 +74,6 @@ const DeleteAccount = ({ user }) => {
       </Modal>
     </>
   );
-};
-
-DeleteAccount.propTypes = {
-  user: PropTypes.object,
 };
 
 export default DeleteAccount;
