@@ -1,17 +1,15 @@
-import PropTypes from 'prop-types';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ButtonClose } from '../../components/Button';
 import Modal from '../../components/Modal';
+import { Badge as BadgeType, User } from '../../serverTypes';
 import Badge from './Badge';
 
-function BadgesList({ user }) {
-  const { badges } = user;
-
-  const [selectedBadge, setSelectedBadge] = useState(null);
+function BadgesList({ user }: { user: User }) {
+  const [selectedBadge, setSelectedBadge] = useState<BadgeType | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const handleModalClose = () => setModalOpen(false);
 
-  const handleBadgeClick = (badge) => {
+  const handleBadgeClick = (badge: BadgeType) => {
     setSelectedBadge(badge);
     setModalOpen(true);
   };
@@ -28,13 +26,15 @@ function BadgesList({ user }) {
     }
   }
 
+  const badges = user.badges || [];
+
   return (
     <div className="user-badges">
       <Modal open={modalOpen} onClose={handleModalClose}>
         <div className="modal-card is-compact-mobile is-center modal-badges">
           <div className="modal-badges-head">
             <ButtonClose className="modal-badges-close" onClick={handleModalClose} />
-            <Badge badge={selectedBadge} />
+            {selectedBadge && <Badge badge={selectedBadge} />}
           </div>
           <div className="modal-badges-body">
             <div className="modal-badges-title">{modalTitle}</div>
@@ -50,9 +50,5 @@ function BadgesList({ user }) {
     </div>
   );
 }
-
-BadgesList.propTypes = {
-  user: PropTypes.object.isRequired,
-};
 
 export default BadgesList;

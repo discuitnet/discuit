@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types';
 import React from 'react';
 import Link from '../../components/Link';
 import MarkdownBody from '../../components/MarkdownBody';
@@ -60,11 +59,6 @@ const Comment = ({
       </div>
     </div>
   );
-};
-
-Comment.propTypes = {
-  comment: PropTypes.object.isRequired,
-  onRemoveFromList: PropTypes.func,
 };
 
 export default Comment;

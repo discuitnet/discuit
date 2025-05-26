@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { ButtonClose } from '../../components/Button';
@@ -6,10 +5,11 @@ import { FormField } from '../../components/Form';
 import Input, { Checkbox } from '../../components/Input';
 import Modal from '../../components/Modal';
 import { mfetch } from '../../helper';
+import { User } from '../../serverTypes';
 import { snackAlertError } from '../../slices/mainSlice';
 
-const BanUserButton = ({ user }) => {
-  const [open, setOpen] = useState();
+const BanUserButton = ({ user }: { user: User }) => {
+  const [open, setOpen] = useState(false);
 
   const [deleteContentChecked, setDeleteContentChecked] = useState(false);
   const [page, setPage] = useState(1);
@@ -42,7 +42,12 @@ const BanUserButton = ({ user }) => {
     }
     try {
       setBanInProgress(true);
-      const body = {
+      interface RequestBodyType {
+        action: 'ban_user' | 'unban_user';
+        username: string;
+        deleteContentDays?: number;
+      }
+      const body: RequestBodyType = {
         action: user.isBanned ? 'unban_user' : 'ban_user',
         username: user.username,
       };
@@ -129,10 +134,6 @@ const BanUserButton = ({ user }) => {
       </Modal>
     </>
   );
-};
-
-BanUserButton.propTypes = {
-  user: PropTypes.object.isRequired,
 };
 
 export default BanUserButton;

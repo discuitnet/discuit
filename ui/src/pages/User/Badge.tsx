@@ -1,8 +1,12 @@
-import PropTypes from 'prop-types';
 import React from 'react';
+import { Badge as BadgeType } from '../../serverTypes';
 import { badgeImage } from './badgeImage';
 
-function Badge({ className = '', badge, ...props }) {
+export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
+  badge: BadgeType;
+}
+
+function Badge({ className = '', badge, ...props }: BadgeProps) {
   const renderImage = () => {
     const { src, alt } = badgeImage(badge.type);
     return <img src={src} alt={alt} />;
@@ -13,10 +17,5 @@ function Badge({ className = '', badge, ...props }) {
     </div>
   );
 }
-
-Badge.propTypes = {
-  className: PropTypes.string,
-  badge: PropTypes.object.isRequired,
-};
 
 export default Badge;
