@@ -3,22 +3,22 @@ import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import CommunityProPic from '../../components/CommunityProPic';
 import { FormField } from '../../components/Form';
-import Input, { Checkbox, InputWithCount, useInputMaxLength } from '../../components/Input';
-import { APIError, mfetch, mfetchjson } from '../../helper';
-import { communityAdded } from '../../slices/communitiesSlice';
-import { snackAlert, snackAlertError } from '../../slices/mainSlice';
-import Banner from '../Community/Banner';
 import ImageEditModal from '../../components/ImageEditModal';
-import { selectImageCopyURL } from '../../helper';
+import Input, { Checkbox, InputWithCount, useInputMaxLength } from '../../components/Input';
+import { APIError, mfetch, mfetchjson, selectImageCopyURL } from '../../helper';
 import { useImageEdit } from '../../hooks/useImageEdit';
+import { Community } from '../../serverTypes';
+import { communityAdded } from '../../slices/communitiesSlice';
+import { MainState, snackAlert, snackAlertError } from '../../slices/mainSlice';
+import { RootState } from '../../store';
+import Banner from '../Community/Banner';
 
 const descriptionMaxLength = 2000;
 
-const Settings = ({ community }) => {
+const Settings = ({ community }: { community: Community }) => {
   const dispatch = useDispatch();
 
-  const user = useSelector((state) => state.main.user);
-  const loggedIn = user !== null;
+  const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
 
   const [_changed, setChanged] = useState(-1);
 
@@ -51,10 +51,10 @@ const Settings = ({ community }) => {
     setChanged((c) => c + 1);
   }, [description, postingRestricted]);
 
-  const proPicFileInputRef = useRef(null);
-  const bannerFileInputRef = useRef(null);
+  const proPicFileInputRef = useRef<HTMLInputElement>(null);
+  const bannerFileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const updloadImage = async (file, url) => {
+  const updloadImage = async (file: File, url: string) => {
     if (isUploading) return;
     try {
       const data = new FormData();
@@ -86,15 +86,19 @@ const Settings = ({ community }) => {
     }
   };
   const handleProPicFileChange = () => {
-    updloadImage(proPicFileInputRef.current.files[0], `/api/communities/${community.id}/pro_pic`);
+    const files = proPicFileInputRef.current?.files;
+    if (files && files.length > 0) {
+      updloadImage(files[0], `/api/communities/${community.id}/pro_pic`);
+    }
   };
   const handleBannerFileChange = () => {
-    updloadImage(
-      bannerFileInputRef.current.files[0],
-      `/api/communities/${community.id}/banner_image`
-    );
+    const files = bannerFileInputRef.current?.files;
+    if (files && files.length > 0) {
+      updloadImage(files[0], `/api/communities/${community.id}/banner_image`);
+    }
   };
 
+  /*
   const handleDeleteProPic = async () => {
     try {
       const rcomm = await mfetchjson(`/api/communities/${community.id}/pro_pic`, {
@@ -116,6 +120,7 @@ const Settings = ({ community }) => {
       dispatch(snackAlertError(error));
     }
   };
+  */
 
   const [communityPicModalOpen, setCommunityPicModalOpen] = useState(false);
   const [communityBannerModalOpen, setCommunityBannerModalOpen] = useState(false);
@@ -140,7 +145,7 @@ const Settings = ({ community }) => {
     dispatch(communityAdded(res));
   });
 
-  const handleSaveCommunityPicAlt = (altText) => {
+  const handleSaveCommunityPicAlt = (altText: string) => {
     if (!community) return dispatch(snackAlert('No community to update.', null));
     if (!community.proPic) return dispatch(snackAlert('No profile picture to update.', null));
     handleSaveCommunityPicAltText(altText, community.proPic.id).then((success) => {
@@ -151,7 +156,7 @@ const Settings = ({ community }) => {
     });
   };
 
-  const handleSaveCommunityBannerAlt = (altText) => {
+  const handleSaveCommunityBannerAlt = (altText: string) => {
     if (!community) return dispatch(snackAlert('No community to update.', null));
     if (!community.bannerImage) return dispatch(snackAlert('No banner image to update.', null));
     handleSaveCommunityBannerAltText(altText, community.bannerImage.id).then((success) => {
@@ -164,7 +169,7 @@ const Settings = ({ community }) => {
 
   const handleChangeDefault = async () => {
     try {
-      const res = await mfetchjson(`/api/_admin`, {
+      await mfetchjson(`/api/_admin`, {
         method: 'POST',
         body: JSON.stringify({
           action: community.isDefault ? 'remove_default_forum' : 'add_default_forum',
@@ -230,7 +235,7 @@ const Settings = ({ community }) => {
         >
           <InputWithCount
             textarea
-            rows="5"
+            rows={5}
             maxLength={descriptionMaxLength}
             value={description}
             onChange={setDescription}
@@ -245,7 +250,7 @@ const Settings = ({ community }) => {
             spaceBetween
           />
         </FormField>
-        {user.isAdmin && (
+        {user && user.isAdmin && (
           <FormField>
             <button onClick={handleChangeDefault}>
               {community.isDefault ? 'Remove as default community' : 'Set as default community'}
