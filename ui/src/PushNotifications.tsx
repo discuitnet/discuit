@@ -4,28 +4,14 @@ import { ButtonClose } from './components/Button';
 import Modal from './components/Modal';
 import { mfetchjson, urlBase64ToUint8Array } from './helper';
 import { useIsMobile } from './hooks';
-
-function askDeviceNotificationsPermissions() {
-  return new Promise(function (resolve, reject) {
-    const permissionResult = Notification.requestPermission(function (result) {
-      resolve(result);
-    });
-
-    if (permissionResult) {
-      permissionResult.then(resolve, reject);
-    }
-  }).then(function (permissionResult) {
-    if (permissionResult !== 'granted') {
-      throw new Error("We weren't granted permission.");
-    }
-  });
-}
+import { MainState } from './slices/mainSlice';
+import { RootState } from './store';
 
 const timestampKey = 'notifPermsLastAskedAt';
 
 export const shouldAskForNotificationsPermissions = (
-  loggedIn,
-  applicationServerKey,
+  loggedIn: boolean,
+  applicationServerKey: string | null,
   considerLastAsked = true
 ) => {
   if (!(loggedIn && applicationServerKey)) return false;
@@ -35,7 +21,7 @@ export const shouldAskForNotificationsPermissions = (
   if (Notification.permission === 'granted') return false;
 
   if (considerLastAsked) {
-    const ts = parseInt(localStorage.getItem(timestampKey), 10);
+    const ts = parseInt(localStorage.getItem(timestampKey) || '', 10);
     if (!isNaN(ts)) {
       const current = Math.round(Date.now() / 1000);
       if (current - ts > 3600 * 24 * 30) {
@@ -53,7 +39,7 @@ export const clearNotificationsLocalStorage = () => {
   localStorage.removeItem(timestampKey);
 };
 
-const updatePushSubscription = async (loggedIn, applicationServerKey) => {
+const updatePushSubscription = async (loggedIn: boolean, applicationServerKey: string) => {
   if (!(loggedIn && applicationServerKey)) return;
   if (!('serviceWorker' in navigator && 'PushManager' in window)) return;
   try {
@@ -81,29 +67,30 @@ const updatePushSubscription = async (loggedIn, applicationServerKey) => {
 
 // Gets device notification permissions and sends the PushSubscription to the
 // server for persistence.
-export const getNotificationsPermissions = async (loggedIn, applicationServerKey) => {
+export const getNotificationsPermissions = async (
+  loggedIn: boolean,
+  applicationServerKey: string
+) => {
   if (!(loggedIn && applicationServerKey)) return;
   if (!('serviceWorker' in navigator && 'PushManager' in window)) return;
 
-  let canNotify = Notification.permission === 'granted';
-
-  if (!canNotify) {
-    try {
-      await askDeviceNotificationsPermissions();
-      canNotify = true;
-    } catch (error) {
+  if (Notification.permission !== 'granted') {
+    if ((await Notification.requestPermission()) !== 'granted') {
       alert("It looks like your browser doesn't support push notifications.");
+      return;
     }
   }
 
-  if (canNotify) updatePushSubscription(loggedIn, applicationServerKey);
+  updatePushSubscription(loggedIn, applicationServerKey);
 };
 
 const PushNotifications = () => {
-  const user = useSelector((state) => state.main.user);
+  const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const loggedIn = user !== null;
 
-  const applicationServerKey = useSelector((state) => state.main.vapidPublicKey);
+  const applicationServerKey = useSelector<RootState>(
+    (state) => state.main.vapidPublicKey
+  ) as MainState['vapidPublicKey'];
 
   const isMobile = useIsMobile(true);
 
@@ -111,7 +98,7 @@ const PushNotifications = () => {
   const handleAskModalClose = () => setAskModalOpen(false);
 
   useEffect(() => {
-    if (isMobile) {
+    if (isMobile && applicationServerKey) {
       setAskModalOpen(shouldAskForNotificationsPermissions(loggedIn, applicationServerKey));
       if (window.Notification && Notification.permission === 'granted') {
         updatePushSubscription(loggedIn, applicationServerKey);
@@ -121,13 +108,15 @@ const PushNotifications = () => {
 
   useEffect(() => {
     if (askModalOpen) {
-      return () => localStorage.setItem(timestampKey, Math.round(Date.now() / 1000));
+      return () => localStorage.setItem(timestampKey, Math.round(Date.now() / 1000).toString());
     }
   }, [askModalOpen]);
 
   const handlePermissionsAsk = async () => {
-    await getNotificationsPermissions(loggedIn, applicationServerKey);
-    handleAskModalClose();
+    if (applicationServerKey) {
+      await getNotificationsPermissions(loggedIn, applicationServerKey);
+      handleAskModalClose();
+    }
   };
 
   return (
