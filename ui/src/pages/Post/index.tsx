@@ -15,7 +15,12 @@ import {
   userGroupSingular,
 } from '../../helper';
 import { useIsMobile } from '../../hooks';
-import { saveToListModalOpened, snackAlert, snackAlertError } from '../../slices/mainSlice';
+import {
+  MainState,
+  saveToListModalOpened,
+  snackAlert,
+  snackAlertError,
+} from '../../slices/mainSlice';
 import PageNotLoaded from '../PageNotLoaded';
 import AddComment from './AddComment';
 import CommentSection from './CommentSection';
@@ -24,41 +29,45 @@ import PostShareButton from './PostShareButton';
 // import CommentsSortButton from './CommentsSortButton';
 import { useLocation } from 'react-router-dom';
 import MarkdownBody from '../../components/MarkdownBody';
-import { getEmbedComponent } from '../../components/PostCard';
+import embeddedElement from '../../components/PostCard/embed';
 import LinkImage from '../../components/PostCard/LinkImage';
 import PostCardHeadingDetails from '../../components/PostCard/PostCardHeadingDetails';
 import PostImageGallery from '../../components/PostImageGallery';
 import Spinner from '../../components/Spinner';
 import { ExternalLink, LinkOrDiv } from '../../components/Utils';
-import { commentsAdded, newCommentAdded } from '../../slices/commentsSlice';
+import { Comment, Community } from '../../serverTypes';
+import { commentsAdded, CommentsState, newCommentAdded } from '../../slices/commentsSlice';
 import { communityAdded } from '../../slices/communitiesSlice';
-import { postAdded } from '../../slices/postsSlice';
+import { postAdded, PostsState, Post as PostType } from '../../slices/postsSlice';
+import { RootState } from '../../store';
 import { SVGExternalLink } from '../../SVGs';
 import CommunityCard from './CommunityCard';
 import PostImage from './PostImage';
 import PostVotesBar from './PostVotesBar';
 
 const Post = () => {
-  const { id, commentId, communityName } = useParams(); // id is post.publicId
+  const { id, commentId, communityName } = useParams<{ [key: string]: string }>(); // id is post.publicId
 
   const dispatch = useDispatch();
   const history = useHistory();
 
-  const location = useLocation();
+  const location = useLocation<{ fromNotifications: boolean }>();
   const fromNotifications = Boolean(location.state ? location.state.fromNotifications : false);
 
-  const user = useSelector(
+  const user = useSelector<RootState>(
     (state) => state.main.user,
     () => true
-  ); // select only once
-  const post = useSelector((state) => state.posts.items[id]);
-  const comments = useSelector((state) => state.comments.items[id]);
-  const community = useSelector((state) => {
+  ) as MainState['user']; // select only once
+  const post = useSelector<RootState>((state) => state.posts.items[id]) as PostsState['items'][''];
+  const comments = useSelector<RootState>(
+    (state) => state.comments.items[id]
+  ) as CommentsState['items'][''];
+  const community = useSelector<RootState>((state) => {
     if (post) {
       return state.communities.items[post.communityName];
     }
     return state.communities.items[communityName];
-  });
+  }) as Community;
 
   const [postLoading, setPostLoading] = useState(post ? 'loaded' : 'loading');
   const shouldCommentsLoad = () => {
@@ -114,14 +123,14 @@ const Post = () => {
     }
   }, [location, community, post]);
 
-  const handleAddCommentSuccess = (comment) => {
+  const handleAddCommentSuccess = (comment: Comment) => {
     dispatch(newCommentAdded(post.publicId, comment));
   };
 
   const [deleteAs, setDeleteAs] = useState('normal');
   const [deleteModalOpen, _setDeleteModalOpen] = useState(false);
   const [canDeletePostContent, setCanDeletePostContent] = useState(false);
-  const setDeleteModalOpen = (open, deleteAs = 'normal') => {
+  const setDeleteModalOpen = (open: boolean, deleteAs = 'normal') => {
     setCanDeletePostContent(Boolean(deleteAs === 'admins' || deleteAs == 'normal'));
     if (open) {
       setDeleteAs(deleteAs);
@@ -144,7 +153,7 @@ const Post = () => {
   };
 
   const [deleteContentModalOpen, _setDeleteContentModalOpen] = useState(false);
-  const setDeleteContentModalOpen = (open, deleteAs = 'normal') => {
+  const setDeleteContentModalOpen = (open: boolean, deleteAs = 'normal') => {
     if (open) {
       setDeleteAs(deleteAs);
     } else {
@@ -198,16 +207,16 @@ const Post = () => {
   useEffect(() => {
     if (post) setIsPinnedSite(post.isPinnedSite);
   }, [post]);
-  const handlePinChange = (e, siteWide) => {
+  const handlePinChange = (event: React.ChangeEvent<HTMLInputElement>, siteWide: boolean) => {
     const checkedBefore = siteWide ? isPinnedSite : isPinned;
-    const set = (checked) => {
+    const set = (checked: boolean) => {
       if (siteWide) {
         setIsPinnedSite(checked);
       } else {
         setIsPinned(checked);
       }
     };
-    const checked = e.target.checked;
+    const checked = (event.target as HTMLInputElement).checked;
     set(checked);
     (async () => {
       try {
@@ -257,7 +266,9 @@ const Post = () => {
   const isMobile = useIsMobile();
   const loggedIn = user !== null;
   const isAdmin = loggedIn && user.isAdmin;
-  const bannedFrom = useSelector((state) => state.main.bannedFrom);
+  const bannedFrom = useSelector<RootState>(
+    (state) => state.main.bannedFrom
+  ) as MainState['bannedFrom'];
 
   if (postLoading !== 'loaded' || !post) {
     return <PageNotLoaded loading={postLoading} />;
@@ -265,7 +276,7 @@ const Post = () => {
 
   const isLocked = post.locked;
   const hasImage = false;
-  const isMod = community ? community.userMod : false;
+  const isMod = Boolean(community ? community.userMod : false);
   const isBanned =
     loggedIn && post !== null && bannedFrom.find((id) => id === post.communityId) !== undefined;
   const postOwner = user && user.id === post.userId;
@@ -274,7 +285,7 @@ const Post = () => {
   const showLink = !post.deletedContent && post.type === 'link';
 
   const disableEmbeds = user && user.embedsOff;
-  const { isEmbed: _isEmbed, render: Embed, url: embedURL } = getEmbedComponent(post.link);
+  const { isEmbed: _isEmbed, element: embeddedReactElement } = embeddedElement(post.link);
   const isEmbed = !disableEmbeds && _isEmbed;
 
   const showImage = !post.deletedContent && post.type === 'image' && post.image;
@@ -282,24 +293,24 @@ const Post = () => {
   const canVote = !post.locked;
   const canComment = !(post.locked || isBanned);
 
-  const getDeletedBannerText = (post) => {
+  const getDeletedBannerText = (post: PostType) => {
     if (post.deletedContent) {
       if (post.deletedAs === post.deletedContentAs) {
         return `This post and its ${
           post.type === 'image' ? 'image(s)' : post.type
-        } have been removed by ${userGroupSingular(post.deletedAs, true)}.`;
+        } have been removed by ${userGroupSingular(post.deletedAs!, true)}.`;
       } else {
-        return `This post has been removed by ${userGroupSingular(post.deletedAs, true)} and its ${
+        return `This post has been removed by ${userGroupSingular(post.deletedAs!, true)} and its ${
           post.type
         } has been removed
-        by ${userGroupSingular(post.deletedContentAs, true)}.`;
+        by ${userGroupSingular(post.deletedContentAs!, true)}.`;
       }
     }
-    return `This post has been removed by ${userGroupSingular(post.deletedAs, true)}.`;
+    return `This post has been removed by ${userGroupSingular(post.deletedAs!, true)}.`;
   };
 
   const deletePostContentButtonText = `Delete ${
-    post.type === 'image' ? (post.images.length > 1 ? 'images' : 'image') : post.type
+    post.type === 'image' ? (post.images && post.images.length > 1 ? 'images' : 'image') : post.type
   }`;
 
   return (
@@ -339,12 +350,12 @@ const Post = () => {
                 <LinkOrDiv
                   className={'post-card-title-text' + (showLink ? ' is-link' : '')}
                   isLink={showLink}
-                  href={showLink ? post.link.url : ''}
+                  href={showLink ? (post.link ? post.link.url : '') : ''}
                   target="_blank"
                   rel="noreferrer nofollow"
                 >
                   <h1 className="post-card-title-main">{post.title}</h1>
-                  {showLink && (
+                  {showLink && post.link && (
                     <div className="post-card-link-domain">
                       <span>{omitWWWFromHostname(post.link.hostname)}</span>
                       <svg
@@ -359,7 +370,7 @@ const Post = () => {
                     </div>
                   )}
                 </LinkOrDiv>
-                {showLink && !isEmbed && post.link.image && (
+                {showLink && !isEmbed && post.link && post.link.image && (
                   <ExternalLink className="post-card-link-image" href={post.link.url}>
                     <LinkImage image={post.link.image} />
                     <SVGExternalLink />
@@ -378,11 +389,11 @@ const Post = () => {
                   className="post-image"
                 />
               )*/}
-              {showImage && post.images.length === 1 && <PostImage post={post} />}
-              {showImage && post.images.length > 1 && (
-                <PostImageGallery post={post} isMobile={isMobile} keyboardControlsOn />
+              {showImage && post.images && post.images.length === 1 && <PostImage post={post} />}
+              {showImage && post.images && post.images.length > 1 && (
+                <PostImageGallery post={post} keyboardControlsOn />
               )}
-              {isEmbed && <Embed url={embedURL} />}
+              {isEmbed && embeddedReactElement}
               {(isLocked || post.deleted) && (
                 <div className="post-card-banners">
                   {isLocked && (
@@ -390,7 +401,7 @@ const Post = () => {
                       className="post-card-banner is-locked"
                       style={{ color: 'var(--color-red)' }}
                     >
-                      This post has been locked by {userGroupSingular(post.lockedByGroup)}.
+                      This post has been locked by {userGroupSingular(post.lockedByGroup!)}.
                     </div>
                   )}
                   {post.deleted && (
@@ -572,6 +583,7 @@ const Post = () => {
               <AddComment
                 isMod={isMod}
                 post={post}
+                parentCommentId={null}
                 onSuccess={handleAddCommentSuccess}
                 main
                 loggedIn={loggedIn}

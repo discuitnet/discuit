@@ -1,11 +1,11 @@
-import PropTypes from 'prop-types';
 import React from 'react';
 import { useDispatch } from 'react-redux';
 import Dropdown from '../../components/Dropdown';
 import { copyToClipboard } from '../../helper';
 import { snackAlert } from '../../slices/mainSlice';
+import { Post } from '../../slices/postsSlice';
 
-const Target = ({ ...props }) => {
+const Target = (props: React.HTMLAttributes<HTMLDivElement>) => {
   return (
     <div className="button button-with-icon button-text" {...props}>
       <svg
@@ -29,7 +29,7 @@ const Target = ({ ...props }) => {
   );
 };
 
-const PostShareButton = ({ post }) => {
+const PostShareButton = ({ post }: { post: Post }) => {
   const dispatch = useDispatch();
 
   const url = `${window.location.origin}/${post.communityName}/post/${post.publicId}`;
@@ -54,14 +54,13 @@ const PostShareButton = ({ post }) => {
   };
 
   const renderImageDownloadButton = () => {
-    if (post.images.length === 0) {
+    if (!post.images || post.images.length === 0) {
       return (
         <div className="button-clear dropdown-item" style={{ opacity: 'var(--disabled-opacity)' }}>
           Download image
         </div>
       );
     }
-
     const image = post.images[post.imageGalleryIndex];
     const url = image.url;
     const filename = `discuit-${post.communityName}[${post.publicId}]-${
@@ -107,10 +106,6 @@ const PostShareButton = ({ post }) => {
       </div>
     </Dropdown>
   );
-};
-
-PostShareButton.propTypes = {
-  post: PropTypes.object.isRequired,
 };
 
 export default PostShareButton;

@@ -1,11 +1,25 @@
-import PropTypes from 'prop-types';
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { mfetchjson } from '../../helper';
-import { defaultCommentZIndex, moreCommentsAdded } from '../../slices/commentsSlice';
-import { commentsTree, countChildrenReplies } from '../../slices/commentsTree';
+import { Comment as CommentType, Community, User } from '../../serverTypes';
+import { CommentsState, defaultCommentZIndex, moreCommentsAdded } from '../../slices/commentsSlice';
+import { commentsTree, countChildrenReplies, Node } from '../../slices/commentsTree';
 import { snackAlertError } from '../../slices/mainSlice';
+import { Post } from '../../slices/postsSlice';
+import { RootState } from '../../store';
 import { MemorizedComment } from './Comment';
+
+export interface CommentSectionProps {
+  post: Post;
+  community: Community;
+  user: User | null;
+  focusId?: string;
+  isMobile: boolean;
+  isAdmin: boolean;
+  isBanned: boolean;
+  canVote: boolean;
+  canComment: boolean;
+}
 
 const CommentSection = ({
   post,
@@ -17,7 +31,7 @@ const CommentSection = ({
   isBanned,
   canVote,
   canComment,
-}) => {
+}: CommentSectionProps) => {
   const dispatch = useDispatch();
 
   const postId = post.publicId;
@@ -26,7 +40,9 @@ const CommentSection = ({
   //   if (obj) return obj.comments;
   //   return null;
   // });
-  const commentsObj = useSelector((state) => state.comments.items[postId]);
+  const commentsObj = useSelector<RootState>(
+    (state) => state.comments.items[postId]
+  ) as CommentsState['items'][''];
   const comments = commentsObj ? commentsObj.comments : null;
 
   const noRootComments = comments && comments.children ? comments.children.length : 0;
@@ -45,10 +61,12 @@ const CommentSection = ({
       return r + atOnce;
     });
   };
-  const timer = useRef(null);
+  const timer: React.MutableRefObject<number | null> = useRef(null);
   useEffect(() => {
     return () => {
-      clearTimeout(timer.current);
+      if (timer.current) {
+        window.clearTimeout(timer.current);
+      }
     };
   }, []);
 
@@ -62,13 +80,22 @@ const CommentSection = ({
   const handleMoreComments = async () => {
     try {
       setMoreCommentsLoading('loading');
-      let res, rcomments;
+      let res;
+      let rcomments: CommentType[];
       let next = commentsNext;
       do {
-        res = await mfetchjson(`/api/posts/${post.publicId}/comments?next=${next}`);
+        res = (await mfetchjson(`/api/posts/${post.publicId}/comments?next=${next}`)) as {
+          comments: CommentType[] | null;
+          next: string | null;
+        };
         rcomments = [];
-        const rootIds = comments.children.map((c) => c.comment.id);
-        res.comments.forEach((c) => {
+        let rootIds: string[] = [];
+        if (comments && comments.children) {
+          rootIds = comments.children
+            .map((node) => (node.comment ? node.comment.id : null))
+            .filter((id) => id !== null);
+        }
+        (res.comments || []).forEach((c) => {
           if (c.depth === 0) {
             if (!rootIds.includes(c.id)) rcomments.push(c);
           } else {
@@ -80,10 +107,13 @@ const CommentSection = ({
         next = res.next;
       } while (rcomments.length === 0 && next !== null);
       const newtree = commentsTree(rcomments);
-      const merged = {
-        ...comments,
-        noRepliesRendered: comments.noRepliesRendered + newtree.noRepliesRendered,
-        children: [...comments.children, ...newtree.children],
+      const merged: Node = {
+        ...comments!,
+        noRepliesRendered: (comments ? comments.noRepliesRendered : 0) + newtree.noRepliesRendered,
+        children: [
+          ...(comments && comments.children ? comments.children : []),
+          ...(newtree && newtree.children ? newtree.children : []),
+        ],
       };
       dispatch(moreCommentsAdded(post.publicId, merged, next));
     } catch (error) {
@@ -98,21 +128,22 @@ const CommentSection = ({
   const renderComments = () => {
     const rendered = [];
     let _toRender = toRender;
-    if (_toRender > comments.children.length) {
-      _toRender = comments.children.length;
-      setToRender(comments.children.length);
+    const children: Node[] = (comments && comments.children) || [];
+    if (_toRender > children.length) {
+      _toRender = children.length;
+      setToRender(children.length);
     }
     for (let i = 0; i < _toRender; i++) {
-      const n = comments.children[i];
+      const node = children[i];
       rendered.push(
         <MemorizedComment
           post={post}
-          user={user}
-          key={n.comment.id}
+          user={user || null}
+          key={node.comment?.id}
           zIndex={zIndexTop - i}
           community={community}
-          focusId={focusId}
-          node={n}
+          focusId={focusId || ''}
+          node={node}
           isMobile={isMobile}
           isAdmin={isAdmin}
           isBanned={isBanned}
@@ -125,7 +156,7 @@ const CommentSection = ({
       if (noRootComments - _toRender === 1) {
         setToRender(noRootComments);
       } else {
-        timer.current = setTimeout(updateToRender, interval);
+        timer.current = window.setTimeout(updateToRender, interval);
       }
     }
     return rendered;
@@ -149,18 +180,6 @@ const CommentSection = ({
       )}
     </div>
   );
-};
-
-CommentSection.propTypes = {
-  post: PropTypes.object.isRequired,
-  community: PropTypes.object.isRequired,
-  user: PropTypes.object,
-  focusId: PropTypes.string,
-  isMobile: PropTypes.bool.isRequired,
-  isAdmin: PropTypes.bool.isRequired,
-  isBanned: PropTypes.bool.isRequired,
-  canVote: PropTypes.bool.isRequired,
-  canComment: PropTypes.bool.isRequired,
 };
 
 export default CommentSection;

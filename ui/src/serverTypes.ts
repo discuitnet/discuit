@@ -117,7 +117,7 @@ export interface Post {
   };
   locked: boolean;
   lockedBy: string | null;
-  lockedAs?: UserGroup;
+  lockedByGroup?: UserGroup;
   lockedAt: string | null; // A datetime.
   upvotes: number;
   downvotes: number;
@@ -135,7 +135,7 @@ export interface Post {
   commentsNext?: string | null;
   userVoted: boolean | null;
   userVotedUp: boolean | null;
-  lastVisitedAt: string | null;
+  lastVisitAt: string | null;
   newComments: number;
   isAuthorMuted: boolean;
   isCommunityMuted: boolean;

@@ -1,13 +1,22 @@
-import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
+import { MainState } from '../../slices/mainSlice';
+import { RootState } from '../../store';
 
-const AsUser = ({ isMod, disabled = false, onChange }) => {
-  const user = useSelector((state) => state.main.user);
+const AsUser = ({
+  isMod,
+  disabled = false,
+  onChange,
+}: {
+  isMod: boolean;
+  disabled?: boolean;
+  onChange: (group: string) => void;
+}) => {
+  const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const isAdmin = user !== null ? user.isAdmin : false;
 
   const [group, setGroup] = useState('normal');
-  const handleChange = (to, checked) => {
+  const handleChange = (to: string, checked: boolean) => {
     if (checked) {
       setGroup(to);
     } else {
@@ -48,12 +57,6 @@ const AsUser = ({ isMod, disabled = false, onChange }) => {
       )}
     </>
   );
-};
-
-AsUser.propTypes = {
-  isMod: PropTypes.bool.isRequired,
-  disabled: PropTypes.bool,
-  onChange: PropTypes.func.isRequired,
 };
 
 export default AsUser;

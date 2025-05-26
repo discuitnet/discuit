@@ -1,22 +1,38 @@
-import PropTypes from 'prop-types';
 import { useCallback, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import MarkdownTextarea from '../../components/MarkdownTextarea';
 import { APIError, mfetch } from '../../helper';
+import { Comment } from '../../serverTypes';
 import {
   bannedFromAdded,
   loginPromptToggled,
   snackAlert,
   snackAlertError,
 } from '../../slices/mainSlice';
+import { Post } from '../../slices/postsSlice';
 import AsUser from './AsUser';
 
-function appendTextSelection(comment, textSelection) {
+function appendTextSelection(comment: string, textSelection?: string) {
   if (comment || !textSelection) {
     return comment;
   }
   return `> ${textSelection}\n\n`;
+}
+
+export interface AddCommentProps {
+  post: Post;
+  parentCommentId: string | null;
+  onSuccess: (comment: Comment) => void;
+  onCancel?: () => void;
+  editing?: boolean;
+  id?: string;
+  commentBody?: string;
+  main?: boolean;
+  loggedIn?: boolean;
+  disabled?: boolean;
+  isMod?: boolean;
+  textSelection?: string;
 }
 
 const AddComment = ({
@@ -32,7 +48,7 @@ const AddComment = ({
   loggedIn = true,
   disabled = false,
   textSelection = '',
-}) => {
+}: AddCommentProps) => {
   const dispatch = useDispatch();
 
   const [body, setBody] = useState(appendTextSelection(commentBody, textSelection));
@@ -44,9 +60,9 @@ const AddComment = ({
 
   const [clicked, setClicked] = useState(false);
   const [sendingRequest, setSendingRequest] = useState(false);
-  const timer = useRef(null);
+  const timer: React.MutableRefObject<number | null> = useRef(null);
 
-  const textareaNode = useRef();
+  const textareaNode: React.MutableRefObject<HTMLTextAreaElement | null> = useRef(null);
   const reset = () => {
     if (timer.current) clearTimeout(timer.current);
     setClicked(false);
@@ -90,12 +106,12 @@ const AddComment = ({
           }
         } else if (res.status === 429) {
           // Try again in 2 seconds.
-          timer.current = setTimeout(handleSubmit, 2000);
+          timer.current = window.setTimeout(handleSubmit, 2000);
           return;
         }
         throw new APIError(res.status, await res.json());
       }
-      const comm = await res.json();
+      const comm = (await res.json()) as Comment;
       reset();
       onSuccess(comm);
     } catch (error) {
@@ -104,8 +120,8 @@ const AddComment = ({
     }
   };
 
-  const textareaRef = useRef();
-  const textareaCallbackRef = useCallback((node) => {
+  const textareaRef: React.MutableRefObject<HTMLTextAreaElement | null> = useRef(null);
+  const textareaCallbackRef: React.RefCallback<HTMLTextAreaElement> = useCallback((node) => {
     if (node !== null) {
       if (!main) {
         node.focus();
@@ -117,7 +133,7 @@ const AddComment = ({
 
   const handleTextareaClick = () => {
     if (!loggedIn) {
-      textareaRef.current.blur();
+      textareaRef.current?.blur();
       dispatch(loginPromptToggled());
       return;
     }
@@ -135,7 +151,7 @@ const AddComment = ({
         ref={textareaCallbackRef}
         name=""
         id=""
-        rows="3"
+        rows={3}
         placeholder="Add a new comment"
         value={body}
         onClick={handleTextareaClick}
@@ -143,7 +159,6 @@ const AddComment = ({
         onChange={(e) => setBody(e.target.value)}
         onQuickSubmit={handleSubmit}
         onCancel={onCancel}
-        onTextAmend={(value) => setBody(value)}
       />
       {(!main || (main && clicked)) && (
         <div className="post-comments-new-buttons">
@@ -168,21 +183,6 @@ const AddComment = ({
       )}
     </div>
   );
-};
-
-AddComment.propTypes = {
-  post: PropTypes.object.isRequired,
-  parentCommentId: PropTypes.string,
-  onSuccess: PropTypes.func.isRequired,
-  onCancel: PropTypes.func,
-  editing: PropTypes.bool,
-  id: PropTypes.string,
-  commentBody: PropTypes.string,
-  main: PropTypes.bool,
-  loggedIn: PropTypes.bool,
-  disabled: PropTypes.bool,
-  isMod: PropTypes.bool,
-  textSelection: PropTypes.string,
 };
 
 export default AddComment;

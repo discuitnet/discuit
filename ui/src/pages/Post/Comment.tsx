@@ -1,5 +1,4 @@
 /* eslint-disable react/display-name */
-import PropTypes from 'prop-types';
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useLocation } from 'react-router-dom';
@@ -13,20 +12,37 @@ import UserProPic, { GhostUserProPic, UserLink } from '../../components/UserProP
 import { LinkOrDiv } from '../../components/Utils';
 import { kRound, mfetchjson, stringCount, toTitleCase, userGroupSingular } from '../../helper';
 import { useVoting } from '../../hooks';
+import { Comment as CommentType, Community, User } from '../../serverTypes';
 import { newCommentAdded, replyCommentsAdded } from '../../slices/commentsSlice';
-import { countChildrenReplies } from '../../slices/commentsTree';
+import { countChildrenReplies, Node } from '../../slices/commentsTree';
 import {
   loginPromptToggled,
   saveToListModalOpened,
   snackAlert,
   snackAlertError,
 } from '../../slices/mainSlice';
+import { Post } from '../../slices/postsSlice';
 import { userHasSupporterBadge } from '../User';
 import AddComment from './AddComment';
 import CommentShareButton, { CommentShareDropdownItems } from './CommentShareButton';
 
 const Diagnostics = false; // import.meta.env.MODE !== 'production';
 const MaxCommentDepth = 15;
+
+export interface CommentProps {
+  post: Post;
+  user: User | null;
+  zIndex: number;
+  community: Community;
+  focusId: string;
+  node: Node; // todo
+  isMobile?: boolean;
+  isRoot?: boolean;
+  isAdmin: boolean;
+  isBanned: boolean;
+  canVote: boolean;
+  canComment: boolean;
+}
 
 const Comment = ({
   post,
@@ -40,7 +56,7 @@ const Comment = ({
   isBanned,
   canVote,
   canComment,
-}) => {
+}: CommentProps) => {
   const dispatch = useDispatch();
 
   const postId = post.publicId;
@@ -48,8 +64,8 @@ const Comment = ({
   const postLastVisitAt = post.lastVisitAt;
 
   const { noRepliesRendered, children } = node;
-  const [comment, _setComment] = useState(node.comment);
-  const setComment = (comment) => {
+  const [comment, _setComment] = useState(node.comment!);
+  const setComment = (comment: CommentType) => {
     // Beware: In place data mutation.
     node.comment = {
       ...node.comment,
@@ -95,24 +111,24 @@ const Comment = ({
     }
     openReplyBox();
   };
-  const handleAddCommentSuccess = (newComment) => {
+  const handleAddCommentSuccess = (newComment: CommentType) => {
     closeReplyBox();
     if (!newComment.author) {
-      newComment.author = user;
+      newComment.author = user!;
     }
     dispatch(newCommentAdded(postId, newComment));
   };
 
   const [isEditing, setIsEditing] = useState(false);
   const handleOnEdit = () => setIsEditing(true);
-  const handleEditCommentSuccess = (newComment) => {
+  const handleEditCommentSuccess = (newComment: CommentType) => {
     setIsEditing(false);
     setComment(newComment);
   };
 
   const [deleteAs, setDeleteAs] = useState('normal');
   const [confirmDeleteOpen, _setConfirmDeleteOpen] = useState(false);
-  const setConfirmDeleteOpen = (newConfirm, deleteAs = 'normal') => {
+  const setConfirmDeleteOpen = (newConfirm: boolean, deleteAs = 'normal') => {
     if (newConfirm === false) {
       setDeleteAs('normal');
     } else {
@@ -136,7 +152,7 @@ const Comment = ({
     }
   };
 
-  const { upvotes, downvotes, vote, doVote } = useVoting(
+  const { upvotes, downvotes, vote, doVote } = useVoting<CommentType>(
     comment.userVoted ? (comment.userVotedUp ? true : false) : null,
     comment.upvotes,
     comment.downvotes
@@ -188,7 +204,7 @@ const Comment = ({
   }, [userGroup]);
 
   const [collapsed, setCollapsed] = useState(node.collapsed || false);
-  const collapsedRef = useRef(null);
+  const collapsedRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const navBarHeight = 100; // roughly
     if (collapsed && collapsedRef.current !== null) {
@@ -201,7 +217,7 @@ const Comment = ({
       }
     }
   }, [collapsed]);
-  const handleCollapse = (collapsed) => {
+  const handleCollapse = (collapsed: boolean) => {
     node.collapsed = collapsed;
     setCollapsed(collapsed);
   };
@@ -225,7 +241,7 @@ const Comment = ({
     }
   };
 
-  const div = useRef();
+  const div = useRef<HTMLDivElement>(null);
   const focused = focusId === comment.id;
   useEffect(() => {
     if (focused && div.current) {
@@ -240,8 +256,8 @@ const Comment = ({
 
   const highlighted = (() => {
     const ts = new Date(comment.createdAt).getTime() / 1000,
-      from = parseInt(params.get('highlightFrom')),
-      to = parseInt(params.get('highlightTo'));
+      from = parseInt(params.get('highlightFrom') || ''),
+      to = parseInt(params.get('highlightTo') || '');
     if (isNaN(to)) {
       return ts >= from;
     }
@@ -278,7 +294,7 @@ const Comment = ({
   if (Diagnostics) console.log('Comment rendering.');
 
   const showAuthorProPic = user ? !user.hideUserProfilePictures : true;
-  const proPicRef = useRef(null);
+  const proPicRef = useRef<HTMLDivElement>(null);
   const renderAuthorProPic = () => {
     if (!showAuthorProPic) {
       return <div className={'post-comment-collapse-minus' + (collapsed ? ' is-plus' : '')}></div>;
@@ -325,24 +341,7 @@ const Comment = ({
     );
   };
 
-  const CommentNewLabel = ({ inline = true, comment, postLastVisitAt, ...rest }) => {
-    if (comment.username == user.username) {
-      return null;
-    }
-    return React.createElement(
-      inline ? 'span' : 'div',
-      { ...rest },
-      `${Date.parse(postLastVisitAt) <= Date.parse(comment.createdAt) && !comment.deleted ? '(new)' : ''}`
-    );
-  };
-
-  CommentNewLabel.propTypes = {
-    inline: PropTypes.bool.isRequired,
-    comment: PropTypes.object.isRequired,
-    postLastVisitAt: PropTypes.string.isRequired,
-  };
-
-  const isAuthorSupporter = userHasSupporterBadge(comment.author);
+  const isAuthorSupporter = userHasSupporterBadge(comment.author || null);
   const topDivClassname = 'post-comment' + (showAuthorProPic ? ' has-propics' : '');
   if (collapsed) {
     return (
@@ -367,9 +366,10 @@ const Comment = ({
               time={comment.createdAt}
               short={isMobile}
             />
-            {loggedIn && (
+            {loggedIn && postLastVisitAt && (
               <CommentNewLabel
                 className="post-comment-head-item post-new-comment-label"
+                user={user}
                 comment={comment}
                 postLastVisitAt={postLastVisitAt}
               />
@@ -401,8 +401,8 @@ const Comment = ({
     dispatch(saveToListModalOpened(comment.id, 'comment'));
   };
 
-  const upCls = {};
-  const downCls = {};
+  const upCls: React.CSSProperties = {};
+  const downCls: React.CSSProperties = {};
   if (vote === true) {
     upCls.color = 'var(--color-voted)';
     upCls.background = 'rgba(var(--base-brand), 0.2)';
@@ -411,10 +411,10 @@ const Comment = ({
     downCls.background = 'rgba(var(--base-brand), 0.2)';
   }
 
-  const userMod = community ? community.userMod : false;
+  const userMod = Boolean(community ? community.userMod : false);
 
   let deletedText = '';
-  if (deleted) deletedText = `Deleted by ${userGroupSingular(comment.deletedAs, true)}`;
+  if (deleted) deletedText = `Deleted by ${userGroupSingular(comment.deletedAs!, true)}`;
   const disabled = !(canVote && !comment.deletedAt);
   const noRepliesRenderedDirect = children ? children.length : 0;
   const noChildrenReplies = countChildrenReplies(node);
@@ -433,7 +433,7 @@ const Comment = ({
         <div className={cls()} onClick={() => !disabled && setConfirmDeleteOpen(true, 'mods')}>
           Delete
         </div>
-        {user.id === comment.userId && (
+        {user && user.id === comment.userId && (
           <div className={cls('is-non-reactive')}>
             <div className="checkbox">
               <input
@@ -458,7 +458,7 @@ const Comment = ({
         <div className="dropdown-item" onClick={() => setConfirmDeleteOpen(true, 'admins')}>
           Delete
         </div>
-        {user.id === comment.userId && (
+        {user && user.id === comment.userId && (
           <div className="dropdown-item is-non-reactive">
             <div className="checkbox">
               <input
@@ -479,16 +479,16 @@ const Comment = ({
   };
 
   const showEditedSign = comment.editedAt
-    ? new Date(comment.editedAt) - new Date(comment.createdAt) > 5 * 60000
+    ? new Date(comment.editedAt).valueOf() - new Date(comment.createdAt).valueOf() > 5 * 60000
     : false; // show if comment was edited less than 5 mins ago
 
   const style = {
     zIndex,
   };
 
-  const handleLineClick = (e) => {
+  const handleLineClick: React.MouseEventHandler = (event) => {
     if (proPicRef.current) {
-      if (proPicRef.current.contains(e.target)) {
+      if (proPicRef.current.contains(event.target as Element)) {
         return;
       }
     }
@@ -531,14 +531,15 @@ const Comment = ({
               {`${toTitleCase(userGroupSingular(comment.userGroup, isMobile))}`}
             </div>
           )}
-          {loggedIn && (
+          {loggedIn && postLastVisitAt && (
             <CommentNewLabel
               className="post-comment-head-item post-new-comment-label"
+              user={user}
               comment={comment}
               postLastVisitAt={postLastVisitAt}
             />
           )}
-          {showEditedSign && (
+          {showEditedSign && comment.editedAt && (
             <TimeAgo
               className="post-comment-head-item"
               time={comment.editedAt}
@@ -555,11 +556,11 @@ const Comment = ({
         {isEditing && (
           <AddComment
             post={post}
-            postId={comment.postId}
             id={comment.id}
             onSuccess={handleEditCommentSuccess}
             onCancel={() => setIsEditing(false)}
             commentBody={comment.body}
+            parentCommentId={null}
             editing
           />
         )}
@@ -689,7 +690,7 @@ const Comment = ({
           )}
           {!deleted && !isMobile && (
             <>
-              <CommentShareButton url={commentShareURL} prefix="Share via " />
+              <CommentShareButton url={commentShareURL} />
               {showEditDelete && (
                 <>
                   <button className="button-text" onClick={handleOnEdit}>
@@ -737,15 +738,15 @@ const Comment = ({
           />
         )}
         {children &&
-          children.map((n, i) => (
+          children.map((node, i) => (
             <Comment
               post={post}
               user={user}
               community={community}
-              key={n.comment.id}
+              key={node.comment?.id}
               zIndex={1000000 - i}
               focusId={focusId}
-              node={n}
+              node={node}
               isMobile={isMobile}
               isAdmin={isAdmin}
               isBanned={isBanned}
@@ -767,21 +768,30 @@ const Comment = ({
   );
 };
 
-Comment.propTypes = {
-  post: PropTypes.object.isRequired,
-  user: PropTypes.object,
-  zIndex: PropTypes.number.isRequired,
-  community: PropTypes.object,
-  focusId: PropTypes.string,
-  node: PropTypes.object.isRequired,
-  isMobile: PropTypes.bool,
-  isRoot: PropTypes.bool,
-  isAdmin: PropTypes.bool.isRequired,
-  isBanned: PropTypes.bool.isRequired,
-  canVote: PropTypes.bool.isRequired,
-  canComment: PropTypes.bool.isRequired,
-};
-
 export default Comment;
 
 export const MemorizedComment = React.memo(Comment);
+
+interface CommentNewLabelProps extends React.HTMLAttributes<HTMLElement> {
+  user: User;
+  inline?: boolean;
+  comment: CommentType;
+  postLastVisitAt: string;
+}
+
+const CommentNewLabel = ({
+  user,
+  inline = true,
+  comment,
+  postLastVisitAt,
+  ...rest
+}: CommentNewLabelProps) => {
+  if (comment.username == user.username) {
+    return null;
+  }
+  return React.createElement(
+    inline ? 'span' : 'div',
+    { ...rest },
+    `${Date.parse(postLastVisitAt) <= Date.parse(comment.createdAt) && !comment.deleted ? '(new)' : ''}`
+  );
+};

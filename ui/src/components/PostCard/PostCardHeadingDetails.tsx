@@ -13,7 +13,7 @@ import CommunityLink from './CommunityLink';
 
 export interface PostCardHeadingDetailsProps {
   post: Post;
-  userGroup?: UserGroup;
+  userGroup: UserGroup | null;
   showEdited?: boolean;
   showAuthorProPic?: boolean;
   onRemoveFromList?: (postId: string) => void;

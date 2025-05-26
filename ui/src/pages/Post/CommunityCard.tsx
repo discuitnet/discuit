@@ -1,13 +1,12 @@
-import PropTypes from 'prop-types';
-import React from 'react';
 import CommunityProPic from '../../components/CommunityProPic';
 import Link from '../../components/Link';
 import MarkdownBody from '../../components/MarkdownBody';
 import ShowMoreBox from '../../components/ShowMoreBox';
 import { stringCount } from '../../helper';
+import { Community } from '../../serverTypes';
 import JoinButton from '../Community/JoinButton';
 
-const CommunityCard = ({ community }) => {
+const CommunityCard = ({ community }: { community: Community }) => {
   const { name } = community;
   const communityURL = `/${name}`;
 
@@ -36,10 +35,6 @@ const CommunityCard = ({ community }) => {
       </div>
     </div>
   );
-};
-
-CommunityCard.propTypes = {
-  community: PropTypes.object.isRequired,
 };
 
 export default CommunityCard;

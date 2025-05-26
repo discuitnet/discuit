@@ -1,12 +1,17 @@
-import PropTypes from 'prop-types';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Dropdown from '../../components/Dropdown';
 
 const options = ['Top', 'Latest', 'Oldest'];
 
-const CommentsSortButton = ({ defaultSort = options[0], onSortChange }) => {
+const CommentsSortButton = ({
+  defaultSort = options[0],
+  onSortChange,
+}: {
+  defaultSort: string;
+  onSortChange: (sort: string) => void;
+}) => {
   const [sort, _setSort] = useState(defaultSort);
-  const setSort = (newVal) => {
+  const setSort = (newVal: string) => {
     _setSort(newVal);
     if (onSortChange) onSortChange(newVal);
   };
@@ -27,11 +32,6 @@ const CommentsSortButton = ({ defaultSort = options[0], onSortChange }) => {
       </Dropdown>
     </div>
   );
-};
-
-CommentsSortButton.propTypes = {
-  defaultSort: PropTypes.string,
-  onSortChange: PropTypes.func.isRequired,
 };
 
 export default CommentsSortButton;

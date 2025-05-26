@@ -1,8 +1,6 @@
-import PropTypes from 'prop-types';
-import React from 'react';
 import { stringCount } from '../../helper';
 
-const PostVotesBar = ({ up = 20000, down = 1000 }) => {
+const PostVotesBar = ({ up = 20000, down = 1000 }: { up: number; down: number }) => {
   const w = down === 0 ? 0 : (down / (up + down)) * 100;
   const u = up === 0 ? 0 : (up / (up + down)) * 100;
   const none = up + down === 0;
@@ -21,11 +19,6 @@ const PostVotesBar = ({ up = 20000, down = 1000 }) => {
       </div>
     </div>
   );
-};
-
-PostVotesBar.propTypes = {
-  up: PropTypes.number.isRequired,
-  down: PropTypes.number.isRequired,
 };
 
 export default PostVotesBar;
