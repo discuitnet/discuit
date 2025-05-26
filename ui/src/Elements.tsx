@@ -1,11 +1,10 @@
-import PropTypes from 'prop-types';
 import { useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Button, { ButtonClose, ButtonMore } from './components/Button';
 import Dropdown from './components/Dropdown';
 import FeedSkeleton from './components/Feed/FeedSkeleton';
 import { Form, FormField, FormSection } from './components/Form';
-import Input, { Checkbox, InputPassword, Radio, useInputMaxLength } from './components/Input';
+import Input, { Checkbox, InputPassword, Radio } from './components/Input';
 import MarkdownTextarea from './components/MarkdownTextarea';
 import Modal from './components/Modal';
 import ModalConfirm from './components/Modal/ModalConfirm';
@@ -19,15 +18,13 @@ function Elements() {
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const [iwcValue, iwcHandleChange] = useInputMaxLength(1000);
-
   const [transparentBackground, setTransparentBackground] = useState(false);
   const handleToggleBackground = () => setTransparentBackground((b) => !b);
   const style = {
     background: transparentBackground ? 'transparent' : 'var(--color-bg)',
   };
 
-  const textareaRef = useRef();
+  const textareaRef = useRef(null);
   const [textareaValue, setTextareaValue] = useState('blaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
 
   const [buttonLoading, setButtonLoading] = useState(false);
@@ -205,10 +202,7 @@ function Elements() {
         <Form>
           <FormSection heading="General">
             <FormField label="Username" description="Enter a unique username for your account.">
-              <Input
-                label="Username"
-                description="This is a description. It should appear underneath the label."
-              />
+              <Input />
             </FormField>
             <FormField label="Password" error="Password cannot be empty.">
               <InputPassword />
@@ -374,7 +368,7 @@ function Elements() {
         culpa? Pariatur, harum!
       </p>
       <div style={{ width: '100%' }}>
-        <FeedSkeleton />
+        <FeedSkeleton compact={false} />
       </div>
       <div style={{ width: '50%' }}>
         <MarkdownTextarea
@@ -389,11 +383,7 @@ function Elements() {
       </div>
       <div>
         <Button onClick={() => setFadeInOutElVisible((x) => !x)}>Toggle</Button>
-        <FadeInAndOut
-          display={fadeInOutElVisible}
-          visibleStyle={{ opacity: '1' }}
-          hiddenStyle={{ opacity: '0' }}
-        >
+        <FadeInAndOut display={fadeInOutElVisible}>
           <h2>whatever</h2>
         </FadeInAndOut>
       </div>
@@ -403,7 +393,12 @@ function Elements() {
 
 export default Elements;
 
-function Section({ title, children, bodyStyle, ...props }) {
+interface SectionProps extends React.HTMLAttributes<HTMLDivElement> {
+  title?: string;
+  bodyStyle?: React.CSSProperties;
+}
+
+function Section({ title, children, bodyStyle, ...props }: SectionProps) {
   return (
     <div className="test-elements-section" {...props}>
       {title && <h2>{title}</h2>}
@@ -413,9 +408,3 @@ function Section({ title, children, bodyStyle, ...props }) {
     </div>
   );
 }
-
-Section.propTypes = {
-  title: PropTypes.node,
-  children: PropTypes.node,
-  bodyStyle: PropTypes.object,
-};
