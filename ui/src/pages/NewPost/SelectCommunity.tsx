@@ -1,14 +1,26 @@
-import PropTypes from 'prop-types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { kRound, mfetchjson, selectImageCopyURL } from '../../helper';
 import { useDelayedEffect, useQuery } from '../../hooks';
+import { Community } from '../../serverTypes';
 import { snackAlertError } from '../../slices/mainSlice';
 
-const SelectCommunity = ({ initial = '', onFocus, onChange, disabled = false }) => {
+export interface SelectCommunityProps {
+  initial?: string;
+  onFocus?: () => void;
+  onChange: (community: Community) => void;
+  disabled?: boolean;
+}
+
+const SelectCommunity = ({
+  initial = '',
+  onFocus,
+  onChange,
+  disabled = false,
+}: SelectCommunityProps) => {
   const dispatch = useDispatch();
 
-  const [suggestions, setSuggestions] = useState([]);
+  const [suggestions, setSuggestions] = useState<Community[]>([]);
   useEffect(() => {
     (async function () {
       try {
@@ -18,7 +30,7 @@ const SelectCommunity = ({ initial = '', onFocus, onChange, disabled = false }) 
         dispatch(snackAlertError(error));
       }
     })();
-  }, []);
+  }, [dispatch]);
   const [value, setValue] = useState(initial);
   const [focus, setFocus] = useState(false);
   const query = useQuery();
@@ -27,16 +39,17 @@ const SelectCommunity = ({ initial = '', onFocus, onChange, disabled = false }) 
     if (name === null || name === '') return;
     (async () => {
       try {
-        const comm = await mfetchjson(`/api/communities/${name}?byName=true`);
+        const comm = (await mfetchjson(`/api/communities/${name}?byName=true`)) as Community;
         setValue(comm.name);
         onChange(comm);
       } catch (error) {
         dispatch(snackAlertError(error));
       }
     })();
-  }, []);
+  }, [dispatch, query]);
 
-  const handleChange = (e) => setValue(e.target.value);
+  const handleChange: React.ChangeEventHandler<HTMLInputElement> = (event) =>
+    setValue(event.target.value);
   useDelayedEffect(
     useCallback(() => {
       (async function () {
@@ -68,40 +81,40 @@ const SelectCommunity = ({ initial = '', onFocus, onChange, disabled = false }) 
     _setIndex(-1);
   }, [focus]);
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      setIndex(!e.shiftKey);
-    } else if (e.key === 'ArrowDown') {
-      setIndex(!e.shiftKey);
-    } else if (e.key === 'ArrowUp') {
-      setIndex(e.shiftKey);
-    } else if (e.key === 'Enter') {
+  const handleKeyDown: React.KeyboardEventHandler = (event) => {
+    if (event.key === 'Tab') {
+      event.preventDefault();
+      setIndex(!event.shiftKey);
+    } else if (event.key === 'ArrowDown') {
+      setIndex(!event.shiftKey);
+    } else if (event.key === 'ArrowUp') {
+      setIndex(event.shiftKey);
+    } else if (event.key === 'Enter') {
       let selected = index;
       if (suggestions.length === 1) selected = 0;
       if (selected !== -1) {
         _setIndex(-1);
         setValue(suggestions[selected].name);
         setFocus(false);
-        document.querySelector('textarea').focus();
+        document.querySelector('textarea')?.focus();
         onChange(suggestions[selected]);
       }
-    } else if (e.key === 'Escape') {
+    } else if (event.key === 'Escape') {
       setFocus(false);
     }
   };
 
-  const inputRef = useRef();
+  const inputRef = useRef<HTMLInputElement>(null);
   const handleFocus = () => {
     setFocus(true);
     if (onFocus) onFocus();
-    inputRef.current.select();
+    inputRef.current?.select();
   };
 
-  const ref = useRef(null);
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const onBodyClick = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) {
+    const onBodyClick = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node | null)) {
         setFocus(false);
       }
     };
@@ -110,7 +123,7 @@ const SelectCommunity = ({ initial = '', onFocus, onChange, disabled = false }) 
       document.removeEventListener('click', onBodyClick);
     };
   }, []);
-  const handleSuggestClick = (suggestion) => {
+  const handleSuggestClick = (suggestion: Community) => {
     setValue(suggestion.name);
     setFocus(false);
     onChange(suggestion);
@@ -131,7 +144,6 @@ const SelectCommunity = ({ initial = '', onFocus, onChange, disabled = false }) 
           value={value}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          focus={focus.toString()}
         />
         <svg version="1.1" x="0px" y="0px" viewBox="0 0 512.005 512.005" fill="currentColor">
           <path
@@ -169,13 +181,6 @@ const SelectCommunity = ({ initial = '', onFocus, onChange, disabled = false }) 
       )}
     </div>
   );
-};
-
-SelectCommunity.propTypes = {
-  initial: PropTypes.string,
-  onFocus: PropTypes.func,
-  onChange: PropTypes.func.isRequired,
-  disabled: PropTypes.bool,
 };
 
 export default SelectCommunity;

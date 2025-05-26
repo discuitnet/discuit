@@ -1,33 +1,34 @@
-import PropTypes from 'prop-types';
-import React, { useLayoutEffect, useRef, useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ButtonClose } from '../../components/Button';
 import Img from '../../components/Image';
-import { useWindowWidth } from '../../hooks';
 import Textarea from '../../components/Textarea';
+import { useWindowWidth } from '../../hooks';
+import { Image as ServerImage } from '../../serverTypes';
 
-const Image = ({ image, onClose, disabled = false, onAltTextSave }) => {
-  const url = image.url ?? `/images/${image.fid}/${image.id}.jpg`;
+export interface ImageProps {
+  image: ServerImage;
+  onClose: () => void;
+  disabled?: boolean;
+  onAltTextSave: (altText: string) => void;
+}
+
+const Image = ({ image, onClose, disabled = false, onAltTextSave }: ImageProps) => {
   const { width, height } = image;
-
   const windowWidth = useWindowWidth();
 
-  const divref = useRef();
+  const divref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.0);
   useLayoutEffect(() => {
     if (divref.current) {
-      const containerWidth = divref.current.parentElement.clientWidth;
-      setScale(containerWidth / width);
+      const containerWidth = divref.current.parentElement?.clientWidth;
+      if (containerWidth) {
+        setScale(containerWidth / width);
+      }
     }
-  }, [image, windowWidth]);
+  }, [image, windowWidth, width]);
 
-  let imgWidth = Math.floor(scale * width),
+  const imgWidth = Math.floor(scale * width),
     imgHeight = Math.floor(scale * height);
-
-  let averageColor = image.averageColor;
-  if (typeof image.averageColor === 'object') {
-    const x = image.averageColor;
-    averageColor = `rgb(${x.r}, ${x.g}, ${x.b})`;
-  }
 
   const [altText, setAltText] = useState(image.altText || '');
   useEffect(() => {
@@ -45,8 +46,8 @@ const Image = ({ image, onClose, disabled = false, onAltTextSave }) => {
       )}
       <div className="contain-image">
         <Img
-          src={url}
-          backgroundColor={averageColor}
+          src={image.url}
+          backgroundColor={image.averageColor}
           alt={image.altText || 'Just uploaded'}
           style={{
             width: imgWidth,
@@ -57,14 +58,13 @@ const Image = ({ image, onClose, disabled = false, onAltTextSave }) => {
       {/* alt text input */}
       {!disabled && (
         <Textarea
-          type="text"
           className="page-new-image-alt"
           placeholder="Describe this image (alt text)…"
           value={altText}
           onChange={(e) => setAltText(e.target.value)}
           onBlur={() => {
             if (altText !== image.altText) {
-              onAltTextSave?.(altText);
+              onAltTextSave(altText);
             }
           }}
           maxLength={1024}
@@ -73,13 +73,6 @@ const Image = ({ image, onClose, disabled = false, onAltTextSave }) => {
       )}
     </div>
   );
-};
-
-Image.propTypes = {
-  image: PropTypes.object.isRequired,
-  onClose: PropTypes.func.isRequired,
-  disabled: PropTypes.bool,
-  onAltTextSave: PropTypes.func,
 };
 
 export default Image;

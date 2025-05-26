@@ -1,10 +1,9 @@
 import clsx from 'clsx';
-import PropTypes from 'prop-types';
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router';
-import { useLocation } from 'react-router-dom/cjs/react-router-dom.min';
+import { useLocation } from 'react-router-dom';
 import Link from '../../components/Link';
 import MarkdownTextarea from '../../components/MarkdownTextarea';
 import PageLoading from '../../components/PageLoading';
@@ -12,8 +11,10 @@ import Spinner from '../../components/Spinner';
 import Textarea from '../../components/Textarea';
 import { APIError, isValidHttpUrl, mfetch, mfetchjson } from '../../helper';
 import { useLoading, useQuery } from '../../hooks';
-import { snackAlert, snackAlertError } from '../../slices/mainSlice';
+import { Community, Post, Image as ServerImage } from '../../serverTypes';
+import { MainState, snackAlert, snackAlertError } from '../../slices/mainSlice';
 import { postAdded } from '../../slices/postsSlice';
+import { RootState } from '../../store';
 import Rules from '../Community/Rules';
 import AsUser from '../Post/AsUser';
 import CommunityCard from '../Post/CommunityCard';
@@ -25,11 +26,11 @@ const NewPost = () => {
   const history = useHistory();
   const location = useLocation();
 
-  const user = useSelector((state) => state.main.user);
+  const user = (useSelector<RootState>((state) => state.main.user) as MainState['user'])!;
   const loggedIn = user !== null;
   useEffect(() => {
     if (!loggedIn) history.push('/login');
-  }, [loggedIn]);
+  }, [loggedIn, history]);
 
   const query = useQuery();
   const isEditPost = query.has('edit');
@@ -39,8 +40,10 @@ const NewPost = () => {
   const [postType, setPostType] = useState('text');
   const [userGroup, setUserGroup] = useState('normal');
 
-  const bannedFrom = useSelector((state) => state.main.bannedFrom);
-  const [community, setCommunity] = useState(null);
+  const bannedFrom = useSelector<RootState>(
+    (state) => state.main.bannedFrom
+  ) as MainState['bannedFrom'];
+  const [community, setCommunity] = useState<Community | null>(null);
 
   const [isBanned, setIsBanned] = useState(false);
   const [isUserMod, setIsUserMod] = useState(false);
@@ -52,10 +55,10 @@ const NewPost = () => {
     } else {
       setIsBanned(false);
     }
-    setIsUserMod(community === null ? false : community.userMod);
+    setIsUserMod(Boolean(community === null ? false : community.userMod));
   }, [community, bannedFrom]);
 
-  const handleCommunityChange = async (ncomm) => {
+  const handleCommunityChange = async (ncomm: Community) => {
     try {
       const rcomm = await mfetchjson(`/api/communities/${ncomm.id}`);
       setCommunity(rcomm);
@@ -70,13 +73,14 @@ const NewPost = () => {
   };
 
   const [title, _setTitle] = useState('');
-  const setTitle = (title) => _setTitle(title.length > 255 ? title.substr(0, 256) : title);
+  const setTitle = (title: string) =>
+    _setTitle(title.length > 255 ? title.substring(0, 256) : title);
   const [body, setBody] = useState('');
   const [link, setLink] = useState('');
-  const [images, SetImages] = useState([]);
+  const [images, SetImages] = useState<ServerImage[]>([]);
   const maxNumOfImages = import.meta.env.VITE_MAXIMAGESPERPOST;
 
-  const [post, setPost] = useState(null);
+  const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useLoading();
   useEffect(() => {
     if (isEditPost) {
@@ -105,8 +109,8 @@ const NewPost = () => {
 
   const [isUploading, setIsUploading] = useState(false);
   const abortController = useRef(new AbortController());
-  const handleImagesUpload = async (files = []) => {
-    if (isUploading) {
+  const handleImagesUpload = async (files?: FileList | null) => {
+    if (isUploading || !files) {
       return;
     }
     // Check to see if uploading these images would reach the max image limit.
@@ -139,7 +143,7 @@ const NewPost = () => {
           }
           throw new APIError(res.status, await res.json());
         }
-        const resImage = await res.json();
+        const resImage = (await res.json()) as ServerImage;
         SetImages((images) => {
           return [...images, resImage];
         });
@@ -152,14 +156,14 @@ const NewPost = () => {
     }
     setIsUploading(false);
   };
-  const deleteImage = (imageId) => {
+  const deleteImage = (imageId: string) => {
     // TODO: send DELETE request to server.
     SetImages((images) => images.filter((image) => image.id !== imageId));
   };
 
   // For only when editing a post.
-  const returnToWhence = (post) => {
-    const state = location.state;
+  const returnToWhence = (post: Post) => {
+    const state = location.state as { fromPostPage: boolean };
     if (state && state.fromPostPage) {
       // fromPostPage property is set manually upon edit button click.
       history.goBack();
@@ -170,11 +174,12 @@ const NewPost = () => {
 
   const isPostingDisabled =
     community !== null &&
-    (isBanned || (!isEditPost && community.postingRestricted && !(isUserMod || user.isAdmin)));
+    (isBanned ||
+      (!isEditPost && community.postingRestricted && !(isUserMod || (user && user.isAdmin))));
 
   const getPostingDisabledText = () => {
     if (isBanned) {
-      return `You've been banned from ${community.name}.`;
+      return `You've been banned from ${community?.name}.`;
     } else {
       return `Only approved members of this community can post.`;
     }
@@ -262,8 +267,8 @@ const NewPost = () => {
     }
   };
   useEffect(() => {
-    const listner = (e) => {
-      if (e.key === 'Enter' && e.ctrlKey) {
+    const listner = (event: KeyboardEvent) => {
+      if (event.key === 'Enter' && event.ctrlKey) {
         handleSubmit();
       }
     };
@@ -273,7 +278,7 @@ const NewPost = () => {
   const handleCancel = () => {
     if (((changed || isUploading) && confirm('Are you sure you want to leave?')) || !changed) {
       if (isUploading) abortController.current.abort();
-      if (window.appData.historyLength > 1) {
+      if ((window as unknown as { appData: { historyLength: number } }).appData.historyLength > 1) {
         history.goBack();
       } else {
         history.replace('/');
@@ -282,30 +287,42 @@ const NewPost = () => {
   };
 
   const overrideTitle = useRef(true);
-  const handleTitleChange = (e) => {
-    overrideTitle.current = e.target.value === '';
+  const handleTitleChange: React.ChangeEventHandler<HTMLTextAreaElement> = (event) => {
+    overrideTitle.current = event.target.value === '';
     if (!changed) setChanged(true);
-    setTitle(e.target.value);
+    setTitle(event.target.value);
   };
 
-  const handleBodyChange = (e) => {
+  const handleBodyChange: React.ChangeEventHandler<HTMLTextAreaElement> = (event) => {
     if (!changed) setChanged(true);
-    setBody(e.target.value);
+    setBody(event.target.value);
   };
-  const handleBodyPaste = (e) => {
-    let paste = (e.clipboardData || window.clipboardData).getData('text');
+  const handleBodyPaste: React.ClipboardEventHandler<HTMLTextAreaElement> = (event) => {
+    const paste = (
+      event.clipboardData ||
+      (
+        window as unknown as {
+          clipboardData: {
+            getText: (format: string) => string;
+          };
+        }
+      ).clipboardData
+    ).getData('text');
     if (body.trim() === '' && !isEditPost && isValidHttpUrl(paste) && overrideTitle.current) {
       setPostType('link');
-      handleLinkChange({ target: { value: paste } });
+      _handleLinkChange(paste);
       autoFillTitle(paste);
     }
   };
 
-  const handleLinkChange = (e) => {
+  const _handleLinkChange = (value: string) => {
     if (!changed) setChanged(true);
-    setLink(e.target.value);
+    setLink(value);
   };
-  const autoFillTitle = async (url) => {
+  const handleLinkChange: React.ChangeEventHandler<HTMLTextAreaElement> = (event) => {
+    _handleLinkChange(event.target.value);
+  };
+  const autoFillTitle = async (url: string) => {
     // overrideTitle.current = true;
     try {
       const res = await mfetchjson(`/api/_link_info?url=${encodeURIComponent(url)}`);
@@ -317,15 +334,28 @@ const NewPost = () => {
       console.error(error);
     }
   };
-  const handleLinkPaste = (e) => {
-    let paste = (e.clipboardData || window.clipboardData).getData('text');
+  const handleLinkPaste: React.ClipboardEventHandler = (event) => {
+    const paste = (
+      event.clipboardData ||
+      (
+        window as unknown as {
+          clipboardData: {
+            getText: (format: string) => string;
+          };
+        }
+      ).clipboardData
+    ).getData('text');
     if (isValidHttpUrl(paste) && overrideTitle.current) {
       autoFillTitle(paste);
     }
   };
 
-  const imagePostSubmitReqPoints = useSelector((state) => state.main.imagePostSubmitReqPoints);
-  const linkPostSubmitReqPoints = useSelector((state) => state.main.linkPostSubmitReqPoints);
+  const imagePostSubmitReqPoints = useSelector<RootState>(
+    (state) => state.main.imagePostSubmitReqPoints
+  ) as MainState['imagePostSubmitReqPoints'];
+  const linkPostSubmitReqPoints = useSelector<RootState>(
+    (state) => state.main.linkPostSubmitReqPoints
+  ) as MainState['linkPostSubmitReqPoints'];
   const imageSubmitAllowed = imagePostSubmitReqPoints < 1 || user.points > imagePostSubmitReqPoints,
     linkSubmitAllowed = linkPostSubmitReqPoints < 1 || user.points > linkPostSubmitReqPoints;
 
@@ -433,7 +463,7 @@ const NewPost = () => {
               placeholder="Post title goes here..."
               value={title}
               onChange={handleTitleChange}
-              rows="1"
+              rows={1}
               adjustable
               disabled={isPostingDisabled}
             />
@@ -444,7 +474,9 @@ const NewPost = () => {
                 value={body}
                 onChange={handleBodyChange}
                 onPaste={handleBodyPaste}
-                disabled={isPostingDisabled || (isEditPost ? post.deletedContent : false)}
+                disabled={Boolean(
+                  isPostingDisabled || (isEditPost ? post && post.deletedContent : false)
+                )}
               />
             )}
             {postType === 'image' && (
@@ -535,7 +567,7 @@ const NewPost = () => {
           {community && (
             <>
               <CommunityCard community={community} />
-              <Rules rules={community.rules} communityName={community.name} unordered />
+              <Rules rules={community.rules || []} unordered />
             </>
           )}
         </div>
@@ -557,34 +589,40 @@ const ImageUploadArea = ({
   onImagesUpload,
   disabled = false,
   disabledMessage = 'Maximum number of images reached.',
+}: {
+  isUploading: boolean;
+  onImagesUpload: (files?: FileList | null) => void;
+  disabled?: boolean;
+  disabledMessage?: string;
 }) => {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
-  const dropzoneRef = useRef();
-  const handleOnDrop = (e) => {
+  const dropzoneRef = useRef(null);
+  const handleOnDrop: React.DragEventHandler = (event) => {
     if (disabled) {
       return;
     }
-    const dt = e.dataTransfer;
+    const dt = event.dataTransfer;
     if (dt.files.length > 0) {
       onImagesUpload(dt.files);
     }
   };
 
-  const fileInputRef = useRef();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const handleFileChange = () => {
-    onImagesUpload(fileInputRef.current.files);
+    onImagesUpload(fileInputRef.current?.files);
   };
 
   const handleAddPhoto = () => {
-    fileInputRef.current.click();
+    fileInputRef.current?.click();
   };
 
   // Prevent image load on missing drop-zone.
   useEffect(() => {
-    const handleDrop = (e) => {
-      if (!['TEXTAREA', 'INPUT'].includes(e.target.nodeName)) e.preventDefault();
+    const handleDrop = (event: DragEvent) => {
+      if (!['TEXTAREA', 'INPUT'].includes((event.target as Element).nodeName))
+        event.preventDefault();
     };
-    const handleDragOver = (e) => e.preventDefault();
+    const handleDragOver = (event: DragEvent) => event.preventDefault();
     window.addEventListener('drop', handleDrop);
     window.addEventListener('dragover', handleDragOver);
     return () => {
@@ -646,11 +684,4 @@ const ImageUploadArea = ({
       </div>
     </div>
   );
-};
-
-ImageUploadArea.propTypes = {
-  isUploading: PropTypes.bool.isRequired,
-  onImagesUpload: PropTypes.func.isRequired,
-  disabled: PropTypes.bool,
-  disabledMessage: PropTypes.string,
 };

@@ -1,5 +1,3 @@
-import React from 'react';
-
 export const HelpCardCommunity = () => {
   return (
     <div className="newpost-help card-gray">
