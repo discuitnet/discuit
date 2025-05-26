@@ -1,5 +1,4 @@
 import clsx from 'clsx';
-import PropTypes from 'prop-types';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useLocation } from 'react-router-dom';
@@ -9,24 +8,26 @@ import { mobileBreakpointWidth, useTheme, useWindowWidth } from '../../hooks';
 import {
   chatOpenToggled,
   loginModalOpened,
+  MainState,
   notificationsReloaded,
   signupModalOpened,
   snackAlert,
   snackAlertError,
   toggleSidebarOpen,
 } from '../../slices/mainSlice';
+import { RootState } from '../../store';
 import { homeReloaded } from '../../views/PostsFeed';
 import Button, { ButtonHamburger, ButtonNotifications } from '../Button';
 import Dropdown from '../Dropdown';
 import Link from '../Link';
 import Search from './Search';
 
-const Navbar = ({ offline = false }) => {
+const Navbar = ({ offline = false }: { offline?: boolean }) => {
   // Only enable background blur when scrolled down.
   const supportsBlur = () => window.CSS && window.CSS.supports('backdrop-filter', 'blur(10px)');
   const [blur, setBlur] = useState(supportsBlur() && window.scrollY > 50);
   const blurRef = useRef(blur);
-  const navbarRef = useRef();
+  const navbarRef = useRef<HTMLElement>(null);
   useEffect(() => {
     if (supportsBlur()) {
       const listner = () => {
@@ -66,7 +67,8 @@ const Navbar = ({ offline = false }) => {
     const navbarShouldBeInView = () => {
       return window.scrollY <= navHeight;
     };
-    const setTransform = (height) => {
+    const setTransform = (height: number) => {
+      if (!navbarRef.current) return;
       if (recentLocationChange.current) {
         if (navbarShouldBeInView()) {
           navbarRef.current.style.transform = `translateY(0)`;
@@ -79,8 +81,10 @@ const Navbar = ({ offline = false }) => {
       navbarRef.current.style.transition = 'transform 200ms ease-in';
       transitioning = true;
       setTimeout(() => {
+        if (!navbarRef.current) return;
         navbarRef.current.style.transform = `translateY(${height}px)`;
         setTimeout(() => {
+          if (!navbarRef.current) return;
           navbarRef.current.style.transition = 'none';
           transitioning = false;
         }, 210);
@@ -107,7 +111,7 @@ const Navbar = ({ offline = false }) => {
 
   const [bottomNavbarNavigation, setBottomNavbarNavigation] = useState(true);
 
-  const location = useLocation();
+  const location = useLocation<{ fromBottomNav: boolean }>();
   useLayoutEffect(() => {
     recentLocationChange.current = true;
     setTimeout(() => {
@@ -120,11 +124,13 @@ const Navbar = ({ offline = false }) => {
 
   const dispatch = useDispatch();
 
-  const user = useSelector((state) => state.main.user);
+  const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const loggedIn = user !== null;
 
   const homeFeed = loggedIn ? user.homeFeed : 'all';
-  const notifsNewCount = useSelector((state) => state.main.notifications.newCount);
+  const notifsNewCount = useSelector<RootState>(
+    (state) => state.main.notifications.newCount
+  ) as MainState['notifications']['newCount'];
 
   const handleLogout = async () => {
     clearNotificationsLocalStorage();
@@ -143,7 +149,7 @@ const Navbar = ({ offline = false }) => {
   };
 
   const handleLogoClick = () => {
-    dispatch(homeReloaded(homeFeed, user && user.rememberFeedSort));
+    dispatch(homeReloaded(homeFeed, Boolean(user && user.rememberFeedSort)));
     setTimeout(() => window.scrollTo(0, 0), 10);
   };
 
@@ -158,8 +164,8 @@ const Navbar = ({ offline = false }) => {
   };
 
   const { theme, setTheme } = useTheme();
-  const handleDarkModeChange = (e) => {
-    const checked = e.target.checked;
+  const handleDarkModeChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
+    const checked = event.target.checked;
     setTheme(checked ? 'dark' : 'light');
   };
 
@@ -284,7 +290,7 @@ const Navbar = ({ offline = false }) => {
                 <div className="dropdown-list-sep"></div>
                 <div
                   role="button"
-                  tabIndex="0"
+                  tabIndex={0}
                   className="dropdown-item"
                   onClick={handleLogout}
                   onKeyUp={(e) => onKeyEnter(e, handleLogout)}
@@ -298,10 +304,6 @@ const Navbar = ({ offline = false }) => {
       </div>
     </header>
   );
-};
-
-Navbar.propTypes = {
-  offline: PropTypes.bool,
 };
 
 export default Navbar;
