@@ -1,13 +1,12 @@
-import React from 'react';
 import { useSelector } from 'react-redux';
-import { Redirect } from 'react-router-dom/cjs/react-router-dom.min';
+import { Redirect } from 'react-router-dom';
+import { MainState } from '../slices/mainSlice';
+import { RootState } from '../store';
 import LoginForm from '../views/LoginForm';
 
 const Login = () => {
-  const user = useSelector((state) => state.main.user);
+  const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const loggedIn = user !== null;
-
-  const handleSuccess = () => {};
 
   if (loggedIn) {
     return <Redirect to="/" />;
@@ -17,7 +16,7 @@ const Login = () => {
     <div className="page-content page-login wrap">
       <div className="card login-card">
         <div className="title">Login to continue</div>
-        <LoginForm onSucces={handleSuccess} />
+        <LoginForm />
       </div>
     </div>
   );

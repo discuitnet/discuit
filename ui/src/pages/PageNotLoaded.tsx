@@ -1,9 +1,8 @@
 import PropTypes from 'prop-types';
-import React from 'react';
 import PageLoading from '../components/PageLoading';
 import NotFound from './NotFound';
 
-const PageNotLoaded = ({ loading }) => {
+const PageNotLoaded = ({ loading }: { loading: 'loading' | 'notfound' | 'loaded' }) => {
   switch (loading) {
     case 'loading':
       return <PageLoading />;

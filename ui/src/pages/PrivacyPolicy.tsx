@@ -1,4 +1,3 @@
-import React from 'react';
 import StaticPage from '../components/StaticPage';
 
 const PrivacyPolicy = () => {

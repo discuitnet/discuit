@@ -1,11 +1,9 @@
-import React from 'react';
 import Link from '../components/Link';
 import StaticPage from '../components/StaticPage';
 
 const Terms = () => {
-  const description = `Terms of service for ${import.meta.env.VITE_SITENAME}.`;
   return (
-    <StaticPage className="" title="Terms of Service" description={description}>
+    <StaticPage className="" title="Terms of Service">
       <main className="document">
         <h1>Terms of Service</h1>
         <p>
@@ -68,6 +66,7 @@ const Terms = () => {
         </p>
         <h2>Disclaimer</h2>
         <p>
+          {`
           The Services of this website are provided "as is". We make no warranties, expressed or
           implied, and hereby disclaims and negates all other warranties, including without
           limitation, implied warranties or conditions of merchantability, fitness for a particular
@@ -75,6 +74,7 @@ const Terms = () => {
           Further, we do not warrant or make any representations concerning the accuracy, likely
           results, or reliability of the use of the Services or otherwise relating to such materials
           or on any sites linked to this site.
+          `}
         </p>
         <h2>General</h2>
         <p>These Terms may change at any time.</p>

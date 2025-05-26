@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Link from '../components/Link';
 import StaticPage from '../components/StaticPage';
 
@@ -80,8 +80,8 @@ const About = () => {
       ),
     },
   ];
-  const [faqItemOpenedIndex, _setFaqItemOpenedIndex] = useState(null);
-  const setFaqItemOpenedIndex = (index) => {
+  const [faqItemOpenedIndex, _setFaqItemOpenedIndex] = useState<number | null>(null);
+  const setFaqItemOpenedIndex = (index: number) => {
     _setFaqItemOpenedIndex((value) => {
       if (value === index) return null;
       return index;

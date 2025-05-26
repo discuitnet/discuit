@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router';
 
@@ -26,12 +26,7 @@ const Search = () => {
       </Helmet>
       <div className="search-content">
         <p>{`Showing results for "${query}"`}</p>
-        <img
-          className="big-gulps"
-          src={null}
-          alt="Guy furiously smashes computer."
-          onLoad={handleImageLoad}
-        />
+        <img className="big-gulps" alt="Guy furiously smashes computer." onLoad={handleImageLoad} />
         <div className="coming-to-town">Coming soon...!</div>
         <a className="button button-main" href={googleHref} target="_blank" rel="noreferrer">
           Search on Google for now
