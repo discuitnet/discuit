@@ -1,5 +1,4 @@
 import clsx from 'clsx';
-import PropTypes from 'prop-types';
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
@@ -17,14 +16,17 @@ import Sidebar from '../components/Sidebar';
 import { communityNameMaxLength } from '../config';
 import { mfetch, mfetchjson } from '../helper';
 import { useInputUsername } from '../hooks';
+import { CommunitiesSort, Community } from '../serverTypes';
 import { FeedItem } from '../slices/feedsSlice';
 import {
   allCommunitiesSearchQueryChanged,
   allCommunitiesSortChanged,
   loginPromptToggled,
+  MainState,
   snackAlert,
   snackAlertError,
 } from '../slices/mainSlice';
+import { RootState } from '../store';
 import { SVGClose, SVGSearch } from '../SVGs';
 import LoginForm from '../views/LoginForm';
 import JoinButton from './Community/JoinButton';
@@ -41,12 +43,14 @@ const prepareText = (isMobile = false) => {
 const AllCommunities = () => {
   const dispatch = useDispatch();
 
-  const user = useSelector((state) => state.main.user);
+  const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const loggedIn = user !== null;
 
-  const searchQuery = useSelector((state) => state.main.allCommunitiesSearchQuery);
+  const searchQuery = useSelector<RootState>(
+    (state) => state.main.allCommunitiesSearchQuery
+  ) as MainState['allCommunitiesSearchQuery'];
   const [isSearching, setIsSearching] = useState(searchQuery !== '');
-  const setSearchQuery = (query) => {
+  const setSearchQuery = (query: string) => {
     dispatch(allCommunitiesSearchQueryChanged(query));
   };
   useEffect(() => {
@@ -55,13 +59,15 @@ const AllCommunities = () => {
     }
   }, [isSearching]);
 
-  const sort = useSelector((state) => state.main.allCommunitiesSort);
-  const setSort = (sort) => {
+  const sort = useSelector<RootState>(
+    (state) => state.main.allCommunitiesSort
+  ) as MainState['allCommunitiesSort'];
+  const setSort = (sort: CommunitiesSort) => {
     dispatch(allCommunitiesSortChanged(sort));
   };
 
-  const fetchCommunities = async (next) => {
-    const res = await mfetchjson(`/api/communities?sort=${sort}`);
+  const fetchCommunities = async () => {
+    const res = (await mfetchjson(`/api/communities?sort=${sort}`)) as Community[];
     const items = res.map((community) => new FeedItem(community, 'community', community.id));
     return {
       items: items,
@@ -69,7 +75,7 @@ const AllCommunities = () => {
     };
   };
 
-  const handleRenderItem = (item, index) => {
+  const handleRenderItem = (item: FeedItem<Community>) => {
     if (
       searchQuery !== '' &&
       !item.item.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
@@ -99,6 +105,7 @@ const AllCommunities = () => {
   const renderSortDropdown = () => {
     const sortOptions = {
       new: 'Latest',
+      old: 'Oldest',
       size: 'Popular',
       name_asc: 'A-Z',
       name_dsc: 'Z-A',
@@ -108,11 +115,18 @@ const AllCommunities = () => {
         <div className="dropdown-list">
           {Object.keys(sortOptions)
             .filter((key) => key !== sort)
-            .map((key) => (
-              <Button className="button-clear dropdown-item" onClick={() => setSort(key)} key={key}>
-                {sortOptions[key]}
-              </Button>
-            ))}
+            .map((_key) => {
+              const key = _key as CommunitiesSort;
+              return (
+                <Button
+                  className="button-clear dropdown-item"
+                  onClick={() => setSort(key)}
+                  key={key}
+                >
+                  {sortOptions[key]}
+                </Button>
+              );
+            })}
         </div>
       </Dropdown>
     );
@@ -139,7 +153,7 @@ const AllCommunities = () => {
           </div>
         </div>
         <div className="comms-list">
-          <Feed
+          <Feed<Community>
             feedId={'all-communities-' + sort}
             onFetch={fetchCommunities}
             onRenderItem={handleRenderItem}
@@ -177,8 +191,16 @@ const CommunityCreationCard = () => {
   );
 };
 
-const RequestCommunityButton = ({ children, isMobile = false, ...props }) => {
-  const loggedIn = useSelector((state) => state.main.user) !== null;
+interface RequestCommunityButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  isMobile?: boolean;
+}
+
+const RequestCommunityButton = ({
+  children,
+  isMobile = false,
+  ...props
+}: RequestCommunityButtonProps) => {
+  const loggedIn = useSelector<RootState>((state) => state.main.user) !== null;
   const dispatch = useDispatch();
 
   const [open, setOpen] = useState(false);
@@ -255,7 +277,7 @@ const RequestCommunityButton = ({ children, isMobile = false, ...props }) => {
                 value={note}
                 onChange={handleNoteChange}
                 textarea
-                rows="4"
+                rows={4}
                 maxLength={noteLength}
               />
             </FormField>
@@ -279,19 +301,14 @@ const RequestCommunityButton = ({ children, isMobile = false, ...props }) => {
   );
 };
 
-RequestCommunityButton.propTypes = {
-  isMobile: PropTypes.bool,
-  children: PropTypes.node.isRequired,
-};
-
-const ListItem = React.memo(function ListItem({ community }) {
+const ListItem = React.memo(function ListItem({ community }: { community: Community }) {
   const to = `/${community.name}`;
 
   const history = useHistory();
-  const ref = useRef();
+  const ref = useRef(null);
 
-  const handleClick = (e) => {
-    if (e.target.tagName !== 'BUTTON') {
+  const handleClick: React.MouseEventHandler = (event) => {
+    if ((event.target as Element).tagName !== 'BUTTON') {
       history.push(to);
     }
   };
