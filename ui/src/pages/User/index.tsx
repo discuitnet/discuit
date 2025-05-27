@@ -27,7 +27,7 @@ import { useFetchUsersLists, useMuteUser } from '../../hooks';
 import { useImageEdit } from '../../hooks/useImageEdit';
 import type { Comment, User } from '../../serverTypes';
 import { FeedItem } from '../../slices/feedsSlice';
-import { snackAlert, snackAlertError, userLoggedIn } from '../../slices/mainSlice';
+import { MainState, snackAlert, snackAlertError, userLoggedIn } from '../../slices/mainSlice';
 import { Post } from '../../slices/postsSlice';
 import { selectUser, userAdded } from '../../slices/usersSlice';
 import { RootState } from '../../store';
@@ -60,7 +60,7 @@ const User = () => {
   const dispatch = useDispatch();
   const history = useHistory();
 
-  const viewer = useSelector<RootState>((state) => state.main.user) as User | null;
+  const viewer = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const viewerAdmin = viewer ? viewer.isAdmin : false;
   const loggedIn = viewer !== null;
 
@@ -72,8 +72,9 @@ const User = () => {
     handleUpload: handleUploadProfilePic,
     handleDelete: handleDeleteProfilePic,
     handleSaveAltText,
-  } = useImageEdit(`/api/users/${username}/pro_pic`, (res) => {
+  } = useImageEdit<User>(`/api/users/${username}/pro_pic`, (res) => {
     dispatch(userLoggedIn(res));
+    dispatch(userAdded(res));
   });
 
   const handleSaveProfilePicAlt = (altText: string) => {

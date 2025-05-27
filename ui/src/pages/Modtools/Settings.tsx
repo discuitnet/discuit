@@ -131,7 +131,7 @@ const Settings = ({ community }: { community: Community }) => {
     handleUpload: handleUploadCommunityPic,
     handleDelete: handleDeleteCommunityPic,
     handleSaveAltText: handleSaveCommunityPicAltText,
-  } = useImageEdit(`/api/communities/${community.id}/pro_pic`, (res) => {
+  } = useImageEdit<Community>(`/api/communities/${community.id}/pro_pic`, (res) => {
     dispatch(communityAdded(res));
   });
 
@@ -141,7 +141,7 @@ const Settings = ({ community }: { community: Community }) => {
     handleUpload: handleUploadCommunityBanner,
     handleDelete: handleDeleteCommunityBanner,
     handleSaveAltText: handleSaveCommunityBannerAltText,
-  } = useImageEdit(`/api/communities/${community.id}/banner_image`, (res) => {
+  } = useImageEdit<Community>(`/api/communities/${community.id}/banner_image`, (res) => {
     dispatch(communityAdded(res));
   });
 
