@@ -372,6 +372,7 @@ function Elements() {
       </div>
       <div style={{ width: '50%' }}>
         <MarkdownTextarea
+          placeholder="Adjustable markdown text area"
           ref={textareaRef}
           rows={5}
           style={{ width: '100%' }}

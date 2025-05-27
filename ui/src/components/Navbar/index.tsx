@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useLocation } from 'react-router-dom';
 import { clearNotificationsLocalStorage } from '../../PushNotifications';
+import { getGlobalAppData } from '../../appData';
 import { kRound, mfetch, onKeyEnter, stringCount } from '../../helper';
 import { mobileBreakpointWidth, useTheme, useWindowWidth } from '../../hooks';
 import {
@@ -120,7 +121,9 @@ const Navbar = ({ offline = false }: { offline?: boolean }) => {
     setBottomNavbarNavigation(Boolean(location.state && location.state.fromBottomNav));
   }, [location, recentLocationChange]);
 
-  const renderGoBackNavbar = isMobile && !bottomNavbarNavigation && location.pathname !== '/';
+  const historyLength = getGlobalAppData().historyLength || 0;
+  const renderGoBackNavbar =
+    isMobile && !bottomNavbarNavigation && location.pathname !== '/' && historyLength > 1;
 
   const dispatch = useDispatch();
 
