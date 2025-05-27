@@ -127,7 +127,7 @@ const Settings = () => {
   }, [notificationsPermissions]);
 
   const handleEnablePushNotifications = async () => {
-    await getNotificationsPermissions(loggedIn, applicationServerKey);
+    await getNotificationsPermissions(loggedIn, applicationServerKey!);
   };
 
   const handleSave = async () => {

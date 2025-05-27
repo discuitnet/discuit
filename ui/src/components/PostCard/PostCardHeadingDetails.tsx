@@ -13,7 +13,7 @@ import CommunityLink from './CommunityLink';
 
 export interface PostCardHeadingDetailsProps {
   post: Post;
-  userGroup: UserGroup | null;
+  userGroup?: UserGroup | null;
   showEdited?: boolean;
   showAuthorProPic?: boolean;
   onRemoveFromList?: (postId: string) => void;
@@ -97,7 +97,7 @@ const PostCardHeadingDetails = ({
         {showEditedSign && (
           <TimeAgo
             className="post-card-heading-ago"
-            time={post.editedAt}
+            time={post.editedAt!}
             prefix="Edited "
             suffix=""
             short

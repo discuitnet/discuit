@@ -366,7 +366,7 @@ const Community = () => {
         </header>
         {loggedIn && <div className="comm-action-buttons-m">{renderActionButtons()}</div>}
         <div className="comm-posts">
-          {tab === 'posts' && <PostsFeed communityId={community.id} />}
+          {tab === 'posts' && <PostsFeed communityId={community.id} feedType="community" />}
           {tab === 'about' && (
             <div className="comm-about">
               {renderRules()}

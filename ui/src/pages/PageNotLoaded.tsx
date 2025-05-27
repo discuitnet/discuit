@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import PageLoading from '../components/PageLoading';
 import NotFound from './NotFound';
 
-const PageNotLoaded = ({ loading }: { loading: 'loading' | 'notfound' | 'loaded' }) => {
+const PageNotLoaded = ({ loading }: { loading: 'loading' | 'notfound' | 'loaded' | string }) => {
   switch (loading) {
     case 'loading':
       return <PageLoading />;
