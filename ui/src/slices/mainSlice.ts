@@ -649,7 +649,7 @@ export const createCommunityModalOpened = (open = true) => {
   return { type: 'main/createCommunityModalOpened', payload: open };
 };
 
-export const showAppInstallButton = (show: boolean, deferredPrompt?: unknown) => {
+export const showAppInstallButton = (show: boolean, deferredPrompt?: Event) => {
   return {
     type: 'main/appInstallButtonUpdate',
     payload: {

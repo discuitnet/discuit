@@ -1,8 +1,8 @@
-import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { Redirect, Route, Switch, useHistory, useLocation } from 'react-router-dom';
+import { getGlobalAppData } from './appData';
 import AppUpdate from './AppUpdate';
 import BottomNavbar from './components/BottomNavbar';
 import { ButtonClose } from './components/Button';
@@ -45,19 +45,19 @@ import {
   createCommunityModalOpened,
   initialFieldsSet,
   loginModalOpened,
+  MainState,
   markNotificationAsSeen,
   signupModalOpened,
   snackAlert,
   userLoggedIn,
 } from './slices/mainSlice';
+import { RootState } from './store';
 import LoginForm from './views/LoginForm';
 
 // Value taken from _mixins.scss file.
 const tabletBreakpoint = 1170;
 
-// Global data, use sparingly.
-if (!window.appData) window.appData = {};
-window.appData.historyLength = 0;
+getGlobalAppData().historyLength = 0;
 
 const App = () => {
   const dispatch = useDispatch();
@@ -104,8 +104,10 @@ const App = () => {
 
         // Save CSRF token in localStorage because service workers don't cache
         // Cookies.
-        window.localStorage.setItem('csrftoken', res.headers.get('Csrf-Token'));
-
+        const csrfToken = res.headers.get('Csrf-Token');
+        if (csrfToken) {
+          window.localStorage.setItem('csrftoken', csrfToken);
+        }
         dispatch(initialFieldsSet(initial));
       } catch (err) {
         console.error(err);
@@ -113,7 +115,7 @@ const App = () => {
       }
       setLoading('loaded');
     })();
-  }, [isOnline]);
+  }, [isOnline, dispatch, setLoading]);
 
   // Analytics.
   useEffect(() => {
@@ -137,7 +139,7 @@ const App = () => {
   }, [isOnline]);
 
   // Check if there're new notifications every 5 secs.
-  const user = useSelector((state) => state.main.user);
+  const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const loggedIn = user !== null;
   useEffect(() => {
     if (loggedIn) {
@@ -151,19 +153,27 @@ const App = () => {
       }, 5000);
       return () => clearInterval(timerId);
     }
-  }, [loggedIn]);
+  }, [loggedIn, dispatch]);
 
   const width = useWindowWidth();
-  const chatOpen = useSelector((state) => state.main.chatOpen);
+  const chatOpen = useSelector<RootState>((state) => state.main.chatOpen) as MainState['chatOpen'];
 
-  const notifsNewCount = useSelector((state) => state.main.notifications.newCount);
+  const notifsNewCount = useSelector<RootState>(
+    (state) => state.main.notifications.newCount
+  ) as MainState['notifications']['newCount'];
   const notifsNewCountStr = notifsNewCount > 0 ? `(${notifsNewCount}) ` : '';
   const titleTemplate = `${notifsNewCountStr} %s - ${import.meta.env.VITE_SITENAME}`;
 
-  const loginModalOpen = useSelector((state) => state.main.loginModalOpen);
-  const signupModalOpen = useSelector((state) => state.main.signupModalOpen);
+  const loginModalOpen = useSelector<RootState>(
+    (state) => state.main.loginModalOpen
+  ) as MainState['loginModalOpen'];
+  const signupModalOpen = useSelector<RootState>(
+    (state) => state.main.signupModalOpen
+  ) as MainState['signupModalOpen'];
 
-  const createCommunityOpen = useSelector((state) => state.main.createCommunityModalOpen);
+  const createCommunityOpen = useSelector<RootState>(
+    (state) => state.main.createCommunityModalOpen
+  ) as MainState['createCommunityModalOpen'];
 
   // Offline page is only rendered if the user goes to a new page while the
   // internet connectivity is lost.
@@ -177,7 +187,9 @@ const App = () => {
   }, [isOnline]);
 
   // Device preferences:
-  const settingsChanged = useSelector((state) => state.main.settingsChanged);
+  const settingsChanged = useSelector<RootState>(
+    (state) => state.main.settingsChanged
+  ) as MainState['settingsChanged'];
   useEffect(() => {
     if (getDevicePreference('font') === 'system') {
       document.documentElement.classList.add('is-system-font');
@@ -332,13 +344,13 @@ const AppSwitch = () => {
  * Redirects the logged out user to the login page.
  *
  */
-const ProtectedRoute = ({ children, ...rest }) => {
-  const user = useSelector((state) => state.main.user);
+const ProtectedRoute = ({ children, path }: { children: React.ReactNode; path: string }) => {
+  const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const loggedIn = user !== null;
 
   return (
     <Route
-      {...rest}
+      path={path}
       render={({ location }) =>
         loggedIn ? (
           children
@@ -355,10 +367,6 @@ const ProtectedRoute = ({ children, ...rest }) => {
   );
 };
 
-ProtectedRoute.propTypes = {
-  children: PropTypes.element,
-};
-
 /*
  * Scroll to top when moving between pages unless
  * the user is using back and forward buttons of the
@@ -366,14 +374,14 @@ ProtectedRoute.propTypes = {
  *
  */
 const ScrollToTop = () => {
-  const location = useLocation();
+  const location = useLocation<{ fromBottomNav: boolean }>();
   const history = useHistory();
 
   useEffect(() => {
     if (history.action !== 'POP' && !(location.state && location.state.fromBottomNav)) {
       window.scrollTo(0, 0);
     }
-    window.appData.historyLength++;
+    getGlobalAppData().historyLength!++;
   }, [location.pathname, history]);
 
   return null;

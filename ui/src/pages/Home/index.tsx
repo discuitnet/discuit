@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { getGlobalAppData } from '../../appData';
 import { ButtonClose } from '../../components/Button';
 import MiniFooter from '../../components/MiniFooter';
 import Sidebar from '../../components/Sidebar';
@@ -45,13 +46,9 @@ const Home = () => {
           e.preventDefault();
           dispatch(showAppInstallButton(true, e));
         });
-        const _window = window as unknown as {
-          appData: {
-            deferredInstallPrompt: boolean;
-          };
-        };
-        if (_window.appData && _window.appData.deferredInstallPrompt) {
-          dispatch(showAppInstallButton(true, _window.appData.deferredInstallPrompt));
+        const deferredInstallPrompt = getGlobalAppData().deferredInstallPrompt;
+        if (deferredInstallPrompt) {
+          dispatch(showAppInstallButton(true, deferredInstallPrompt));
         }
       } else {
         // probably iOS

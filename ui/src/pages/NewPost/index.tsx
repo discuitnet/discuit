@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router';
 import { useLocation } from 'react-router-dom';
+import { getGlobalAppData } from '../../appData';
 import Link from '../../components/Link';
 import MarkdownTextarea from '../../components/MarkdownTextarea';
 import PageLoading from '../../components/PageLoading';
@@ -278,7 +279,8 @@ const NewPost = () => {
   const handleCancel = () => {
     if (((changed || isUploading) && confirm('Are you sure you want to leave?')) || !changed) {
       if (isUploading) abortController.current.abort();
-      if ((window as unknown as { appData: { historyLength: number } }).appData.historyLength > 1) {
+      const historyLength = getGlobalAppData().historyLength || 0;
+      if (historyLength > 1) {
         history.goBack();
       } else {
         history.replace('/');

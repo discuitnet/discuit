@@ -11,7 +11,7 @@ import { isDeviceIos } from './helper';
 import './scss/styles.scss';
 import store from './store';
 
-const Fallback = ({ error, resetErrorBoundary }) => {
+const Fallback = ({ error }: { error: Error }) => {
   useEffect(() => {
     forceSwUpdate();
   }, []);
@@ -39,13 +39,13 @@ const Fallback = ({ error, resetErrorBoundary }) => {
   );
 };
 
-const logAppError = (error, info) => {
+const logAppError = (/* error, info */) => {
   // Send analytics request to server.
   // mfetchjson(`/api/analytics`)
 };
 
 const container = document.getElementById('root');
-const root = createRoot(container);
+const root = createRoot(container!);
 
 root.render(
   <Provider store={store}>
