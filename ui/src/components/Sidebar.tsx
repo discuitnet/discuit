@@ -182,7 +182,7 @@ const Sidebar = ({ mobile = false }: { mobile?: boolean }) => {
       }
       if (
         !touchState.current.open &&
-        (touchState.current.startPos.x > 200 || touchState.current.startPos.x < 35)
+        (touchState.current.startPos.x > 100 || touchState.current.startPos.x < 18)
       ) {
         return;
       }
