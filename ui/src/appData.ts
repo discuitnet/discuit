@@ -1,12 +1,14 @@
 interface CustomWindow extends Window {
-  appData?: {
-    historyLength?: number;
-  };
+  appData?: GlobalAppData;
 }
 
 export class GlobalAppData {
   historyLength?: number;
-  deferredInstallPrompt?: Event; // this is really a BeforeInstallPromptEvent
+
+  /**
+   * This is really a BeforeInstallPromptEvent.
+   */
+  deferredInstallPrompt?: Event;
 }
 
 export function getGlobalAppData(): GlobalAppData {
