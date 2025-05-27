@@ -537,7 +537,7 @@ const User = () => {
           </div>
           {user.aboutMe && (
             <div className="user-card-desc">
-              <ShowMoreBox showButton maxHeight="120px">
+              <ShowMoreBox showButton maxHeight="120px" childrenHash={user.aboutMe || ''}>
                 <MarkdownBody>{user.aboutMe}</MarkdownBody>
               </ShowMoreBox>
             </div>

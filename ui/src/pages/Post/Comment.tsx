@@ -495,6 +495,8 @@ const Comment = ({
     handleCollapse(true);
   };
 
+  const commentBodyText = mutedUserHidden ? mutedText : comment.body;
+
   return (
     <div
       className={topDivClassname + ` is-depth-${comment.depth}`}
@@ -578,8 +580,8 @@ const Comment = ({
             }}
           >
             {!purged && (
-              <ShowMoreBox showButton maxHeight="500px">
-                <MarkdownBody>{mutedUserHidden ? mutedText : comment.body}</MarkdownBody>
+              <ShowMoreBox showButton maxHeight="500px" childrenHash={commentBodyText}>
+                <MarkdownBody>{commentBodyText}</MarkdownBody>
               </ShowMoreBox>
             )}
             {deleted && <div className="post-comment-text-sign">{deletedText}</div>}

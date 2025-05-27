@@ -25,7 +25,7 @@ const CommunityCard = ({ community }: { community: Community }) => {
           </div>
         </Link>
         <div className="about-comm-desc">
-          <ShowMoreBox showButton maxHeight="250px">
+          <ShowMoreBox showButton maxHeight="250px" childrenHash={community.about || ''}>
             <MarkdownBody>{community.about}</MarkdownBody>
           </ShowMoreBox>
         </div>

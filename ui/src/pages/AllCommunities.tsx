@@ -341,7 +341,7 @@ const ListItem = React.memo(function ListItem({ community }: { community: Commun
         </div>
         <div className="comms-list-item-count">{`${community.noMembers} members`}</div>
         <div className="comms-list-item-about">
-          <ShowMoreBox maxHeight="120px">
+          <ShowMoreBox maxHeight="120px" childrenHash={community.about || ''}>
             <MarkdownBody>{community.about}</MarkdownBody>
           </ShowMoreBox>
         </div>

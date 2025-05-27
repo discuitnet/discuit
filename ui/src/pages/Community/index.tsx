@@ -341,7 +341,7 @@ const Community = () => {
               {stringCount(community.noMembers, false, 'member')}
             </div>
             <div className="comm-main-description">
-              <ShowMoreBox showButton maxHeight="120px">
+              <ShowMoreBox showButton maxHeight="120px" childrenHash={community.about || ''}>
                 <MarkdownBody>{community.about}</MarkdownBody>
               </ShowMoreBox>
             </div>

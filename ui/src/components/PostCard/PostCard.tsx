@@ -228,7 +228,7 @@ const PostCard = ({
           {!compact && isEmbed && embeddedReactElement}
           {!compact && post.type === 'text' && (
             <div className="post-card-text">
-              <ShowMoreBox maxHeight="200px">
+              <ShowMoreBox maxHeight="200px" childrenHash={post.body || ''}>
                 <MarkdownBody noLinks>{post.body}</MarkdownBody>
               </ShowMoreBox>
             </div>

@@ -39,7 +39,7 @@ const Comment = ({
         className="comment-body"
         to={`/${comment.communityName}/post/${comment.postPublicId}/${comment.id}`}
       >
-        <ShowMoreBox>
+        <ShowMoreBox childrenHash={comment.body}>
           <MarkdownBody noLinks>{comment.body}</MarkdownBody>
         </ShowMoreBox>
       </Link>
