@@ -66,7 +66,7 @@ export default function NewCommunityRequests() {
         <div className="table-column">
           <Button
             onClick={() => dispatch(denyCommunityModalOpened())}
-            className={'button button-main'}
+            className={'button button-main home-btn-new-post'}
           >
             Deny
           </Button>

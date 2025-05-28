@@ -43,6 +43,7 @@ import User from './pages/User';
 import PushNotifications from './PushNotifications';
 import {
   createCommunityModalOpened,
+  denyCommunityModalOpened,
   initialFieldsSet,
   loginModalOpened,
   markNotificationAsSeen,
@@ -51,6 +52,7 @@ import {
   userLoggedIn,
 } from './slices/mainSlice';
 import LoginForm from './views/LoginForm';
+import DenyCommunity from './components/DenyCommunity';
 
 // Value taken from _mixins.scss file.
 const tabletBreakpoint = 1170;
@@ -164,6 +166,7 @@ const App = () => {
   const signupModalOpen = useSelector((state) => state.main.signupModalOpen);
 
   const createCommunityOpen = useSelector((state) => state.main.createCommunityModalOpen);
+  const denyCommunityOpen = useSelector((state) => state.main.denyCommunityModalOpen);
 
   // Offline page is only rendered if the user goes to a new page while the
   // internet connectivity is lost.
@@ -244,6 +247,10 @@ const App = () => {
       <CreateCommunity
         open={createCommunityOpen}
         onClose={() => dispatch(createCommunityModalOpened(false))}
+      />
+      <DenyCommunity
+        open = {denyCommunityOpen}
+        onClose={() => dispatch(denyCommunityModalOpened(false))}
       />
     </>
   );
