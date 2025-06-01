@@ -87,6 +87,11 @@ type Config struct {
 	SubstackURL    string `yaml:"substackURL"`
 
 	WelcomeCommunity string `yaml:"welcomeCommunity"`
+
+	// This email address is provided to the Web Push services (of the browser
+	// vendors) in case they need to reach out. If this field is empty, push
+	// notifications are not enabled.
+	WebPushSubscriberEmail string `yaml:"webPushSubscriberEmail"`
 }
 
 // Parse parses the yaml file at path and returns a Config.
