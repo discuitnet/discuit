@@ -117,7 +117,7 @@ export interface Post {
   };
   locked: boolean;
   lockedBy: string | null;
-  lockedAs?: UserGroup;
+  lockedByGroup?: UserGroup;
   lockedAt: string | null; // A datetime.
   upvotes: number;
   downvotes: number;
@@ -135,6 +135,8 @@ export interface Post {
   commentsNext?: string | null;
   userVoted: boolean | null;
   userVotedUp: boolean | null;
+  lastVisitAt: string | null;
+  newComments: number;
   isAuthorMuted: boolean;
   isCommunityMuted: boolean;
   community?: Community;
@@ -189,6 +191,15 @@ export interface List {
   sort: ListSort;
   createdAt: string; // A datetime.
   lastUpdatedAt: string; // A datetime.
+}
+
+export interface ListItem {
+  id: number;
+  listId: number;
+  targetType: 'post' | 'comment';
+  targetId: string;
+  createdAt: string; // A datetime
+  targetItem: Post | Comment;
 }
 
 export type NotificationType =
@@ -277,9 +288,28 @@ export interface NotificationAnnouncement {
   community: Community;
 }
 
+export type TextFormat = 'html' | 'md';
+
+export interface NotificationView {
+  id: number;
+  version: number;
+  type: NotificationType;
+  textFormat: TextFormat;
+  title: string;
+  body: string;
+  icons: string[];
+  toURL: string;
+  seen: boolean;
+  seenAt: string | null; // A datetime.
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type MuteType = 'user' | 'community';
+
 export interface Mute {
   id: string;
-  type: 'user' | 'community';
+  type: MuteType;
   mutedUserId?: string;
   mutedCommunityId?: string;
   createdAt: string; // A datetime.
@@ -305,3 +335,31 @@ export interface AnalyticsEvent {
 }
 
 export type CommunitiesSort = 'new' | 'old' | 'size' | 'name_asc' | 'name_dsc';
+
+export interface Report {
+  id: number;
+  communityId: string;
+  postId: string;
+  reason: string;
+  description: string | null;
+  reasonId: number;
+  type: 'post' | 'comment';
+  targetId: string;
+  actionTaken: string | null;
+  dealtAt: string | null; // A datetime
+  dealtBy: string | null; // A user id
+  createdAt: string; // A datetime
+  target: Post | Comment;
+}
+
+export interface ReportReason {
+  id: number;
+  title: string;
+  description: string | null;
+}
+
+export interface CommunityReportDetails {
+  noReports: number;
+  noPostReports: number;
+  noCommentReports: number;
+}

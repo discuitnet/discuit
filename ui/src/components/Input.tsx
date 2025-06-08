@@ -22,9 +22,12 @@ export const InputWithCount = ({
   /* error = false, */
   value,
   onChange,
+  onBlur,
   style,
   autoFocus,
   rows,
+  disabled,
+  autoComplete,
   ...props
 }: {
   className?: string;
@@ -36,7 +39,10 @@ export const InputWithCount = ({
   style?: React.CSSProperties;
   autoFocus?: boolean;
   rows?: number;
+  disabled?: boolean;
   onChange?: React.ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
+  onBlur?: React.FocusEventHandler;
+  autoComplete?: string;
 }) => {
   const length = value ? value.length : 0;
   return (
@@ -45,9 +51,12 @@ export const InputWithCount = ({
         <textarea
           value={value}
           onChange={onChange}
+          onBlur={onBlur}
           style={style}
           autoFocus={autoFocus}
           rows={rows}
+          disabled={disabled}
+          autoComplete={autoComplete}
           {...props}
         ></textarea>
       ) : (
@@ -57,6 +66,8 @@ export const InputWithCount = ({
           onChange={onChange}
           style={style}
           autoFocus={autoFocus}
+          disabled={disabled}
+          autoComplete={autoComplete}
           {...props}
         />
       )}

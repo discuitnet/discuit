@@ -1313,6 +1313,9 @@ type CommunityRequest struct {
 	CommunityExists bool            `json:"communityExists"`
 	Note            msql.NullString `json:"note"`
 	CreatedAt       time.Time       `json:"createdAt"`
+	DeniedNote      msql.NullString `json:"deniedNote"`
+	DeniedBy        msql.NullString `json:"deniedBy"`
+	DeniedAt        msql.NullTime   `json:"deniedAt"`
 }
 
 func CreateCommunityRequest(ctx context.Context, db *sql.DB, byUser, name, note string) error {
@@ -1338,7 +1341,7 @@ func CreateCommunityRequest(ctx context.Context, db *sql.DB, byUser, name, note 
 
 func GetCommunityRequests(ctx context.Context, db *sql.DB) ([]*CommunityRequest, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT cr.id, cr.by_user, cr.community_name, cr.note, cr.created_at, c.id IS NOT NULL
+		SELECT cr.id, cr.by_user, cr.community_name, cr.note, cr.created_at, c.id IS NOT NULL, cr.denied_note, cr.denied_by, cr.denied_at
 		FROM community_requests AS cr 
 		LEFT JOIN communities AS c ON cr.community_name_lc = c.name_lc 
 		WHERE cr.created_at >  SUBDATE(NOW(), 90)
@@ -1352,7 +1355,8 @@ func GetCommunityRequests(ctx context.Context, db *sql.DB) ([]*CommunityRequest,
 	requests := []*CommunityRequest{}
 	for rows.Next() {
 		r := &CommunityRequest{}
-		if err := rows.Scan(&r.ID, &r.ByUser, &r.CommunityName, &r.Note, &r.CreatedAt, &r.CommunityExists); err != nil {
+		if err := rows.Scan(&r.ID, &r.ByUser, &r.CommunityName, &r.Note, &r.CreatedAt, &r.CommunityExists,
+			&r.DeniedNote, &r.DeniedBy, &r.DeniedAt); err != nil {
 			return nil, err
 		}
 		requests = append(requests, r)

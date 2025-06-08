@@ -2,12 +2,13 @@ package server
 
 import (
 	"database/sql"
-	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/discuitnet/discuit/core"
 	"github.com/discuitnet/discuit/core/sitesettings"
 	"github.com/discuitnet/discuit/internal/httperr"
+	msql "github.com/discuitnet/discuit/internal/sql"
 )
 
 // getLoggedInAdmin returns the logged in admin, if the
@@ -28,7 +29,7 @@ func getLoggedInAdmin(db *sql.DB, r *request) (*core.User, error) {
 
 // /api/_admin [POST]
 func (s *Server) adminActions(w *responseWriter, r *request) error {
-	_, err := getLoggedInAdmin(s.db, r)
+	admin, err := getLoggedInAdmin(s.db, r)
 	if err != nil {
 		return err
 	}
@@ -116,14 +117,34 @@ func (s *Server) adminActions(w *responseWriter, r *request) error {
 		if !ok {
 			return invalidJSONErr
 		}
-
+		///////////////////// should do a length check here
 		body, ok := reqBody["body"].(string)
 		if !ok {
 			body = ""
 		}
-		//// >>>>>>>>>>> update requests table to deny (need new columns for text, denial flag)
-		//// should check it is not already denied to prevent multiple denials
-		fmt.Println(">>>>>>>>>>>>>>>>>>>", id)
+		deniedBy, ok := reqBody["deniedBy"].(string)
+		if !ok {
+			return err
+		}
+		if deniedBy != admin.Username {
+			return httperr.NewBadRequest("invalid_admin", "Logged-in admin name doesn't match denial name.")
+		}
+		var deniedAt msql.NullTime
+		if err := s.db.QueryRowContext(r.ctx, "SELECT denied_at from community_requests where id = ?", id).Scan(&deniedAt); err != nil {
+			if err != sql.ErrNoRows {
+				return err
+			}
+			// somehow, an invalid community request ID was passed in
+			return httperr.NewBadRequest("invalid_id", "Invalid community request ID.")
+		}
+		if deniedAt.Valid {
+			return httperr.NewBadRequest("already_denied", "Community was already denied.")
+		}
+		if _, err := s.db.ExecContext(r.ctx,
+			"UPDATE community_requests SET denied_note = ?, denied_by = ?, denied_at = ? WHERE id = ?",
+			body, deniedBy, time.Now(), id); err != nil {
+			return err
+		}
 		if err = core.CreateDeniedCommNotification(r.ctx, s.db, user.ID, body); err != nil {
 			return err
 		}

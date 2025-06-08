@@ -132,7 +132,9 @@ export function useLoading(
   return [loading, setLoading];
 }
 
-export function usePagination(initial = 1) {
+export function usePagination(
+  initial = 1
+): [number, (n: number, clearOtherParms?: boolean) => void] {
   const history = useHistory();
 
   const query = useQuery();
@@ -176,7 +178,7 @@ export function useIsChanged(deps: unknown[] = []): [boolean, () => void] {
   return [c > 1, resetChanged];
 }
 
-export function useVoting(
+export function useVoting<T = unknown>(
   initialVote: boolean | null,
   initialUpvotes: number,
   initialDownvotes: number
@@ -222,8 +224,8 @@ export function useVoting(
   const [requesting, setRequesting] = useState(false);
   const doVote = async (
     up: boolean,
-    fetch: () => Promise<unknown>,
-    onSuccess: (arg0: unknown) => void,
+    fetch: () => Promise<T>,
+    onSuccess: (arg0: T) => void,
     onFailure: (arg0: unknown) => void
   ) => {
     if (requesting) return;

@@ -5,6 +5,14 @@ export function Form({ children, ...props }: React.FormHTMLAttributes<HTMLFormEl
   return <form {...props}>{children}</form>;
 }
 
+export interface FormFieldProps extends React.HTMLAttributes<HTMLDivElement> {
+  className?: string;
+  label?: string;
+  description?: string;
+  error?: string | boolean;
+  children: React.ReactNode;
+}
+
 export function FormField({
   className,
   label,
@@ -12,13 +20,7 @@ export function FormField({
   error,
   children,
   ...props
-}: {
-  className?: string;
-  label?: string;
-  description?: string;
-  error?: string | boolean;
-  children: React.ReactNode;
-}) {
+}: FormFieldProps) {
   return (
     <div className={clsx('form-field', className, error && 'is-error')} {...props}>
       {label && <div className="form-label">{label}</div>}
@@ -29,16 +31,13 @@ export function FormField({
   );
 }
 
-export function FormSection({
-  className,
-  heading,
-  children,
-  ...props
-}: {
+export interface FormSectionProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
   heading?: string;
   children: React.ReactNode;
-}) {
+}
+
+export function FormSection({ className, heading, children, ...props }: FormSectionProps) {
   return (
     <div className={clsx('form-section', className)} {...props}>
       {heading && <div className="form-section-heading">{heading}</div>}

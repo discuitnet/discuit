@@ -1,7 +1,17 @@
 import { ThunkDispatch } from 'redux-thunk';
 import { APIError, mfetch, mfetchjson } from '../helper';
 import { getDevicePreference, setDevicePreference } from '../pages/Settings/devicePrefs';
-import { CommunitiesSort, Community, List, Mute, Mutes, Notification, User } from '../serverTypes';
+import {
+  CommunitiesSort,
+  Community,
+  List,
+  Mute,
+  Mutes,
+  Notification,
+  NotificationView,
+  ReportReason,
+  User,
+} from '../serverTypes';
 import { AppDispatch, RootState, UnknownAction } from '../store';
 import { communitiesAdded } from './communitiesSlice';
 
@@ -14,13 +24,13 @@ export interface Alert {
 export interface NotificationsResponse {
   count: number;
   newCount: number;
-  items: Notification[] | null;
+  items: (Notification | NotificationView)[] | null;
   next: string;
 }
 
 export interface InitialValues {
   signupsDisabled: boolean;
-  reportReasons: unknown;
+  reportReasons: ReportReason[] | null;
   user: User | null;
   lists: List[];
   communities: Community[];
@@ -58,7 +68,6 @@ export interface MainState {
   loginModalOpen: boolean;
   signupModalOpen: boolean;
   createCommunityModalOpen: boolean;
-  denyCommunityModalOpen: boolean;
   mutes: Mutes;
   lists: {
     loading: boolean;
@@ -111,7 +120,6 @@ const initialState: MainState = {
   loginModalOpen: false,
   signupModalOpen: false,
   createCommunityModalOpen: false,
-  denyCommunityModalOpen: false,
   mutes: {
     userMutes: [],
     communityMutes: [],
@@ -283,7 +291,7 @@ export default function mainReducer(
     }
     case 'main/notificationSeen': {
       const { notifId, seen } = action.payload as { notifId: number; seen: boolean };
-      const newItems: Notification[] = [];
+      const newItems: (Notification | NotificationView)[] = [];
       state.notifications.items!.forEach((item) => {
         if (item.id === notifId) {
           newItems.push({
@@ -319,7 +327,7 @@ export default function mainReducer(
     case 'main/reportReasonsUpdated': {
       return {
         ...state,
-        reportReasons: action.payload,
+        reportReasons: action.payload as ReportReason[],
       };
     }
     case 'main/toggleSidebarOpen': {
@@ -357,12 +365,6 @@ export default function mainReducer(
         ...state,
         createCommunityModalOpen: action.payload as boolean,
       };
-    }
-    case 'main/denyCommunityModalOpened': {
-      return {
-        ...state,
-        denyCommunityModalOpen: action.payload as boolean,
-      }
     }
     case 'main/appInstallButtonUpdate': {
       return {
@@ -529,7 +531,7 @@ export const allCommunitiesUpdated =
   };
 
 export const snackAlert =
-  (text: string, id: string | number | null, timeout = 3000) =>
+  (text: string, id?: string | number | null, timeout = 3000) =>
   (dispatch: AppDispatch) => {
     const alert: Alert = { id: id || Date.now(), text: text };
     dispatch({ type: 'main/alertAdded', payload: alert });
@@ -555,7 +557,7 @@ export const loginPromptToggled = () => {
   return { type: 'main/loginPromptToggled' };
 };
 
-export const reportReasonsUpdated = (reasons: unknown) => {
+export const reportReasonsUpdated = (reasons: ReportReason[] | null) => {
   return { type: 'main/reportReasonsUpdated', payload: reasons || [] };
 };
 
@@ -595,7 +597,7 @@ const closePushNotification = async (notifId: string | number) => {
 };
 
 export const markNotificationAsSeen =
-  (notif: Notification | string | number, seen = true) =>
+  (notif: Notification | NotificationView | string | number, seen = true) =>
   async (dispatch: AppDispatch) => {
     const notifId = typeof notif === 'object' ? notif.id : notif;
     const errMsg = 'Error marking notification as seen: ';
@@ -627,7 +629,7 @@ export const notificationsAllDeleted = () => {
   return { type: 'main/notificationsAllDeleted' };
 };
 
-export const notificationsDeleted = (notification: Notification) => {
+export const notificationsDeleted = (notification: Notification | NotificationView) => {
   return { type: 'main/notificationsDeleted', payload: notification };
 };
 
@@ -647,11 +649,8 @@ export const createCommunityModalOpened = (open = true) => {
   return { type: 'main/createCommunityModalOpened', payload: open };
 };
 
-export const denyCommunityModalOpened = (open = true) => {
-  return { type: 'main/denyCommunityModalOpened', payload: open };
-};
+export const showAppInstallButton = (show: boolean, deferredPrompt?: Event) => {
 
-export const showAppInstallButton = (show: boolean, deferredPrompt: unknown) => {
   return {
     type: 'main/appInstallButtonUpdate',
     payload: {

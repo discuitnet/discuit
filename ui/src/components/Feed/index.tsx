@@ -24,7 +24,7 @@ export interface FeedProps<FeedItemType> {
   onFetch: (
     next?: string | null
   ) => Promise<{ items: FeedItem<FeedItemType | unknown>[]; next: string | null } | null>;
-  onRenderItem: (item: FeedItem, index: number) => React.ReactNode;
+  onRenderItem: (item: FeedItem<FeedItemType>, index: number) => React.ReactNode;
   banner?: React.ReactNode;
   noMoreItemsText?: string;
   emptyItemsText?: string;
@@ -51,7 +51,7 @@ function Feed<FeedItemType>({
     threshold: 0,
   });
 
-  const feed = useSelector(selectFeed(feedId));
+  const feed = useSelector(selectFeed<FeedItemType>(feedId));
   const loading = feed ? feed.loading : true;
   const hasMore = feed ? Boolean(feed.next) : false;
   const [, /*error*/ setError] = useState<unknown>(null);

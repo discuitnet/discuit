@@ -2,9 +2,9 @@ import React, { useEffect, useImperativeHandle, useRef } from 'react';
 import { adjustTextareaHeight, isValidHttpUrl } from '../helper';
 
 export interface MarkdownTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  autoAdjustHeight: boolean;
-  onQuickSubmit: () => void;
-  onCancel: () => void;
+  autoAdjustHeight?: boolean;
+  onQuickSubmit?: () => void;
+  onCancel?: () => void;
 }
 
 const MarkdownTextarea = React.forwardRef<HTMLTextAreaElement, MarkdownTextareaProps>(
@@ -26,7 +26,7 @@ const MarkdownTextarea = React.forwardRef<HTMLTextAreaElement, MarkdownTextareaP
       if (onInput) onInput(event);
       if (autoAdjustHeight) {
         const textareaBorderSize = 4; // in pixels
-        adjustTextareaHeight(event, textareaBorderSize);
+        adjustTextareaHeight(event.target as HTMLElement, textareaBorderSize);
       }
     };
 
@@ -65,10 +65,7 @@ const MarkdownTextarea = React.forwardRef<HTMLTextAreaElement, MarkdownTextareaP
     useEffect(() => {
       const node = innerRef.current;
       if (node && autoAdjustHeight) {
-        adjustTextareaHeight(
-          { target: node } as unknown as React.FormEvent<HTMLTextAreaElement>,
-          4
-        );
+        adjustTextareaHeight(node, 4);
       }
     }, [autoAdjustHeight]);
 
