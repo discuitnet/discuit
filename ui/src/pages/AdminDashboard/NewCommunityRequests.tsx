@@ -31,101 +31,159 @@ interface CommunityRequest {
 
 
 
-interface DenyCommunityButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  isMobile?: boolean;
+interface StatusCellProps {
+  initialStatus: string;
   item: CommunityRequest;
 }
 
-const DenyCommunityButton = ({
-  children,
-  isMobile = false,
-  item,
-  ...props
-}: DenyCommunityButtonProps) => {
-  const user = useSelector<RootState>((state) => state.main.user);
-  const dispatch = useDispatch();
-  const [open, setOpen] = useState(false);
-  const handleClose = () => setOpen(false);
-  const noteMaxLength = 500;
-  const [formError, setFormError] = useState('');
-  const [note, handleNoteChange] = useInputMaxLength(noteMaxLength);
-  
-  useEffect(() => {
-    setFormError('');
-  }, [note]);
+/*
+initial state is easy to populate from item
+state only needs to change after interacting with the modal
+- if there is an error message from the server saying it was already denied, can populate with generic message saying that (no endpoint to extract specific
+  request record, but the error message can be modified to do that)
+- if the denial was succesfully sent (use the request details to populate info)
 
-  const handleButtonClick = () => {
-    if (user === null) {
-      dispatch(loginPromptToggled());
-      return;
-    }
-    setOpen(true);
-  };
+Therefore, the DenyCommunityButton needs to be able to be monitored by its parent, StatusCell
 
-  const handleSubmit = async () => {
-    if (note.length < 10) {
-      alert('Type at least 10 characters for community denial message.');
-      return;
-    }
-    try {
-      const res = await mfetch(`/api/_admin`, {
-        method: 'POST',
-        body: JSON.stringify({
-          action: 'deny_comm', name: item.byUser, id: item.id, body: note, deniedBy: (user as any).username 
-        }),
-      });
-      if (res.ok) {
-        dispatch(snackAlert('Denial alert sent.'));
-        /////////////////////////////// nuke the button and replace it with denial text
-        handleClose();
-      } else {
-        const error = await res.json();
-        dispatch(snackAlert(error.message));
+Can have code for all three possible states but only show one?
+
+useState should handle that?
+
+list of valid request statuses used to validate?
+
+(... as any), comments on usage?
+
+overuse of closure?
+*/
+////////////////// need to change the cell's state somehow after successful denial submit or error of previously denied
+
+////////////// service worker's refresh is closing the modal?
+
+const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
+  ////// this needs to be nested in statuscell so its state can be updated?
+  interface DenyCommunityButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+    isMobile?: boolean;
+    item: CommunityRequest;
+  }
+
+  const DenyCommunityButton = ({
+    children,
+    isMobile = false,
+    item,
+    ...props
+  }: DenyCommunityButtonProps) => {
+    const user = useSelector<RootState>((state) => state.main.user);
+    const dispatch = useDispatch();
+    const [open, setOpen] = useState(false);
+    const handleClose = () => setOpen(false);
+    const noteMaxLength = 500;
+    const [formError, setFormError] = useState('');
+    const [note, handleNoteChange] = useInputMaxLength(noteMaxLength);
+    
+    useEffect(() => {
+      setFormError('');
+    }, [note]);
+
+    const handleButtonClick = () => {
+      if (user === null) {
+        dispatch(loginPromptToggled());
+        return;
       }
-    } catch (error) {
-      dispatch(snackAlertError(error));
-    }
+      setOpen(true);
+    };
+
+    const handleSubmit = async () => {
+      if (note.length < 10) {
+        ////////////////// check length in backend? set default message for decline?
+        alert('Type at least 10 characters for community denial message.');
+        return;
+      }
+      try {
+        const res = await mfetch(`/api/_admin`, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'deny_comm', name: item.byUser, id: item.id, body: note, deniedBy: (user as any).username 
+          }),
+        });
+        if (res.ok) {
+          dispatch(snackAlert('Denial alert sent.'));
+          /////////////////////////////// nuke the button and replace it with denial text
+          setCurrentStatus('denied_now');
+          handleClose();
+        } else {
+          const error = await res.json();
+          dispatch(snackAlert(error.message));
+          if (error.code == 'already_denied') {
+            setCurrentStatus('denied_prev');
+          }
+        }
+      } catch (error) {
+        dispatch(snackAlertError(error));
+      }
+    };
+
+    return (
+      <>
+        <Modal open={open} onClose={handleClose}>
+          <div className="modal-card modal-form">
+            <div className="modal-card-head">
+              <div className="modal-card-title">Deny community request</div>
+              <ButtonClose onClick={handleClose} />
+            </div>
+            <div className="form modal-card-content flex-column inner-gap-1">
+              <FormField label="Denial message" description={`Alert ${item.byUser} of denial of ${item.communityName}`}>
+                <InputWithCount
+                  value={note}
+                  onChange={handleNoteChange}
+                  textarea
+                  rows={4}
+                  maxLength={noteMaxLength}
+                  style={{ marginBottom: '0' }}
+                  autoFocus
+                />
+              </FormField>
+              {formError !== '' && (
+                <div className="form-field">
+                  <div className="form-error text-center">{formError}</div>
+                </div>
+              )}
+              <FormField>
+                <button className="button-main" onClick={handleSubmit} style={{ width: '100%' }}>
+                  Send
+                </button>
+              </FormField>
+            </div>
+          </div>
+        </Modal>
+        <button onClick={handleButtonClick} {...props}>
+          {children}
+        </button>
+      </>
+    );
   };
 
-  return (
-    <>
-      <Modal open={open} onClose={handleClose}>
-        <div className="modal-card modal-form">
-          <div className="modal-card-head">
-            <div className="modal-card-title">Deny community request</div>
-            <ButtonClose onClick={handleClose} />
-          </div>
-          <div className="form modal-card-content flex-column inner-gap-1">
-            <FormField label="Denial message" description={`Alert ${item.byUser} of denial of ${item.communityName}`}>
-              <InputWithCount
-                value={note}
-                onChange={handleNoteChange}
-                textarea
-                rows={4}
-                maxLength={noteMaxLength}
-                style={{ marginBottom: '0' }}
-                autoFocus
-              />
-            </FormField>
-            {formError !== '' && (
-              <div className="form-field">
-                <div className="form-error text-center">{formError}</div>
-              </div>
-            )}
-            <FormField>
-              <button className="button-main" onClick={handleSubmit} style={{ width: '100%' }}>
-                Send
-              </button>
-            </FormField>
-          </div>
-        </div>
-      </Modal>
-      <button onClick={handleButtonClick} {...props}>
-        {children}
-      </button>
-    </>
-  );
-};
+  const [currentStatus, setCurrentStatus] = useState(initialStatus);
+  if (currentStatus == 'created') {
+    return ('Created.');
+  } else if (currentStatus == 'denied') {
+    return (`Denied by ${item.deniedBy} at ${(item.deniedAt as any).toLocaleString()} because: ${item.deniedNote}`);
+  } else if (currentStatus == 'denied_now') {
+    return ('You just denied this request.');
+  } else if (currentStatus == 'denied_prev') {
+    return ('Someone else denied this request.');
+  } else if (currentStatus == 'pending') {
+    return (
+      <DenyCommunityButton
+        className={"button button-main home-btn-new-post"}
+        item={item}
+      >
+        Deny
+      </DenyCommunityButton>
+    );
+  } else {
+    return ('Request status could not be loaded.');
+  }
+}
 
 ////////////////////////////////////////clean up " vs ' ////////////////////////////////////////////////////
 
@@ -159,73 +217,23 @@ export default function NewCommunityRequests() {
 
 
   const handleRenderItem = (item: CommunityRequest) => {
-    /*
-    initial state is easy to populate from item
-    state only needs to change after interacting with the modal
-    - if there is an error message from the server saying it was already denied, can populate with generic message saying that (no endpoint to extract specific
-      request record, but the error message can be modified to do that)
-    - if the denial was succesfully sent (use the request details to populate info)
-
-    Therefore, the DenyCommunityButton needs to be able to be monitored by its parent, StatusCell
-
-    Can have code for all three possible states but only show one?
-
-    useState should handle that?
-
-    list of valid request statuses used to validate?
-
-    (... as any), comments on usage?
-
-    overuse of closure?
-    */
-    ////////////////// need to change the cell's state somehow after successful denial submit or error of previously denied
-    const StatusCell = ({status = ''}) => {
-      if (status == 'zzz') {
-        return (
-          <DenyCommunityButton
-            className={"button button-main home-btn-new-post"}
-            item={item}
-          >
-            Deny
-          </DenyCommunityButton>
-        );
-      }
-      return (<div> {status} </div>);
-      /*
-      if (status == 'created') {
-        console.log('created');
-        return ('Created.');
-      } else if (status == 'denied') {
-        console.log('denied');
-        return (`Denied by ${item.deniedBy} at ${(item.deniedAt as any).toLocaleString()} because: ${item.deniedNote}`);
-      } else if (status == 'pending') {
-        console.log('pending');
-        return (
-          <DenyCommunityButton
-            className={"button button-main home-btn-new-post"}
-            item={item}
-          >
-            Deny
-          </DenyCommunityButton>
-        );
-      } else {
-        console.log('oops');
-        return ('Request status could not be loaded.');
-      }
-        */
-    }
 
     const El = item.communityExists ? Link : 'div';
     const elProps = {
       to: item.communityExists ? `/${item.communityName}` : '',
     };
-    const [reqStatus, setReqStatus] = useState('');
+    ////////////////////// this is causing too many renders, because setting the state rerenders?
+    //const [reqStatus, setReqStatus] = useState('');
+    var initialStatus = '';
     if (item.communityExists) {
-      setReqStatus('created');
+      initialStatus = 'created';
+      //setReqStatus('created');
     } else if (item.deniedAt) {
-      setReqStatus('denied');
+      initialStatus = 'denied';
+      //setReqStatus('denied');
     } else if (!item.communityExists && !item.deniedAt) {
-      setReqStatus('pending');
+      initialStatus = 'pending';
+      //setReqStatus('pending');
     }
     return (
       <TableRow columns={5}>
@@ -238,7 +246,7 @@ export default function NewCommunityRequests() {
         </div>
         <div className="table-column">{item.note}</div>
         <div className="table-column">
-          (true ? <div>ternary text</div> : <StatusCell status={reqStatus} />)
+          <StatusCell initialStatus={initialStatus} item={item} />
         </div>
       </TableRow>
     );
