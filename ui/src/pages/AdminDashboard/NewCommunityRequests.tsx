@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
+import { declineCommNoteMaxLength } from '../../config';
 import { FormField } from '../../components/Form';
 import { InputWithCount, useInputMaxLength } from '../../components/Input';
 import { mfetch } from '../../helper';
@@ -13,6 +14,8 @@ import { mfetchjson } from '../../helper';
 import { useLoading } from '../../hooks';
 import { loginPromptToggled, snackAlert, snackAlertError } from '../../slices/mainSlice';
 import { ButtonClose } from '../../components/Button';
+
+
 
 interface CommunityRequest {
   id: number;
@@ -28,8 +31,7 @@ interface CommunityRequest {
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 
-
-
+//////////////////////////////////////////////////////////////////////////////////////////////
 
 interface StatusCellProps {
   initialStatus: string;
@@ -59,6 +61,20 @@ overuse of closure?
 
 ////////////// service worker's refresh is closing the modal?
 
+/////////////// the other admin pages do seem to have a refresh too... just use a global modal?
+
+/*
+timer of 5 seconds in app.tsx:
+useEffect(() => {
+    if (loggedIn) {
+
+is causing the modal to disappear
+* is the global state changing somehow
+* if it is the global state, then getting a new notification will make the modal disappear?
+* why isn't the create community modal disappearing?
+
+*/
+
 const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
   ////// this needs to be nested in statuscell so its state can be updated?
   interface DenyCommunityButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -76,10 +92,9 @@ const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
     const dispatch = useDispatch();
     const [open, setOpen] = useState(false);
     const handleClose = () => setOpen(false);
-    const noteMaxLength = 500;
     const [formError, setFormError] = useState('');
-    const [note, handleNoteChange] = useInputMaxLength(noteMaxLength);
-    
+    const [note, handleNoteChange] = useInputMaxLength(declineCommNoteMaxLength);
+
     useEffect(() => {
       setFormError('');
     }, [note]);
@@ -108,13 +123,13 @@ const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
         if (res.ok) {
           dispatch(snackAlert('Denial alert sent.'));
           /////////////////////////////// nuke the button and replace it with denial text
-          setCurrentStatus('denied_now');
+          //setCurrentStatus('denied_now');
           handleClose();
         } else {
           const error = await res.json();
           dispatch(snackAlert(error.message));
           if (error.code == 'already_denied') {
-            setCurrentStatus('denied_prev');
+            //setCurrentStatus('denied_prev');
           }
         }
       } catch (error) {
@@ -122,6 +137,7 @@ const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
       }
     };
 
+    const defaultMessage = `Your request for ${item.communityName} has been declined.`;
     return (
       <>
         <Modal open={open} onClose={handleClose}>
@@ -131,13 +147,13 @@ const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
               <ButtonClose onClick={handleClose} />
             </div>
             <div className="form modal-card-content flex-column inner-gap-1">
-              <FormField label="Denial message" description={`Alert ${item.byUser} of denial of ${item.communityName}`}>
+              <FormField label="Additional note to user" description={`Default: <b>${defaultMessage}</b>`}>
                 <InputWithCount
                   value={note}
                   onChange={handleNoteChange}
                   textarea
                   rows={4}
-                  maxLength={noteMaxLength}
+                  maxLength={declineCommNoteMaxLength}
                   style={{ marginBottom: '0' }}
                   autoFocus
                 />
@@ -162,7 +178,9 @@ const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
     );
   };
 
-  const [currentStatus, setCurrentStatus] = useState(initialStatus);
+  var currentStatus = initialStatus;
+//  const [currentStatus, setCurrentStatus] = useState(initialStatus);
+//  console.log("In statuscell; current status", currentStatus, item.communityName)
   if (currentStatus == 'created') {
     return ('Created.');
   } else if (currentStatus == 'denied') {
@@ -184,6 +202,9 @@ const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
     return ('Request status could not be loaded.');
   }
 }
+
+const M = memo(StatusCell);
+
 
 ////////////////////////////////////////clean up " vs ' ////////////////////////////////////////////////////
 
@@ -246,7 +267,7 @@ export default function NewCommunityRequests() {
         </div>
         <div className="table-column">{item.note}</div>
         <div className="table-column">
-          <StatusCell initialStatus={initialStatus} item={item} />
+          <M initialStatus={initialStatus} item={item} />
         </div>
       </TableRow>
     );
@@ -267,42 +288,9 @@ export default function NewCommunityRequests() {
 
   const feedItems: SimpleFeedItem<CommunityRequest>[] = [];
   requests?.forEach((req) => feedItems.push({ item: req, key: req.id.toString() }));
-
-  /*const handleDeclineRequest = async (item: CommunityRequest) => {
-     	<DenyCommunity
-    	open={denyCommunityModalOpened}
-    	onClose={() => dispatch(denyCommunityModalOpened(false))}
-  	/>
-
-<div className="form modal-card-content flex-column inner-gap-1">
-  <FormField label="Community name" description="Community name cannot be changed.">
-    <InputWithCount
-      value={name}
-      onChange={handleNameChange}
-      maxLength={communityNameMaxLength}
-      style={{ marginBottom: '0' }}
-      autoFocus
-    />
-  </FormField>
-  </div>
-    const body = {
-      action: 'deny_comm',
-      name: item.byUser,
-      id : item.id,
-      body: `${item.communityName} denied!`,
-    };
-    const res = await mfetch(`/api/_admin`, {
-      method: 'POST',
-      body: JSON.stringify(body)
-    });
-    if (res.ok) {
-      alert('Disc denied.');
-    } else {
-      alert('Error denying disc.');
-    }
-  }*/
-
+// why is button not showing unless class is removed?  className="button-main "
   return (
+    <>
     <div className="dashboard-page-requests document">
       <div className="dashboard-page-title">New community requests</div>
       <div className="dashboard-page-content">
@@ -314,5 +302,6 @@ export default function NewCommunityRequests() {
         />
       </div>
     </div>
+    </>
   );
 }
