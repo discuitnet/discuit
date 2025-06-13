@@ -20,6 +20,7 @@ export interface User {
   rememberFeedSort: boolean;
   embedsOff: boolean;
   hideUserProfilePictures: boolean;
+  requireAltText: boolean;
   bannedAt: string | null; // A datetime.
   isBanned: boolean;
   notificationsNewCount: number;
