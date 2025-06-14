@@ -129,7 +129,7 @@ type User struct {
 	RememberFeedSort        bool     `json:"rememberFeedSort"`
 	EmbedsOff               bool     `json:"embedsOff"`
 	HideUserProfilePictures bool     `json:"hideUserProfilePictures"`
-	RequireAltText bool `json:"requireAltText"`
+	RequireAltText          bool     `json:"requireAltText"`
 
 	WelcomeNotificationSent bool `json:"-"`
 
