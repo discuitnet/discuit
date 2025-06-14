@@ -186,8 +186,11 @@ const NewPost = () => {
     }
   };
 
+  const missingAlt =
+    user.requireAltText && images.some((img) => !img.altText || img.altText.trim() === '');
+
   const [_isSubmitDisabled, setIsSubmitting] = useState(false);
-  const isSubmitDisabled = _isSubmitDisabled || isUploading || isPostingDisabled;
+  const isSubmitDisabled = _isSubmitDisabled || isUploading || isPostingDisabled || missingAlt;
   const handleSubmit = async () => {
     if (isSubmitDisabled) return;
     if (isBanned) {
@@ -210,6 +213,15 @@ const NewPost = () => {
       if (images.length === 0) {
         alert("You haven't uploaded an image");
         return;
+      }
+      if (user.requireAltText) {
+        const missingAlt = images.some((img) => !img.altText || img.altText.trim() === '');
+        if (missingAlt) {
+          alert(
+            "One or more images are missing alt text. Please make sure that you've added alt text to all images."
+          );
+          return;
+        }
       }
     }
     if (postType === 'link') {
@@ -499,6 +511,7 @@ const NewPost = () => {
                           body: JSON.stringify({ altText }),
                         });
                       }}
+                      requiresAltText={user.requireAltText}
                     />
                   ))}
                 {!isEditPost && !(post && post.deletedContent) && (

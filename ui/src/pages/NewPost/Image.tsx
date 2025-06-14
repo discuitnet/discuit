@@ -9,10 +9,17 @@ export interface ImageProps {
   image: ServerImage;
   onClose: () => void;
   disabled?: boolean;
+  requiresAltText: boolean;
   onAltTextSave: (altText: string) => void;
 }
 
-const Image = ({ image, onClose, disabled = false, onAltTextSave }: ImageProps) => {
+const Image = ({
+  image,
+  onClose,
+  disabled = false,
+  requiresAltText,
+  onAltTextSave,
+}: ImageProps) => {
   const { width, height } = image;
   const windowWidth = useWindowWidth();
 
@@ -31,6 +38,8 @@ const Image = ({ image, onClose, disabled = false, onAltTextSave }: ImageProps) 
     imgHeight = Math.floor(scale * height);
 
   const [altText, setAltText] = useState(image.altText || '');
+  const missingAltText = requiresAltText ? altText.trim().length <= 0 : false;
+
   useEffect(() => {
     setAltText(image.altText || '');
   }, [image.altText]);
@@ -58,8 +67,8 @@ const Image = ({ image, onClose, disabled = false, onAltTextSave }: ImageProps) 
       {/* alt text input */}
       {!disabled && (
         <Textarea
-          className="page-new-image-alt"
-          placeholder="Describe this image (alt text)…"
+          className={`page-new-image-alt${missingAltText ? ' is-error' : ''}`}
+          placeholder={'Describe this image (alt text)…'}
           value={altText}
           onChange={(e) => setAltText(e.target.value)}
           onBlur={() => {

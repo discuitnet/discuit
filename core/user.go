@@ -129,6 +129,7 @@ type User struct {
 	RememberFeedSort        bool     `json:"rememberFeedSort"`
 	EmbedsOff               bool     `json:"embedsOff"`
 	HideUserProfilePictures bool     `json:"hideUserProfilePictures"`
+	RequireAltText          bool     `json:"requireAltText"`
 
 	WelcomeNotificationSent bool `json:"-"`
 
@@ -246,6 +247,7 @@ func buildSelectUserQuery(where string) string {
 		"users.embeds_off",
 		"users.hide_user_profile_pictures",
 		"users.welcome_notification_sent",
+		"users.require_alt_text",
 	}
 	cols = append(cols, images.ImageColumns("pro_pic")...)
 	joins := []string{
@@ -348,6 +350,7 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 			&u.EmbedsOff,
 			&u.HideUserProfilePictures,
 			&u.WelcomeNotificationSent,
+			&u.RequireAltText,
 		}
 
 		proPic := &images.Image{}
@@ -635,7 +638,8 @@ func (u *User) Update(ctx context.Context, db *sql.DB) error {
 		home_feed = ?,
 		remember_feed_sort = ?,
 		embeds_off = ?,
-		hide_user_profile_pictures = ?
+		hide_user_profile_pictures = ?,
+		require_alt_text = ?
 	WHERE id = ?`,
 		u.EmailPublic,
 		u.About,
@@ -645,6 +649,7 @@ func (u *User) Update(ctx context.Context, db *sql.DB) error {
 		u.RememberFeedSort,
 		u.EmbedsOff,
 		u.HideUserProfilePictures,
+		u.RequireAltText,
 		u.ID)
 	return err
 }
