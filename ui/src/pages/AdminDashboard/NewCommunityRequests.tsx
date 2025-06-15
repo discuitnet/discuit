@@ -15,8 +15,6 @@ import { useLoading } from '../../hooks';
 import { loginPromptToggled, snackAlert, snackAlertError } from '../../slices/mainSlice';
 import { ButtonClose } from '../../components/Button';
 
-
-
 interface CommunityRequest {
   id: number;
   byUser: string;
@@ -29,23 +27,12 @@ interface CommunityRequest {
   deniedAt: Date | null;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-
 interface StatusCellProps {
   initialStatus: string;
   item: CommunityRequest;
 }
 
 /*
-initial state is easy to populate from item
-state only needs to change after interacting with the modal
-- if there is an error message from the server saying it was already denied, can populate with generic message saying that (no endpoint to extract specific
-  request record, but the error message can be modified to do that)
-- if the denial was succesfully sent (use the request details to populate info)
-
-Therefore, the DenyCommunityButton needs to be able to be monitored by its parent, StatusCell
 
 Can have code for all three possible states but only show one?
 
@@ -53,30 +40,11 @@ useState should handle that?
 
 list of valid request statuses used to validate?
 
-(... as any), comments on usage?
-
-overuse of closure?
-*/
-////////////////// need to change the cell's state somehow after successful denial submit or error of previously denied
-
-////////////// service worker's refresh is closing the modal?
-
-/////////////// the other admin pages do seem to have a refresh too... just use a global modal?
-
-/*
-timer of 5 seconds in app.tsx:
-useEffect(() => {
-    if (loggedIn) {
-
-is causing the modal to disappear
-* is the global state changing somehow
-* if it is the global state, then getting a new notification will make the modal disappear?
-* why isn't the create community modal disappearing?
 
 */
+
 
 const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
-  ////// this needs to be nested in statuscell so its state can be updated?
   interface DenyCommunityButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     isMobile?: boolean;
     item: CommunityRequest;
@@ -92,12 +60,7 @@ const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
     const dispatch = useDispatch();
     const [open, setOpen] = useState(false);
     const handleClose = () => setOpen(false);
-    const [formError, setFormError] = useState('');
     const [note, handleNoteChange] = useInputMaxLength(declineCommNoteMaxLength);
-
-    useEffect(() => {
-      setFormError('');
-    }, [note]);
 
     const handleButtonClick = () => {
       if (user === null) {
@@ -108,28 +71,22 @@ const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
     };
 
     const handleSubmit = async () => {
-      if (note.length < 10) {
-        ////////////////// check length in backend? set default message for decline?
-        alert('Type at least 10 characters for community denial message.');
-        return;
-      }
       try {
         const res = await mfetch(`/api/_admin`, {
           method: 'POST',
           body: JSON.stringify({
-            action: 'deny_comm', name: item.byUser, id: item.id, body: note, deniedBy: (user as any).username 
+            action: 'deny_comm', name: item.byUser, id: item.id, body: defaultMessage + (note ? '<br />' + note : ''), deniedBy: (user as any).username 
           }),
         });
         if (res.ok) {
           dispatch(snackAlert('Denial alert sent.'));
-          /////////////////////////////// nuke the button and replace it with denial text
-          //setCurrentStatus('denied_now');
+          setCurrentStatus('denied_now');
           handleClose();
         } else {
           const error = await res.json();
           dispatch(snackAlert(error.message));
           if (error.code == 'already_denied') {
-            //setCurrentStatus('denied_prev');
+            setCurrentStatus('denied_prev');
           }
         }
       } catch (error) {
@@ -137,7 +94,7 @@ const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
       }
     };
 
-    const defaultMessage = `Your request for ${item.communityName} has been declined.`;
+    const defaultMessage = `Your request for +${item.communityName} has been declined.`;
     return (
       <>
         <Modal open={open} onClose={handleClose}>
@@ -147,7 +104,7 @@ const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
               <ButtonClose onClick={handleClose} />
             </div>
             <div className="form modal-card-content flex-column inner-gap-1">
-              <FormField label="Additional note to user" description={`Default: <b>${defaultMessage}</b>`}>
+              <FormField label="Add additional text to default notification:" description={`${defaultMessage}`}>
                 <InputWithCount
                   value={note}
                   onChange={handleNoteChange}
@@ -158,11 +115,6 @@ const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
                   autoFocus
                 />
               </FormField>
-              {formError !== '' && (
-                <div className="form-field">
-                  <div className="form-error text-center">{formError}</div>
-                </div>
-              )}
               <FormField>
                 <button className="button-main" onClick={handleSubmit} style={{ width: '100%' }}>
                   Send
@@ -178,9 +130,7 @@ const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
     );
   };
 
-  var currentStatus = initialStatus;
-//  const [currentStatus, setCurrentStatus] = useState(initialStatus);
-//  console.log("In statuscell; current status", currentStatus, item.communityName)
+  const [currentStatus, setCurrentStatus] = useState(initialStatus);
   if (currentStatus == 'created') {
     return ('Created.');
   } else if (currentStatus == 'denied') {
@@ -203,10 +153,7 @@ const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
   }
 }
 
-const M = memo(StatusCell);
-
-
-////////////////////////////////////////clean up " vs ' ////////////////////////////////////////////////////
+const MemoStatusCell = memo(StatusCell);
 
 export default function NewCommunityRequests() {
   const [requests, setRequests] = useState<CommunityRequest[] | null>(null);
@@ -243,18 +190,13 @@ export default function NewCommunityRequests() {
     const elProps = {
       to: item.communityExists ? `/${item.communityName}` : '',
     };
-    ////////////////////// this is causing too many renders, because setting the state rerenders?
-    //const [reqStatus, setReqStatus] = useState('');
     var initialStatus = '';
     if (item.communityExists) {
       initialStatus = 'created';
-      //setReqStatus('created');
     } else if (item.deniedAt) {
       initialStatus = 'denied';
-      //setReqStatus('denied');
     } else if (!item.communityExists && !item.deniedAt) {
       initialStatus = 'pending';
-      //setReqStatus('pending');
     }
     return (
       <TableRow columns={5}>
@@ -267,7 +209,7 @@ export default function NewCommunityRequests() {
         </div>
         <div className="table-column">{item.note}</div>
         <div className="table-column">
-          <M initialStatus={initialStatus} item={item} />
+          <MemoStatusCell initialStatus={initialStatus} item={item} />
         </div>
       </TableRow>
     );

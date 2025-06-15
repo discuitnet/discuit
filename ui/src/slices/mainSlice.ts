@@ -650,7 +650,6 @@ export const createCommunityModalOpened = (open = true) => {
 };
 
 export const showAppInstallButton = (show: boolean, deferredPrompt?: Event) => {
-
   return {
     type: 'main/appInstallButtonUpdate',
     payload: {

@@ -2,6 +2,7 @@ package server
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -105,6 +106,10 @@ func (s *Server) adminActions(w *responseWriter, r *request) error {
 			return err
 		}
 	case "deny_comm":
+		id, ok := reqBody["id"].(float64)
+		if !ok {
+			return invalidJSONErr
+		}
 		name, ok := reqBody["name"].(string)
 		if !ok {
 			return invalidJSONErr
@@ -112,15 +117,6 @@ func (s *Server) adminActions(w *responseWriter, r *request) error {
 		user, err := core.GetUserByUsername(r.ctx, s.db, name, r.viewer)
 		if err != nil {
 			return err
-		}
-		id, ok := reqBody["id"].(float64)
-		if !ok {
-			return invalidJSONErr
-		}
-		///////////////////// should do a length check here
-		body, ok := reqBody["body"].(string)
-		if !ok {
-			body = ""
 		}
 		deniedBy, ok := reqBody["deniedBy"].(string)
 		if !ok {
@@ -130,7 +126,8 @@ func (s *Server) adminActions(w *responseWriter, r *request) error {
 			return httperr.NewBadRequest("invalid_admin", "Logged-in admin name doesn't match denial name.")
 		}
 		var deniedAt msql.NullTime
-		if err := s.db.QueryRowContext(r.ctx, "SELECT denied_at from community_requests where id = ?", id).Scan(&deniedAt); err != nil {
+		var commName string
+		if err := s.db.QueryRowContext(r.ctx, "SELECT community_name, denied_at from community_requests where id = ?", id).Scan(&commName, &deniedAt); err != nil {
 			if err != sql.ErrNoRows {
 				return err
 			}
@@ -140,6 +137,11 @@ func (s *Server) adminActions(w *responseWriter, r *request) error {
 		if deniedAt.Valid {
 			return httperr.NewBadRequest("already_denied", "Community was already denied.")
 		}
+		body, ok := reqBody["body"].(string)
+		if !ok || body == "" {
+			body = fmt.Sprintf("Your request for +%s has been declined.", commName)
+		}
+
 		if _, err := s.db.ExecContext(r.ctx,
 			"UPDATE community_requests SET denied_note = ?, denied_by = ?, denied_at = ? WHERE id = ?",
 			body, deniedBy, time.Now(), id); err != nil {
