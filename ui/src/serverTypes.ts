@@ -225,7 +225,8 @@ export interface Notification {
     | NotificationModAdd
     | NotificationNewBadge
     | NotificationWelcome
-    | NotificationAnnouncement;
+    | NotificationAnnouncement
+    | NotificationDeniedCommunity;
   seen: boolean;
   seenAt: string | null; // A datetime.
   createdAt: string; // A datetime.
@@ -286,6 +287,10 @@ export interface NotificationAnnouncement {
   postId: string;
   post: Post;
   community: Community;
+}
+
+export interface NotificationDeniedCommunity {
+  body: string;
 }
 
 export type TextFormat = 'html' | 'md';

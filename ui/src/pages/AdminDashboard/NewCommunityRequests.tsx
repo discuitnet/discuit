@@ -28,11 +28,10 @@ interface CommunityRequest {
 }
 
 interface StatusCellProps {
-  initialStatus: string;
   item: CommunityRequest;
 }
 
-const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
+const StatusCell = ({item}: StatusCellProps) => {
   interface DenyCommunityButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     isMobile?: boolean;
     item: CommunityRequest;
@@ -98,7 +97,7 @@ const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
                   onChange={handleNoteChange}
                   textarea
                   rows={4}
-                  maxLength={declineCommNoteMaxLength - defaultMessage.length - 1}
+                  maxLength={declineCommNoteMaxLength}
                   style={{ marginBottom: '0' }}
                   autoFocus
                 />
@@ -118,16 +117,18 @@ const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
     );
   };
 
-  const [currentStatus, setCurrentStatus] = useState(initialStatus);
-  if (currentStatus == 'created') {
-    return ('Created.');
-  } else if (currentStatus == 'denied') {
-    return (`Denied by ${item.deniedBy} at ${(item.deniedAt as any).toLocaleString()} because: ${item.deniedNote}`);
-  } else if (currentStatus == 'denied_now') {
+  const [currentStatus, setCurrentStatus] = useState('');
+  // ordering matters here: must check the textual currentStatus first since checking the item attributes first
+  // means they will trigger and the state-linked denied_now and denied_prev cases will never trigger
+  if (currentStatus == 'denied_now') {
     return ('You just denied this request.');
   } else if (currentStatus == 'denied_prev') {
     return ('Someone else denied this request.');
-  } else if (currentStatus == 'pending') {
+  } else if (item.communityExists) {
+    return ('Created.');
+  } else if (item.deniedAt) {
+    return (`Denied by ${item.deniedBy} at ${(item.deniedAt as any).toLocaleString()} because: ${item.deniedNote}`);
+  } else if (!item.communityExists && !item.deniedAt) {
     return (
       <DenyCommunityButton
         className={"button button-main home-btn-new-post"}
@@ -171,21 +172,11 @@ export default function NewCommunityRequests() {
     return <PageLoading />;
   }
 
-
   const handleRenderItem = (item: CommunityRequest) => {
-
     const El = item.communityExists ? Link : 'div';
     const elProps = {
       to: item.communityExists ? `/${item.communityName}` : '',
     };
-    var initialStatus = '';
-    if (item.communityExists) {
-      initialStatus = 'created';
-    } else if (item.deniedAt) {
-      initialStatus = 'denied';
-    } else if (!item.communityExists && !item.deniedAt) {
-      initialStatus = 'pending';
-    }
     return (
       <TableRow columns={5}>
         <div className="table-column">{item.createdAt.toLocaleString()}</div>
@@ -197,7 +188,7 @@ export default function NewCommunityRequests() {
         </div>
         <div className="table-column">{item.note}</div>
         <div className="table-column">
-          <MemoStatusCell initialStatus={initialStatus} item={item} />
+          <MemoStatusCell item={item} />
         </div>
       </TableRow>
     );
@@ -219,7 +210,6 @@ export default function NewCommunityRequests() {
   requests?.forEach((req) => feedItems.push({ item: req, key: req.id.toString() }));
 
   return (
-    <>
     <div className="dashboard-page-requests document">
       <div className="dashboard-page-title">New community requests</div>
       <div className="dashboard-page-content">
@@ -231,6 +221,5 @@ export default function NewCommunityRequests() {
         />
       </div>
     </div>
-    </>
   );
 }
