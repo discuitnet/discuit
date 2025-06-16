@@ -32,18 +32,6 @@ interface StatusCellProps {
   item: CommunityRequest;
 }
 
-/*
-
-Can have code for all three possible states but only show one?
-
-useState should handle that?
-
-list of valid request statuses used to validate?
-
-
-*/
-
-
 const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
   interface DenyCommunityButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     isMobile?: boolean;
@@ -75,7 +63,7 @@ const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
         const res = await mfetch(`/api/_admin`, {
           method: 'POST',
           body: JSON.stringify({
-            action: 'deny_comm', name: item.byUser, id: item.id, body: defaultMessage + (note ? '<br />' + note : ''), deniedBy: (user as any).username 
+            action: 'deny_comm', id: item.id, body: defaultMessage + (note ? ' ' + note : '')
           }),
         });
         if (res.ok) {
@@ -110,7 +98,7 @@ const StatusCell = ({initialStatus = '', item}: StatusCellProps) => {
                   onChange={handleNoteChange}
                   textarea
                   rows={4}
-                  maxLength={declineCommNoteMaxLength}
+                  maxLength={declineCommNoteMaxLength - defaultMessage.length - 1}
                   style={{ marginBottom: '0' }}
                   autoFocus
                 />
@@ -214,7 +202,6 @@ export default function NewCommunityRequests() {
       </TableRow>
     );
   };
-  //          <StatusCell status={reqStatus} />
 
   const handleRenderHead = () => {
     return (
@@ -230,7 +217,7 @@ export default function NewCommunityRequests() {
 
   const feedItems: SimpleFeedItem<CommunityRequest>[] = [];
   requests?.forEach((req) => feedItems.push({ item: req, key: req.id.toString() }));
-// why is button not showing unless class is removed?  className="button-main "
+
   return (
     <>
     <div className="dashboard-page-requests document">

@@ -1334,7 +1334,7 @@ func CreateCommunityRequest(ctx context.Context, db *sql.DB, byUser, name, note 
 	_, err = db.ExecContext(ctx, "INSERT INTO community_requests (by_user, community_name, community_name_lc, note) VALUES (?, ?, ?, ?)",
 		byUser, name, strings.ToLower(name), note)
 	if err != nil && msql.IsErrDuplicateErr(err) {
-		return httperr.NewForbidden("previously-declined", "Your request for this community was declined before.")
+		return httperr.NewForbidden("previously-declined", "Your request for this community is pending or was declined before.")
 	}
 	return err
 }

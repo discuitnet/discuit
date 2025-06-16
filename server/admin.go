@@ -10,6 +10,7 @@ import (
 	"github.com/discuitnet/discuit/core/sitesettings"
 	"github.com/discuitnet/discuit/internal/httperr"
 	msql "github.com/discuitnet/discuit/internal/sql"
+	"github.com/discuitnet/discuit/internal/utils"
 )
 
 // getLoggedInAdmin returns the logged in admin, if the
@@ -110,24 +111,9 @@ func (s *Server) adminActions(w *responseWriter, r *request) error {
 		if !ok {
 			return invalidJSONErr
 		}
-		name, ok := reqBody["name"].(string)
-		if !ok {
-			return invalidJSONErr
-		}
-		user, err := core.GetUserByUsername(r.ctx, s.db, name, r.viewer)
-		if err != nil {
-			return err
-		}
-		deniedBy, ok := reqBody["deniedBy"].(string)
-		if !ok {
-			return err
-		}
-		if deniedBy != admin.Username {
-			return httperr.NewBadRequest("invalid_admin", "Logged-in admin name doesn't match denial name.")
-		}
 		var deniedAt msql.NullTime
-		var commName string
-		if err := s.db.QueryRowContext(r.ctx, "SELECT community_name, denied_at from community_requests where id = ?", id).Scan(&commName, &deniedAt); err != nil {
+		var commName, byUser string
+		if err := s.db.QueryRowContext(r.ctx, "SELECT community_name, by_user, denied_at from community_requests where id = ?", id).Scan(&commName, &byUser, &deniedAt); err != nil {
 			if err != sql.ErrNoRows {
 				return err
 			}
@@ -137,14 +123,18 @@ func (s *Server) adminActions(w *responseWriter, r *request) error {
 		if deniedAt.Valid {
 			return httperr.NewBadRequest("already_denied", "Community was already denied.")
 		}
+		user, err := core.GetUserByUsername(r.ctx, s.db, byUser, r.viewer)
+		if err != nil {
+			return err
+		}
 		body, ok := reqBody["body"].(string)
 		if !ok || body == "" {
 			body = fmt.Sprintf("Your request for +%s has been declined.", commName)
 		}
-
+		body = utils.TruncateUnicodeString(body, 500)
 		if _, err := s.db.ExecContext(r.ctx,
 			"UPDATE community_requests SET denied_note = ?, denied_by = ?, denied_at = ? WHERE id = ?",
-			body, deniedBy, time.Now(), id); err != nil {
+			body, admin.Username, time.Now(), id); err != nil {
 			return err
 		}
 		if err = core.CreateDeniedCommNotification(r.ctx, s.db, user.ID, body); err != nil {
