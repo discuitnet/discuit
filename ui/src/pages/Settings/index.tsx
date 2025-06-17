@@ -382,7 +382,7 @@ const Settings = () => {
           <FormField className="is-preference is-switch">
             <Checkbox
               variant="switch"
-              label="Require alt text when posting"
+              label="Require alt text when posting images"
               checked={requireAltText}
               onChange={(e) => setRequireAltText(e.target.checked)}
             />

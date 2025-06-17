@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ButtonClose } from '../../components/Button';
 import Img from '../../components/Image';
@@ -67,7 +68,7 @@ const Image = ({
       {/* alt text input */}
       {!disabled && (
         <Textarea
-          className={`page-new-image-alt${missingAltText ? ' is-error' : ''}`}
+          className={clsx('page-new-image-alt', missingAltText && 'is-error')}
           placeholder={'Describe this image (alt text)…'}
           value={altText}
           onChange={(e) => setAltText(e.target.value)}

@@ -186,11 +186,12 @@ const NewPost = () => {
     }
   };
 
-  const missingAlt =
-    user.requireAltText && images.some((img) => !img.altText || img.altText.trim() === '');
+  const isAltMissing = () => {
+    return user.requireAltText && images.some((img) => !img.altText || img.altText.trim() === '');
+  };
 
   const [_isSubmitDisabled, setIsSubmitting] = useState(false);
-  const isSubmitDisabled = _isSubmitDisabled || isUploading || isPostingDisabled || missingAlt;
+  const isSubmitDisabled = _isSubmitDisabled || isUploading || isPostingDisabled || isAltMissing();
   const handleSubmit = async () => {
     if (isSubmitDisabled) return;
     if (isBanned) {
@@ -215,8 +216,7 @@ const NewPost = () => {
         return;
       }
       if (user.requireAltText) {
-        const missingAlt = images.some((img) => !img.altText || img.altText.trim() === '');
-        if (missingAlt) {
+        if (isAltMissing()) {
           alert(
             "One or more images are missing alt text. Please make sure that you've added alt text to all images."
           );
