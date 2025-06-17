@@ -64,6 +64,7 @@ const Settings = () => {
   const [showUserProfilePictures, setShowUserProfilePictures] = useState(
     !user.hideUserProfilePictures
   );
+  const [requireAltText, setRequireAltText] = useState(user.requireAltText);
 
   const fontOptions = {
     custom: 'Custom', // value -> display name
@@ -88,6 +89,7 @@ const Settings = () => {
     showUserProfilePictures,
     font,
     infiniteScrollingDisabed,
+    requireAltText,
   ]);
 
   const applicationServerKey = useSelector<RootState>(
@@ -150,6 +152,7 @@ const Settings = () => {
           embedsOff: !enableEmbeds,
           email,
           hideUserProfilePictures: !showUserProfilePictures,
+          requireAltText,
         }),
       });
       dispatch(userLoggedIn(ruser));
@@ -374,6 +377,14 @@ const Settings = () => {
               label="Show user profile pictures"
               checked={showUserProfilePictures}
               onChange={(e) => setShowUserProfilePictures(e.target.checked)}
+            />
+          </FormField>
+          <FormField className="is-preference is-switch">
+            <Checkbox
+              variant="switch"
+              label="Require alt text when posting images"
+              checked={requireAltText}
+              onChange={(e) => setRequireAltText(e.target.checked)}
             />
           </FormField>
         </FormSection>
