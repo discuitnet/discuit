@@ -1373,3 +1373,43 @@ func DeleteCommunityRequest(ctx context.Context, db *sql.DB, id int) error {
 	_, err := db.ExecContext(ctx, "UPDATE community_requests SET deleted_at = ? WHERE id = ?", time.Now(), id)
 	return err
 }
+
+func DenyCommunityRequest(ctx context.Context, db *sql.DB, requestID int, deniedNote string, admin *User) error {
+	var (
+		deniedAt         msql.NullTime
+		commName, byUser string
+	)
+	if err := db.QueryRowContext(ctx, "SELECT community_name, by_user, denied_at from community_requests where id = ?", requestID).Scan(&commName, &byUser, &deniedAt); err != nil {
+		if err != sql.ErrNoRows {
+			return err
+		}
+		return httperr.NewBadRequest("invalid_id", "Invalid community request ID.")
+	}
+
+	if deniedAt.Valid {
+		return httperr.NewBadRequest("already_denied", "Community was already denied.")
+	}
+
+	user, err := GetUserByUsername(ctx, db, byUser, nil)
+	if err != nil {
+		return err
+	}
+
+	if deniedNote == "" {
+		deniedNote = fmt.Sprintf("Your request for +%s has been declined.", commName)
+	} else {
+		deniedNote = utils.TruncateUnicodeString(deniedNote, 500)
+	}
+
+	if _, err := db.ExecContext(ctx,
+		"UPDATE community_requests SET denied_note = ?, denied_by = ?, denied_at = ? WHERE id = ?",
+		deniedNote, admin.Username, time.Now(), requestID); err != nil {
+		return err
+	}
+
+	if err = CreateDeniedCommNotification(ctx, db, user.ID, deniedNote); err != nil {
+		return err
+	}
+
+	return nil
+}
