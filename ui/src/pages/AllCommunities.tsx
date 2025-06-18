@@ -242,11 +242,8 @@ const RequestCommunityButton = ({
         dispatch(snackAlert('Requested!'));
         handleClose();
       } else {
-        if (res.status === 409) {
-          setFormError('A community by that name already exists');
-        } else {
-          throw new Error(await res.text());
-        }
+          const error = await res.json();
+          dispatch(snackAlert(error.message));
       }
     } catch (error) {
       dispatch(snackAlertError(error));

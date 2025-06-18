@@ -1313,6 +1313,9 @@ type CommunityRequest struct {
 	CommunityExists bool            `json:"communityExists"`
 	Note            msql.NullString `json:"note"`
 	CreatedAt       time.Time       `json:"createdAt"`
+	DeniedNote      msql.NullString `json:"deniedNote"`
+	DeniedBy        msql.NullString `json:"deniedBy"`
+	DeniedAt        msql.NullTime   `json:"deniedAt"`
 }
 
 func CreateCommunityRequest(ctx context.Context, db *sql.DB, byUser, name, note string) error {
@@ -1331,14 +1334,14 @@ func CreateCommunityRequest(ctx context.Context, db *sql.DB, byUser, name, note 
 	_, err = db.ExecContext(ctx, "INSERT INTO community_requests (by_user, community_name, community_name_lc, note) VALUES (?, ?, ?, ?)",
 		byUser, name, strings.ToLower(name), note)
 	if err != nil && msql.IsErrDuplicateErr(err) {
-		return nil
+		return httperr.NewForbidden("previously-declined", "Your request for this community is pending or was declined before.")
 	}
 	return err
 }
 
 func GetCommunityRequests(ctx context.Context, db *sql.DB) ([]*CommunityRequest, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT cr.id, cr.by_user, cr.community_name, cr.note, cr.created_at, c.id IS NOT NULL
+		SELECT cr.id, cr.by_user, cr.community_name, cr.note, cr.created_at, c.id IS NOT NULL, cr.denied_note, cr.denied_by, cr.denied_at
 		FROM community_requests AS cr 
 		LEFT JOIN communities AS c ON cr.community_name_lc = c.name_lc 
 		WHERE cr.created_at >  SUBDATE(NOW(), 90)
@@ -1352,7 +1355,8 @@ func GetCommunityRequests(ctx context.Context, db *sql.DB) ([]*CommunityRequest,
 	requests := []*CommunityRequest{}
 	for rows.Next() {
 		r := &CommunityRequest{}
-		if err := rows.Scan(&r.ID, &r.ByUser, &r.CommunityName, &r.Note, &r.CreatedAt, &r.CommunityExists); err != nil {
+		if err := rows.Scan(&r.ID, &r.ByUser, &r.CommunityName, &r.Note, &r.CreatedAt, &r.CommunityExists,
+			&r.DeniedNote, &r.DeniedBy, &r.DeniedAt); err != nil {
 			return nil, err
 		}
 		requests = append(requests, r)
@@ -1368,4 +1372,44 @@ func GetCommunityRequests(ctx context.Context, db *sql.DB) ([]*CommunityRequest,
 func DeleteCommunityRequest(ctx context.Context, db *sql.DB, id int) error {
 	_, err := db.ExecContext(ctx, "UPDATE community_requests SET deleted_at = ? WHERE id = ?", time.Now(), id)
 	return err
+}
+
+func DenyCommunityRequest(ctx context.Context, db *sql.DB, requestID int, deniedNote string, admin *User) error {
+	var (
+		deniedAt         msql.NullTime
+		commName, byUser string
+	)
+	if err := db.QueryRowContext(ctx, "SELECT community_name, by_user, denied_at from community_requests where id = ?", requestID).Scan(&commName, &byUser, &deniedAt); err != nil {
+		if err != sql.ErrNoRows {
+			return err
+		}
+		return httperr.NewBadRequest("invalid_id", "Invalid community request ID.")
+	}
+
+	if deniedAt.Valid {
+		return httperr.NewBadRequest("already_denied", "Community was already denied.")
+	}
+
+	user, err := GetUserByUsername(ctx, db, byUser, nil)
+	if err != nil {
+		return err
+	}
+
+	if deniedNote == "" {
+		deniedNote = fmt.Sprintf("Your request for +%s has been declined.", commName)
+	} else {
+		deniedNote = utils.TruncateUnicodeString(deniedNote, 500)
+	}
+
+	if _, err := db.ExecContext(ctx,
+		"UPDATE community_requests SET denied_note = ?, denied_by = ?, denied_at = ? WHERE id = ?",
+		deniedNote, admin.Username, time.Now(), requestID); err != nil {
+		return err
+	}
+
+	if err = CreateDeniedCommNotification(ctx, db, user.ID, deniedNote); err != nil {
+		return err
+	}
+
+	return nil
 }

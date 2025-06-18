@@ -159,7 +159,7 @@
         @include mixins.tablet {
             &.is-menu-visible {
                 display: flex;
-                background: #fff;
+                background: var(--color-bg);
                 left: 0;
                 right: 0;
                 width: auto;

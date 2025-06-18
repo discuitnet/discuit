@@ -27,7 +27,7 @@ func getLoggedInAdmin(db *sql.DB, r *request) (*core.User, error) {
 
 // /api/_admin [POST]
 func (s *Server) adminActions(w *responseWriter, r *request) error {
-	_, err := getLoggedInAdmin(s.db, r)
+	admin, err := getLoggedInAdmin(s.db, r)
 	if err != nil {
 		return err
 	}
@@ -100,6 +100,18 @@ func (s *Server) adminActions(w *responseWriter, r *request) error {
 			return err
 		}
 		if err = comm.SetDefault(r.ctx, s.db, action == "add_default_forum"); err != nil {
+			return err
+		}
+	case "deny_comm":
+		id, ok := reqBody["id"].(float64)
+		if !ok {
+			return invalidJSONErr
+		}
+		body, ok := reqBody["body"].(string)
+		if !ok {
+			return invalidJSONErr
+		}
+		if err := core.DenyCommunityRequest(r.ctx, s.db, int(id), body, admin); err != nil {
 			return err
 		}
 	default:

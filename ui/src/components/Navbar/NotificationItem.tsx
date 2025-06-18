@@ -41,6 +41,9 @@ const NotificationItem = ({ notification, ...rest }: NotificationItemProps) => {
   const handleClick = (event: React.MouseEvent, to: string) => {
     event.preventDefault();
     const target = event.target as Node | null;
+    if (to === '#') {
+      return;
+    }
     if (
       actionsRef.current &&
       !actionsRef.current.contains(target) &&
