@@ -506,6 +506,11 @@ func CreateNotification(ctx context.Context, db *sql.DB, user uid.ID, Type Notif
 	}
 
 	sendPushNotif := func() {
+		dummy := Notification{Type: Type}
+		if !dummy.CanSendPushNotification() {
+			// Save a DB call thusly.
+			return
+		}
 		notif, err := GetNotification(ctx, db, strconv.Itoa(int(lastID)), false, "")
 		if err != nil {
 			log.Println("Error getting notification (CreateNotification)", err)
@@ -643,10 +648,18 @@ func (n *Notification) Update(ctx context.Context) error {
 	return nil
 }
 
+func (n *Notification) CanSendPushNotification() bool {
+	// Warning: Never allow notifications of type NotificationTypeDeniedComm to
+	// send push notifications, because doing so will send a push notification
+	// with a url of '#', which will cause the PWA to crash when the user clicks
+	// on that push notification.
+	return !(n.Type == NotificationTypeUpvote || n.Type == NotificationTypeDeniedComm)
+}
+
 // SendPushNotification sends the notification to all matching sessions. Call
 // EnablePushNotifications before any calls to this method.
 func (n *Notification) SendPushNotification(ctx context.Context) error {
-	if n.Type == NotificationTypeUpvote { // no push notifications for upvotes, for the moment
+	if !n.CanSendPushNotification() {
 		return nil
 	}
 
