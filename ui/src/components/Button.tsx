@@ -206,7 +206,7 @@ export const ButtonNotifications = ({
       icon={<SVGNotification variant={iconVariant} />}
       {...props}
     >
-      {count > 0 && <span className="notifications-count">{count}</span>}
+      <span className={clsx('notifications-count', count > 0 && 'is-visible')}>{count}</span>
     </Button>
   );
 };

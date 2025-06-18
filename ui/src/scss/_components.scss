@@ -152,6 +152,10 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        visibility: hidden;
+        &.is-visible {
+            visibility: visible;
+        }
     }
 }
 
