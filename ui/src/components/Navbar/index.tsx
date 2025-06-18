@@ -54,8 +54,14 @@ const Navbar = ({ offline = false }: { offline?: boolean }) => {
 
   // Auto-hide the navbar when scrolling down (only on mobile).
   const recentLocationChange = useRef(false);
+  const topNavbarAutohideDisabled = useSelector<RootState>(
+    (state) => state.main.topNavbarAutohideDisabled
+  ) as boolean;
   useLayoutEffect(() => {
-    if (!isMobile) {
+    if (!isMobile || topNavbarAutohideDisabled) {
+      if (navbarRef.current) {
+        navbarRef.current.style.transform = `translateY(0)`;
+      }
       return;
     }
     let prevScrollY = window.scrollY;
@@ -91,24 +97,37 @@ const Navbar = ({ offline = false }: { offline?: boolean }) => {
         }, 210);
       }, 10);
     };
+    let timer: number | null = null;
     const listener = () => {
       const dy = window.scrollY - prevScrollY;
       tdy = tdy + dy;
-      if (tdy > buffer) {
-        setTransform(-1 * navHeight);
-        tdy = buffer;
-      }
       if (tdy < -1 * buffer) {
         setTransform(0);
         tdy = -1 * buffer;
+      } else if (tdy > buffer) {
+        setTransform(-1 * navHeight);
+        tdy = buffer;
       }
       prevScrollY = window.scrollY;
+      if (timer) {
+        window.clearTimeout(timer);
+        timer = null;
+      }
+      // Without this, if you scroll down from (0, 0) and go back to (0, 0)
+      // really fast, the navbar stays hidden, presumably because not enough
+      // scroll events are being fired to run the calculations properly.
+      timer = window.setTimeout(() => {
+        if (window.scrollY <= navHeight) {
+          setTransform(0);
+        }
+        timer = null;
+      }, 200);
     };
     document.addEventListener('scroll', listener);
     return () => {
       document.removeEventListener('scroll', listener);
     };
-  }, [isMobile, navbarRef]);
+  }, [isMobile, navbarRef, topNavbarAutohideDisabled]);
 
   const [bottomNavbarNavigation, setBottomNavbarNavigation] = useState(true);
 

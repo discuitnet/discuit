@@ -84,6 +84,7 @@ export interface MainState {
   allCommunitiesSearchQuery: string;
   imagePostSubmitReqPoints: number;
   linkPostSubmitReqPoints: number;
+  topNavbarAutohideDisabled: boolean;
 }
 
 const initialNotifications = {
@@ -139,6 +140,7 @@ const initialState: MainState = {
   allCommunitiesSearchQuery: '',
   imagePostSubmitReqPoints: 0,
   linkPostSubmitReqPoints: 0,
+  topNavbarAutohideDisabled: getDevicePreference('top_navbar_autohide_disabled') === 'true',
 };
 
 export default function mainReducer(
@@ -488,6 +490,12 @@ export default function mainReducer(
         allCommunitiesSearchQuery: action.payload as string,
       };
     }
+    case 'main/topNavbarAutohideDisabledChanged': {
+      return {
+        ...state,
+        topNavbarAutohideDisabled: action.payload as boolean,
+      };
+    }
     default:
       return state;
   }
@@ -815,4 +823,8 @@ export const allCommunitiesSortChanged = (sort: CommunitiesSort) => {
 
 export const allCommunitiesSearchQueryChanged = (query: string) => {
   return { type: 'main/allCommunitiesSearchQueryChanged', payload: query };
+};
+
+export const topNavbarAutohideDisabledChanged = (disabled: boolean) => {
+  return { type: 'main/topNavbarAutohideDisabledChanged', payload: disabled };
 };

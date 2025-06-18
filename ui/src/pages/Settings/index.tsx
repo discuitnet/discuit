@@ -21,6 +21,7 @@ import {
   settingsChanged,
   snackAlert,
   snackAlertError,
+  topNavbarAutohideDisabledChanged,
   unmuteCommunity,
   unmuteUser,
   userLoggedIn,
@@ -78,6 +79,9 @@ const Settings = () => {
   const [infiniteScrollingDisabed, setInfinitedScrollingDisabled] = useState(
     getDevicePreference('infinite_scrolling_disabled') === 'true'
   );
+  const [topNavbarAutohideDisabled, setTopNavbarAutohideDisabled] = useState(
+    getDevicePreference('top_navbar_autohide_disabled') === 'true'
+  );
 
   const [changed, resetChanged] = useIsChanged([
     aboutMe /*, email*/,
@@ -90,6 +94,7 @@ const Settings = () => {
     font,
     infiniteScrollingDisabed,
     requireAltText,
+    topNavbarAutohideDisabled,
   ]);
 
   const applicationServerKey = useSelector<RootState>(
@@ -140,6 +145,11 @@ const Settings = () => {
     // Save device preferences first:
     setDevicePreference('font', font);
     setDevicePreference('infinite_scrolling_disabled', infiniteScrollingDisabed ? 'true' : 'false');
+    setDevicePreference(
+      'top_navbar_autohide_disabled',
+      topNavbarAutohideDisabled ? 'true' : 'false'
+    );
+    dispatch(topNavbarAutohideDisabledChanged(topNavbarAutohideDisabled));
     try {
       const ruser = await mfetchjson(`/api/_settings?action=updateProfile`, {
         method: 'POST',
@@ -412,6 +422,14 @@ const Settings = () => {
               label="Enable infinite scrolling"
               checked={!infiniteScrollingDisabed}
               onChange={(e) => setInfinitedScrollingDisabled(!e.target.checked)}
+            />
+          </FormField>
+          <FormField className="is-preference is-switch">
+            <Checkbox
+              variant="switch"
+              label="Auto-hide top navbar"
+              checked={!topNavbarAutohideDisabled}
+              onChange={(e) => setTopNavbarAutohideDisabled(!e.target.checked)}
             />
           </FormField>
         </FormSection>
