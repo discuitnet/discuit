@@ -42,7 +42,7 @@ const StatusCell = ({ item }: StatusCellProps) => {
   } else if (item.communityExists) {
     return 'Created.';
   } else if (item.deniedAt) {
-    return `Denied by ${item.deniedBy} at ${Date.parse(item.deniedAt).toLocaleString()} because: ${item.deniedNote}`;
+    return `Denied by ${item.deniedBy} at ${new Date(item.deniedAt).toLocaleString()} because: ${item.deniedNote}`;
   } else if (!item.communityExists && !item.deniedAt) {
     return (
       <DenyCommunityButton
