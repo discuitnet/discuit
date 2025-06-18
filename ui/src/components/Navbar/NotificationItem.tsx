@@ -41,15 +41,15 @@ const NotificationItem = ({ notification, ...rest }: NotificationItemProps) => {
   const handleClick = (event: React.MouseEvent, to: string) => {
     event.preventDefault();
     const target = event.target as Node | null;
-    if (to === '#') {
-      return;
-    }
     if (
       actionsRef.current &&
       !actionsRef.current.contains(target) &&
       !document.querySelector('#modal-root')?.contains(target)
     ) {
       if (!seen) handleMarkAsSeen();
+      if (to === '#') {
+        return;
+      }
       history.push(to, {
         fromNotifications: true,
       });
