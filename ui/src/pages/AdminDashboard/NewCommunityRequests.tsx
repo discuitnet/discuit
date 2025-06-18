@@ -1,19 +1,18 @@
 import { memo, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { declineCommNoteMaxLength } from '../../config';
+import { ButtonClose } from '../../components/Button';
 import { FormField } from '../../components/Form';
 import { InputWithCount, useInputMaxLength } from '../../components/Input';
-import { mfetch } from '../../helper';
 import Modal from '../../components/Modal';
 import PageLoading from '../../components/PageLoading';
-import { RootState } from '../../store';
 import SimpleFeed, { SimpleFeedItem } from '../../components/SimpleFeed';
 import { TableRow } from '../../components/Table';
-import { mfetchjson } from '../../helper';
+import { declineCommNoteMaxLength } from '../../config';
+import { mfetch, mfetchjson } from '../../helper';
 import { useLoading } from '../../hooks';
 import { loginPromptToggled, snackAlert, snackAlertError } from '../../slices/mainSlice';
-import { ButtonClose } from '../../components/Button';
+import { RootState } from '../../store';
 
 interface CommunityRequest {
   id: number;
@@ -24,123 +23,40 @@ interface CommunityRequest {
   createdAt: Date;
   deniedNote: string | null;
   deniedBy: string | null;
-  deniedAt: Date | null;
+  deniedAt: string | null;
 }
 
 interface StatusCellProps {
   item: CommunityRequest;
 }
 
-const StatusCell = ({item}: StatusCellProps) => {
-  interface DenyCommunityButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    isMobile?: boolean;
-    item: CommunityRequest;
-  }
-
-  const DenyCommunityButton = ({
-    children,
-    isMobile = false,
-    item,
-    ...props
-  }: DenyCommunityButtonProps) => {
-    const user = useSelector<RootState>((state) => state.main.user);
-    const dispatch = useDispatch();
-    const [open, setOpen] = useState(false);
-    const handleClose = () => setOpen(false);
-    const [note, handleNoteChange] = useInputMaxLength(declineCommNoteMaxLength);
-
-    const handleButtonClick = () => {
-      if (user === null) {
-        dispatch(loginPromptToggled());
-        return;
-      }
-      setOpen(true);
-    };
-
-    const handleSubmit = async () => {
-      try {
-        const res = await mfetch(`/api/_admin`, {
-          method: 'POST',
-          body: JSON.stringify({
-            action: 'deny_comm', id: item.id, body: defaultMessage + (note ? ' ' + note : '')
-          }),
-        });
-        if (res.ok) {
-          dispatch(snackAlert('Denial alert sent.'));
-          setCurrentStatus('denied_now');
-          handleClose();
-        } else {
-          const error = await res.json();
-          dispatch(snackAlert(error.message));
-          if (error.code == 'already_denied') {
-            setCurrentStatus('denied_prev');
-          }
-        }
-      } catch (error) {
-        dispatch(snackAlertError(error));
-      }
-    };
-
-    const defaultMessage = `Your request for +${item.communityName} has been declined.`;
-    return (
-      <>
-        <Modal open={open} onClose={handleClose}>
-          <div className="modal-card modal-form">
-            <div className="modal-card-head">
-              <div className="modal-card-title">Deny community request</div>
-              <ButtonClose onClick={handleClose} />
-            </div>
-            <div className="form modal-card-content flex-column inner-gap-1">
-              <FormField label="Add additional text to default notification:" description={`${defaultMessage}`}>
-                <InputWithCount
-                  value={note}
-                  onChange={handleNoteChange}
-                  textarea
-                  rows={4}
-                  maxLength={declineCommNoteMaxLength}
-                  style={{ marginBottom: '0' }}
-                  autoFocus
-                />
-              </FormField>
-              <FormField>
-                <button className="button-main" onClick={handleSubmit} style={{ width: '100%' }}>
-                  Send
-                </button>
-              </FormField>
-            </div>
-          </div>
-        </Modal>
-        <button onClick={handleButtonClick} {...props}>
-          {children}
-        </button>
-      </>
-    );
-  };
-
+const StatusCell = ({ item }: StatusCellProps) => {
   const [currentStatus, setCurrentStatus] = useState('');
-  // ordering matters here: must check the textual currentStatus first since checking the item attributes first
-  // means they will trigger and the state-linked denied_now and denied_prev cases will never trigger
-  if (currentStatus == 'denied_now') {
-    return ('You just denied this request.');
-  } else if (currentStatus == 'denied_prev') {
-    return ('Someone else denied this request.');
+  // Ordering matters here: must check the textual currentStatus first since
+  // checking the item attributes first means they will trigger and the
+  // state-linked denied_now and denied_prev cases will never trigger
+  if (currentStatus === 'denied_now') {
+    return 'You just denied this request.';
+  } else if (currentStatus === 'denied_prev') {
+    return 'Someone else denied this request.';
   } else if (item.communityExists) {
-    return ('Created.');
+    return 'Created.';
   } else if (item.deniedAt) {
-    return (`Denied by ${item.deniedBy} at ${(item.deniedAt as any).toLocaleString()} because: ${item.deniedNote}`);
+    return `Denied by ${item.deniedBy} at ${Date.parse(item.deniedAt).toLocaleString()} because: ${item.deniedNote}`;
   } else if (!item.communityExists && !item.deniedAt) {
     return (
       <DenyCommunityButton
-        className={"button button-main home-btn-new-post"}
+        className={'button button-main home-btn-new-post'}
         item={item}
+        setCurrentStatus={setCurrentStatus}
       >
         Deny
       </DenyCommunityButton>
     );
   } else {
-    return ('Request status could not be loaded.');
+    return 'Request status could not be loaded.';
   }
-}
+};
 
 const MemoStatusCell = memo(StatusCell);
 
@@ -155,7 +71,7 @@ export default function NewCommunityRequests() {
         res = res.map((res) => {
           return {
             ...res,
-            createdAt: new Date(res.createdAt),
+            createdAt: new Date(res.createdAt as unknown as string),
           };
         });
         setRequests(res);
@@ -223,3 +139,93 @@ export default function NewCommunityRequests() {
     </div>
   );
 }
+
+interface DenyCommunityButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  setCurrentStatus: (status: string) => void;
+  item: CommunityRequest;
+}
+
+const DenyCommunityButton = ({
+  children,
+  item,
+  setCurrentStatus,
+  ...props
+}: DenyCommunityButtonProps) => {
+  const user = useSelector<RootState>((state) => state.main.user);
+  const dispatch = useDispatch();
+  const [open, setOpen] = useState(false);
+  const handleClose = () => setOpen(false);
+  const [note, handleNoteChange] = useInputMaxLength(declineCommNoteMaxLength);
+
+  const handleButtonClick = () => {
+    if (user === null) {
+      dispatch(loginPromptToggled());
+      return;
+    }
+    setOpen(true);
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const res = await mfetch(`/api/_admin`, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'deny_comm',
+          id: item.id,
+          body: defaultMessage + (note ? ' ' + note : ''),
+        }),
+      });
+      if (res.ok) {
+        dispatch(snackAlert('Denial alert sent.'));
+        setCurrentStatus('denied_now');
+        handleClose();
+      } else {
+        const error = await res.json();
+        dispatch(snackAlert(error.message));
+        if (error.code == 'already_denied') {
+          setCurrentStatus('denied_prev');
+        }
+      }
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    }
+  };
+
+  const defaultMessage = `Your request for +${item.communityName} has been declined.`;
+  return (
+    <>
+      <Modal open={open} onClose={handleClose}>
+        <div className="modal-card modal-form">
+          <div className="modal-card-head">
+            <div className="modal-card-title">Deny community request</div>
+            <ButtonClose onClick={handleClose} />
+          </div>
+          <div className="form modal-card-content flex-column inner-gap-1">
+            <FormField
+              label="Add additional text to default notification:"
+              description={`${defaultMessage}`}
+            >
+              <InputWithCount
+                value={note}
+                onChange={handleNoteChange}
+                textarea
+                rows={4}
+                maxLength={declineCommNoteMaxLength}
+                style={{ marginBottom: '0' }}
+                autoFocus
+              />
+            </FormField>
+            <FormField>
+              <button className="button-main" onClick={handleSubmit} style={{ width: '100%' }}>
+                Send
+              </button>
+            </FormField>
+          </div>
+        </div>
+      </Modal>
+      <button onClick={handleButtonClick} {...props}>
+        {children}
+      </button>
+    </>
+  );
+};
