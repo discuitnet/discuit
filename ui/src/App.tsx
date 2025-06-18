@@ -219,6 +219,8 @@ const App = () => {
     return <AppLoading />;
   }
 
+  const deviceStandalone = isDeviceStandalone();
+
   return (
     <>
       <Helmet
@@ -230,7 +232,7 @@ const App = () => {
       <ScrollToTop />
       <CanonicalTag />
       <Navbar />
-      {isMobile && <BottomNavbar />}
+      {isMobile && deviceStandalone && <BottomNavbar />}
       <AppUpdate />
       <PushNotifications />
       {width <= tabletBreakpoint && <Sidebar mobile />}

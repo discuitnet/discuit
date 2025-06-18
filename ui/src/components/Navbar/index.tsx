@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useLocation } from 'react-router-dom';
 import { clearNotificationsLocalStorage } from '../../PushNotifications';
 import { getGlobalAppData } from '../../appData';
-import { kRound, mfetch, onKeyEnter, stringCount } from '../../helper';
+import { isDeviceStandalone, kRound, mfetch, onKeyEnter, stringCount } from '../../helper';
 import { mobileBreakpointWidth, useTheme, useWindowWidth } from '../../hooks';
 import {
   chatOpenToggled,
@@ -51,6 +51,7 @@ const Navbar = ({ offline = false }: { offline?: boolean }) => {
 
   const windowWidth = useWindowWidth();
   const isMobile = windowWidth <= mobileBreakpointWidth;
+  const deviceStandalone = isDeviceStandalone();
 
   // Auto-hide the navbar when scrolling down (only on mobile).
   const recentLocationChange = useRef(false);
@@ -58,7 +59,7 @@ const Navbar = ({ offline = false }: { offline?: boolean }) => {
     (state) => state.main.topNavbarAutohideDisabled
   ) as boolean;
   useLayoutEffect(() => {
-    if (!isMobile || topNavbarAutohideDisabled) {
+    if (!isMobile || topNavbarAutohideDisabled || !deviceStandalone) {
       if (navbarRef.current) {
         navbarRef.current.style.transform = `translateY(0)`;
       }
@@ -127,7 +128,7 @@ const Navbar = ({ offline = false }: { offline?: boolean }) => {
     return () => {
       document.removeEventListener('scroll', listener);
     };
-  }, [isMobile, navbarRef, topNavbarAutohideDisabled]);
+  }, [isMobile, navbarRef, topNavbarAutohideDisabled, deviceStandalone]);
 
   const [bottomNavbarNavigation, setBottomNavbarNavigation] = useState(true);
 
@@ -142,7 +143,11 @@ const Navbar = ({ offline = false }: { offline?: boolean }) => {
 
   const historyLength = getGlobalAppData().historyLength || 0;
   const renderGoBackNavbar =
-    isMobile && !bottomNavbarNavigation && location.pathname !== '/' && historyLength > 1;
+    isMobile &&
+    deviceStandalone &&
+    !bottomNavbarNavigation &&
+    location.pathname !== '/' &&
+    historyLength > 1;
 
   const dispatch = useDispatch();
 
@@ -261,7 +266,11 @@ const Navbar = ({ offline = false }: { offline?: boolean }) => {
           )}
           {/*<ButtonSearch />*/}
           {loggedIn && (
-            <Link className="is-no-m" to="/notifications" onClick={handleNotifIconClick}>
+            <Link
+              className={clsx(deviceStandalone && 'is-no-m')}
+              to="/notifications"
+              onClick={handleNotifIconClick}
+            >
               <ButtonNotifications count={notifsNewCount} />
             </Link>
           )}

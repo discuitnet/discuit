@@ -12,7 +12,7 @@ import { FormField, FormSection } from '../../components/Form';
 import ImageEditModal from '../../components/ImageEditModal';
 import Input, { Checkbox } from '../../components/Input';
 import CommunityLink from '../../components/PostCard/CommunityLink';
-import { mfetchjson, selectImageCopyURL, validEmail } from '../../helper';
+import { isDeviceStandalone, mfetchjson, selectImageCopyURL, validEmail } from '../../helper';
 import { useIsChanged } from '../../hooks';
 import { Mute, Mutes, MuteType } from '../../serverTypes';
 import {
@@ -137,6 +137,8 @@ const Settings = () => {
     await getNotificationsPermissions(loggedIn, applicationServerKey!);
   };
 
+  const deviceStandalone = isDeviceStandalone();
+
   const handleSave = async () => {
     if (email !== '' && !validEmail(email)) {
       dispatch(snackAlert('Please enter a valid email'));
@@ -145,11 +147,13 @@ const Settings = () => {
     // Save device preferences first:
     setDevicePreference('font', font);
     setDevicePreference('infinite_scrolling_disabled', infiniteScrollingDisabed ? 'true' : 'false');
-    setDevicePreference(
-      'top_navbar_autohide_disabled',
-      topNavbarAutohideDisabled ? 'true' : 'false'
-    );
-    dispatch(topNavbarAutohideDisabledChanged(topNavbarAutohideDisabled));
+    if (deviceStandalone) {
+      setDevicePreference(
+        'top_navbar_autohide_disabled',
+        topNavbarAutohideDisabled ? 'true' : 'false'
+      );
+      dispatch(topNavbarAutohideDisabledChanged(topNavbarAutohideDisabled));
+    }
     try {
       const ruser = await mfetchjson(`/api/_settings?action=updateProfile`, {
         method: 'POST',
@@ -424,14 +428,16 @@ const Settings = () => {
               onChange={(e) => setInfinitedScrollingDisabled(!e.target.checked)}
             />
           </FormField>
-          <FormField className="is-preference is-switch">
-            <Checkbox
-              variant="switch"
-              label="Auto-hide top navbar"
-              checked={!topNavbarAutohideDisabled}
-              onChange={(e) => setTopNavbarAutohideDisabled(!e.target.checked)}
-            />
-          </FormField>
+          {deviceStandalone && (
+            <FormField className="is-preference is-switch">
+              <Checkbox
+                variant="switch"
+                label="Auto-hide top navbar"
+                checked={!topNavbarAutohideDisabled}
+                onChange={(e) => setTopNavbarAutohideDisabled(!e.target.checked)}
+              />
+            </FormField>
+          )}
         </FormSection>
         <FormSection heading="Notifications">
           <FormField className="is-preference is-switch">
