@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"strings"
 	"time"
 )
@@ -282,6 +283,69 @@ func (i *NullBool) UnmarshalJSON(b []byte) error {
 	}
 
 	if err := json.Unmarshal(b, &i.Bool); err != nil {
+		return err
+	}
+
+	i.Valid = true
+	return nil
+}
+
+// NullIP represents a net.IP that may be null.
+// NullIP implements the sql.Scanner interface so it can be used as a scan
+// destination, similar to NullString.
+type NullIP struct {
+	IP    net.IP
+	Valid bool
+}
+
+// NewNullIP returns a NullIP with Valid set to true if t is of type net.IP.
+func NewNullIP(t any) NullIP {
+	var n NullIP
+	if v, ok := t.(net.IP); ok {
+		n.IP = v
+		n.Valid = true
+	}
+	return n
+}
+
+// Scan implements sql.Scanner interface
+func (i *NullIP) Scan(src any) error {
+	switch v := src.(type) {
+	case string:
+		i.IP = net.ParseIP(v)
+		if i.IP != nil {
+			i.Valid = true
+		}
+	case []byte:
+		i.IP = net.ParseIP(string(v))
+		if i.IP != nil {
+			i.Valid = true
+		}
+	case nil:
+		i.IP = nil
+		i.Valid = false
+	default:
+		return errors.New("scanning NullIP, unspecified src type")
+	}
+	return nil
+}
+
+// MarshalJSON implements json.Marshalar interface.
+func (i NullIP) MarshalJSON() ([]byte, error) {
+	if i.Valid {
+		return json.Marshal(i.IP)
+	}
+	return []byte("null"), nil
+}
+
+// UnmarshalJSON implements json.Unmarshalar interface.
+func (i *NullIP) UnmarshalJSON(b []byte) error {
+	if string(b) == "null" {
+		i.Valid = false
+		return nil
+	}
+
+	if err := json.Unmarshal(b, &i.IP); err != nil {
 		return err
 	}
 

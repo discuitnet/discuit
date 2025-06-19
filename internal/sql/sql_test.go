@@ -2,6 +2,7 @@ package sql
 
 import (
 	"encoding/json"
+	"net"
 	"reflect"
 	"testing"
 	"time"
@@ -272,6 +273,53 @@ func TestNullFloat64Unmarshal(t *testing.T) {
 	json.Unmarshal([]byte(js), &f)
 
 	if f.Valid != false {
+		t.Error("f.Valid = true")
+	}
+}
+
+func TestNullIPMarshal(t *testing.T) {
+	tests := []struct {
+		i      interface{}
+		expect string
+	}{
+		{nil, "null"},
+		{net.ParseIP("10.0.0.1"), `"10.0.0.1"`},
+	}
+
+	for _, test := range tests {
+		nullIP := NewNullIP(test.i)
+		b, _ := json.Marshal(nullIP)
+		s := string(b)
+
+		if s != test.expect {
+			t.Errorf("NullIP == %v, should be %v", s, test.expect)
+		}
+
+		b, _ = json.Marshal(&nullIP)
+		s = string(b)
+		if s != test.expect {
+			t.Errorf("*NullIP == %v, should be %v", s, test.expect)
+		}
+	}
+}
+
+func TestNullIPUnmarshal(t *testing.T) {
+	js := `"10.0.0.1"`
+	var i NullIP
+	json.Unmarshal([]byte(js), &i)
+
+	if i.IP.String() != "10.0.0.1" {
+		t.Errorf("i.IP is not 10.0.0.1, it's %s", i.IP.String())
+	}
+
+	if i.Valid != true {
+		t.Error("i.Valid = false")
+	}
+
+	js = "null"
+	json.Unmarshal([]byte(js), &i)
+
+	if i.Valid != false {
 		t.Error("f.Valid = true")
 	}
 }

@@ -116,9 +116,9 @@ type User struct {
 	NumComments      int             `json:"noComments"`
 	LastSeen         time.Time       `json:"-"`             // accurate to within 5 minutes
 	LastSeenMonth    string          `json:"lastSeenMonth"` // of the form: November 2024
-	LastSeenIP       *string         `json:"-"`
+	LastSeenIP       msql.NullIP     `json:"-"`
 	CreatedAt        time.Time       `json:"createdAt"`
-	CreatedIP        *string         `json:"-"`
+	CreatedIP        msql.NullIP     `json:"-"`
 	Deleted          bool            `json:"deleted"`
 	DeletedAt        msql.NullTime   `json:"deletedAt,omitempty"`
 
@@ -688,11 +688,11 @@ func (u *User) UnsetToGhost() {
 func (u *User) MarshalJSONForAdminViewer(ctx context.Context, db *sql.DB) ([]byte, error) {
 	user := &struct {
 		*User
-		CreatedIP                *string   `json:"createdIP"`
-		UserIndex                int       `json:"userIndex"`
-		LastSeen                 time.Time `json:"lastSeen"`
-		LastSeenIP               *string   `json:"lastSeenIP"`
-		WebPushSubsriptionsCount int       `json:"webPushSubscriptionsCount"`
+		CreatedIP                msql.NullIP `json:"createdIP"`
+		UserIndex                int         `json:"userIndex"`
+		LastSeen                 time.Time   `json:"lastSeen"`
+		LastSeenIP               msql.NullIP `json:"lastSeenIP"`
+		WebPushSubsriptionsCount int         `json:"webPushSubscriptionsCount"`
 	}{
 		User:       u,
 		CreatedIP:  u.CreatedIP,
