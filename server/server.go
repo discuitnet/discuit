@@ -21,6 +21,7 @@ import (
 
 	"github.com/discuitnet/discuit/config"
 	"github.com/discuitnet/discuit/core"
+	"github.com/discuitnet/discuit/core/ipblocks"
 	"github.com/discuitnet/discuit/internal/httperr"
 	"github.com/discuitnet/discuit/internal/httputil"
 	"github.com/discuitnet/discuit/internal/images"
@@ -58,6 +59,8 @@ type Server struct {
 
 	sessions *sessions.RedisStore
 
+	ipblocks *ipblocks.Blocker
+
 	// react serve
 	reactPath  string
 	reactIndex string
@@ -92,6 +95,7 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 		config:       conf,
 		reactPath:    "./ui/dist/",
 		reactIndex:   "index.html",
+		ipblocks:     ipblocks.NewBlocker(db),
 	}
 
 	if keys, err := core.GetApplicationVAPIDKeys(context.Background(), db); err != nil {
@@ -196,6 +200,9 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/analytics/bss", s.withHandler(s.getBasicSiteStats)).Methods("GET")
 	r.Handle("/api/site_settings", s.withHandler(s.handleSiteSettings)).Methods("GET", "PUT")
 
+	r.Handle("/api/ipblocks", s.withHandler(s.handleIPBlocks)).Methods("GET", "POST", "DELETE")
+	r.Handle("/api/ipblocks/{blockID}", s.withHandler(s.handleSingleIPBlock)).Methods("GET", "DELETE")
+
 	r.NotFoundHandler = http.HandlerFunc(s.apiNotFoundHandler)
 	r.MethodNotAllowedHandler = http.HandlerFunc(s.apiMethodNotAllowedHandler)
 
@@ -218,6 +225,11 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	} else {
 		s.staticRouter.PathPrefix("/").HandlerFunc(s.serveSPA)
 	}
+
+	if err := s.ipblocks.LoadDatabaseBlocks(context.Background()); err != nil {
+		return nil, fmt.Errorf("error loading database blocks: %v", err)
+	}
+
 	return s, nil
 }
 
@@ -406,6 +418,13 @@ func constructLogLine(fields []logField, color string) string {
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	beginT := time.Now()
+
+	if match, err := s.ipblocks.Match(httputil.GetIP(r)); err != nil {
+		log.Println(err)
+	} else if match {
+		log.Println("Blocking IP: ", httputil.GetIP(r))
+		return
+	}
 
 	if r.URL.Path == "/robots.txt" {
 		http.ServeFile(w, r, "./robots.txt")

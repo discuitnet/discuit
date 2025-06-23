@@ -1,10 +1,14 @@
 package server
 
 import (
+	"context"
 	"database/sql"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/discuitnet/discuit/core"
+	"github.com/discuitnet/discuit/core/ipblocks"
 	"github.com/discuitnet/discuit/core/sitesettings"
 	"github.com/discuitnet/discuit/internal/httperr"
 )
@@ -218,4 +222,77 @@ func (s *Server) getCommunityRequests(w *responseWriter, r *request) error {
 	}
 
 	return w.writeJSON(request)
+}
+
+func (s *Server) handleIPBlocks(w *responseWriter, r *request) error {
+	_, err := getLoggedInAdmin(s.db, r)
+	if err != nil {
+		return err
+	}
+
+	signoutFunc := ipblocks.SignoutUsersFunc(func(ctx context.Context, usernames []string) error {
+		users, err := core.GetUsersByUsernames(ctx, s.db, usernames, r.viewer)
+		if err != nil {
+			return err
+		}
+		for _, user := range users {
+			if err := s.LogoutAllSessionsOfUser(user); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	if r.req.Method == "POST" {
+		reqBody := struct {
+			Address   string     `json:"address"`
+			ExpiresAt *time.Time `json:"expiresAt"`
+			Note      string     `json:"note"`
+		}{}
+		if err := r.unmarshalJSONBody(&reqBody); err != nil {
+			return err
+		}
+		block, err := s.ipblocks.Block(r.ctx, reqBody.Address, *r.viewer, reqBody.ExpiresAt, reqBody.Note, signoutFunc)
+		if err != nil {
+			return err
+		}
+		return w.writeJSON(block)
+	}
+
+	if r.req.Method == "DELETE" {
+		if err := s.ipblocks.CancelAllBlocks(r.ctx); err != nil {
+			return err
+		}
+	}
+
+	resulSet, err := ipblocks.GetAllIPBlocks(r.ctx, s.db, ipblocks.InEffectAll, "")
+	if err != nil {
+		return err
+	}
+	return w.writeJSON(resulSet)
+}
+
+func (s *Server) handleSingleIPBlock(w *responseWriter, r *request) error {
+	_, err := getLoggedInAdmin(s.db, r)
+	if err != nil {
+		return err
+	}
+
+	blockID, err := strconv.Atoi(r.muxVar("blockID"))
+	if err != nil {
+		return httperr.NewBadRequest("invalid-block-id", "Invalid block ID.")
+	}
+
+	if r.req.Method == "DELETE" {
+		if err := s.ipblocks.CancelBlock(r.ctx, blockID); err != nil {
+			return err
+		}
+	}
+
+	block, err := ipblocks.GetIPBlock(r.ctx, s.db, blockID)
+	if err != nil {
+		return err
+	}
+
+	return w.writeJSON(block)
 }

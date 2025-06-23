@@ -290,6 +290,27 @@ func GetUsersByIDs(ctx context.Context, db *sql.DB, IDs []uid.ID, viewer *uid.ID
 	return users, nil
 }
 
+func GetUsersByUsernames(ctx context.Context, db *sql.DB, usernames []string, viewer *uid.ID) ([]*User, error) {
+	if len(usernames) == 0 {
+		return nil, nil
+	}
+	args := make([]any, len(usernames))
+	for i := range usernames {
+		args[i] = usernames[i]
+	}
+
+	query := buildSelectUserQuery(fmt.Sprintf("WHERE users.username IN %s", msql.InClauseQuestionMarks(len(usernames))))
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	users, err := scanUsers(ctx, db, rows, viewer)
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
 func GetUserByUsername(ctx context.Context, db *sql.DB, username string, viewer *uid.ID) (*User, error) {
 	rows, err := db.QueryContext(ctx, buildSelectUserQuery("WHERE users.username_lc = ?"), strings.ToLower(username))
 	if err != nil {

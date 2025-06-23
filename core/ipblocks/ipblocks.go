@@ -57,9 +57,11 @@ func (bl *Blocker) LoadDatabaseBlocks(ctx context.Context) error {
 func (bl *Blocker) Match(address string) (bool, error) {
 	bl.mu.Lock()
 	defer bl.mu.Unlock()
+
 	if bl.blockedIPs[address] {
 		return true, nil
 	}
+
 	contains, err := bl.blockedNetworks.Contains(net.ParseIP(address))
 	if err != nil {
 		return false, fmt.Errorf("ipblocks network match error for IP address %s", address)
@@ -158,7 +160,7 @@ func (bl *Blocker) Block(ctx context.Context, addr string, blockedBy uid.ID, exp
 	}
 
 	query, args := msql.BuildInsertQuery("ipblocks", []msql.ColumnValue{
-		{Name: "ip", Value: ip},
+		{Name: "ip", Value: ip.String()},
 		{Name: "masked_bits", Value: maskedBits},
 		{Name: "created_by", Value: blockedBy},
 		{Name: "expires_at", Value: expiresAt},
@@ -200,7 +202,7 @@ func (bl *Blocker) CancelBlock(ctx context.Context, blockID int) error {
 
 	return msql.Transact(ctx, bl.db, func(tx *sql.Tx) error {
 		now := time.Now()
-		_, err := tx.Exec("UPDATE ipblocks SET in_effect = false, cancelled_at = ? WHERE id = ? AND in_effect = false AND expires_at < ?", now, blockID, now)
+		_, err := tx.Exec("UPDATE ipblocks SET in_effect = false, cancelled_at = ? WHERE id = ? AND in_effect = true", now, blockID)
 		if err != nil {
 			return err
 		}
@@ -208,10 +210,10 @@ func (bl *Blocker) CancelBlock(ctx context.Context, blockID int) error {
 	})
 }
 
-func (bl *Blocker) RemoveExpiredBlocks(ctx context.Context) (int, error) {
+func (bl *Blocker) CancelExpiredBlocks(ctx context.Context) (int, error) {
 	numRemoved := 0
 	err := msql.Transact(ctx, bl.db, func(tx *sql.Tx) error {
-		rows, err := tx.QueryContext(ctx, buildIPBlocksSelectQuery("WHERE in_effect = true AND expires_at <= current_timestamp()"))
+		rows, err := tx.QueryContext(ctx, buildIPBlocksSelectQuery("WHERE ipblocks.in_effect = true AND ipblocks.expires_at <= current_timestamp()"))
 		if err != nil {
 			return err
 		}
@@ -252,6 +254,14 @@ func (bl *Blocker) Len() int {
 	return bl.blockedNetworks.Len() + len(bl.blockedIPs)
 }
 
+func (bl *Blocker) CancelAllBlocks(ctx context.Context) error {
+	_, err := bl.db.ExecContext(ctx, "UPDATE ipblocks SET in_effect = false WHERE in_effect = true")
+	if err != nil {
+		return err
+	}
+	return bl.LoadDatabaseBlocks(ctx)
+}
+
 type Block struct {
 	ID int `json:"id"`
 
@@ -260,16 +270,16 @@ type Block struct {
 	// For IPv4-mapped addresses, this value is always between 0 and 32. For
 	// regular IPv6 addresses, it's always between 0-128. A zero value would
 	// indicate that the IP is not a network IP but a host.
-	MaskedBits int `json:"masked_bits"`
+	MaskedBits int `json:"maskedBits"`
 
-	CreatedAt       time.Time `json:"created_at"`
+	CreatedAt       time.Time `json:"createdAt"`
 	createdBy       uid.ID
-	CreatedBy       string     `json:"created_by"`
-	ExpiresAt       *time.Time `json:"expires_at"`
-	CancelledAt     *time.Time `json:"cancelled_at"`
-	InEffect        bool       `json:"in_effect"`
-	AssociatedUsers []string   `json:"associated_users"`
-	Note            *string    `json:"note"`
+	CreatedBy       string     `json:"createdBy"`
+	ExpiresAt       *time.Time `json:"expiresAt"`
+	CancelledAt     *time.Time `json:"cancelledAt"`
+	InEffect        bool       `json:"inEffect"`
+	AssociatedUsers []string   `json:"associatedUsers"`
+	Note            string     `json:"note"`
 }
 
 func (b *Block) IsIPV4() bool {
@@ -295,7 +305,7 @@ func (b *Block) IPNet() net.IPNet {
 
 func blockExists(ctx context.Context, db *sql.DB, ip net.IP, maskedBits int) (bool, error) {
 	var id int
-	err := db.QueryRowContext(ctx, "SELECT id FROM ipblocks WHERE in_effect = true AND ip = ? AND masked_bits = ? LIMIT 1", ip, maskedBits).Scan(&id)
+	err := db.QueryRowContext(ctx, "SELECT id FROM ipblocks WHERE in_effect = true AND ip = ? AND masked_bits = ? LIMIT 1", ip.String(), maskedBits).Scan(&id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false, nil
@@ -306,7 +316,7 @@ func blockExists(ctx context.Context, db *sql.DB, ip net.IP, maskedBits int) (bo
 }
 
 func getUsersLastSeenBetweenIPs(ctx context.Context, db *sql.DB, first, last net.IP) ([]string, error) {
-	rows, err := db.QueryContext(ctx, "SELECT username FROM users WHERE last_seen_ip >= ? AND last_seen_ip <= ?", first, last)
+	rows, err := db.QueryContext(ctx, "SELECT username FROM users WHERE last_seen_ip >= ? AND last_seen_ip <= ?", first.String(), last.String())
 	if err != nil {
 		return nil, err
 	}
@@ -348,8 +358,8 @@ func buildIPBlocksSelectQuery(where string) string {
 }
 
 type ResultSet struct {
-	Blocks []*Block
-	Next   *string
+	Blocks []*Block `json:"blocks"`
+	Next   *string  `json:"next"`
 }
 
 type InEffect string
@@ -377,17 +387,22 @@ func GetAllIPBlocks(ctx context.Context, db *sql.DB, inEffect InEffect, next str
 		if inEffect == InEffectNotInEffect {
 			s = "false"
 		}
-		where = fmt.Sprintf("WHERE in_effect = %s", s)
+		where = fmt.Sprintf("WHERE ipblocks.in_effect = %s", s)
 	}
 
 	// TODO: Implement cursor pagination here.
-	rows, err := db.QueryContext(ctx, buildIPBlocksSelectQuery(fmt.Sprintf("%s ORDER BY (in_effect, id)", where)))
+	rows, err := db.QueryContext(ctx, buildIPBlocksSelectQuery(fmt.Sprintf("%s ORDER BY ipblocks.in_effect DESC, ipblocks.id DESC", where)))
 	if err != nil {
+		return nil, err
 	}
 
 	blocks, err := scanIPBlocks(rows)
 	if err != nil {
 		return nil, err
+	}
+
+	if blocks == nil {
+		blocks = []*Block{} // for json '[]' marshalling
 	}
 
 	rset := &ResultSet{
@@ -402,11 +417,14 @@ func scanIPBlocks(rows *sql.Rows) ([]*Block, error) {
 
 	blocks := []*Block{}
 	for rows.Next() {
-		b := &Block{}
-		var associatedUsersJson string
+		var (
+			b                       = &Block{}
+			associatedUsersJson, ip string
+			note                    *string
+		)
 		if err := rows.Scan(
 			&b.ID,
-			&b.IP,
+			&ip,
 			&b.MaskedBits,
 			&b.CreatedAt,
 			&b.createdBy,
@@ -414,13 +432,22 @@ func scanIPBlocks(rows *sql.Rows) ([]*Block, error) {
 			&b.CancelledAt,
 			&b.InEffect,
 			&associatedUsersJson,
-			&b.Note,
+			&note,
 			&b.CreatedBy,
 		); err != nil {
 			return nil, err
 		}
+		if b.IP = net.ParseIP(ip); b.IP == nil {
+			return nil, fmt.Errorf("scanning IP %s is nil", ip)
+		}
 		if err := json.Unmarshal([]byte(associatedUsersJson), &b.AssociatedUsers); err != nil {
 			return nil, fmt.Errorf("error unmarshaling ipblocks.associated_users (id: %d)", b.ID)
+		}
+		if b.AssociatedUsers == nil {
+			b.AssociatedUsers = []string{} // so that JSON of this field will never be null
+		}
+		if note != nil {
+			b.Note = *note
 		}
 		blocks = append(blocks, b)
 	}
@@ -433,7 +460,7 @@ func scanIPBlocks(rows *sql.Rows) ([]*Block, error) {
 }
 
 func GetIPBlock(ctx context.Context, db *sql.DB, rowID int) (*Block, error) {
-	rows, err := db.QueryContext(ctx, buildIPBlocksSelectQuery("WHERE id = ?"), rowID)
+	rows, err := db.QueryContext(ctx, buildIPBlocksSelectQuery("WHERE ipblocks.id = ?"), rowID)
 	if err != nil {
 		return nil, err
 	}

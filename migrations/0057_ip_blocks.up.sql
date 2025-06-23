@@ -1,4 +1,4 @@
-create table if not exists ipblocks {
+create table if not exists ipblocks (
     id int unsigned not null auto_increment,
     ip inet6 not null,
     masked_bits tinyint unsigned not null default 0,
@@ -11,5 +11,5 @@ create table if not exists ipblocks {
     note TEXT,
 
     primary key (id),
-	foreign key (created_by) references users (id),
-}
+	foreign key (created_by) references users (id)
+);
