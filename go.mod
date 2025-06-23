@@ -16,6 +16,8 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
+require github.com/yl2chen/cidranger v1.0.2 // indirect
+
 require (
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
