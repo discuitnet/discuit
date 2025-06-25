@@ -120,6 +120,9 @@ func (bl *Blocker) Block(ctx context.Context, addr string, blockedBy uid.ID, exp
 		if lastIP == nil {
 			return nil, httperr.NewBadRequest("bad-ip", "Error parsing ip address: ip and mask have different lengths.")
 		}
+		if maskedBits < 8 {
+			return nil, httperr.NewBadRequest("bad-ip", "IP subnet too large.")
+		}
 	} else {
 		ip = net.ParseIP(addr)
 		if ip == nil {
@@ -207,7 +210,7 @@ func (bl *Blocker) CancelBlock(ctx context.Context, blockID int) error {
 }
 
 func (bl *Blocker) CancelExpiredBlocks(ctx context.Context) (int, error) {
-	numRemoved := 0
+	numCancelled := 0
 	err := msql.Transact(ctx, bl.db, func(tx *sql.Tx) error {
 		rows, err := tx.QueryContext(ctx, buildIPBlocksSelectQuery("WHERE ipblocks.in_effect = true AND ipblocks.expires_at <= current_timestamp()"))
 		if err != nil {
@@ -236,12 +239,12 @@ func (bl *Blocker) CancelExpiredBlocks(ctx context.Context) (int, error) {
 			if err := bl.remove(block); err != nil {
 				return err
 			}
-			numRemoved++
+			numCancelled++
 		}
 
 		return nil
 	})
-	return numRemoved, err
+	return numCancelled, err
 }
 
 func (bl *Blocker) Len() int {
@@ -265,7 +268,7 @@ type Block struct {
 
 	// For IPv4-mapped addresses, this value is always between 0 and 32. For
 	// regular IPv6 addresses, it's always between 0-128. A zero value would
-	// indicate that the IP is not a network IP but a host.
+	// indicate that the IP is not a network but a host.
 	MaskedBits int `json:"maskedBits"`
 
 	CreatedAt       time.Time `json:"createdAt"`
@@ -278,7 +281,7 @@ type Block struct {
 	Note            string     `json:"note"`
 }
 
-func (b *Block) IsIPV4() bool {
+func (b *Block) IsIPv4() bool {
 	return b.IP.To4() != nil
 }
 
@@ -289,7 +292,7 @@ func (b *Block) IsNetwork() bool {
 func (b *Block) IPNet() net.IPNet {
 	bitsize := 128
 	ip := net.IP{}
-	if b.IsIPV4() {
+	if b.IsIPv4() {
 		bitsize = 32
 		ip = b.IP.To4()
 	}

@@ -1,8 +1,8 @@
 create table if not exists ipblocks (
     id int unsigned not null auto_increment,
     ip inet6 not null,
-    masked_bits tinyint unsigned not null default 0,
-	created_at datetime not null default current_timestamp(),
+    masked_bits tinyint unsigned not null default 0, /* zero means no mask */
+    created_at datetime not null default current_timestamp(),
     created_by varbinary (12) not null,
     expires_at datetime,
     cancelled_at datetime,
