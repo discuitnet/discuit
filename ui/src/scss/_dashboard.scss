@@ -245,6 +245,17 @@
     }
 }
 
+.modal {
+    .modal-users-list {
+        .modal-card-content {
+            overflow-y: auto;
+            @include mixins.not-mobile {
+                max-height: 70vh;
+            }
+        }
+    }
+}
+
 .dashboard-page-ipblocks {
     .dashboard-page-title {
         display: flex;
@@ -252,6 +263,12 @@
         button,
         .button {
             font-size: var(--fs-normal);
+        }
+    }
+    .table {
+        .table-column-usernames {
+            display: flex;
+            flex-direction: column;
         }
     }
 }

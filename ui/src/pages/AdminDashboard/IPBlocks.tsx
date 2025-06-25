@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux';
 import Button, { ButtonClose } from '../../components/Button';
 import { Form, FormField } from '../../components/Form';
 import Input from '../../components/Input';
+import Link from '../../components/Link';
 import MarkdownTextarea from '../../components/MarkdownTextarea';
 import Modal from '../../components/Modal';
 import SimpleFeed, { SimpleFeedItem } from '../../components/SimpleFeed';
@@ -42,10 +43,12 @@ export default function IPBlocks() {
     f();
   }, [dispatch]);
 
+  const renderID = false;
+
   const handleRenderHead = () => {
     return (
-      <TableRow columns={10} head>
-        <div className="table-column">ID</div>
+      <TableRow columns={9 + (renderID ? 1 : 0)} head>
+        {renderID && <div className="table-column">ID</div>}
         <div className="table-column">Address</div>
         <div className="table-column">Created at</div>
         <div className="table-column">Created by</div>
@@ -82,17 +85,48 @@ export default function IPBlocks() {
     }
   };
 
+  const [usersList, setUsersList] = useState<string[]>([]);
+  const [usersListModalOpen, setUsersListModalOpen] = useState(false);
+  const closeUsersListModal = () => setUsersListModalOpen(false);
+  const openUsersListModal = (usernames: string[]) => {
+    setUsersList(usernames);
+    setUsersListModalOpen(true);
+  };
+
   const handleRenderItem = (block: IPBlock) => {
-    let associatedUsersText = '';
-    for (let i = 0; i < block.associatedUsers.length; i++) {
-      associatedUsersText += `${i > 0 ? ', ' : ''}${block.associatedUsers[i]}`;
+    const users: React.ReactNode[] = [],
+      limit = 10;
+    for (let i = 0; i < Math.min(block.associatedUsers.length, limit); i++) {
+      const username = block.associatedUsers[i];
+      users.push(
+        <Link to={`/@${username}`} key={username}>
+          @{username}
+        </Link>
+      );
     }
+    if (block.associatedUsers.length > limit) {
+      users.push(
+        <div
+          onClick={() => openUsersListModal(block.associatedUsers)}
+          style={{ cursor: 'pointer' }}
+        >
+          and {block.associatedUsers.length - limit} more
+        </div>
+      );
+    }
+
+    // let associatedUsersText = '';
+    // for (let i = 0; i < block.associatedUsers.length; i++) {
+    //   associatedUsersText += `${i > 0 ? ', ' : ''}${block.associatedUsers[i]}`;
+    // }
     return (
-      <TableRow columns={10}>
-        <div className="table-column">{block.id}</div>
+      <TableRow columns={9 + (renderID ? 1 : 0)}>
+        {renderID && <div className="table-column">{block.id}</div>}
         <div className="table-column">{printIP(block.ip, block.maskedBits)}</div>
         <div className="table-column">{new Date(block.createdAt).toLocaleString()}</div>
-        <div className="table-column">@{block.createdBy}</div>
+        <div className="table-column">
+          <Link to={`/@${block.createdBy}`}>@{block.createdBy}</Link>
+        </div>
         <div className="table-column">
           {block.expiresAt ? new Date(block.expiresAt).toLocaleString() : ''}
         </div>
@@ -100,7 +134,7 @@ export default function IPBlocks() {
           {block.cancelledAt ? new Date(block.cancelledAt).toLocaleString() : ''}
         </div>
         <div className="table-column">{block.inEffect === true ? 'Yes' : '-'}</div>
-        <div className="table-column">{associatedUsersText}</div>
+        <div className="table-column table-column-usernames">{users}</div>
         <div className="table-column">{block.note}</div>
         <div className="table-column">
           {block.inEffect && <Button onClick={() => handleCancel(block)}>Cancel</Button>}
@@ -119,14 +153,36 @@ export default function IPBlocks() {
     }
   };
 
+  const handleNewBlockAdded = (block: IPBlock) => {
+    setBlocks((blocks) => [block, ...blocks]);
+  };
+
   const feedItems: SimpleFeedItem<IPBlock>[] = [];
   blocks.forEach((block) => feedItems.push({ item: block, key: block.id.toString() }));
 
   return (
     <div className="dashboard-page-ipblocks document">
+      <Modal open={usersListModalOpen} onClose={closeUsersListModal}>
+        <div className="modal-card modal-users-list">
+          <div className="modal-card-head">
+            <div className="modal-card-title">Associated users</div>
+            <ButtonClose onClick={closeUsersListModal} />
+          </div>
+          <div className="modal-card-content">
+            {usersList.map((username) => (
+              <Link to={`/@${username}`} key={username}>
+                @{username}
+              </Link>
+            ))}
+          </div>
+          <div className="modal-card-actions">
+            <Button>Close</Button>
+          </div>
+        </div>
+      </Modal>
       <div className="dashboard-page-title">
         <div>IP Blocks</div>
-        <NewButton />
+        <NewButton onSuccess={handleNewBlockAdded} />
       </div>
       <div className="bashboard-page-content">
         <SimpleFeed
@@ -183,7 +239,7 @@ function wildCardToCIDR(str: string): string {
   return str;
 }
 
-function NewButton() {
+function NewButton({ onSuccess }: { onSuccess: (block: IPBlock) => void }) {
   const [open, setOpen] = useState(false);
   const [ip, setIP] = useState('');
   const [expiresIn, setExpiresIn] = useState('');
@@ -216,6 +272,9 @@ function NewButton() {
       if (!res.ok) {
         throw new Error('Error blocking IP: ' + ((await res.json()) as APIError).message);
       }
+      const block = (await res.json()) as IPBlock;
+      onSuccess(block);
+      handleClose();
     } catch (error) {
       dispatch(snackAlert((error as Error).message));
     }
