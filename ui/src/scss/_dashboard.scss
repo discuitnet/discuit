@@ -244,3 +244,14 @@
         }
     }
 }
+
+.dashboard-page-ipblocks {
+    .dashboard-page-title {
+        display: flex;
+        justify-content: space-between;
+        button,
+        .button {
+            font-size: var(--fs-normal);
+        }
+    }
+}

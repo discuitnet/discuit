@@ -43,8 +43,8 @@ function Sidebar({
           <Link className="sidebar-item" to={dashboardLink('communities')}>
             Communities
           </Link>
-          <Link className="sidebar-item" to={dashboardLink('ipbans')}>
-            IP bans
+          <Link className="sidebar-item" to={dashboardLink('ipblocks')}>
+            IP blocks
           </Link>
           <Link className="sidebar-item" to={dashboardLink('bss')}>
             Analytics

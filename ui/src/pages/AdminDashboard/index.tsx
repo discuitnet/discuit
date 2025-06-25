@@ -8,7 +8,7 @@ import Forbidden from '../Forbidden';
 import BasicSiteAnalytics from './BasicSiteAnalytics';
 import Comments from './Comments';
 import Communities from './Communities';
-import IPBans from './IPBans';
+import IPBlocks from './IPBlocks';
 import NewCommunityRequests from './NewCommunityRequests';
 import Settings from './Settings';
 import Sidebar from './Sidebar';
@@ -88,8 +88,8 @@ function AdminDashboard() {
             <Route exact path={`${path}/communities`}>
               <Communities />
             </Route>
-            <Route exact path={`${path}/ipbans`}>
-              <IPBans />
+            <Route exact path={`${path}/ipblocks`}>
+              <IPBlocks />
             </Route>
             <Route exact path={`${path}/bss`}>
               <BasicSiteAnalytics />

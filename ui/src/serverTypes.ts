@@ -369,3 +369,16 @@ export interface CommunityReportDetails {
   noPostReports: number;
   noCommentReports: number;
 }
+
+export interface IPBlock {
+  id: number;
+  ip: string;
+  maskedBits: number;
+  createdAt: string; // A datetime
+  createdBy: string;
+  expiresAt: string | null; // A datetime
+  cancelledAt: string | null; // A datetime
+  inEffect: boolean;
+  associatedUsers: string[];
+  note: string;
+}
