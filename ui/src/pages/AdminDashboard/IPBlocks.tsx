@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Button, { ButtonClose } from '../../components/Button';
+import { Form, FormField } from '../../components/Form';
 import Input from '../../components/Input';
+import MarkdownTextarea from '../../components/MarkdownTextarea';
 import Modal from '../../components/Modal';
 import SimpleFeed, { SimpleFeedItem } from '../../components/SimpleFeed';
 import { TableRow } from '../../components/Table';
-import { mfetch, mfetchjson } from '../../helper';
+import { APIError, mfetch, mfetchjson } from '../../helper';
 import { IPBlock } from '../../serverTypes';
-import { snackAlertError } from '../../slices/mainSlice';
+import { snackAlert, snackAlertError } from '../../slices/mainSlice';
 
 interface IPBlocksResultSet {
   blocks: IPBlock[];
@@ -120,7 +122,7 @@ export default function IPBlocks() {
 
 interface NewBlockRequestBody {
   address: string;
-  expiresAt: string | null;
+  expiresIn: number;
   note: string;
 }
 
@@ -131,9 +133,37 @@ function printIP(ip: string, maskedBits: number): string {
   return `${ip}/${maskedBits}`;
 }
 
+function wildCardToCIDR(str: string): string {
+  str = str.trim();
+  let nums: string[] = [];
+  let isV4 = true;
+  if (str.includes('.')) {
+    nums = str.split('.'); // IPv4
+  } else {
+    isV4 = false;
+    nums = str.split(':'); // IPv6
+  }
+  let n = 0;
+  for (let i = 0; i < nums.length; i++) {
+    if (n > 0 && nums[i] !== '*') {
+      throw new Error('Invalid wildcard');
+    }
+    if (nums[i] === '*') {
+      n++;
+      nums[i] = '0';
+    }
+  }
+  if (n > 0) {
+    return `${nums.join(isV4 ? '.' : ':')}/${n * 8}`;
+  }
+  return str;
+}
+
 function NewButton() {
   const [open, setOpen] = useState(false);
   const [ip, setIP] = useState('');
+  const [expiresIn, setExpiresIn] = useState('');
+  const [note, setNote] = useState('');
 
   const handleClose = () => {
     setOpen(false);
@@ -143,22 +173,27 @@ function NewButton() {
   const dispatch = useDispatch();
   const handleBlock = async () => {
     try {
+      let expiresInNum = 0;
+      if (expiresIn !== '') {
+        expiresInNum = parseFloat(expiresIn);
+        if (isNaN(expiresInNum)) {
+          throw new Error('Invalid expires in value');
+        }
+      }
       const body: NewBlockRequestBody = {
-        address: ip,
-        expiresAt: null,
-        note: '',
+        address: wildCardToCIDR(ip),
+        expiresIn: expiresInNum,
+        note,
       };
       const res = await mfetch('/api/ipblocks', {
         method: 'POST',
         body: JSON.stringify(body),
       });
       if (!res.ok) {
-        throw new Error('error blocking ip: ' + ip);
+        throw new Error('Error blocking IP: ' + ((await res.json()) as APIError).message);
       }
-      const block = (await res.json()) as IPBlock;
-      console.log(block);
     } catch (error) {
-      dispatch(snackAlertError(error));
+      dispatch(snackAlert((error as Error).message));
     }
   };
 
@@ -173,9 +208,23 @@ function NewButton() {
             <div className="modal-card-title">Block IP</div>
             <ButtonClose onClick={handleClose} />
           </div>
-          <div className="modal-card-content">
-            <Input value={ip} onChange={(e) => setIP(e.target.value)} />
-          </div>
+          <Form className="modal-card-content">
+            <FormField
+              label="IP address"
+              description="The IP address could be a full IP address (eg: 10.0.0.1), a CIDR subnet (eg: 10.0.0.0/24), or a wildcard (eg: 10.0.*.*)."
+            >
+              <Input value={ip} onChange={(e) => setIP(e.target.value)} />
+            </FormField>
+            <FormField
+              label="Expires in (optional)"
+              description="Number of hours the IP block will be valid for. If this field is empty, the block will be valid indefinitely."
+            >
+              <Input value={expiresIn} onChange={(e) => setExpiresIn(e.target.value)} />
+            </FormField>
+            <FormField label="Note (optional)">
+              <MarkdownTextarea value={note} onChange={(e) => setNote(e.target.value)} rows={5} />
+            </FormField>
+          </Form>
           <div className="modal-card-actions">
             <Button color="main" onClick={handleBlock}>
               Block

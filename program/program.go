@@ -30,6 +30,7 @@ type Program struct {
 	imagesDir string
 	ctx       context.Context
 	tr        *taskrunner.TaskRunner
+	server    *server.Server
 }
 
 func NewProgram(openDatabase bool) (*Program, error) {
@@ -105,6 +106,20 @@ func (pg *Program) startBackgroundTasks(delay time.Duration) {
 	pg.tr.New("Record basic site analytics", func(ctx context.Context) error {
 		return core.RecordBasicSiteStats(ctx, pg.db)
 	}, time.Hour, false)
+	pg.tr.New("Remove expires IP blocks", func(ctx context.Context) error {
+		count, err := pg.server.CancelExpiredIPBlocks(context.Background())
+		if err != nil {
+			return err
+		}
+		if count > 0 {
+			s := ""
+			if count > 1 {
+				s = "s"
+			}
+			log.Printf("Cancelled %d expired IP block%s\n", count, s)
+		}
+		return nil
+	}, time.Second*100, false)
 
 	go func() {
 		time.Sleep(delay)
@@ -157,6 +172,8 @@ func (pg *Program) Serve() error {
 		return fmt.Errorf("error creating server: %w", err)
 	}
 	defer site.Close()
+
+	pg.server = site
 
 	var https bool = pg.conf.CertFile != ""
 

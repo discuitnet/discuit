@@ -245,14 +245,19 @@ func (s *Server) handleIPBlocks(w *responseWriter, r *request) error {
 
 	if r.req.Method == "POST" {
 		reqBody := struct {
-			Address   string     `json:"address"`
-			ExpiresAt *time.Time `json:"expiresAt"`
-			Note      string     `json:"note"`
+			Address   string  `json:"address"`
+			ExpiresIn float64 `json:"expiresIn"`
+			Note      string  `json:"note"`
 		}{}
 		if err := r.unmarshalJSONBody(&reqBody); err != nil {
 			return err
 		}
-		block, err := s.ipblocks.Block(r.ctx, reqBody.Address, *r.viewer, reqBody.ExpiresAt, reqBody.Note, signoutFunc)
+		var expiresAt *time.Time
+		if reqBody.ExpiresIn > 0.0001 {
+			t := time.Now().Add(time.Duration(reqBody.ExpiresIn * float64(time.Hour)))
+			expiresAt = &t
+		}
+		block, err := s.ipblocks.Block(r.ctx, reqBody.Address, *r.viewer, expiresAt, reqBody.Note, signoutFunc)
 		if err != nil {
 			return err
 		}
@@ -295,4 +300,8 @@ func (s *Server) handleSingleIPBlock(w *responseWriter, r *request) error {
 	}
 
 	return w.writeJSON(block)
+}
+
+func (s *Server) CancelExpiredIPBlocks(ctx context.Context) (int, error) {
+	return s.ipblocks.CancelExpiredBlocks(ctx)
 }
