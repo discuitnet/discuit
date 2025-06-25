@@ -3,6 +3,7 @@ package ipblocks
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -34,7 +35,7 @@ func NewBlocker(db *sql.DB) *Blocker {
 }
 
 func (bl *Blocker) LoadDatabaseBlocks(ctx context.Context) error {
-	rset, err := GetAllIPBlocks(ctx, bl.db, InEffectInEffect, "")
+	rset, err := GetAllIPBlocks(ctx, bl.db, InEffectInEffect, 0, "")
 	if err != nil {
 		return err
 	}
@@ -374,14 +375,19 @@ func (ie InEffect) Valid() bool {
 	return slices.Contains([]InEffect{InEffectInEffect, InEffectNotInEffect, InEffectAll}, ie)
 }
 
-var ErrInvalidInEffect = httperr.NewBadRequest("invalid-in-effect", "Invalid in_effect parameter.")
+var errInvalidInEffect = httperr.NewBadRequest("invalid-in-effect", "Invalid in_effect parameter.")
+var errInvalidResultSetNextValue = httperr.NewBadRequest("invalid-next-value", "Invalid next parameter.")
 
-func GetAllIPBlocks(ctx context.Context, db *sql.DB, inEffect InEffect, next string) (*ResultSet, error) {
+func GetAllIPBlocks(ctx context.Context, db *sql.DB, inEffect InEffect, limit int, next string) (*ResultSet, error) {
 	if !inEffect.Valid() {
-		return nil, ErrInvalidInEffect
+		return nil, errInvalidInEffect
 	}
 
-	var where string
+	var (
+		where string
+		args  []any
+	)
+
 	if inEffect != InEffectAll {
 		var s = "true"
 		if inEffect == InEffectNotInEffect {
@@ -390,8 +396,35 @@ func GetAllIPBlocks(ctx context.Context, db *sql.DB, inEffect InEffect, next str
 		where = fmt.Sprintf("WHERE ipblocks.in_effect = %s", s)
 	}
 
-	// TODO: Implement cursor pagination here.
-	rows, err := db.QueryContext(ctx, buildIPBlocksSelectQuery(fmt.Sprintf("%s ORDER BY ipblocks.in_effect DESC, ipblocks.id DESC", where)))
+	type cursorData struct {
+		InEffect bool `json:"inEffect"`
+		ID       int  `json:"id"`
+	}
+
+	limitS := ""
+	if limit > 0 {
+		if next != "" {
+			_next := cursorData{}
+			b, err := hex.DecodeString(next)
+			if err != nil {
+				return nil, errInvalidResultSetNextValue
+			}
+			if err := json.Unmarshal(b, &_next); err != nil {
+				return nil, errInvalidResultSetNextValue
+			}
+			if inEffect == InEffectAll {
+				where = "WHERE ipblocks.in_effect = ? AND ipblocks.id < ?"
+				args = append(args, _next.InEffect, _next.ID)
+			} else {
+				where = " AND ipblocks.id < ?"
+				args = append(args, _next.ID)
+			}
+		}
+		limitS = fmt.Sprintf("LIMIT %d", limit+1)
+	}
+
+	where = fmt.Sprintf("%s ORDER BY ipblocks.in_effect DESC, ipblocks.id DESC %s", where, limitS)
+	rows, err := db.QueryContext(ctx, buildIPBlocksSelectQuery(where), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -407,6 +440,17 @@ func GetAllIPBlocks(ctx context.Context, db *sql.DB, inEffect InEffect, next str
 
 	rset := &ResultSet{
 		Blocks: blocks,
+	}
+
+	if limit > 0 && len(blocks) > limit {
+		next := cursorData{
+			InEffect: blocks[limit].InEffect,
+			ID:       blocks[limit].ID,
+		}
+		b, _ := json.Marshal(next)
+		s := hex.EncodeToString(b)
+		rset.Next = &s
+		rset.Blocks = blocks[:limit]
 	}
 
 	return rset, nil

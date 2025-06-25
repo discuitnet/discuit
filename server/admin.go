@@ -270,7 +270,11 @@ func (s *Server) handleIPBlocks(w *responseWriter, r *request) error {
 		}
 	}
 
-	resulSet, err := ipblocks.GetAllIPBlocks(r.ctx, s.db, ipblocks.InEffectAll, "")
+	limit, err := r.urlQueryParamsValueInt("limit", 20)
+	if err != nil {
+		return httperr.NewBadRequest("invalid-limit", "Invalid limit value.")
+	}
+	resulSet, err := ipblocks.GetAllIPBlocks(r.ctx, s.db, ipblocks.InEffectAll, limit, r.urlQueryParamsValueString("next", ""))
 	if err != nil {
 		return err
 	}

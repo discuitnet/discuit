@@ -329,7 +329,10 @@ export function mfetch(url: string | URL, options: RequestInit = {}): Promise<Re
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function mfetchjson(url: string | URL, options: RequestInit = {}): Promise<any> {
+export async function mfetchjson<T = any>(
+  url: string | URL,
+  options: RequestInit = {}
+): Promise<T> {
   const res = await mfetch(url, options);
   if (!res.ok) throw new APIError(res.status, await res.json());
   return await res.json();

@@ -16,15 +16,25 @@ interface IPBlocksResultSet {
   next: string | null;
 }
 
+async function fetchIPBlocks(next?: string): Promise<IPBlocksResultSet> {
+  let url = '/api/ipblocks';
+  if (next) {
+    url += `?next=${next}`;
+  }
+  return mfetchjson<IPBlocksResultSet>(url);
+}
+
 export default function IPBlocks() {
   const [blocks, setBlocks] = useState<IPBlock[]>([]);
+  const [next, setNext] = useState<string | null>(null);
 
   const dispatch = useDispatch();
   useEffect(() => {
     const f = async () => {
       try {
-        const res = (await mfetchjson('/api/ipblocks')) as IPBlocksResultSet;
+        const res = await fetchIPBlocks();
         setBlocks(res.blocks);
+        setNext(res.next);
       } catch (error) {
         dispatch(snackAlertError(error));
       }
@@ -99,6 +109,16 @@ export default function IPBlocks() {
     );
   };
 
+  const handleFetchMore = async () => {
+    try {
+      const res = await fetchIPBlocks(next || undefined);
+      setBlocks((blocks) => [...blocks, ...res.blocks]);
+      setNext(res.next);
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    }
+  };
+
   const feedItems: SimpleFeedItem<IPBlock>[] = [];
   blocks.forEach((block) => feedItems.push({ item: block, key: block.id.toString() }));
 
@@ -114,6 +134,8 @@ export default function IPBlocks() {
           items={feedItems}
           onRenderItem={handleRenderItem}
           onRenderHead={handleRenderHead}
+          onFetchMore={handleFetchMore}
+          hasMore={Boolean(next)}
         />
       </div>
     </div>
@@ -137,10 +159,12 @@ function wildCardToCIDR(str: string): string {
   str = str.trim();
   let nums: string[] = [];
   let isV4 = true;
+  let len = 32;
   if (str.includes('.')) {
     nums = str.split('.'); // IPv4
   } else {
     isV4 = false;
+    len = 128;
     nums = str.split(':'); // IPv6
   }
   let n = 0;
@@ -154,7 +178,7 @@ function wildCardToCIDR(str: string): string {
     }
   }
   if (n > 0) {
-    return `${nums.join(isV4 ? '.' : ':')}/${n * 8}`;
+    return `${nums.join(isV4 ? '.' : ':')}/${len - n * 8}`;
   }
   return str;
 }
