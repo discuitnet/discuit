@@ -5,8 +5,11 @@ import (
 	"crypto/md5"
 	"database/sql"
 	"encoding/json"
+	"fmt"
+	"strconv"
 	"time"
 
+	"github.com/discuitnet/discuit/internal/httperr"
 	msql "github.com/discuitnet/discuit/internal/sql"
 )
 
@@ -106,24 +109,51 @@ func RecordBasicSiteStats(ctx context.Context, db *sql.DB) error {
 	return CreateAnalyticsEvent(ctx, db, BasicSiteStatsEventName, "", string(b))
 }
 
-func GetBasicSiteStats(ctx context.Context, db *sql.DB, days int) ([]*AnalyticsEvent, error) {
-	rows, err := db.QueryContext(ctx, "SELECT payload, created_at FROM analytics WHERE event_name = ? ORDER BY created_at DESC", BasicSiteStatsEventName)
+func GetBasicSiteStats(ctx context.Context, db *sql.DB, limit int, next string) ([]*AnalyticsEvent, string, error) {
+	limitQuery := ""
+	if limit > 0 {
+		limitQuery = "LIMIT " + strconv.Itoa(limit+1)
+	}
+
+	query := "SELECT id, payload, created_at FROM analytics WHERE event_name = ?"
+	args := []any{BasicSiteStatsEventName}
+
+	nextQuery := ""
+	if next != "" {
+		nextInt, err := strconv.ParseInt(next, 10, 64)
+		if err != nil {
+			return nil, "", httperr.NewBadRequest("invalid-next-value", "Invalid next parameter.")
+		}
+		nextTime := time.Unix(nextInt, 0)
+		nextQuery = "AND created_at <= ?"
+		args = append(args, nextTime)
+	}
+
+	query = fmt.Sprintf("%s %s ORDER BY created_at DESC %s", query, nextQuery, limitQuery)
+
+	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer rows.Close()
 
 	var events []*AnalyticsEvent
 	for rows.Next() {
 		e := &AnalyticsEvent{}
-		if err := rows.Scan(&e.Payload, &e.CreatedAt); err != nil {
-			return nil, err
+		if err := rows.Scan(&e.ID, &e.Payload, &e.CreatedAt); err != nil {
+			return nil, "", err
 		}
 		events = append(events, e)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return events, nil
+
+	if len(events) > limit {
+		// return events[:limit], hex.EncodeToString([]byte(events[limit].CreatedAt.Format(time.RFC3339))), nil
+		return events[:limit], strconv.FormatInt(events[limit].CreatedAt.Unix(), 10), nil
+	}
+
+	return events, "", nil
 }

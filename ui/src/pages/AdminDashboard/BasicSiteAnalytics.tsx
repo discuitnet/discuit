@@ -30,6 +30,11 @@ interface Row {
   createdAt: Date;
 }
 
+interface APIReponse {
+  events: AnalyticsEvent[];
+  next: string;
+}
+
 function printDate(date: Date): string {
   // return timeAgo(date);
   // return date.toLocaleString()
@@ -37,29 +42,33 @@ function printDate(date: Date): string {
 }
 
 export default function BasicSiteAnalytics() {
-  const [rows, setRows] = useState<Row[] | null>(null);
+  const [rows, setRows] = useState<Row[]>([]);
+  const [next, setNext] = useState('');
   const [loading, setLoading] = useLoading('loading');
 
   const dispatch = useDispatch();
+  const fetchEvents = async (next = '') => {
+    try {
+      const res = (await mfetchjson(`/api/analytics/bss?next=${next}`)) as APIReponse;
+      const items = res.events.map((event) => {
+        return {
+          stat: JSON.parse(event.payload) as BasicSiteStats,
+          createdAt: new Date(event.createdAt),
+        } as Row;
+      });
+      setRows((rows) => [...rows, ...items]);
+      setNext(res.next);
+      setLoading('loaded');
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    }
+  };
+
   useEffect(() => {
-    const f = async () => {
-      try {
-        const res = (await mfetchjson('/api/analytics/bss')) as AnalyticsEvent[];
-        const items = res.map((event) => {
-          return {
-            stat: JSON.parse(event.payload) as BasicSiteStats,
-            createdAt: new Date(event.createdAt),
-          } as Row;
-        });
-        setRows(items);
-        setLoading('loaded');
-      } catch (error) {
-        dispatch(snackAlertError(error));
-        setLoading('error');
-      }
-    };
-    f();
+    fetchEvents();
   }, []);
+
+  const handleFetchMore = () => fetchEvents(next);
 
   const handleRenderItem = (item: Row) => {
     return (
@@ -135,6 +144,8 @@ export default function BasicSiteAnalytics() {
             items={feedItems}
             onRenderItem={handleRenderItem}
             onRenderHead={handleRenderHead}
+            hasMore={Boolean(next)}
+            onFetchMore={handleFetchMore}
           />
         </div>
       </div>

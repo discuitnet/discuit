@@ -202,12 +202,24 @@ func (s *Server) getBasicSiteStats(w *responseWriter, r *request) error {
 		return err
 	}
 
-	events, err := core.GetBasicSiteStats(r.ctx, s.db, 30)
+	limit, err := r.urlQueryParamsValueInt("limit", 250)
+	if err != nil {
+		return httperr.NewBadRequest("invalid-limit", "Invalid limit parameter.")
+	}
+	events, next, err := core.GetBasicSiteStats(r.ctx, s.db, limit, r.urlQueryParamsValueString("next", ""))
 	if err != nil {
 		return err
 	}
 
-	return w.writeJSON(events)
+	response := struct {
+		Events []*core.AnalyticsEvent `json:"events"`
+		Next   string                 `json:"next"`
+	}{
+		Events: events,
+		Next:   next,
+	}
+
+	return w.writeJSON(response)
 }
 
 func (s *Server) getCommunityRequests(w *responseWriter, r *request) error {
