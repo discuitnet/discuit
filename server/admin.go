@@ -230,19 +230,6 @@ func (s *Server) handleIPBlocks(w *responseWriter, r *request) error {
 		return err
 	}
 
-	signoutFunc := ipblocks.SignoutUsersFunc(func(ctx context.Context, usernames []string) error {
-		users, err := core.GetUsersByUsernames(ctx, s.db, usernames, r.viewer)
-		if err != nil {
-			return err
-		}
-		for _, user := range users {
-			if err := s.LogoutAllSessionsOfUser(user); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-
 	if r.req.Method == "POST" {
 		reqBody := struct {
 			Address   string  `json:"address"`
@@ -257,7 +244,7 @@ func (s *Server) handleIPBlocks(w *responseWriter, r *request) error {
 			t := time.Now().Add(time.Duration(reqBody.ExpiresIn * float64(time.Hour)))
 			expiresAt = &t
 		}
-		block, err := s.ipblocks.Block(r.ctx, reqBody.Address, *r.viewer, expiresAt, reqBody.Note, signoutFunc)
+		block, err := s.ipblocks.Block(r.ctx, reqBody.Address, *r.viewer, expiresAt, reqBody.Note)
 		if err != nil {
 			return err
 		}

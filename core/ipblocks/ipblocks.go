@@ -102,9 +102,7 @@ func (bl *Blocker) remove(block *Block) error {
 	return nil
 }
 
-type SignoutUsersFunc func(ctx context.Context, users []string) error
-
-func (bl *Blocker) Block(ctx context.Context, addr string, blockedBy uid.ID, expiresAt *time.Time, note string, signout SignoutUsersFunc) (*Block, error) {
+func (bl *Blocker) Block(ctx context.Context, addr string, blockedBy uid.ID, expiresAt *time.Time, note string) (*Block, error) {
 	var (
 		ip         net.IP
 		maskedBits int
@@ -149,9 +147,6 @@ func (bl *Blocker) Block(ctx context.Context, addr string, blockedBy uid.ID, exp
 	associatedUsers, err := getUsersLastSeenBetweenIPs(ctx, bl.db, ip, lastIP)
 	if err != nil {
 		return nil, err
-	}
-	if err := signout(ctx, associatedUsers); err != nil {
-		return nil, fmt.Errorf("error signing out users: %v", err)
 	}
 	associatedUsersJson, _ := json.Marshal(associatedUsers)
 
