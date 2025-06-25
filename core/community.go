@@ -1344,7 +1344,7 @@ func GetCommunityRequests(ctx context.Context, db *sql.DB) ([]*CommunityRequest,
 		SELECT cr.id, cr.by_user, cr.community_name, cr.note, cr.created_at, c.id IS NOT NULL, cr.denied_note, cr.denied_by, cr.denied_at
 		FROM community_requests AS cr 
 		LEFT JOIN communities AS c ON cr.community_name_lc = c.name_lc 
-		WHERE cr.created_at >  SUBDATE(NOW(), 90)
+		WHERE cr.created_at >  SUBDATE(NOW(), 90) AND cr.deleted_at IS NULL
 		ORDER BY created_at DESC`,
 	)
 	if err != nil {

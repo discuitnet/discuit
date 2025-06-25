@@ -104,6 +104,11 @@ type User struct {
 
 	EmailPublic *string `json:"email"`
 
+	// Additional admin-only viewable fields
+	LastSeenPublic   *time.Time `json:"lastSeen,omitempty"`
+	LastSeenIPPublic *string    `json:"lastSeenIP,omitempty"`
+	CreatedIPPublic  *string    `json:"createdIP,omitempty"`
+
 	Email            msql.NullString `json:"-"`
 	EmailConfirmedAt msql.NullTime   `json:"emailConfirmedAt"`
 	Password         string          `json:"-"`
@@ -419,6 +424,11 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 				user.EmailPublic = new(string)
 				*user.EmailPublic = user.Email.String
 			}
+		}
+		if viewerAdmin {
+			user.LastSeenPublic = &user.LastSeen
+			user.LastSeenIPPublic = user.LastSeenIP
+			user.CreatedIPPublic = user.CreatedIP
 		}
 		// Set the user info of deleted users to the ghost user for everyone
 		// except the admins.
@@ -1425,7 +1435,7 @@ func GetUsers(ctx context.Context, db *sql.DB, limit int, next *string, viewer *
 	if next != nil {
 		nextID, err := uid.FromString(*next)
 		if err != nil {
-			return nil, nil, errors.New("invalid next for site comments")
+			return nil, nil, errors.New("invalid next for site users")
 		}
 		where = "WHERE users.id <= ? "
 		args = append(args, nextID)
