@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useLocation } from 'react-router-dom';
 import { getGlobalAppData } from '../../appData';
 import { ButtonClose } from '../../components/Button';
 import MiniFooter from '../../components/MiniFooter';
 import Sidebar from '../../components/Sidebar';
 import { isDeviceIos, isDeviceStandalone } from '../../helper';
+import { User } from '../../serverTypes';
 import { MainState, showAppInstallButton } from '../../slices/mainSlice';
 import { RootState } from '../../store';
 import LoginForm from '../../views/LoginForm';
-import PostsFeed from '../../views/PostsFeed';
+import PostsFeed, { PostsFeedType } from '../../views/PostsFeed';
 import WelcomeBanner from '../../views/WelcomeBanner';
 import ButtonAppInstall, { DeferredInstallPrompt } from './ButtonAppInstall';
 
@@ -16,19 +18,22 @@ const Home = () => {
   const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const loggedIn = user !== null;
 
-  // const location = useLocation();
-  const feedType = (() => {
-    // let f = 'all';
-    // if (loggedIn) {
-    //   f = location.pathname === '/' ? user.homeFeed : location.pathname.substring(1);
-
-    // }
-    // return f;
-    if (loggedIn) {
-      return user.homeFeed;
+  const location = useLocation();
+  const getFeedType = (user: User | null, pathname: string): PostsFeedType => {
+    let f: PostsFeedType = 'all';
+    if (user !== null) {
+      if (user.homeFeed === 'all') {
+        f = pathname === '/' ? 'all' : 'subscriptions';
+      } else {
+        f = pathname === '/' ? 'subscriptions' : 'all';
+      }
     }
-    return 'all';
-  })();
+    return f;
+  };
+  const [feedType, setFeedType] = useState<PostsFeedType>(getFeedType(user, location.pathname));
+  useEffect(() => {
+    setFeedType(getFeedType(user, location.pathname));
+  }, [user, location.pathname]);
 
   const { show: showInstallPrompt, deferredPrompt } = useSelector<RootState>(
     (state) => state.main.appInstallButton
