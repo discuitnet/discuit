@@ -107,6 +107,8 @@ const Sidebar = ({ mobile = false }: { mobile?: boolean }) => {
     );
   };
 
+  const pullOutDisabled = true;
+
   const ref = useRef<HTMLElement>(null);
   const scrollY = useSelector<RootState>(
     (state) => state.main.sidebarScrollY
@@ -201,6 +203,9 @@ const Sidebar = ({ mobile = false }: { mobile?: boolean }) => {
       setPosition({ x, y });
     };
     const touchStart = (event: MouseEvent | TouchEvent) => {
+      if (pullOutDisabled) {
+        return;
+      }
       const clientX = event instanceof MouseEvent ? event.clientX : event.touches[0].clientX;
       const clientY = event instanceof MouseEvent ? event.clientY : event.touches[0].clientY;
       setOffset({
