@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import { getGlobalAppData } from '../../appData';
 import { ButtonClose } from '../../components/Button';
+import Link from '../../components/Link';
 import MiniFooter from '../../components/MiniFooter';
 import Sidebar from '../../components/Sidebar';
 import { isDeviceIos, isDeviceStandalone } from '../../helper';
@@ -44,8 +45,10 @@ const Home = () => {
     localStorage.getItem('neverShowInstallBanner') === 'true'
   );
 
+  const deviceStandalone = isDeviceStandalone();
+
   useEffect(() => {
-    if (!isDeviceStandalone() || !neverShowBanner) {
+    if (!deviceStandalone || !neverShowBanner) {
       if ('onbeforeinstallprompt' in window) {
         window.addEventListener('beforeinstallprompt', (e) => {
           e.preventDefault();
@@ -62,7 +65,7 @@ const Home = () => {
         }
       }
     }
-  }, [dispatch, neverShowBanner]);
+  }, [dispatch, neverShowBanner, deviceStandalone]);
 
   const handleNeverShowBanner = () => {
     localStorage.setItem('neverShowInstallBanner', 'true');
@@ -86,6 +89,15 @@ const Home = () => {
               <ButtonClose onClick={handleNeverShowBanner} style={{ color: 'inherit' }} />
             </div>
           </div>
+        )}
+        {loggedIn && !deviceStandalone && (
+          <Link
+            to="/new"
+            className="button button-main is-m"
+            style={{ borderRadius: 0, marginBottom: 'calc(var(--gap) / 2)' }}
+          >
+            Create post
+          </Link>
         )}
         <PostsFeed feedType={feedType} communityId={null} />
       </main>
