@@ -59,11 +59,9 @@ const Rules = ({ community }: { community: Community }) => {
   };
 
   const handleSave = async () => {
-    if (!ruleEditing) {
-      return;
-    }
     try {
       if (isEditRule) {
+        if (!ruleEditing) return;
         const rrule = await mfetchjson(`/api/communities/${community.id}/rules/${ruleEditing.id}`, {
           method: 'PUT',
           body: JSON.stringify({ zIndex: ruleEditing.zIndex, rule, description }),
