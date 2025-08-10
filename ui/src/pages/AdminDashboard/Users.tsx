@@ -57,7 +57,7 @@ export default function Users() {
   const handleRenderItem = (item: User) => {
     const user = item;
     return (
-      <TableRow columns={3}>
+      <TableRow columns={5}>
         <Link className="table-column" to={`/@${user.username}`}>
           @{user.username}
         </Link>
@@ -65,16 +65,24 @@ export default function Users() {
           {user.isBanned ? 'Banned' : user.deleted ? 'Deleted' : ''}
         </div>
         <TimeAgo className="table-column" time={user.createdAt} />
+        <div className="table-column">
+          {user.createdIP}
+        </div>
+        <div className="table-column">
+          {user.lastSeenIP}
+        </div>
       </TableRow>
     );
   };
 
   const handleRenderHead = () => {
     return (
-      <TableRow columns={3} head>
+      <TableRow columns={5} head>
         <div className="table-column">Username</div>
         <div className="table-column">Deleted</div>
         <div className="table-column">Created at</div>
+        <div className="table-column">Created IP</div>
+        <div className="table-column">Last IP</div>
       </TableRow>
     );
   };

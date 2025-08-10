@@ -25,6 +25,8 @@ export interface User {
   isBanned: boolean;
   notificationsNewCount: number;
   moddingList: Community[] | null;
+  createdIP: string | null;
+  lastSeenIP: string | null;
 }
 
 export type UserGroup = 'normal' | 'admins' | 'mods';
