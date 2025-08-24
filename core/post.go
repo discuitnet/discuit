@@ -543,8 +543,8 @@ func populatePostsImages(ctx context.Context, db *sql.DB, posts []*Post) error {
 			if post.ID == postID {
 				img := record.Image()
 				img.PostScan()
-				img.AppendCopy("tiny", 120, 120, images.ImageFitCover, "")
-				img.AppendCopy("small", 325, 250, images.ImageFitCover, "")
+				img.AppendCopy("tiny", 120, 120, images.ImageFitContain, "")
+				img.AppendCopy("small", 325, 250, images.ImageFitContain, "")
 				img.AppendCopy("medium", 720, 1440, images.ImageFitContain, "")
 				img.AppendCopy("large", 1080, 2160, images.ImageFitContain, "")
 				img.AppendCopy("large", 2160, 4320, images.ImageFitContain, "")
