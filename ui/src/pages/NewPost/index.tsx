@@ -186,6 +186,7 @@ const NewPost = () => {
     }
   };
 
+  const [altTextChanges, setAltTextChanges] = useState<Record<string, string>>({});
   const isAltMissing = () => {
     return user.requireAltText && images.some((img) => !img.altText || img.altText.trim() === '');
   };
@@ -232,6 +233,17 @@ const NewPost = () => {
     }
     try {
       setIsSubmitting(true);
+
+      if (isEditPost && Object.keys(altTextChanges).length > 0) {
+        const altTextPromises = Object.entries(altTextChanges).map(([imageId, altText]) =>
+          mfetch(`/api/images/${imageId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ altText }),
+          })
+        );
+        await Promise.all(altTextPromises);
+      }
+
       let newPost;
       if (isEditPost) {
         newPost = await mfetchjson(`/api/posts/${editPostId}`, {
@@ -502,14 +514,22 @@ const NewPost = () => {
                       image={image}
                       onClose={() => deleteImage(image.id)}
                       disabled={isEditPost}
+                      isEditMode={isEditPost}
                       onAltTextSave={(altText) => {
                         SetImages((images) =>
                           images.map((img, i) => (i === idx ? { ...img, altText } : img))
                         );
-                        mfetch(`/api/images/${image.id}`, {
-                          method: 'PUT',
-                          body: JSON.stringify({ altText }),
-                        });
+                        if (isEditPost) {
+                          setAltTextChanges((prev) => ({
+                            ...prev,
+                            [image.id]: altText,
+                          }));
+                        } else {
+                          mfetch(`/api/images/${image.id}`, {
+                            method: 'PUT',
+                            body: JSON.stringify({ altText }),
+                          });
+                        }
                       }}
                       requiresAltText={user.requireAltText}
                     />
