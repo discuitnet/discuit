@@ -75,7 +75,7 @@ const NewPost = () => {
 
   const [title, _setTitle] = useState('');
   const setTitle = (title: string) =>
-    _setTitle(title.length > 255 ? title.substring(0, 256) : title);
+    _setTitle(title.length > 255 ? title.substring(0, 255) : title);
   const [body, setBody] = useState('');
   const [link, setLink] = useState('');
   const [images, SetImages] = useState<ServerImage[]>([]);
