@@ -50,7 +50,7 @@ export interface ImageCopy {
   height: number;
   boxWidth: number;
   boxHeight: number;
-  fit: 'cover' | 'contain';
+  objectFit: 'cover' | 'contain';
   format: 'jpeg' | 'webp' | 'png';
   url: string;
 }

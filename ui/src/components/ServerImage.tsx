@@ -11,6 +11,9 @@ function ServerImage({ onLoad, image, sizes, style = {}, src, ...props }: Server
   if (image.copies) {
     for (let i = 0; i < image.copies.length; i++) {
       const copy = image.copies[i];
+      if (copy.objectFit === 'cover') {
+        continue;
+      }
       srcset += (i > 0 ? ', ' : '') + `${copy.url} ${copy.width}w`;
     }
   }
