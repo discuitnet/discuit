@@ -19,19 +19,13 @@ const PostCardImage = ({ image, isMobile, loading = 'lazy' }: ImageProps) => {
     height: undefined,
   });
   const [cardWidth, setCardWidth] = useState(0);
+  const w = document.querySelector('.post-card-body')?.clientWidth as number;
   const updateImageSize = useCallback(() => {
-    const w = document.querySelector('.post-card-body')?.clientWidth as number;
     const h = isMobile ? maxImageHeightMobile() : maxImageHeight;
-    // eslint-disable-next-line prefer-const
-    let { width, height } = getImageContainSize(image.width, image.height, w, h);
-    if (w - width < 35 && width / height < 1.15 && width / height > 0.85) {
-      // Cover image to fit card if the image is only slightly not fitting.
-      // A small part of the original image may not be visible because of this.
-      width = w;
-    }
+    const { width, height } = getImageContainSize(image.width, image.height, w, h);
     setCardWidth(w);
     setImageSize({ width, height });
-  }, [image.height, image.width, isMobile]);
+  }, [image.height, image.width, isMobile, w]);
   useLayoutEffect(() => {
     updateImageSize();
   }, [updateImageSize]);
