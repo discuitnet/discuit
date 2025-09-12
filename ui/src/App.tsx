@@ -93,11 +93,10 @@ const App = () => {
 
         if (!res.ok) {
           if (res.status === 408) {
-            // Network error
             setIsOnline(false);
-          } else {
-            throw new Error(await res.text());
+            return;
           }
+          throw new Error(await res.text());
         }
 
         const initial = await res.json();
