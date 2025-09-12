@@ -19,19 +19,18 @@ const PostCardImage = ({ image, isMobile, loading = 'lazy' }: ImageProps) => {
     height: undefined,
   });
   const [cardWidth, setCardWidth] = useState(0);
+  const w = document.querySelector('.post-card-body')?.clientWidth as number;
   const updateImageSize = useCallback(() => {
-    const w = document.querySelector('.post-card-body')?.clientWidth as number;
     const h = isMobile ? maxImageHeightMobile() : maxImageHeight;
     let { width, height } = getImageContainSize(image.width, image.height, w, h);
     setCardWidth(w);
     setImageSize({ width, height });
-  }, [image.height, image.width, isMobile]);
+  }, [image.height, image.width, isMobile, w]);
   useLayoutEffect(() => {
     updateImageSize();
   }, [updateImageSize]);
 
   const isImageFittingCard = imageSize.width !== Math.round(cardWidth);
-  console.log(">>>PostImage imageSize, cardWidth", imageSize, cardWidth)
 
   return (
     <div className={clsx('post-image', isImageFittingCard && 'is-no-fit')}>
