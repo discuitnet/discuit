@@ -12,6 +12,7 @@ export interface ImageProps {
   disabled?: boolean;
   requiresAltText: boolean;
   onAltTextSave: (altText: string) => void;
+  isEditMode?: boolean;
 }
 
 const Image = ({
@@ -20,6 +21,7 @@ const Image = ({
   disabled = false,
   requiresAltText,
   onAltTextSave,
+  isEditMode = false,
 }: ImageProps) => {
   const { width, height } = image;
   const windowWidth = useWindowWidth();
@@ -66,7 +68,7 @@ const Image = ({
         />
       </div>
       {/* alt text input */}
-      {!disabled && (
+      {(!disabled || isEditMode) && (
         <Textarea
           className={clsx('page-new-image-alt', missingAltText && 'is-error')}
           placeholder={'Describe this image (alt text)…'}
