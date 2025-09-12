@@ -180,6 +180,7 @@ In the root directory are these directories:
 - [ ] RSS feeds.
 - [ ] Wiki pages for communities.
 - [x] User profile pictures.
+- [ ] Award mechanism . 
 - [x] User badges (displayed on profile page).
 - [ ] Post drafts.
 - [ ] History (viewed posts).
