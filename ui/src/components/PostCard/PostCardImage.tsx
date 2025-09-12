@@ -22,7 +22,7 @@ const PostCardImage = ({ image, isMobile, loading = 'lazy' }: ImageProps) => {
   const w = document.querySelector('.post-card-body')?.clientWidth as number;
   const updateImageSize = useCallback(() => {
     const h = isMobile ? maxImageHeightMobile() : maxImageHeight;
-    let { width, height } = getImageContainSize(image.width, image.height, w, h);
+    const { width, height } = getImageContainSize(image.width, image.height, w, h);
     setCardWidth(w);
     setImageSize({ width, height });
   }, [image.height, image.width, isMobile, w]);
