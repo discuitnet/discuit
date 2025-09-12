@@ -548,7 +548,9 @@ func populatePostsImages(ctx context.Context, db *sql.DB, posts []*Post) error {
 				img.AppendCopy("medium", 720, 1440, images.ImageFitContain, "")
 				img.AppendCopy("large", 1080, 2160, images.ImageFitContain, "")
 				img.AppendCopy("large", 2160, 4320, images.ImageFitContain, "")
-				post.Image = img
+				if post.Image == nil {
+					post.Image = img
+				}
 				post.Images = append(post.Images, img)
 				break
 			}
