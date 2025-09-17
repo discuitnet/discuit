@@ -132,6 +132,7 @@ const NewPost = () => {
           body: data,
         });
         if (!res.ok) {
+          setIsUploading(false);
           if (res.status === 400) {
             const error = await res.json();
             if (error.code === 'file_size_exceeded') {
@@ -152,6 +153,7 @@ const NewPost = () => {
         if (!(error instanceof DOMException && error.name === 'AbortError')) {
           dispatch(snackAlertError(error));
         }
+        setIsUploading(false);
         break;
       }
     }
