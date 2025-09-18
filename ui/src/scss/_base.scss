@@ -912,6 +912,13 @@ button,
     }
 }
 
+button.button-close {
+    background: rgba(var(--base-fg), 0);
+    &:hover {
+        background: rgba(var(--base-fg), 0.1);
+    }
+}
+
 .button-upload {
     display: flex;
     height: max-content;

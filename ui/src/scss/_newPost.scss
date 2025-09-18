@@ -199,7 +199,6 @@
             .page-new-image-upload {
                 min-height: var(--textarea-min-height);
                 margin: var(--form-padding);
-                margin-top: 5px;
             }
             .page-new-image-upload {
                 display: flex;
@@ -244,6 +243,8 @@
                     flex-direction: column;
                     border-radius: var(--border-radius);
                     margin-bottom: var(--gap);
+                    --button-background: rgba(0, 0, 0, 0.7);
+                    --color: #fff;
                     .contain-image {
                         max-height: none;
                         .image,
@@ -253,18 +254,25 @@
                     }
                     .button-close {
                         position: absolute;
-                        top: 0;
-                        right: 0;
-                        color: #fff;
-                        background-color: var(--color-red);
+                        top: 8px;
+                        right: 8px;
+                        background-color: var(--button-background);
                         padding: 6px;
-                        width: 25px !important;
-                        height: 25px !important;
                         border-radius: 50%;
-                        transform: translate(40%, -40%);
                         border: 1px solid rgba(var(--base-fg), 0.2);
+                        color: var(--color);
+                    }
+                    .button-alt-text {
+                        position: absolute;
+                        top: 8px;
+                        left: 8px;
+                        background-color: var(--button-background);
+                        color: var(--color);
+                    }
+                    .button-close,
+                    .button-alt-text {
                         &:hover {
-                            background-color: var(--color-fg);
+                            background-color: #000;
                         }
                     }
                 }
@@ -333,6 +341,27 @@
         }
         > * {
             margin-bottom: var(--gap);
+        }
+    }
+}
+
+.modal {
+    .modal-add-alt-text {
+        width: auto;
+        max-width: auto;
+        .modal-card-content {
+            img {
+                border-radius: var(--border-radius);
+            }
+            > * {
+                margin-bottom: var(--gap);
+                &:last-child {
+                    margin-bottom: 0;
+                }
+            }
+            textarea {
+                min-height: 100px;
+            }
         }
     }
 }
