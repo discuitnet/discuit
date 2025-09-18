@@ -29,11 +29,14 @@ const Image = ({
 
   const divref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.0);
+  const [gridImgWidth, setGridImgWidth] = useState(0);
   useLayoutEffect(() => {
     if (divref.current) {
       const containerWidth = divref.current.parentElement?.clientWidth;
       if (containerWidth) {
         setScale(containerWidth / width);
+        const gridGap = 8;
+        setGridImgWidth((containerWidth - gridGap) / 2);
       }
     }
   }, [image, windowWidth, width]);
@@ -83,8 +86,9 @@ const Image = ({
           backgroundColor={image.averageColor}
           alt={image.altText || 'Just uploaded'}
           style={{
-            width: imgWidth,
-            height: imgHeight,
+            width: isMobile ? '100%' : gridImgWidth,
+            height: isMobile ? 'max-content' : gridImgWidth,
+            objectFit: 'cover',
           }}
         />
       </div>

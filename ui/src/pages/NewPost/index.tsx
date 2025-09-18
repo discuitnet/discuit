@@ -525,7 +525,13 @@ const NewPost = () => {
               />
             )}
             {postType === 'image' && (
-              <div className={clsx('page-new-image-upload', !imageSubmitAllowed && 'is-disabled')}>
+              <div
+                className={clsx(
+                  'page-new-image-upload',
+                  !imageSubmitAllowed && 'is-disabled',
+                  images.length === 0 && 'has-no-images'
+                )}
+              >
                 {images.length > 0 &&
                   images.map((image, idx) => (
                     <Image
