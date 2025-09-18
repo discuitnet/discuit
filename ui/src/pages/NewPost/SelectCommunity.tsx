@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
+import { useLocation } from 'react-router-dom';
 import { kRound, mfetchjson, selectImageCopyURL } from '../../helper';
-import { useDelayedEffect, useQuery } from '../../hooks';
+import { useDelayedEffect } from '../../hooks';
 import { Community } from '../../serverTypes';
 import { snackAlertError } from '../../slices/mainSlice';
 
@@ -33,9 +34,9 @@ const SelectCommunity = ({
   }, [dispatch]);
   const [value, setValue] = useState(initial);
   const [focus, setFocus] = useState(false);
-  const query = useQuery();
+  const location = useLocation();
   useEffect(() => {
-    const name = query.get('community');
+    const name = new URLSearchParams(location.search).get('community');
     if (name === null || name === '') return;
     (async () => {
       try {
@@ -46,7 +47,7 @@ const SelectCommunity = ({
         dispatch(snackAlertError(error));
       }
     })();
-  }, [dispatch, query]);
+  }, [location]);
 
   const handleChange: React.ChangeEventHandler<HTMLInputElement> = (event) =>
     setValue(event.target.value);
