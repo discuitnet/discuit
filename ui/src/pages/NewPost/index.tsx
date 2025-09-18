@@ -10,7 +10,7 @@ import MarkdownTextarea from '../../components/MarkdownTextarea';
 import PageLoading from '../../components/PageLoading';
 import Spinner from '../../components/Spinner';
 import Textarea from '../../components/Textarea';
-import { APIError, isValidHttpUrl, mfetch, mfetchjson } from '../../helper';
+import { APIError, isValidHttpUrl, mfetch, mfetchjson, truncateStringWithDots } from '../../helper';
 import { useLoading, useQuery } from '../../hooks';
 import type { Community, Post, Image as ServerImage } from '../../serverTypes';
 import { MainState, snackAlert, snackAlertError } from '../../slices/mainSlice';
@@ -136,10 +136,15 @@ const NewPost = () => {
             const error = await res.json();
             if (error.code === 'file_size_exceeded') {
               dispatch(snackAlert('Maximum file size exceeded.'));
-              return;
-            } else if (error.code === 'unsupported_image') {
-              dispatch(snackAlert('Unsupported image.'));
-              return;
+              break;
+            } else if (error.code === 'unsupported-image-format') {
+              console.log(file.name);
+              dispatch(
+                snackAlert(
+                  `File '${truncateStringWithDots(file.name, 20)}' is of an unsupported type.`
+                )
+              );
+              break;
             }
           }
           throw new APIError(res.status, await res.json());

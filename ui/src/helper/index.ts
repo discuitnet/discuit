@@ -484,3 +484,10 @@ export function copyToClipboard(text: string): boolean {
   }
   return false;
 }
+
+export function truncateStringWithDots(str: string, maxLength: number, suffix = '...'): string {
+  if (str.length > maxLength) {
+    return str.substring(0, maxLength) + suffix;
+  }
+  return str;
+}

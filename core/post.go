@@ -1860,6 +1860,9 @@ func SavePostImage(ctx context.Context, db *sql.DB, authorID uid.ID, image []byt
 			Fit:    images.ImageFitContain,
 		})
 		if err != nil {
+			if err == images.ErrImageFormatUnsupported {
+				return httperr.NewBadRequest("unsupported-image-format", "The uploaded file is of an unsupported type.")
+			}
 			return fmt.Errorf("failed to save post image (author: %v): %w", authorID, err)
 		}
 		imageID = id
