@@ -12,7 +12,7 @@ import Spinner from '../../components/Spinner';
 import Textarea from '../../components/Textarea';
 import { APIError, isValidHttpUrl, mfetch, mfetchjson } from '../../helper';
 import { useLoading, useQuery } from '../../hooks';
-import { Community, Post, Image as ServerImage } from '../../serverTypes';
+import type { Community, Post, Image as ServerImage } from '../../serverTypes';
 import { MainState, snackAlert, snackAlertError } from '../../slices/mainSlice';
 import { postAdded } from '../../slices/postsSlice';
 import { RootState } from '../../store';
@@ -38,7 +38,7 @@ const NewPost = () => {
   const editPostId = query.get('edit');
   const [changed, setChanged] = useState(false);
 
-  const [postType, setPostType] = useState('text');
+  const [postType, setPostType] = useState<Post['type']>('text');
   const [userGroup, setUserGroup] = useState('normal');
 
   const bannedFrom = useSelector<RootState>(
@@ -157,6 +157,20 @@ const NewPost = () => {
     }
     setIsUploading(false);
   };
+  useEffect(() => {
+    // This hooks adds image clipboard pasting functionality.
+    const listener = async (event: ClipboardEvent) => {
+      if (event.clipboardData && event.clipboardData.files.length !== 0) {
+        event.preventDefault();
+        setPostType('image');
+        handleImagesUpload(event.clipboardData.files);
+      }
+    };
+    document.addEventListener('paste', listener);
+    return () => {
+      document.removeEventListener('paste', listener);
+    };
+  }, []);
   const deleteImage = (imageId: string) => {
     // TODO: send DELETE request to server.
     SetImages((images) => images.filter((image) => image.id !== imageId));
