@@ -19,13 +19,13 @@ const PostCardImage = ({ image, isMobile, loading = 'lazy' }: ImageProps) => {
     height: undefined,
   });
   const [cardWidth, setCardWidth] = useState(0);
-  const w = document.querySelector('.post-card-body')?.clientWidth as number;
   const updateImageSize = useCallback(() => {
+    const w = document.querySelector('.post-card-body')?.clientWidth as number;
     const h = isMobile ? maxImageHeightMobile() : maxImageHeight;
     const { width, height } = getImageContainSize(image.width, image.height, w, h);
     setCardWidth(w);
     setImageSize({ width, height });
-  }, [image.height, image.width, isMobile, w]);
+  }, [image.height, image.width, isMobile]);
   useLayoutEffect(() => {
     updateImageSize();
   }, [updateImageSize]);
