@@ -10,9 +10,9 @@ import MarkdownTextarea from '../../components/MarkdownTextarea';
 import PageLoading from '../../components/PageLoading';
 import Spinner from '../../components/Spinner';
 import Textarea from '../../components/Textarea';
-import { APIError, isValidHttpUrl, mfetch, mfetchjson } from '../../helper';
+import { APIError, isValidHttpUrl, mfetch, mfetchjson, truncateStringWithDots } from '../../helper';
 import { useLoading, useQuery } from '../../hooks';
-import { Community, Post, Image as ServerImage } from '../../serverTypes';
+import type { Community, Post, Image as ServerImage } from '../../serverTypes';
 import { MainState, snackAlert, snackAlertError } from '../../slices/mainSlice';
 import { postAdded } from '../../slices/postsSlice';
 import { RootState } from '../../store';
@@ -38,7 +38,7 @@ const NewPost = () => {
   const editPostId = query.get('edit');
   const [changed, setChanged] = useState(false);
 
-  const [postType, setPostType] = useState('text');
+  const [postType, setPostType] = useState<Post['type']>('text');
   const [userGroup, setUserGroup] = useState('normal');
 
   const bannedFrom = useSelector<RootState>(
@@ -136,10 +136,15 @@ const NewPost = () => {
             const error = await res.json();
             if (error.code === 'file_size_exceeded') {
               dispatch(snackAlert('Maximum file size exceeded.'));
-              return;
-            } else if (error.code === 'unsupported_image') {
-              dispatch(snackAlert('Unsupported image.'));
-              return;
+              break;
+            } else if (error.code === 'unsupported-image-format') {
+              console.log(file.name);
+              dispatch(
+                snackAlert(
+                  `File '${truncateStringWithDots(file.name, 20)}' is of an unsupported type.`
+                )
+              );
+              break;
             }
           }
           throw new APIError(res.status, await res.json());
@@ -157,6 +162,20 @@ const NewPost = () => {
     }
     setIsUploading(false);
   };
+  useEffect(() => {
+    // This hooks adds image clipboard pasting functionality.
+    const listener = async (event: ClipboardEvent) => {
+      if (event.clipboardData && event.clipboardData.files.length !== 0) {
+        event.preventDefault();
+        setPostType('image');
+        handleImagesUpload(event.clipboardData.files);
+      }
+    };
+    document.addEventListener('paste', listener);
+    return () => {
+      document.removeEventListener('paste', listener);
+    };
+  }, []);
   const deleteImage = (imageId: string) => {
     // TODO: send DELETE request to server.
     SetImages((images) => images.filter((image) => image.id !== imageId));
@@ -506,7 +525,13 @@ const NewPost = () => {
               />
             )}
             {postType === 'image' && (
-              <div className={clsx('page-new-image-upload', !imageSubmitAllowed && 'is-disabled')}>
+              <div
+                className={clsx(
+                  'page-new-image-upload',
+                  !imageSubmitAllowed && 'is-disabled',
+                  images.length === 0 && 'has-no-images'
+                )}
+              >
                 {images.length > 0 &&
                   images.map((image, idx) => (
                     <Image

@@ -27,13 +27,13 @@
         }
     }
     .page-new-content {
-        max-width: 960px;
+        max-width: 990px;
         width: 100%;
         padding: 0 var(--gap);
         align-self: center;
         justify-self: center;
         display: grid;
-        grid-template-columns: 2fr 1fr;
+        grid-template-columns: 660px 1fr;
         grid-template-rows: 1fr;
         @include mixins.mobile() {
             width: 100%;
@@ -199,15 +199,35 @@
             .page-new-image-upload {
                 min-height: var(--textarea-min-height);
                 margin: var(--form-padding);
-                margin-top: 5px;
             }
             .page-new-image-upload {
-                display: flex;
-                flex-direction: column;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                grid-gap: 8px;
+                > * {
+                    aspect-ratio: 1 / 1;
+                }
+                &:not(.has-no-images) {
+                    .page-new-image-drop {
+                        height: unset;
+                    }
+                }
+                &.has-no-images {
+                    grid-template-columns: 1fr;
+                }
                 &.is-disabled {
                     opacity: 0.8;
                     .page-new-image-drop {
                         cursor: unset;
+                    }
+                }
+                @include mixins.mobile() {
+                    grid-template-columns: 1fr;
+                    > * {
+                        aspect-ratio: unset;
+                    }
+                    .page-new-image-drop {
+                        height: 300px !important;
                     }
                 }
                 .page-new-image-drop {
@@ -243,7 +263,8 @@
                     display: flex;
                     flex-direction: column;
                     border-radius: var(--border-radius);
-                    margin-bottom: var(--gap);
+                    --button-background: rgba(0, 0, 0, 0.7);
+                    --color: #fff;
                     .contain-image {
                         max-height: none;
                         .image,
@@ -253,18 +274,25 @@
                     }
                     .button-close {
                         position: absolute;
-                        top: 0;
-                        right: 0;
-                        color: #fff;
-                        background-color: var(--color-red);
+                        top: 8px;
+                        right: 8px;
+                        background-color: var(--button-background);
                         padding: 6px;
-                        width: 25px !important;
-                        height: 25px !important;
                         border-radius: 50%;
-                        transform: translate(40%, -40%);
                         border: 1px solid rgba(var(--base-fg), 0.2);
+                        color: var(--color);
+                    }
+                    .button-alt-text {
+                        position: absolute;
+                        top: 8px;
+                        left: 8px;
+                        background-color: var(--button-background);
+                        color: var(--color);
+                    }
+                    .button-close,
+                    .button-alt-text {
                         &:hover {
-                            background-color: var(--color-fg);
+                            background-color: #000;
                         }
                     }
                 }
@@ -333,6 +361,27 @@
         }
         > * {
             margin-bottom: var(--gap);
+        }
+    }
+}
+
+.modal {
+    .modal-add-alt-text {
+        width: auto;
+        max-width: auto;
+        .modal-card-content {
+            img {
+                border-radius: var(--border-radius);
+            }
+            > * {
+                margin-bottom: var(--gap);
+                &:last-child {
+                    margin-bottom: 0;
+                }
+            }
+            textarea {
+                min-height: 100px;
+            }
         }
     }
 }

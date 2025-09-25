@@ -126,7 +126,7 @@ func (f ImageFormat) BIMGType() (t bimg.ImageType, err error) {
 	case ImageFormatPNG:
 		t = bimg.PNG
 	default:
-		err = errors.New("unsupported bimg image type")
+		err = ErrImageFormatUnsupported
 	}
 	return
 }
@@ -708,11 +708,11 @@ func convertImage(image []byte, r *request) (_ []byte, err error) {
 
 	if r.format != "" {
 		if o.Type, err = r.format.BIMGType(); err != nil {
-			return nil, fmt.Errorf("unsupported image format %v (image id: %v)", r.format, r.id)
+			return nil, err
 		}
 	}
 
-	img, err := bimg.NewImage(image).Process(o)
+	img, err := bimgProcessImage(image, o)
 	if err != nil {
 		return nil, err
 	}
@@ -803,7 +803,7 @@ func SaveImageTx(ctx context.Context, tx *sql.Tx, storeName string, file []byte,
 		if err != nil {
 			return uid.ID{}, err
 		}
-		img, err = bimg.NewImage(file).Process(bimg.Options{
+		img, err = bimgProcessImage(file, bimg.Options{
 			StripMetadata: true,
 			Quality:       bimg.Quality,
 			Type:          bimgType,
@@ -887,4 +887,14 @@ func DeleteImagesTx(ctx context.Context, tx *sql.Tx, db *sql.DB, images ...uid.I
 
 	_, err = tx.ExecContext(ctx, fmt.Sprintf("DELETE FROM images WHERE id IN %s", msql.InClauseQuestionMarks(len(images))), args...)
 	return err
+}
+
+func bimgProcessImage(buf []byte, o bimg.Options) ([]byte, error) {
+	img, err := bimg.NewImage(buf).Process(o)
+	if err != nil && err.Error() == "Unsupported image format" {
+		// Hacky error type manipulation because the bimg package doesn't do
+		// this internally.
+		err = ErrImageFormatUnsupported
+	}
+	return img, err
 }

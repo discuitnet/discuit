@@ -85,7 +85,7 @@ export const ButtonClose = ({
   className?: string;
   style?: React.CSSProperties;
 } & ButtonProps) => {
-  const cls = 'button-icon' + (className ? ` ${className}` : '');
+  const cls = 'button-close button-icon' + (className ? ` ${className}` : '');
   return (
     <Button className={cls} style={{ padding: '9px', ...style }} {...props}>
       <SVGClose />
