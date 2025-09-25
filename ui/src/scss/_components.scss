@@ -1151,15 +1151,17 @@
     }
 }
 
-.image-gallery {
-    position: relative;
-
+.image-gallery-gutter {
     // Without this, Chrome, for some reason, automatically selects the images
     // when clicking on the next and previous buttons quickly.
     user-select: none;
+    position: relative;
+    height: fit-content;
+    display: flex;
+    justify-content: space-between;
 
     .image-gallery-next-btn {
-        position: absolute;
+        position: relative;
         z-index: 100;
         cursor: pointer;
         right: 0;
@@ -1184,6 +1186,48 @@
             filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
         }
     }
+
+    .image-gallery-dots {
+        position: relative;
+        z-index: 100;
+        top: 50%;
+        display: flex;
+        .image-gallery-dot {
+            position: relative;
+            --size: 6px;
+            top:calc(1.5 * var(--size));
+            width: var(--size);
+            height: var(--size);
+            background: #fff;
+            filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
+            border-radius: 50%;
+            margin-right: 6px;
+            opacity: 0.45;
+            &:last-child {
+                margin-right: 0;
+            }
+            &.is-highlighted {
+                opacity: 1;
+            }
+        }
+        .image-gallery-num {
+            margin-right: 6px;
+            opacity: 0.45;
+            &:last-child {
+                margin-right: 0;
+            }
+            &.is-highlighted {
+                opacity: 1;
+            }
+        }
+    } 
+}
+.image-gallery {
+    position: relative;
+
+    // Without this, Chrome, for some reason, automatically selects the images
+    // when clicking on the next and previous buttons quickly.
+    user-select: none;
     .image-gallery-images {
         position: relative;
         overflow: hidden;
@@ -1214,30 +1258,6 @@
             width: 0;
             height: 0;
             overflow: hidden;
-        }
-    }
-    .image-gallery-dots {
-        position: absolute;
-        z-index: 100;
-        bottom: 15px;
-        left: 50%;
-        transform: translateX(-50%);
-        display: flex;
-        .image-gallery-dot {
-            --size: 6px;
-            width: var(--size);
-            height: var(--size);
-            background: #fff;
-            filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
-            border-radius: 50%;
-            margin-right: 6px;
-            opacity: 0.45;
-            &:last-child {
-                margin-right: 0;
-            }
-            &.is-highlighted {
-                opacity: 1;
-            }
         }
     }
 }
