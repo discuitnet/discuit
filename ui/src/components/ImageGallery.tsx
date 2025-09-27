@@ -61,10 +61,8 @@ export default function ImageGallery({
     const dots = [];
     for (let i = 0; i < numImages; i++) {
       dots.push(
-        //(currentImageIndex !== i ? <div className='image-gallery-dot' key = {`dot-${i}`}></div> : <div>{i + 1}</div>)
-        
         <div
-          className={'image-gallery-' + (currentImageIndex === i ? 'num is-highlighted' : 'dot')}
+          className={'image-gallery-' + (currentImageIndex === i ? 'num' : 'dot')}
           key={`dot-${i}`}
         >{(currentImageIndex === i ? i + 1 : '')}</div>
       );
