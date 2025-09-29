@@ -62,9 +62,9 @@ export default function ImageGallery({
     for (let i = 0; i < numImages; i++) {
       dots.push(
         <div
-          className={'image-gallery-dot' + (currentImageIndex === i ? ' is-highlighted' : '')}
+          className={'image-gallery-' + (currentImageIndex === i ? 'num' : 'dot')}
           key={`dot-${i}`}
-        ></div>
+        >{(currentImageIndex === i ? i + 1 : '')}</div>
       );
     }
     return <div className="image-gallery-dots">{dots}</div>;
@@ -102,21 +102,26 @@ export default function ImageGallery({
   }, [showLeftArrow, showRightArrow, keyboardControlsOn]);
 
   return (
-    <div className={'image-gallery' + (className ? ` ${className}` : '')} {...props}>
-      <div
-        className="image-gallery-next-btn is-button is-previous"
-        onClick={() => setCurrentImageIndex(showLeftArrow ? (n) => n - 1 : numImages - 1)}
-      >
-        {nextIcon}
+    <>
+      <div className={'image-gallery' + (className ? ` ${className}` : '')} {...props}>
+        {renderImages()}
       </div>
-      <div
-        className="image-gallery-next-btn is-button"
-        onClick={() => setCurrentImageIndex(showRightArrow ? (n) => n + 1 : 0)}
-      >
-        {nextIcon}
+      <div className='image-gallery-gutter'>
+        <div
+          className="image-gallery-next-btn is-button is-previous"
+          onClick={() => setCurrentImageIndex(showLeftArrow ? (n) => n - 1 : numImages - 1)}
+        >
+          {nextIcon}
+        </div>
+        {renderDots()}
+        <div
+          className="image-gallery-next-btn is-button"
+          onClick={() => setCurrentImageIndex(showRightArrow ? (n) => n + 1 : 0)}
+        >
+          {nextIcon}
+        </div>
       </div>
-      {renderImages()}
-      {renderDots()}
-    </div>
+    </>
+
   );
 }
