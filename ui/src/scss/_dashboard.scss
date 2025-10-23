@@ -105,6 +105,7 @@
 
 .page-dashboard {
     --head-section-height: 60px;
+    --sidebar-left-width: 240px;
     display: grid;
     padding: 0;
     .inner-wrap {
@@ -130,6 +131,7 @@
         }
         h1 {
             font-size: var(--fs-2xl);
+            font-weight: 545;
         }
     }
     .page-dashboard-wrap {
