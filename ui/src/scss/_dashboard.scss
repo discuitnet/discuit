@@ -178,6 +178,19 @@
         font-size: calc(var(--fs-xl) * 1.4);
         border-bottom: var(--seperator);
         padding-bottom: 8px;
+        .right {
+            display: flex;
+            align-items: center;
+            > * {
+                margin-right: var(--gap);
+                &:last-child {
+                    margin-right: 0;
+                }
+            }
+            .form-field {
+                font-size: var(--fs-normal);
+            }
+        }
     }
 }
 

@@ -542,7 +542,8 @@ func (s *Server) handleUserProPic(w *responseWriter, r *request) error {
 		return httperr.NewForbidden("not_owner", "")
 	}
 
-	if r.req.Method == "POST" {
+	switch r.req.Method {
+	case "POST":
 		r.req.Body = http.MaxBytesReader(w, r.req.Body, int64(s.config.MaxImageSize)) // limit max upload size
 		if err := r.req.ParseMultipartForm(int64(s.config.MaxImageSize)); err != nil {
 			return httperr.NewBadRequest("file_size_exceeded", "Max file size exceeded.")
@@ -561,7 +562,7 @@ func (s *Server) handleUserProPic(w *responseWriter, r *request) error {
 		if err := user.UpdateProPic(r.ctx, s.db, data); err != nil {
 			return err
 		}
-	} else if r.req.Method == "DELETE" {
+	case "DELETE":
 		if err := user.DeleteProPic(r.ctx, s.db); err != nil {
 			return err
 		}

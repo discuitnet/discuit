@@ -331,7 +331,8 @@ export interface Mutes {
 }
 
 export interface SiteSettings {
-  signupsDisabled: boolean;
+  signupsDisabled?: boolean;
+  torBlocked?: boolean;
 }
 
 export interface AnalyticsEvent {

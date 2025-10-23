@@ -15,6 +15,7 @@ var cache = &ssCache{}
 // dashboard.
 type SiteSettings struct {
 	SignupsDisabled bool `json:"signupsDisabled"`
+	TorBlocked      bool `json:"torBlocked"`
 
 	// note: ssCache.store() and ssCache.get() uses shallow-copy on this struct.
 	// So those lines of code need updating if pointer fields are added to this
