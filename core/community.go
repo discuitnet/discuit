@@ -1306,6 +1306,26 @@ func DeleteUnusedCommunities(ctx context.Context, db *sql.DB, n uint, dryRun boo
 	return deleted, nil
 }
 
+func requestExists(ctx context.Context, db *sql.DB, byUser, name string) (bool, error) {
+	var id int
+	if err := db.QueryRowContext(ctx, `
+			SELECT id
+			FROM community_requests
+			WHERE deleted_at IS NULL AND by_user = ? AND community_name_lc = ? and denied_at IS NULL
+			LIMIT 1`,
+		byUser,
+		strings.ToLower(name),
+	).Scan(&id); err != nil {
+		if err != nil {
+			if err != sql.ErrNoRows {
+				return true, err
+			}
+			return false, nil // no pending requests means the byUser:name request doesn't exist and can go forward
+		}
+	}
+	return true, nil
+}
+
 type CommunityRequest struct {
 	ID              int             `json:"id"`
 	ByUser          string          `json:"byUser"`
@@ -1328,6 +1348,18 @@ func CreateCommunityRequest(ctx context.Context, db *sql.DB, byUser, name, note 
 			HTTPStatus: http.StatusConflict,
 			Code:       "community-already-exists",
 			Message:    "The community you're requesting to create already exists",
+		}
+	}
+
+	requested, err := requestExists(ctx, db, byUser, name)
+	if err != nil {
+		return err
+	}
+	if requested {
+		return &httperr.Error{
+			HTTPStatus: http.StatusConflict,
+			Code:       "community-already-requested",
+			Message:    "You already have a pending request for that community",
 		}
 	}
 
