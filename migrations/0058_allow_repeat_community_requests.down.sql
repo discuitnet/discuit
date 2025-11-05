@@ -1,0 +1,1 @@
+alter table community_requests add unique (by_user, community_name_lc);

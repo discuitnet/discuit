@@ -1,0 +1,1 @@
+alter table community_requests drop constraint by_user;
