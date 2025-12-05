@@ -2,7 +2,6 @@ import { Route, Switch, useRouteMatch } from 'react-router-dom';
 import Dashboard from '.';
 import { SVGComment } from '../../SVGs';
 import DashboardPage from './DashboardPage';
-import { SidebarMenuItem, SidebarTopic } from './Sidebar';
 
 function ExampleDashboard() {
   const { path } = useRouteMatch();
@@ -12,14 +11,12 @@ function ExampleDashboard() {
   return (
     <Dashboard
       title="Example dashboard"
-      sidebarMenu={
-        <>
-          <SidebarMenuItem name="Home" icon={<SVGComment />} to={homeURL} />
-          <SidebarMenuItem name="About" icon={<SVGComment />} to={aboutURL} />
-          <SidebarTopic name="Settings" />
-          <SidebarMenuItem name="General" icon={<SVGComment />} to={settingsURL} />
-        </>
-      }
+      sidebarMenu={[
+        { name: 'Home', icon: <SVGComment />, to: homeURL },
+        { name: 'About', icon: <SVGComment />, to: aboutURL },
+        { name: 'Settings', type: 'topic' },
+        { name: 'General', icon: <SVGComment />, to: settingsURL },
+      ]}
     >
       <Switch>
         <Route exact path={homeURL}>

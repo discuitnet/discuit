@@ -3,7 +3,6 @@ import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, Redirect, Route, Switch, useParams, useRouteMatch } from 'react-router-dom';
 import Dashboard from '../../components/Dashboard';
-import { SidebarMenuItem, SidebarTopic } from '../../components/Dashboard/Sidebar';
 import { APIError, mfetch } from '../../helper';
 import { communityAdded, selectCommunity } from '../../slices/communitiesSlice';
 import { MainState, snackAlertError } from '../../slices/mainSlice';
@@ -72,48 +71,21 @@ const Modtools = () => {
     <Dashboard
       className="modtools"
       title={title}
-      sidebarMenu={
-        <>
-          <SidebarMenuItem
-            name="Community settings"
-            to={getSidebarMenuItemLink('settings')}
-            icon={<SVGSettings />}
-          />
-          <SidebarTopic name="Content" />
-          <SidebarMenuItem
-            name="Reports"
-            to={getSidebarMenuItemLink('reports')}
-            icon={<SVGSettings />}
-          />
-          <SidebarMenuItem
-            name="Removed"
-            to={getSidebarMenuItemLink('removed')}
-            icon={<SVGSettings />}
-          />
-          <SidebarMenuItem
-            name="Locked"
-            to={getSidebarMenuItemLink('locked')}
-            icon={<SVGSettings />}
-          />
-          <SidebarTopic name="Users" />
-          <SidebarMenuItem
-            name="Banned"
-            to={getSidebarMenuItemLink('banned')}
-            icon={<SVGSettings />}
-          />
-          <SidebarMenuItem
-            name="Moderators"
-            to={getSidebarMenuItemLink('mods')}
-            icon={<SVGSettings />}
-          />
-          <SidebarTopic name="Rules" />
-          <SidebarMenuItem
-            name="Rules"
-            to={getSidebarMenuItemLink('rules')}
-            icon={<SVGSettings />}
-          />
-        </>
-      }
+      sidebarMenu={[
+        {
+          name: 'Community settings',
+          icon: <SVGSettings />,
+          to: getSidebarMenuItemLink('settings'),
+        },
+        { name: 'Rules', icon: <SVGSettings />, to: getSidebarMenuItemLink('rules') },
+        { type: 'topic', name: 'Content' },
+        { name: 'Reports', icon: <SVGSettings />, to: getSidebarMenuItemLink('reports') },
+        { name: 'Removed', icon: <SVGSettings />, to: getSidebarMenuItemLink('removed') },
+        { name: 'Locked', icon: <SVGSettings />, to: getSidebarMenuItemLink('locked') },
+        { type: 'topic', name: 'Users' },
+        { name: 'Banned', icon: <SVGSettings />, to: getSidebarMenuItemLink('banned') },
+        { name: 'Moderators', icon: <SVGSettings />, to: getSidebarMenuItemLink('mods') },
+      ]}
     >
       <Helmet>
         <title>Modtools</title>

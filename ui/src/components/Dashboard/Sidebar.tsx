@@ -39,12 +39,14 @@ export function SidebarMenuItem({
   name,
   icon,
   to,
+  isActive = false,
 }: {
   name: string;
   icon?: React.ReactNode;
   to?: string;
+  isActive?: boolean;
 }) {
-  const className = clsx('sidebar-item', icon && 'with-image');
+  const className = clsx('sidebar-item', icon && 'with-image', isActive && 'is-active');
   const renderChildren = () => {
     return (
       <>
