@@ -71,6 +71,7 @@ export default function IPBlocks() {
       dispatch(snackAlertError(error));
     } finally {
       torBlockChangeInProgress.current = false;
+      dispatch(snackAlert(`Tor IPs ${checked ? 'blocked' : 'unblocked'}`));
     }
   };
 
