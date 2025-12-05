@@ -4,12 +4,13 @@ import { ButtonHamburger } from '../Button';
 import Sidebar from './Sidebar';
 
 export interface DashboardProps {
+  className?: string;
   title?: React.ReactNode;
   children?: React.ReactNode;
   sidebarMenu?: React.ReactNode;
 }
 
-function Dashboard({ title, children, sidebarMenu }: DashboardProps) {
+function Dashboard({ className, title, children, sidebarMenu }: DashboardProps) {
   const [menuVisible, setMenuVisible] = useState(false);
   const toggleMenuVisible = () => setMenuVisible((v) => !v);
 
@@ -24,7 +25,7 @@ function Dashboard({ title, children, sidebarMenu }: DashboardProps) {
   }, []);
 
   return (
-    <div className="page-content dashboard">
+    <div className={clsx('page-content dashboard', className)}>
       <div className="navbar dashboard-head">
         <div className="inner-wrap">
           <div className="left">

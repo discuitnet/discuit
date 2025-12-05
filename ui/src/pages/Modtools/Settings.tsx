@@ -2,6 +2,7 @@ import PropTypes from 'prop-types';
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import CommunityProPic from '../../components/CommunityProPic';
+import DashboardPage from '../../components/Dashboard/DashboardPage';
 import { FormField } from '../../components/Form';
 import ImageEditModal from '../../components/ImageEditModal';
 import Input, { Checkbox, InputWithCount, useInputMaxLength } from '../../components/Input';
@@ -188,11 +189,7 @@ const Settings = ({ community }: { community: Community }) => {
   };
 
   return (
-    <div className="modtools-content modtools-settings">
-      <div className="modtools-content-head">
-        <div className="modtools-title">Community settings</div>
-      </div>
-      {/*<div className="flex-column inner-gap-1">*/}
+    <DashboardPage className="modtools-settings" title="Community settings">
       <div className="form">
         <FormField label="Community name">
           <Input value={community.name} disabled />
@@ -297,7 +294,7 @@ const Settings = ({ community }: { community: Community }) => {
         deleting={isDeletingBanner}
         isCircular={false}
       />
-    </div>
+    </DashboardPage>
   );
 };
 

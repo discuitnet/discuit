@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { ButtonClose } from '../../components/Button';
+import DashboardPage from '../../components/Dashboard/DashboardPage';
 import { FormField } from '../../components/Form';
 import { InputWithCount, useInputMaxLength } from '../../components/Input';
 import Modal from '../../components/Modal';
@@ -105,7 +106,7 @@ const Rules = ({ community }: { community: Community }) => {
   const modalDisabled = rule === '';
 
   return (
-    <div className="modtools-content modtools-rules">
+    <DashboardPage className="modtools-content modtools-rules" title="Rules" fullWidth>
       <Modal open={editOpen} onClose={handleEditClose}>
         <div className="modal-card">
           <div className="modal-card-head">
@@ -141,8 +142,7 @@ const Rules = ({ community }: { community: Community }) => {
           </div>
         </div>
       </Modal>
-      <div className="modtools-content-head">
-        <div className="modtools-title">Rules</div>
+      <div className="modtools-rules-new-rule">
         <button className="button-main" onClick={handleAddRule}>
           Add rule
         </button>
@@ -184,7 +184,7 @@ const Rules = ({ community }: { community: Community }) => {
           */}
         </div>
       </div>
-    </div>
+    </DashboardPage>
   );
 };
 

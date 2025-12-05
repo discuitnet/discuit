@@ -1,14 +1,15 @@
 import clsx from 'clsx';
 
 export interface DashboardPageProps {
+  className?: string;
   title: string;
   children?: React.ReactNode;
   fullWidth?: boolean;
 }
 
-function DashboardPage({ title, children, fullWidth = false }: DashboardPageProps) {
+function DashboardPage({ className, title, children, fullWidth = false }: DashboardPageProps) {
   return (
-    <div className={clsx('dashboard-page')}>
+    <div className={clsx('dashboard-page', className)}>
       <div className="dashboard-page-title">{title}</div>
       <div className={clsx('dashboard-page-content', fullWidth && 'is-full-width')}>{children}</div>
     </div>

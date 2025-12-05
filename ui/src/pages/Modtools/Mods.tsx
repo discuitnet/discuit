@@ -2,6 +2,7 @@ import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ButtonClose } from '../../components/Button';
+import DashboardPage from '../../components/Dashboard/DashboardPage';
 import { FormField } from '../../components/Form';
 import Input from '../../components/Input';
 import Modal from '../../components/Modal';
@@ -74,7 +75,7 @@ const Mods = ({ community }: { community: Community }) => {
   });
 
   return (
-    <div className="modtools-content modtools-mods">
+    <DashboardPage className="modtools-content modtools-mods" title="Moderators" fullWidth>
       <Modal open={addModOpen} onClose={handleAddModClose}>
         <div className="modal-card">
           <div className="modal-card-head">
@@ -94,8 +95,7 @@ const Mods = ({ community }: { community: Community }) => {
           </div>
         </div>
       </Modal>
-      <div className="modtools-content-head">
-        <div className="modtools-title">Mods</div>
+      <div className="modtools-mods-new-mod">
         <button className="button-main" onClick={() => setAddModOpen(true)}>
           Add mod
         </button>
@@ -117,7 +117,7 @@ const Mods = ({ community }: { community: Community }) => {
           ))}
         </div>
       </div>
-    </div>
+    </DashboardPage>
   );
 };
 
