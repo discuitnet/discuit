@@ -107,7 +107,9 @@ const Reports = ({ community }: { community: Community }) => {
             );
           })}
       </div>
-      <Pagination current={page} noPages={noPages} onClick={(n) => setPage(n)} />
+      {reports && reports.length > 0 && (
+        <Pagination current={page} noPages={noPages} onClick={(n) => setPage(n)} />
+      )}
     </ReportsView>
   );
 };

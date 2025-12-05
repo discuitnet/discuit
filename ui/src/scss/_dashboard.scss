@@ -159,6 +159,8 @@
         height: calc(100vh - var(--navbar-height) - var(--head-section-height));
         // border-radius: var(--border-radius);
         padding: var(--gap);
+        position: relative;
+        z-index: 1000;
         @include mixins.tablet {
             &.is-menu-visible {
                 display: flex;
@@ -168,6 +170,7 @@
                 width: auto;
                 height: max-content;
                 box-shadow: var(--box-shadow-navbar);
+                border-bottom: var(--card-border);
                 z-index: 10;
             }
         }

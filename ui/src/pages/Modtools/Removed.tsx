@@ -61,7 +61,9 @@ const Removed = ({
           </div>
         ))}
       </div>
-      <Pagination noPages={noPages} onClick={(next) => setPage(next)} current={page} />
+      {noPosts > 0 && (
+        <Pagination noPages={noPages} onClick={(next) => setPage(next)} current={page} />
+      )}
     </ReportsView>
   );
 };

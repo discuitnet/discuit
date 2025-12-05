@@ -618,6 +618,13 @@
             color: var(--color-bg);
         }
     }
+    @include mixins.mobile {
+        flex-direction: column;
+        flex-wrap: wrap;
+        .left {
+            margin-bottom: var(--gap);
+        }
+    }
 }
 
 .sidebar {
