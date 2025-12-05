@@ -117,7 +117,7 @@ export default function BasicSiteAnalytics() {
   const [tableWidth, setTableWidth] = useState(345);
   useLayoutEffect(() => {
     if (isMobile) {
-      const el = document.querySelector('.page-dashboard-head .inner-wrap');
+      const el = document.querySelector('.dashboard-head .inner-wrap');
       if (el) {
         const styles = getComputedStyle(el);
         setTableWidth(

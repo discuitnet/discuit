@@ -8,6 +8,7 @@ import BottomNavbar from './components/BottomNavbar';
 import { ButtonClose } from './components/Button';
 import Chat from './components/Chat';
 import CreateCommunity from './components/CreateCommunity';
+import ExampleDashboard from './components/Dashboard/ExampleDashboard';
 import LoginPrompt from './components/LoginPrompt';
 import Modal from './components/Modal';
 import Navbar from './components/Navbar';
@@ -293,6 +294,9 @@ const AppSwitch = () => {
         </Route>
         <Route exact path="/communities">
           <AllCommunities />
+        </Route>
+        <Route path="/test-dashboard">
+          <ExampleDashboard />
         </Route>
         <ProtectedRoute path="/admin">
           <AdminDashboard />

@@ -58,8 +58,8 @@ function AdminDashboard() {
   }
 
   return (
-    <div className="page-content page-dashboard wrap">
-      <div className="navbar page-dashboard-head">
+    <div className="page-content dashboard wrap">
+      <div className="navbar dashboard-head">
         <div className="inner-wrap">
           <div className="left">
             <h1>Admin dashboard</h1>
@@ -69,12 +69,12 @@ function AdminDashboard() {
           </div>
         </div>
       </div>
-      <div className="page-dashboard-wrap">
+      <div className="dashboard-wrap">
         <Sidebar
           onMenuItemClick={toggleMenuVisible}
           className={clsx(menuVisible && 'is-menu-visible')}
         />
-        <div className="page-dashboard-content">
+        <div className="dashboard-content">
           <Switch>
             <Route exact path={path}>
               <Settings />
@@ -110,7 +110,7 @@ function AdminDashboard() {
 
   /*
   return (
-    <div className="page-content page-dashboard wrap">
+    <div className="page-content dashboard wrap">
       <div className="dashboard">
         <div className="dashboard-top">
           <div className="dashboard-name">Admin dashboard</div>
