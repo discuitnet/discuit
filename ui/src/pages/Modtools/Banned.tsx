@@ -87,7 +87,16 @@ const Banned = ({ community }: { community: Community }) => {
   }
 
   return (
-    <DashboardPage className="modtools-banned" title={`Banned (${users.length})`} fullWidth>
+    <DashboardPage
+      className="modtools-banned"
+      title={`Banned (${users.length})`}
+      fullWidth
+      titleRightContent={
+        <button className="button-main" onClick={() => setBanModalOpen(true)}>
+          Ban user
+        </button>
+      }
+    >
       <Modal open={banModalOpen} onClose={handleBanModalClose}>
         <div className="modal-card">
           <div className="modal-card-head">
@@ -113,11 +122,6 @@ const Banned = ({ community }: { community: Community }) => {
           </div>
         </div>
       </Modal>
-      <div className="modtools-ban-new-user">
-        <button className="button-main" onClick={() => setBanModalOpen(true)}>
-          Ban user
-        </button>
-      </div>
       <div className="modtools-banned-users">
         <div className="table">
           {users.map((user) => (

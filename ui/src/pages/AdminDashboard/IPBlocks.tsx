@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Button, { ButtonClose } from '../../components/Button';
+import DashboardPage from '../../components/Dashboard/DashboardPage';
 import { Form, FormField } from '../../components/Form';
 import Input, { Checkbox } from '../../components/Input';
 import Link from '../../components/Link';
@@ -193,7 +194,26 @@ export default function IPBlocks() {
   blocks.forEach((block) => feedItems.push({ item: block, key: block.id.toString() }));
 
   return (
-    <div className="dashboard-page-ipblocks document">
+    <DashboardPage
+      className="dashboard-page-ipblocks document"
+      title="IP blocks"
+      titleRightContent={
+        <>
+          {loading === 'loaded' && (
+            <FormField>
+              <Checkbox
+                variant="switch"
+                label="Tor block"
+                checked={torBlocked}
+                onChange={handleTorBlockedOnChange}
+              />
+            </FormField>
+          )}
+          <NewButton onSuccess={handleNewBlockAdded} />
+        </>
+      }
+      fullWidth
+    >
       <Modal open={usersListModalOpen} onClose={closeUsersListModal}>
         <div className="modal-card modal-users-list">
           <div className="modal-card-head">
@@ -212,33 +232,15 @@ export default function IPBlocks() {
           </div>
         </div>
       </Modal>
-      <div className="dashboard-page-title">
-        <div>IP Blocks</div>
-        <div className="right">
-          {loading === 'loaded' && (
-            <FormField>
-              <Checkbox
-                variant="switch"
-                label="Tor block"
-                checked={torBlocked}
-                onChange={handleTorBlockedOnChange}
-              />
-            </FormField>
-          )}
-          <NewButton onSuccess={handleNewBlockAdded} />
-        </div>
-      </div>
-      <div className="bashboard-page-content">
-        <SimpleFeed
-          className="table"
-          items={feedItems}
-          onRenderItem={handleRenderItem}
-          onRenderHead={handleRenderHead}
-          onFetchMore={handleFetchMore}
-          hasMore={Boolean(next)}
-        />
-      </div>
-    </div>
+      <SimpleFeed
+        className="table m-long"
+        items={feedItems}
+        onRenderItem={handleRenderItem}
+        onRenderHead={handleRenderHead}
+        onFetchMore={handleFetchMore}
+        hasMore={Boolean(next)}
+      />
+    </DashboardPage>
   );
 }
 

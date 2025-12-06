@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import Button from '../../components/Button';
+import DashboardPage from '../../components/Dashboard/DashboardPage';
 import PageLoading from '../../components/PageLoading';
 import SimpleFeed, { SimpleFeedItem } from '../../components/SimpleFeed';
 import { TableRow } from '../../components/Table';
@@ -65,12 +66,8 @@ export default function Users() {
           {user.isBanned ? 'Banned' : user.deleted ? 'Deleted' : ''}
         </div>
         <TimeAgo className="table-column" time={user.createdAt} />
-        <div className="table-column">
-          {user.createdIP}
-        </div>
-        <div className="table-column">
-          {user.lastSeenIP}
-        </div>
+        <div className="table-column">{user.createdIP}</div>
+        <div className="table-column">{user.lastSeenIP}</div>
       </TableRow>
     );
   };
@@ -95,20 +92,17 @@ export default function Users() {
   usersState.users!.forEach((user) => feedItems.push({ item: user, key: user.id }));
 
   return (
-    <div className="dashboard-page-users document">
-      <div className="dashboard-page-title">Users</div>
-      <div className="dashboard-page-content">
-        <SimpleFeed
-          className="table"
-          items={feedItems}
-          onRenderItem={handleRenderItem}
-          onRenderHead={handleRenderHead}
-        />
-        <Button className="is-more-button" loading={nextUsersLoading} onClick={fetchNextUsers}>
-          More
-        </Button>
-      </div>
-    </div>
+    <DashboardPage className="dashboard-page-users document" title="Users">
+      <SimpleFeed
+        className="table"
+        items={feedItems}
+        onRenderItem={handleRenderItem}
+        onRenderHead={handleRenderHead}
+      />
+      <Button className="is-more-button" loading={nextUsersLoading} onClick={fetchNextUsers}>
+        More
+      </Button>
+    </DashboardPage>
   );
 }
 

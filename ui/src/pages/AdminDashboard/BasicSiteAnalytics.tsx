@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
+import DashboardPage from '../../components/Dashboard/DashboardPage';
 import PageLoading from '../../components/PageLoading';
 import SimpleFeed, { SimpleFeedItem } from '../../components/SimpleFeed';
 import { TableRow } from '../../components/Table';
@@ -135,20 +136,15 @@ export default function BasicSiteAnalytics() {
   rows?.forEach((row) => feedItems.push({ item: row, key: row.createdAt.toString() }));
 
   return (
-    <div className="dashboard-page-analytics document">
-      <div className="dashboard-page-title">Analytics</div>
-      <div className="bashboard-page-content">
-        <div className="table-wrap" style={{ width: isMobile ? tableWidth : undefined }}>
-          <SimpleFeed
-            className="table"
-            items={feedItems}
-            onRenderItem={handleRenderItem}
-            onRenderHead={handleRenderHead}
-            hasMore={Boolean(next)}
-            onFetchMore={handleFetchMore}
-          />
-        </div>
-      </div>
-    </div>
+    <DashboardPage className="dashboard-page-analytics document" title="Analytics" fullWidth>
+      <SimpleFeed
+        className="table m-long"
+        items={feedItems}
+        onRenderItem={handleRenderItem}
+        onRenderHead={handleRenderHead}
+        hasMore={Boolean(next)}
+        onFetchMore={handleFetchMore}
+      />
+    </DashboardPage>
   );
 }

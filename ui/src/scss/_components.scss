@@ -622,6 +622,9 @@
         flex-direction: column;
         flex-wrap: wrap;
         .left {
+            flex-wrap: wrap;
+        }
+        .pagination-item {
             margin-bottom: var(--gap);
         }
     }

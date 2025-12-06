@@ -106,7 +106,16 @@ const Rules = ({ community }: { community: Community }) => {
   const modalDisabled = rule === '';
 
   return (
-    <DashboardPage className="modtools-content modtools-rules" title="Rules" fullWidth>
+    <DashboardPage
+      className="modtools-content modtools-rules"
+      title="Rules"
+      fullWidth
+      titleRightContent={
+        <button className="button-main" onClick={handleAddRule}>
+          Add rule
+        </button>
+      }
+    >
       <Modal open={editOpen} onClose={handleEditClose}>
         <div className="modal-card">
           <div className="modal-card-head">
@@ -142,11 +151,6 @@ const Rules = ({ community }: { community: Community }) => {
           </div>
         </div>
       </Modal>
-      <div className="modtools-rules-new-rule">
-        <button className="button-main" onClick={handleAddRule}>
-          Add rule
-        </button>
-      </div>
       <div className="modtools-rules-list">
         <div className="table">
           {rules.map((rule) => (

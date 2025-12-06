@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Button from '../../components/Button';
+import DashboardPage from '../../components/Dashboard/DashboardPage';
 import { FormField, FormSection } from '../../components/Form';
 import { Checkbox } from '../../components/Input';
 import PageLoading from '../../components/PageLoading';
@@ -55,41 +56,38 @@ export default function Settings() {
   }
 
   return (
-    <div className="dashboard-page-settings document">
-      <div className="dashboard-page-title">Settings</div>
-      <div className="dashboard-page-content">
-        <div className="dashboard-settings-form">
+    <DashboardPage className="dashboard-page-settings document" title="Settings">
+      <div className="dashboard-settings-form">
+        <FormSection>
+          <FormField>
+            <Checkbox
+              variant="switch"
+              label="Enable sign-ups"
+              checked={signupsEnabled}
+              onChange={(event) => {
+                if (confirm('Are you sure?')) {
+                  setSignupsEnabled(event.target.checked);
+                }
+              }}
+            />
+          </FormField>
           <FormSection>
             <FormField>
-              <Checkbox
-                variant="switch"
-                label="Enable sign-ups"
-                checked={signupsEnabled}
-                onChange={(event) => {
-                  if (confirm('Are you sure?')) {
-                    setSignupsEnabled(event.target.checked);
-                  }
-                }}
-              />
+              <Button
+                onClick={() => dispatch(createCommunityModalOpened())}
+                className={'button button-main home-btn-new-post'}
+              >
+                Create community
+              </Button>
             </FormField>
-            <FormSection>
-              <FormField>
-                <Button
-                  onClick={() => dispatch(createCommunityModalOpened())}
-                  className={'button button-main home-btn-new-post'}
-                >
-                  Create community
-                </Button>
-              </FormField>
-            </FormSection>
           </FormSection>
-          <FormSection>
-            <Button color="main" disabled={!changed} onClick={handleSave}>
-              Save
-            </Button>
-          </FormSection>
-        </div>
+        </FormSection>
+        <FormSection>
+          <Button color="main" disabled={!changed} onClick={handleSave}>
+            Save
+          </Button>
+        </FormSection>
       </div>
-    </div>
+    </DashboardPage>
   );
 }

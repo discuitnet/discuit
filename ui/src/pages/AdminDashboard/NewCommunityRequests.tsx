@@ -2,6 +2,7 @@ import { memo, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { ButtonClose } from '../../components/Button';
+import DashboardPage from '../../components/Dashboard/DashboardPage';
 import { FormField } from '../../components/Form';
 import { InputWithCount, useInputMaxLength } from '../../components/Input';
 import Modal from '../../components/Modal';
@@ -126,17 +127,18 @@ export default function NewCommunityRequests() {
   requests?.forEach((req) => feedItems.push({ item: req, key: req.id.toString() }));
 
   return (
-    <div className="dashboard-page-requests document">
-      <div className="dashboard-page-title">New community requests</div>
-      <div className="dashboard-page-content">
-        <SimpleFeed
-          className="table"
-          items={feedItems}
-          onRenderItem={handleRenderItem}
-          onRenderHead={handleRenderHead}
-        />
-      </div>
-    </div>
+    <DashboardPage
+      className="dashboard-page-requests document"
+      title="New community requests"
+      fullWidth
+    >
+      <SimpleFeed
+        className="table m-long"
+        items={feedItems}
+        onRenderItem={handleRenderItem}
+        onRenderHead={handleRenderHead}
+      />
+    </DashboardPage>
   );
 }
 

@@ -59,6 +59,7 @@ const Reports = ({ community }: { community: Community }) => {
 
   return (
     <ReportsView
+      className="is-reports-page"
       title="Reports"
       noPosts={details.noPostReports}
       noComments={details.noCommentReports}

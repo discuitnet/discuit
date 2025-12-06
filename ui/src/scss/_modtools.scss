@@ -97,6 +97,12 @@
         --max-width: 750px;
         display: flex;
         flex-direction: column;
+        &.is-reports-page {
+            .dashboard-page-content {
+                display: grid;
+                grid-template-rows: max-content 1fr;
+            }
+        }
         .modtools-reports-filters {
             display: flex;
             justify-content: space-between;
@@ -104,10 +110,10 @@
             margin-bottom: var(--gap);
         }
         .modtools-reports-content {
-            height: 100%;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            min-height: 100%;
             .modtools-reports-posts {
                 display: flex;
                 flex-direction: column;
@@ -118,14 +124,6 @@
         }
     }
     .modtools-banned {
-        .dashboard-page-content > * {
-            margin-bottom: var(--gap);
-        }
-        .modtools-ban-new-user {
-            display: flex;
-            flex-direction: row-reverse;
-            margin-right: var(--gap);
-        }
         .table {
             .table-row {
                 align-items: center;
@@ -136,26 +134,6 @@
             button {
                 font-weight: normal;
             }
-        }
-    }
-    .modtools-mods {
-        .dashboard-page-content > * {
-            margin-bottom: var(--gap);
-        }
-        .modtools-mods-new-mod {
-            display: flex;
-            flex-direction: row-reverse;
-            margin-right: var(--gap);
-        }
-    }
-    .modtools-rules {
-        .dashboard-page-content > * {
-            margin-bottom: var(--gap);
-        }
-        .modtools-rules-new-rule {
-            display: flex;
-            flex-direction: row-reverse;
-            margin-right: var(--gap);
         }
     }
     .modtools-rules {

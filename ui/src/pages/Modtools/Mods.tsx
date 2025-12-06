@@ -75,7 +75,16 @@ const Mods = ({ community }: { community: Community }) => {
   });
 
   return (
-    <DashboardPage className="modtools-content modtools-mods" title="Moderators" fullWidth>
+    <DashboardPage
+      className="modtools-content modtools-mods"
+      title="Moderators"
+      fullWidth
+      titleRightContent={
+        <button className="button-main" onClick={() => setAddModOpen(true)}>
+          Add mod
+        </button>
+      }
+    >
       <Modal open={addModOpen} onClose={handleAddModClose}>
         <div className="modal-card">
           <div className="modal-card-head">
@@ -95,11 +104,6 @@ const Mods = ({ community }: { community: Community }) => {
           </div>
         </div>
       </Modal>
-      <div className="modtools-mods-new-mod">
-        <button className="button-main" onClick={() => setAddModOpen(true)}>
-          Add mod
-        </button>
-      </div>
       <div className="modtools-mods-list">
         <div className="table">
           {mods.map((mod, index) => (
