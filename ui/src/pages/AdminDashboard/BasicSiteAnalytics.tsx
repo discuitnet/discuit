@@ -1,11 +1,11 @@
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import DashboardPage from '../../components/Dashboard/DashboardPage';
 import PageLoading from '../../components/PageLoading';
 import SimpleFeed, { SimpleFeedItem } from '../../components/SimpleFeed';
 import { TableRow } from '../../components/Table';
 import { mfetchjson } from '../../helper';
-import { useIsMobile, useLoading } from '../../hooks';
+import { useLoading } from '../../hooks';
 import { AnalyticsEvent } from '../../serverTypes';
 import { snackAlertError } from '../../slices/mainSlice';
 
@@ -112,21 +112,6 @@ export default function BasicSiteAnalytics() {
       </TableRow>
     );
   };
-
-  const isMobile = useIsMobile();
-
-  const [tableWidth, setTableWidth] = useState(345);
-  useLayoutEffect(() => {
-    if (isMobile) {
-      const el = document.querySelector('.dashboard-head .inner-wrap');
-      if (el) {
-        const styles = getComputedStyle(el);
-        setTableWidth(
-          el.scrollWidth - parseInt(styles.paddingLeft) - parseInt(styles.paddingRight)
-        );
-      }
-    }
-  }, [isMobile]);
 
   if (loading !== 'loaded') {
     return <PageLoading />;

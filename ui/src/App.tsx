@@ -269,7 +269,14 @@ const AppSwitch = () => {
   return (
     <>
       <Switch>
-        {import.meta.env.MODE !== 'production' && <Route path="/elements" component={Elements} />}
+        {import.meta.env.MODE !== 'production' && (
+          <>
+            <Route path="/elements" component={Elements} />
+            <Route path="/test-dashboard">
+              <ExampleDashboard />
+            </Route>
+          </>
+        )}
         {/*
         <Route exact path="/search">
           <Search />
@@ -294,9 +301,6 @@ const AppSwitch = () => {
         </Route>
         <Route exact path="/communities">
           <AllCommunities />
-        </Route>
-        <Route path="/test-dashboard">
-          <ExampleDashboard />
         </Route>
         <ProtectedRoute path="/admin">
           <AdminDashboard />
