@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -241,12 +240,42 @@ func homeFeedWhereClause(ctx context.Context, db *sql.DB, user uid.ID, where str
 }
 
 func moddingFeedWhereClause(ctx context.Context, db *sql.DB, user uid.ID, where string, args []any) (string, []any, error) {
+	rows, err := db.QueryContext(ctx, "SELECT community_mods.community_id FROM community_mods WHERE community_mods.user_id = ?", user)
+	if err != nil {
+		return where, args, err
+	}
+	defer rows.Close()
+
+	var communityIDs []any
+	for rows.Next() {
+		var cid uid.ID
+		if err := rows.Scan(&cid); err != nil {
+			return where, args, err
+		}
+		communityIDs = append(communityIDs, cid)
+	}
+
+	if err := rows.Err(); err != nil {
+		return where, args, err
+	}
+
 	joiner := ""
 	if where != "" {
 		joiner = "AND"
 	}
-	where = fmt.Sprintf("%s %s posts.community_id IN (SELECT community_mods.community_id FROM community_mods WHERE community_mods.user_id = ?) ", where, joiner)
-	args = append(args, user)
+
+	if len(communityIDs) == 0 {
+		// User is not subscribed to any communities. Use the sentinel value of
+		// zero-bytes community ID, which no community would have, to return an
+		// empty result set.
+		where = fmt.Sprintf("%s %s community_id = ? ", where, joiner)
+		args = append(args, uid.ID{})
+		return where, args, nil
+	}
+
+	where = fmt.Sprintf("%s %s community_id IN %s ", where, joiner, msql.InClauseQuestionMarks(len(communityIDs)))
+	args = append(args, communityIDs...)
+
 	return where, args, nil
 }
 
@@ -298,7 +327,6 @@ func (o *FeedOptions) nextInt64() (i int64, err error) {
 }
 
 func GetFeed(ctx context.Context, db *sql.DB, opts *FeedOptions) (_ *FeedResultSet, err error) {
-	log.Println(opts.Feed)
 	if !opts.Sort.Valid() {
 		return nil, ErrInvalidFeedSort
 	}
