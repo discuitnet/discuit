@@ -139,6 +139,9 @@ func (s *Server) feed(w *responseWriter, r *request) error {
 		default:
 			return httperr.NewBadRequest("invalid-feed-type", "Invalid feed type.")
 		}
+		if cid != nil {
+			feed = core.FeedTypeCommunity
+		}
 		set, err = core.GetFeed(r.ctx, s.db, &core.FeedOptions{
 			Feed:        feed,
 			Sort:        sort,

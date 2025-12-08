@@ -167,6 +167,8 @@ const PostsFeed = ({
       name = 'Home';
     } else if (feedType === 'subscriptions') {
       name = 'Subscriptions';
+    } else if (feedType === 'modding') {
+      name = 'Modding';
     }
   }
 

@@ -377,10 +377,9 @@ func getPostsLatest(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedRe
 	case FeedTypeCommunity:
 		where += "AND community_id = ? "
 		args = append(args, *opts.Community)
-
 	}
-	if loggedIn {
-		// where, args = whereMutedAndHidden(where, "posts", args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
+	if loggedIn && opts.Feed != FeedTypeModding {
+		where, args = whereMutedAndHidden(where, "posts", args, *opts.Viewer, opts.Feed == FeedTypeAll)
 	}
 	if opts.Next != "" {
 		next, err := opts.nextID()
@@ -521,8 +520,8 @@ func getPostsHot(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedResul
 		args = append(args, *opts.Community)
 
 	}
-	if loggedIn {
-		// where, args = whereMutedAndHidden(where, "posts", args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
+	if loggedIn && opts.Feed != FeedTypeModding {
+		where, args = whereMutedAndHidden(where, "posts", args, *opts.Viewer, opts.Feed == FeedTypeAll)
 	}
 	if opts.Next != "" {
 		nextHotness, nextID, err := opts.nextPointsID()
@@ -583,8 +582,8 @@ func getPostsTopAll(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedRe
 		args = append(args, *opts.Community)
 
 	}
-	if loggedIn {
-		// where, args = whereMutedAndHidden(where, "posts", args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
+	if loggedIn && opts.Feed != FeedTypeModding {
+		where, args = whereMutedAndHidden(where, "posts", args, *opts.Viewer, opts.Feed == FeedTypeAll)
 	}
 	if opts.Next != "" {
 		nextPoints, nextID, err := opts.nextPointsID()
@@ -645,8 +644,8 @@ func getPostsTop(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedResul
 		args = append(args, *opts.Community)
 
 	}
-	if opts.Viewer != nil {
-		// where, args = whereMutedAndHidden(where, table, args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
+	if opts.Viewer != nil && opts.Feed != FeedTypeModding {
+		where, args = whereMutedAndHidden(where, table, args, *opts.Viewer, opts.Feed == FeedTypeAll)
 	}
 	if opts.Next != "" {
 		nextPoints, nextID, err := opts.nextPointsID()
@@ -716,8 +715,8 @@ func getPostsActivity(ctx context.Context, db *sql.DB, opts *FeedOptions) (*Feed
 		args = append(args, *opts.Community)
 
 	}
-	if loggedIn {
-		// where, args = whereMutedAndHidden(where, "posts", args, *opts.Viewer, opts.Community == nil && !opts.Homefeed)
+	if loggedIn && opts.Feed != FeedTypeModding {
+		where, args = whereMutedAndHidden(where, "posts", args, *opts.Viewer, opts.Feed == FeedTypeAll)
 	}
 	if opts.Next != "" {
 		next, err := opts.nextInt64()
