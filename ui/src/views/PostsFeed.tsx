@@ -94,7 +94,7 @@ function useFeedSort(rememberLastSort = false): [string | null, (newSort: string
   return [sort, setSort];
 }
 
-export type PostsFeedType = 'all' | 'subscriptions' | 'community';
+export type PostsFeedType = 'all' | 'subscriptions' | 'community' | 'modding';
 
 const PostsFeed = ({
   feedType = 'all',
@@ -115,8 +115,15 @@ const PostsFeed = ({
   // stored by the url as the key.
   const urlParams = new URLSearchParams();
   urlParams.set('sort', sort || '');
-  if (loggedIn && feedType === 'subscriptions') {
-    urlParams.set('feed', 'home');
+  if (loggedIn) {
+    switch (feedType) {
+      case 'subscriptions':
+        urlParams.set('feed', 'home');
+        break;
+      case 'modding':
+        urlParams.set('feed', 'modding');
+        break;
+    }
   }
   if (communityId !== null) urlParams.set('communityId', communityId);
   const feedId = `${baseURL}?${urlParams.toString()}`; // api endpoint.

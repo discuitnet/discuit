@@ -1018,12 +1018,17 @@ func CountAllUsers(ctx context.Context, db *sql.DB) (n int, err error) {
 	return
 }
 
+func getUserModdingCommunities(ctx context.Context, db *sql.DB, user uid.ID) ([]*Community, error) {
+	return getCommunities(ctx, db, nil, "WHERE communities.id IN (SELECT community_mods.community_id FROM community_mods WHERE user_id = ?)", user)
+}
+
 func (u *User) LoadModdingList(ctx context.Context, db *sql.DB) error {
-	comms, err := getCommunities(ctx, db, nil, "WHERE communities.id IN (SELECT community_mods.community_id FROM community_mods WHERE user_id = ?)", u.ID)
-	if err == nil {
-		u.ModdingList = comms
+	comms, err := getUserModdingCommunities(ctx, db, u.ID)
+	if err != nil {
+		return err
 	}
-	return err
+	u.ModdingList = comms
+	return nil
 }
 
 func (u *User) DeleteProPicTx(ctx context.Context, db *sql.DB, tx *sql.Tx) error {

@@ -114,10 +114,7 @@ func (s *Server) feed(w *responseWriter, r *request) error {
 	}
 	var set *core.FeedResultSet
 
-	feed := query.Get("feed") // All or home or community.
 	if filter == "" {
-		// Home, all and community feeds.
-		homeFeed := feed == "home"
 		var cid *uid.ID
 		if communityIDText != "" {
 			c, err := strToID(communityIDText)
@@ -126,15 +123,28 @@ func (s *Server) feed(w *responseWriter, r *request) error {
 			}
 			cid = &c
 		}
-		if cid != nil {
-			homeFeed = false
+		var feed core.FeedType
+		switch feedParam := query.Get("feed"); feedParam {
+		case "all", "":
+			feed = core.FeedTypeAll
+		case "home":
+			feed = core.FeedTypeSubscriptions
+		case "community":
+			feed = core.FeedTypeCommunity
+			if cid == nil {
+				return httperr.NewBadRequest("community-is-empty", "The query parameter 'community' cannot be empty.")
+			}
+		case "modding":
+			feed = core.FeedTypeModding
+		default:
+			return httperr.NewBadRequest("invalid-feed-type", "Invalid feed type.")
 		}
 		set, err = core.GetFeed(r.ctx, s.db, &core.FeedOptions{
+			Feed:        feed,
 			Sort:        sort,
 			DefaultSort: sort == s.config.DefaultFeedSort,
 			Viewer:      r.viewer,
 			Community:   cid,
-			Homefeed:    homeFeed,
 			Limit:       limit,
 			Next:        nextText,
 		})
