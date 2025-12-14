@@ -333,7 +333,7 @@ const Sidebar = ({ mobile = false }: { mobile?: boolean }) => {
                   </svg>
                   <span>{homeFeed === 'all' ? 'Subscriptions' : 'All'}</span>
                 </Link>
-                <Link to="/modding" className="sidebar-item with-image" onClick={handleClose}>
+                <Link to="/moderating" className="sidebar-item with-image" onClick={handleClose}>
                   <svg
                     width="24"
                     height="24"
@@ -347,7 +347,7 @@ const Sidebar = ({ mobile = false }: { mobile?: boolean }) => {
                       fill="currentColor"
                     />
                   </svg>
-                  <span>Modding</span>
+                  <span>Moderating</span>
                 </Link>
               </>
             )}

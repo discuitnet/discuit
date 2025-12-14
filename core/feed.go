@@ -92,7 +92,7 @@ type FeedType int
 const (
 	FeedTypeAll = FeedType(iota)
 	FeedTypeSubscriptions
-	FeedTypeModding
+	FeedTypeModerating
 	FeedTypeCommunity
 	FeedTypeUser
 )
@@ -117,8 +117,8 @@ func (ft FeedType) MarshalText() ([]byte, error) {
 		return []byte("all"), nil
 	case FeedTypeSubscriptions:
 		return []byte("subscriptions"), nil
-	case FeedTypeModding:
-		return []byte("modding"), nil
+	case FeedTypeModerating:
+		return []byte("moderating"), nil
 	case FeedTypeCommunity:
 		return []byte("community"), nil
 	case FeedTypeUser:
@@ -138,8 +138,8 @@ func (ft *FeedType) UnmarshalText(text []byte) error {
 		*ft = FeedTypeAll
 	case "subscriptions":
 		*ft = FeedTypeSubscriptions
-	case "modding":
-		*ft = FeedTypeModding
+	case "moderating":
+		*ft = FeedTypeModerating
 	case "community":
 		*ft = FeedTypeCommunity
 	case "user":
@@ -239,7 +239,7 @@ func homeFeedWhereClause(ctx context.Context, db *sql.DB, user uid.ID, where str
 	return where, args, nil
 }
 
-func moddingFeedWhereClause(ctx context.Context, db *sql.DB, user uid.ID, where string, args []any) (string, []any, error) {
+func moderatingFeedWhereClause(ctx context.Context, db *sql.DB, user uid.ID, where string, args []any) (string, []any, error) {
 	rows, err := db.QueryContext(ctx, "SELECT community_mods.community_id FROM community_mods WHERE community_mods.user_id = ?", user)
 	if err != nil {
 		return where, args, err
@@ -331,13 +331,14 @@ func GetFeed(ctx context.Context, db *sql.DB, opts *FeedOptions) (_ *FeedResultS
 		return nil, ErrInvalidFeedSort
 	}
 	var set *FeedResultSet
-	if opts.Sort == FeedSortLatest {
+	switch opts.Sort {
+	case FeedSortLatest:
 		set, err = getPostsLatest(ctx, db, opts)
-	} else if opts.Sort == FeedSortHot {
+	case FeedSortHot:
 		set, err = getPostsHot(ctx, db, opts)
-	} else if opts.Sort == FeedSortActivity {
+	case FeedSortActivity:
 		set, err = getPostsActivity(ctx, db, opts)
-	} else {
+	default:
 		set, err = getPostsTop(ctx, db, opts)
 	}
 	if err != nil {
@@ -368,9 +369,9 @@ func getPostsLatest(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedRe
 		if err != nil {
 			return nil, err
 		}
-	case FeedTypeModding:
+	case FeedTypeModerating:
 		var err error
-		where, args, err = moddingFeedWhereClause(ctx, db, *opts.Viewer, where, args)
+		where, args, err = moderatingFeedWhereClause(ctx, db, *opts.Viewer, where, args)
 		if err != nil {
 			return nil, err
 		}
@@ -378,7 +379,7 @@ func getPostsLatest(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedRe
 		where += "AND community_id = ? "
 		args = append(args, *opts.Community)
 	}
-	if loggedIn && opts.Feed != FeedTypeModding {
+	if loggedIn && opts.Feed != FeedTypeModerating {
 		where, args = whereMutedAndHidden(where, "posts", args, *opts.Viewer, opts.Feed == FeedTypeAll)
 	}
 	if opts.Next != "" {
@@ -509,9 +510,9 @@ func getPostsHot(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedResul
 		if err != nil {
 			return nil, err
 		}
-	case FeedTypeModding:
+	case FeedTypeModerating:
 		var err error
-		where, args, err = moddingFeedWhereClause(ctx, db, *opts.Viewer, where, args)
+		where, args, err = moderatingFeedWhereClause(ctx, db, *opts.Viewer, where, args)
 		if err != nil {
 			return nil, err
 		}
@@ -520,7 +521,7 @@ func getPostsHot(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedResul
 		args = append(args, *opts.Community)
 
 	}
-	if loggedIn && opts.Feed != FeedTypeModding {
+	if loggedIn && opts.Feed != FeedTypeModerating {
 		where, args = whereMutedAndHidden(where, "posts", args, *opts.Viewer, opts.Feed == FeedTypeAll)
 	}
 	if opts.Next != "" {
@@ -571,9 +572,9 @@ func getPostsTopAll(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedRe
 		if err != nil {
 			return nil, err
 		}
-	case FeedTypeModding:
+	case FeedTypeModerating:
 		var err error
-		where, args, err = moddingFeedWhereClause(ctx, db, *opts.Viewer, where, args)
+		where, args, err = moderatingFeedWhereClause(ctx, db, *opts.Viewer, where, args)
 		if err != nil {
 			return nil, err
 		}
@@ -582,7 +583,7 @@ func getPostsTopAll(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedRe
 		args = append(args, *opts.Community)
 
 	}
-	if loggedIn && opts.Feed != FeedTypeModding {
+	if loggedIn && opts.Feed != FeedTypeModerating {
 		where, args = whereMutedAndHidden(where, "posts", args, *opts.Viewer, opts.Feed == FeedTypeAll)
 	}
 	if opts.Next != "" {
@@ -633,9 +634,9 @@ func getPostsTop(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedResul
 		if err != nil {
 			return nil, err
 		}
-	case FeedTypeModding:
+	case FeedTypeModerating:
 		var err error
-		where, args, err = moddingFeedWhereClause(ctx, db, *opts.Viewer, where, args)
+		where, args, err = moderatingFeedWhereClause(ctx, db, *opts.Viewer, where, args)
 		if err != nil {
 			return nil, err
 		}
@@ -644,7 +645,7 @@ func getPostsTop(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedResul
 		args = append(args, *opts.Community)
 
 	}
-	if opts.Viewer != nil && opts.Feed != FeedTypeModding {
+	if opts.Viewer != nil && opts.Feed != FeedTypeModerating {
 		where, args = whereMutedAndHidden(where, table, args, *opts.Viewer, opts.Feed == FeedTypeAll)
 	}
 	if opts.Next != "" {
@@ -704,9 +705,9 @@ func getPostsActivity(ctx context.Context, db *sql.DB, opts *FeedOptions) (*Feed
 		if err != nil {
 			return nil, err
 		}
-	case FeedTypeModding:
+	case FeedTypeModerating:
 		var err error
-		where, args, err = moddingFeedWhereClause(ctx, db, *opts.Viewer, where, args)
+		where, args, err = moderatingFeedWhereClause(ctx, db, *opts.Viewer, where, args)
 		if err != nil {
 			return nil, err
 		}
@@ -715,7 +716,7 @@ func getPostsActivity(ctx context.Context, db *sql.DB, opts *FeedOptions) (*Feed
 		args = append(args, *opts.Community)
 
 	}
-	if loggedIn && opts.Feed != FeedTypeModding {
+	if loggedIn && opts.Feed != FeedTypeModerating {
 		where, args = whereMutedAndHidden(where, "posts", args, *opts.Viewer, opts.Feed == FeedTypeAll)
 	}
 	if opts.Next != "" {
@@ -966,27 +967,3 @@ func getCommentsPostTitles(ctx context.Context, db *sql.DB, comments []*Comment,
 
 	return nil
 }
-
-// func getPostsModding(ctx context.Context, db *sql.DB, userID uid.ID, opts *FeedOptions) (*FeedResultSet, error) {
-// 	// comms, err := getUserModdingCommunities(ctx, db, userID)
-// 	// if err != nil {
-// 	// 	return nil, err
-// 	// }
-//
-// 	var args []any
-// 	loggedIn := opts.Viewer != nil
-//
-// 	if loggedIn {
-// 		args = append(args, opts.Viewer, opts.Viewer)
-// 	}
-// 	where := "WHERE posts.deleted = FALSE"
-//
-// 	if opts.Next != "" {
-// 		next, err := opts.next
-// 	}
-//
-// 	query := buildSelectPostQuery(loggedIn, "posts.community_id in (SELECT community_mods.community_id FROM community_mods WHERE user_id = ?)")
-// 	args = append(args, userID)
-//
-// 	return nil, nil
-// }

@@ -94,7 +94,7 @@ function useFeedSort(rememberLastSort = false): [string | null, (newSort: string
   return [sort, setSort];
 }
 
-export type PostsFeedType = 'all' | 'subscriptions' | 'community' | 'modding';
+export type PostsFeedType = 'all' | 'subscriptions' | 'community' | 'moderating';
 
 const PostsFeed = ({
   feedType = 'all',
@@ -120,8 +120,8 @@ const PostsFeed = ({
       case 'subscriptions':
         urlParams.set('feed', 'home');
         break;
-      case 'modding':
-        urlParams.set('feed', 'modding');
+      case 'moderating':
+        urlParams.set('feed', 'moderating');
         break;
     }
   }
@@ -167,8 +167,8 @@ const PostsFeed = ({
       name = 'Home';
     } else if (feedType === 'subscriptions') {
       name = 'Subscriptions';
-    } else if (feedType === 'modding') {
-      name = 'Modding';
+    } else if (feedType === 'moderating') {
+      name = 'Moderating';
     }
   }
 

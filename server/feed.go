@@ -134,8 +134,8 @@ func (s *Server) feed(w *responseWriter, r *request) error {
 			if cid == nil {
 				return httperr.NewBadRequest("community-is-empty", "The query parameter 'community' cannot be empty.")
 			}
-		case "modding":
-			feed = core.FeedTypeModding
+		case "moderating":
+			feed = core.FeedTypeModerating
 		default:
 			return httperr.NewBadRequest("invalid-feed-type", "Invalid feed type.")
 		}

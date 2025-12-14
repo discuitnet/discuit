@@ -294,7 +294,7 @@ const AppSwitch = () => {
         <Route exact path="/login">
           <Login />
         </Route>
-        <Route exact path={['/', '/subscriptions', '/all', '/modding']}>
+        <Route exact path={['/', '/subscriptions', '/all', '/moderating']}>
           <Home />
         </Route>
         <Route exact path="/communities">

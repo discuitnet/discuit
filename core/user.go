@@ -1018,12 +1018,12 @@ func CountAllUsers(ctx context.Context, db *sql.DB) (n int, err error) {
 	return
 }
 
-func getUserModdingCommunities(ctx context.Context, db *sql.DB, user uid.ID) ([]*Community, error) {
+func getUserModeratingCommunities(ctx context.Context, db *sql.DB, user uid.ID) ([]*Community, error) {
 	return getCommunities(ctx, db, nil, "WHERE communities.id IN (SELECT community_mods.community_id FROM community_mods WHERE user_id = ?)", user)
 }
 
-func (u *User) LoadModdingList(ctx context.Context, db *sql.DB) error {
-	comms, err := getUserModdingCommunities(ctx, db, u.ID)
+func (u *User) LoadModeratingCommunitiesList(ctx context.Context, db *sql.DB) error {
+	comms, err := getUserModeratingCommunities(ctx, db, u.ID)
 	if err != nil {
 		return err
 	}
