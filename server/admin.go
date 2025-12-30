@@ -308,3 +308,8 @@ func (s *Server) handleSingleIPBlock(w *responseWriter, r *request) error {
 func (s *Server) CancelExpiredIPBlocks(ctx context.Context) (int, error) {
 	return s.ipblocks.CancelExpiredBlocks(ctx)
 }
+
+// !!! not really needed? having the reset/expiry fields in the user table are irrelevant until a reset is requested/carried out
+func (s *Server) CancelExpiredPasswordResetLinks(ctx context.Context) (int, error) {
+	return s.CancelExpiredResetLinks(ctx)
+}

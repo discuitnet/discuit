@@ -1,0 +1,148 @@
+/*
+import clsx from 'clsx';
+import PropTypes from 'prop-types';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
+import { useDispatch, useSelector } from 'react-redux';
+import { usernameMaxLength } from '../config';
+import { APIError, mfetch } from '../helper';
+import { useDelayedEffect, useInputUsername } from '../hooks';
+
+import { ButtonClose } from './Button';
+import { Form, FormField } from './Form';
+import Input, { InputWithCount } from './Input';
+import Modal from './Modal';
+*/
+//import { useDispatch, useSelector } from 'react-redux';
+//import { snackAlertError } from '../slices/mainSlice';
+import { useQuery } from '../hooks';
+import { FormField } from '../components/Form';
+import { InputPassword } from '../components/Input';
+import { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { APIError, mfetch } from '../helper';
+import { snackAlert, snackAlertError } from '../slices/mainSlice';
+import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import Sidebar from '../components/Sidebar';
+
+/*
+/api/users/{username}/reset_password
+
+/@username/reset_password/:resetLink
+*/
+
+const PasswordReset = () => {
+  const dispatch = useDispatch();
+  const query = useQuery();
+  let [username, resetLink, err] = ['', '', false];
+  if (query.has('username')) {
+    const _username = query.get('username');
+    if (_username !== null) {
+       username = _username;
+    } else {
+      err = true;
+    }
+  } else {
+    err = true;
+  }
+  if (query.has('resetLink')) {
+    const _resetLink = query.get('resetLink');
+    if (_resetLink !== null) {
+       resetLink = _resetLink;
+    } else {
+      err = true;
+    }
+  } else {
+    err = true;
+  }
+  if (err) {
+    return (
+      <div className="page-content page-passwordreset">
+        <Helmet>
+          <title>Bad password reset link</title>
+          <meta name="robots" content="noindex" />
+        </Helmet>
+        <Sidebar />
+        <h1>Bad password reset link</h1>
+        <p>Password reset link missing username/resetLink parameters.</p>
+        <Link to="/">Go home.</Link>
+      </div>
+    )
+  }
+
+  const [newPassword, setNewPassword] = useState('');
+  const [repeatPassword, setRepeatPassword] = useState('');
+  const changePassword = async () => {
+    console.log(1);
+    //const dispatch = useDispatch();
+    console.log("1b");
+    if (newPassword !== repeatPassword) {
+      console.log("1c");
+      alert('Passwords do not match.');
+      return;
+    }
+    console.log(2);
+    if (newPassword.length < 8) {
+      alert('Password too short.');
+      return;
+    }
+    console.log(3);
+    try {
+      console.log(4);
+      //!!! this section needs changing
+      const res = await mfetch(`/api/password_reset/{username}/{resetLink}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          newPassword,
+          repeatPassword,
+        }),
+      });
+      console.log(5);
+      if (!res.ok) {
+        console.log(6);
+        throw new APIError(res.status, await res.json());
+      } else {
+        console.log(7);
+        dispatch(snackAlert('Password changed succesfully.'));
+      }
+    } catch (error) {
+      console.log(8);
+      dispatch(snackAlertError(error));
+    }
+  };
+
+  console.log(username, resetLink);
+  // check username-resetLink are valid on DB before sending, or on send?
+  return (
+    <div className="page-content page-passwordreset">
+        <Helmet>
+          <title>Bad password reset link</title>
+          <meta name="robots" content="noindex" />
+        </Helmet>
+        <Sidebar />
+        <div
+          className="form"
+          onKeyDown={(e) => e.key === 'Enter' && changePassword()}
+          role="none"
+        >
+          <FormField label={`New password for ${username}`}>
+            <InputPassword value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+          </FormField>
+          <FormField label="Repeat password">
+            <InputPassword
+              value={repeatPassword}
+              onChange={(e) => setRepeatPassword(e.target.value)}
+            />
+          </FormField>
+        </div>
+        <div className="modal-card-actions">
+          <button className="button-main" onClick={changePassword}>
+            Change password
+          </button>
+        </div>
+    </div>
+  );
+}
+
+export default PasswordReset;

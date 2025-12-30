@@ -126,6 +126,8 @@ type User struct {
 	CreatedIP        msql.NullIP     `json:"-"`
 	Deleted          bool            `json:"deleted"`
 	DeletedAt        msql.NullTime   `json:"deletedAt,omitempty"`
+	ResetLink        msql.NullString `json:"-"`
+	ResetExpiresAt   msql.NullTime   `json:"-"`
 
 	// User preferences.
 	UpvoteNotificationsOff  bool     `json:"upvoteNotificationsOff"`
@@ -253,6 +255,8 @@ func buildSelectUserQuery(where string) string {
 		"users.hide_user_profile_pictures",
 		"users.welcome_notification_sent",
 		"users.require_alt_text",
+		"users.reset_link",
+		"users.reset_expires_at",
 	}
 	cols = append(cols, images.ImageColumns("pro_pic")...)
 	joins := []string{
@@ -377,6 +381,8 @@ func scanUsers(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 			&u.HideUserProfilePictures,
 			&u.WelcomeNotificationSent,
 			&u.RequireAltText,
+			&u.ResetLink,
+			&u.ResetExpiresAt,
 		}
 
 		proPic := &images.Image{}
@@ -931,6 +937,19 @@ func (u *User) ChangePassword(ctx context.Context, db *sql.DB, previousPass, new
 	// MatchLoginCredentials checks for deleted account status.
 	if _, err := MatchLoginCredentials(ctx, db, u.Username, previousPass); err != nil {
 		return err
+	}
+	hash, err := HashPassword([]byte(newPass))
+	if err != nil {
+		return err
+	}
+	_, err = db.ExecContext(ctx, "UPDATE users SET password = ? WHERE id = ?", hash, u.ID)
+	u.Password = string(hash)
+	return err
+}
+
+func (u *User) ResetPassword(ctx context.Context, db *sql.DB, newPass string) error {
+	if u.IsGhost() || u.Deleted {
+		return httperr.NewForbidden("invalid_user", "User is banned or deleted")
 	}
 	hash, err := HashPassword([]byte(newPass))
 	if err != nil {
@@ -1519,4 +1538,41 @@ func GetAllUserIDs(ctx context.Context, db *sql.DB, fetchDeleted, fetchBanned bo
 	}
 
 	return ids, nil
+}
+
+// return an obfuscated version of a user's email as a reminder of which account they should check for the reset
+// user@domain.tld -> u*@d*.t*
+func (user *User) GetObfuscatedEmail() (*string, error) {
+	atRune, dotRune, asteriskRune := rune(64), rune(46), rune(42)
+	if !user.Email.Valid {
+		return nil, httperr.NewNotFound("no-email", "user does not have registered email")
+	}
+	// TODO: front-end tests email validity using /^[^\s@]+@[^\s@]+\.[^\s@]+$/, but back-end doesn't test
+	// so it's possible to use the site API to submit an invalid email address
+	// for now, just look for the last . and @ signs and retain the first letters after
+	// code must be UTF8-aware
+	var (
+		firstRune, firstDomain, firstTLD rune
+		prevAt, prevDot                  bool
+	)
+	for i, runeValue := range user.Email.String {
+		if i == 0 {
+			firstRune = runeValue
+			prevAt, prevDot = false, false
+		}
+		if prevAt {
+			firstDomain = runeValue
+		}
+		if prevDot {
+			firstTLD = runeValue
+		}
+		prevAt = (runeValue == atRune)
+		prevDot = (runeValue == dotRune)
+	}
+	if firstRune == 0 || firstDomain == 0 || firstTLD == 0 {
+		return nil, httperr.NewNotFound("invalid-email", "user has invalid email address")
+	}
+	obfuscatedEmail := string([]rune{firstRune, asteriskRune, atRune, firstDomain, asteriskRune, dotRune, firstTLD, asteriskRune})
+
+	return &obfuscatedEmail, nil
 }

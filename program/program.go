@@ -106,7 +106,7 @@ func (pg *Program) startBackgroundTasks(delay time.Duration) {
 	pg.tr.New("Record basic site analytics", func(ctx context.Context) error {
 		return core.RecordBasicSiteStats(ctx, pg.db)
 	}, time.Hour, false)
-	pg.tr.New("Remove expires IP blocks", func(ctx context.Context) error {
+	pg.tr.New("Remove expired IP blocks", func(ctx context.Context) error {
 		count, err := pg.server.CancelExpiredIPBlocks(context.Background())
 		if err != nil {
 			return err
@@ -117,6 +117,20 @@ func (pg *Program) startBackgroundTasks(delay time.Duration) {
 				s = "s"
 			}
 			log.Printf("Cancelled %d expired IP block%s\n", count, s)
+		}
+		return nil
+	}, time.Second*100, false)
+	pg.tr.New("Remove expired password resets", func(ctx context.Context) error {
+		count, err := pg.server.CancelExpiredPasswordResetLinks(context.Background())
+		if err != nil {
+			return err
+		}
+		if count > 0 {
+			s := ""
+			if count > 1 {
+				s = "s"
+			}
+			log.Printf("Cancelled %d expired password reset%s\n", count, s)
 		}
 		return nil
 	}, time.Second*100, false)

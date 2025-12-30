@@ -4,7 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { Form, FormField } from '../components/Form';
 import Input, { InputPassword } from '../components/Input';
 import { APIError, mfetch } from '../helper';
-import { loginModalOpened, signupModalOpened, snackAlertError } from '../slices/mainSlice';
+import { loginModalOpened, signupModalOpened, resetPasswordModalOpened, snackAlertError } from '../slices/mainSlice';
 
 const LoginForm = ({ isModal = false }: { isModal?: boolean }) => {
   const dispatch = useDispatch();
@@ -70,6 +70,12 @@ const LoginForm = ({ isModal = false }: { isModal?: boolean }) => {
     dispatch(signupModalOpened());
   };
 
+  const handleRequestReset: React.MouseEventHandler = (event) => {
+    event.preventDefault();
+    dispatch(loginModalOpened(false));
+    dispatch(resetPasswordModalOpened())
+  }
+
   return (
     <Form className="login-box modal-card-content" onSubmit={handleLoginSubmit}>
       <FormField label="Username">
@@ -97,6 +103,9 @@ const LoginForm = ({ isModal = false }: { isModal?: boolean }) => {
         <input type="submit" className="button button-main" value="Login" />
         <button className="button-link" onClick={handleOnSignup}>
           {"Don't have an account? Signup"}
+        </button>
+        <button className="button-link" onClick={handleRequestReset}>
+          {"Forgot password?"}
         </button>
       </FormField>
     </Form>

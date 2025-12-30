@@ -203,6 +203,9 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/ipblocks", s.withHandler(s.handleIPBlocks)).Methods("GET", "POST", "DELETE")
 	r.Handle("/api/ipblocks/{blockID}", s.withHandler(s.handleSingleIPBlock)).Methods("GET", "DELETE")
 
+	r.Handle("/api/users/{username}/reset_password", s.withHandler(s.getResetPasswordLink)).Methods("GET")
+	r.Handle("/api/password_reset/{username}/{resetLink}", s.withHandler(s.handleResetPassword)).Methods("POST")
+
 	r.NotFoundHandler = http.HandlerFunc(s.apiNotFoundHandler)
 	r.MethodNotAllowedHandler = http.HandlerFunc(s.apiMethodNotAllowedHandler)
 

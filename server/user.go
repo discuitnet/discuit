@@ -1,8 +1,11 @@
 package server
 
 import (
+	"context"
 	"database/sql"
+	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -14,7 +17,9 @@ import (
 	"github.com/discuitnet/discuit/internal/hcaptcha"
 	"github.com/discuitnet/discuit/internal/httperr"
 	"github.com/discuitnet/discuit/internal/httputil"
+	msql "github.com/discuitnet/discuit/internal/sql"
 	"github.com/discuitnet/discuit/internal/uid"
+	"github.com/discuitnet/discuit/internal/utils"
 	"github.com/gorilla/mux"
 )
 
@@ -692,4 +697,153 @@ func (s *Server) unhidePost(w *responseWriter, r *request) error {
 	}
 
 	return w.writeString(`{"success":true}`)
+}
+
+// flow: user lands on the link provided by email
+// page provides new-password and verify-new-password fields
+// username, reset-link, passwords are posted to this API endpoint
+// verification/writing to db
+
+// need to separate all the DB work into core library?
+
+// null out reset_link and reset_expires_at for a single user when the process flows into an expired link
+func blankExpiredReset(ctx context.Context, db *sql.DB, user *core.User) error {
+	if _, err := db.ExecContext(ctx, "UPDATE users SET reset_link = null, reset_expires_at = null WHERE id = ?", user.ID); err != nil {
+		// !!! is it better to silently log instead of propagating error information to possible attacker?
+		log.Printf("Could not null password reset fields for user %s", user.Username)
+		return err
+	}
+	return nil
+}
+
+// /api/users/{username}/reset_password [GET]
+// !!! requests should be logged
+func (s *Server) getResetPasswordLink(w *responseWriter, r *request) error {
+	// !!! check somewhere that the current session is not requesting a password reset for the user?
+	username := r.muxVar("username")
+	user, err := core.GetUserByUsername(r.ctx, s.db, username, nil)
+	if err != nil {
+		return err
+	}
+	// TODO: front-end tests email validity using /^[^\s@]+@[^\s@]+\.[^\s@]+$/, but back-end doesn't test
+	// so it's possible to use the site API to store an invalid email address
+	//fmt.Println("failed: del", user.Deleted, "ban", user.Banned, "email", !user.Email.Valid, "reset", user.ResetLink.Valid, "expiry", time.Now().Before(user.ResetExpiresAt.Time))
+	if user.Deleted || user.Banned || !user.Email.Valid || user.ResetLink.Valid || (user.ResetExpiresAt.Valid && time.Now().Before(user.ResetExpiresAt.Time)) {
+		return httperr.NewBadRequest("cannot_reset_password", "User is banned, deleted, has no registered email, or already has password reset in progress")
+	}
+
+	resetLink := utils.GenerateStringID(24)
+	if _, err := s.db.ExecContext(r.ctx, "UPDATE users SET reset_link = ?, reset_expires_at = ? WHERE id = ?", resetLink, time.Now().Add(time.Minute*10), user.ID); err != nil {
+		return err
+	}
+	//// write sendEmail function... which could possibly return an asynch error, but then that's not reportable... unless user stays on the page?
+	// maybe do max three retries depending on error from email service?
+	type ObfuscatedEmail struct {
+		ObfuscatedEmail *string `json:"obfuscatedEmail"`
+	}
+	var obfuscatedEmail ObfuscatedEmail
+	obfuscatedEmail.ObfuscatedEmail, err = user.GetObfuscatedEmail()
+	if err != nil {
+		return err
+		//log.Printf("Could not obfuscate email for user", username)
+	}
+	fmt.Println("pretend email sent to", obfuscatedEmail)
+	/*
+		if err = sendEmail(user.Email.String, resetLink); err != nil {
+			return err
+		}*/
+	// rate-limit only after successful reset requests
+
+	if err := s.rateLimit(r, "password_reset_request_"+httputil.GetIP(r.req), time.Hour*24, 100); err != nil {
+		return err
+	}
+	if err := s.rateLimit(r, "password_reset_request_"+username, time.Minute*10, 1); err != nil {
+		return err
+	}
+
+	return w.writeJSON(obfuscatedEmail)
+}
+
+// !!! this should be POST: take new, verified password, validate against requirements, then write to DB
+// /api/password_reset/{username}/{resetLink} [POST]
+// pass in password reset details to this endpoint to write new password to DB
+// !!! this should be rate-limited and logged...
+func (s *Server) handleResetPassword(w *responseWriter, r *request) error {
+	values, err := r.unmarshalJSONBodyToStringsMap(true)
+	if err != nil {
+		return err
+	}
+	newPassword := values["newPassword"]
+	repeatPassword := values["repeatPassword"]
+
+	if newPassword != repeatPassword {
+		return httperr.NewBadRequest("password_not_match", "Passwords do not match.")
+	}
+	username := r.muxVar("username")
+	resetLink := r.muxVar("resetLink")
+
+	// !!! validate resetLink against database value: is link associated with username, is it expired (and if expired, clear it--or clear it elsewhere?)
+	user, err := core.GetUserByUsername(r.ctx, s.db, username, r.viewer)
+	if err != nil {
+		return err
+	}
+
+	if user.ResetExpiresAt.Valid && user.ResetExpiresAt.Time.After(time.Now()) {
+		if err := blankExpiredReset(r.ctx, s.db, user); err != nil {
+			return err
+		}
+		return httperr.NewBadRequest("invalid_reset_link", "Password reset link expired")
+	}
+	// !!! if an invalid link is traversed, consider it an attack and reset any existing link in the database
+	if !user.ResetLink.Valid || user.ResetLink.String != resetLink {
+		if err := blankExpiredReset(r.ctx, s.db, user); err != nil {
+			return err
+		}
+		return httperr.NewBadRequest("invalid_reset_link", "Password reset link not valid; please request a new link")
+	}
+
+	if err = user.ResetPassword(r.ctx, s.db, newPassword); err != nil {
+		return err
+	}
+
+	// manually expire the link on a successful reset
+	if err := blankExpiredReset(r.ctx, s.db, user); err != nil {
+		return err
+	}
+	return w.writeString(`{"success": true}`)
+}
+
+func (s *Server) CancelExpiredResetLinks(ctx context.Context) (int, error) {
+	numCancelled := 0
+	err := msql.Transact(ctx, s.db, func(tx *sql.Tx) error {
+		rows, err := tx.QueryContext(ctx, "SELECT id FROM users WHERE reset_link IS NOT NULL AND reset_expires_at <= current_timestamp()")
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		users := []*uid.ID{}
+		for rows.Next() {
+			var id = &uid.ID{}
+			if err := rows.Scan(&id); err != nil {
+				return err
+			}
+			users = append(users, id)
+		}
+		numCancelled = len(users)
+		if numCancelled == 0 {
+			return nil
+		}
+
+		var ids []any
+		for _, id := range users {
+			ids = append(ids, id)
+		}
+		query := "UPDATE users SET reset_link = null, reset_expires_at = null WHERE id IN %s"
+		if _, err := tx.ExecContext(ctx, fmt.Sprintf(query, msql.InClauseQuestionMarks(numCancelled)), ids...); err != nil {
+			return err
+		}
+		return nil
+	})
+	return numCancelled, err
 }
