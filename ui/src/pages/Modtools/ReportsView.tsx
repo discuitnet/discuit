@@ -1,7 +1,10 @@
+import clsx from 'clsx';
 import React from 'react';
+import DashboardPage from '../../components/Dashboard/DashboardPage';
 import Dropdown from '../../components/Dropdown';
 
 export interface ReportsViewProps {
+  className?: string;
   title: string;
   noPosts?: number;
   noComments?: number;
@@ -11,6 +14,7 @@ export interface ReportsViewProps {
 }
 
 const ReportsView = ({
+  className,
   title,
   noPosts = 0,
   noComments = 0,
@@ -37,10 +41,7 @@ const ReportsView = ({
   const active = filterButtons.find((item) => item.filter === filter);
 
   return (
-    <div className="modtools-content modtools-reports">
-      <div className="modtools-content-head">
-        <div className="modtools-title">{title}</div>
-      </div>
+    <DashboardPage className={clsx('modtools-reports', className)} title={title}>
       {filter && (
         <div className="modtools-reports-filters">
           <Dropdown
@@ -72,7 +73,7 @@ const ReportsView = ({
         </div>
       )}
       <div className="modtools-reports-content">{children}</div>
-    </div>
+    </DashboardPage>
   );
 };
 

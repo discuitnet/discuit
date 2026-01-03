@@ -1,15 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Button, { ButtonClose } from '../../components/Button';
+import DashboardPage from '../../components/Dashboard/DashboardPage';
 import { Form, FormField } from '../../components/Form';
-import Input from '../../components/Input';
+import Input, { Checkbox } from '../../components/Input';
 import Link from '../../components/Link';
 import MarkdownTextarea from '../../components/MarkdownTextarea';
 import Modal from '../../components/Modal';
 import SimpleFeed, { SimpleFeedItem } from '../../components/SimpleFeed';
 import { TableRow } from '../../components/Table';
 import { APIError, mfetch, mfetchjson } from '../../helper';
-import { IPBlock } from '../../serverTypes';
+import { useLoading } from '../../hooks';
+import { IPBlock, SiteSettings } from '../../serverTypes';
 import { snackAlert, snackAlertError } from '../../slices/mainSlice';
 
 interface IPBlocksResultSet {
@@ -26,22 +28,53 @@ async function fetchIPBlocks(next?: string): Promise<IPBlocksResultSet> {
 }
 
 export default function IPBlocks() {
+  const [torBlocked, setTorblocked] = useState(false);
   const [blocks, setBlocks] = useState<IPBlock[]>([]);
   const [next, setNext] = useState<string | null>(null);
 
+  const [loading, setLoading] = useLoading();
   const dispatch = useDispatch();
   useEffect(() => {
     const f = async () => {
       try {
+        const torBlocked =
+          ((await mfetchjson('/api/site_settings')) as SiteSettings).torBlocked || false;
+        setTorblocked(torBlocked);
         const res = await fetchIPBlocks();
         setBlocks(res.blocks);
         setNext(res.next);
+        setLoading('loaded');
       } catch (error) {
         dispatch(snackAlertError(error));
+        setLoading('error');
       }
     };
     f();
-  }, [dispatch]);
+  }, [dispatch, loading]);
+
+  const torBlockChangeInProgress = useRef(false);
+  const handleTorBlockedOnChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (torBlockChangeInProgress.current) {
+      return;
+    }
+    const checked = event.target.checked;
+    try {
+      torBlockChangeInProgress.current = true;
+      setTorblocked(checked);
+      await mfetchjson('/api/site_settings', {
+        method: 'PUT',
+        body: JSON.stringify({
+          torBlocked: checked,
+        }),
+      });
+    } catch (error) {
+      setTorblocked(!checked);
+      dispatch(snackAlertError(error));
+    } finally {
+      torBlockChangeInProgress.current = false;
+      dispatch(snackAlert(`Tor IPs ${checked ? 'blocked' : 'unblocked'}`));
+    }
+  };
 
   const renderID = false;
 
@@ -161,7 +194,26 @@ export default function IPBlocks() {
   blocks.forEach((block) => feedItems.push({ item: block, key: block.id.toString() }));
 
   return (
-    <div className="dashboard-page-ipblocks document">
+    <DashboardPage
+      className="dashboard-page-ipblocks document"
+      title="IP blocks"
+      titleRightContent={
+        <>
+          {loading === 'loaded' && (
+            <FormField>
+              <Checkbox
+                variant="switch"
+                label="Tor block"
+                checked={torBlocked}
+                onChange={handleTorBlockedOnChange}
+              />
+            </FormField>
+          )}
+          <NewButton onSuccess={handleNewBlockAdded} />
+        </>
+      }
+      fullWidth
+    >
       <Modal open={usersListModalOpen} onClose={closeUsersListModal}>
         <div className="modal-card modal-users-list">
           <div className="modal-card-head">
@@ -180,21 +232,15 @@ export default function IPBlocks() {
           </div>
         </div>
       </Modal>
-      <div className="dashboard-page-title">
-        <div>IP Blocks</div>
-        <NewButton onSuccess={handleNewBlockAdded} />
-      </div>
-      <div className="bashboard-page-content">
-        <SimpleFeed
-          className="table"
-          items={feedItems}
-          onRenderItem={handleRenderItem}
-          onRenderHead={handleRenderHead}
-          onFetchMore={handleFetchMore}
-          hasMore={Boolean(next)}
-        />
-      </div>
-    </div>
+      <SimpleFeed
+        className="table m-long"
+        items={feedItems}
+        onRenderItem={handleRenderItem}
+        onRenderHead={handleRenderHead}
+        onFetchMore={handleFetchMore}
+        hasMore={Boolean(next)}
+      />
+    </DashboardPage>
   );
 }
 

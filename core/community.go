@@ -215,8 +215,8 @@ func scanCommunities(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *ui
 	return comms, nil
 }
 
-// countUserModdingCommunities returns the number of communities user moderates.
-func countUserModdingCommunities(ctx context.Context, db *sql.DB, user uid.ID) (n int, err error) {
+// countUserModeratingCommunities returns the number of communities user moderates.
+func countUserModeratingCommunities(ctx context.Context, db *sql.DB, user uid.ID) (n int, err error) {
 	row := db.QueryRowContext(ctx, "SELECT COUNT(community_id) FROM community_mods WHERE user_id = ?", user)
 	err = row.Scan(&n)
 	return
@@ -246,7 +246,7 @@ func CreateCommunity(ctx context.Context, db *sql.DB, creator uid.ID, reqPoints,
 		if user.Points < reqPoints {
 			return nil, httperr.NewForbidden("not-enough-points", "You don't have enough points to create a community.")
 		}
-		n, err := countUserModdingCommunities(ctx, db, creator)
+		n, err := countUserModeratingCommunities(ctx, db, creator)
 		if err != nil {
 			return nil, err
 		}

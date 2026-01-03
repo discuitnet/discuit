@@ -24,6 +24,7 @@ type Blocker struct {
 	blockedIPs      map[string]bool
 	mu              sync.Mutex
 	db              *sql.DB
+	torblocker      *torBlocker
 }
 
 func NewBlocker(db *sql.DB) *Blocker {
@@ -31,6 +32,7 @@ func NewBlocker(db *sql.DB) *Blocker {
 		blockedNetworks: cidranger.NewPCTrieRanger(),
 		blockedIPs:      make(map[string]bool),
 		db:              db,
+		torblocker:      newTorBlocker(),
 	}
 }
 
@@ -55,9 +57,25 @@ func (bl *Blocker) LoadDatabaseBlocks(ctx context.Context) error {
 	return nil
 }
 
+func (bl *Blocker) TorBlocked() bool {
+	return bl.torblocker.Blocked()
+}
+
+func (bl *Blocker) BlockTor() {
+	bl.torblocker.Block()
+}
+
+func (bl *Blocker) UnblockTor() {
+	bl.torblocker.Unblock()
+}
+
 func (bl *Blocker) Match(address string) (bool, error) {
 	bl.mu.Lock()
 	defer bl.mu.Unlock()
+
+	if bl.torblocker.Match(address) {
+		return true, nil
+	}
 
 	if bl.blockedIPs[address] {
 		return true, nil

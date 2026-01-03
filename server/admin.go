@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"database/sql"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -173,6 +174,27 @@ func (s *Server) getUsers(w *responseWriter, r *request) error {
 	return w.writeJSON(res)
 }
 
+func reloadTorIPBlocking(db *sql.DB, bl *ipblocks.Blocker) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	s, err := sitesettings.GetSiteSettings(ctx, db)
+	if err != nil {
+		log.Printf("Refreshing Tor blocking failed: error fetching SiteSettings: %v\n", err)
+		return
+	}
+
+	if s.TorBlocked != bl.TorBlocked() {
+		if s.TorBlocked {
+			bl.BlockTor()
+			log.Println("Blocking Tor IPs")
+		} else {
+			bl.UnblockTor()
+			log.Println("Unblocking Tor IPs")
+		}
+	}
+}
+
 func (s *Server) handleSiteSettings(w *responseWriter, r *request) error {
 	_, err := getLoggedInAdmin(s.db, r)
 	if err != nil {
@@ -191,6 +213,7 @@ func (s *Server) handleSiteSettings(w *responseWriter, r *request) error {
 		if err = settings.Save(r.ctx, s.db); err != nil {
 			return err
 		}
+		go reloadTorIPBlocking(s.db, s.ipblocks)
 	}
 
 	return w.writeJSON(settings)

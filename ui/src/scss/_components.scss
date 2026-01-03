@@ -618,6 +618,16 @@
             color: var(--color-bg);
         }
     }
+    @include mixins.mobile {
+        flex-direction: column;
+        flex-wrap: wrap;
+        .left {
+            flex-wrap: wrap;
+        }
+        .pagination-item {
+            margin-bottom: var(--gap);
+        }
+    }
 }
 
 .sidebar {

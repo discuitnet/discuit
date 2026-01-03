@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
+import DashboardPage from '../../components/Dashboard/DashboardPage';
 import PageLoading from '../../components/PageLoading';
 import SimpleFeed, { SimpleFeedItem } from '../../components/SimpleFeed';
 import { TableRow } from '../../components/Table';
@@ -68,11 +69,8 @@ export default function Communities() {
   );
 
   return (
-    <div className="dashboard-page-communities document">
-      <div className="dashboard-page-title">Communities</div>
-      <div className="dashboard-page-content">
-        <SimpleFeed className="table" items={feedItems} onRenderItem={handleRenderItem} />
-      </div>
-    </div>
+    <DashboardPage className="dashboard-page-communities document" title="Communities">
+      <SimpleFeed className="table" items={feedItems} onRenderItem={handleRenderItem} />
+    </DashboardPage>
   );
 }

@@ -1,10 +1,11 @@
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
+import DashboardPage from '../../components/Dashboard/DashboardPage';
 import PageLoading from '../../components/PageLoading';
 import SimpleFeed, { SimpleFeedItem } from '../../components/SimpleFeed';
 import { TableRow } from '../../components/Table';
 import { mfetchjson } from '../../helper';
-import { useIsMobile, useLoading } from '../../hooks';
+import { useLoading } from '../../hooks';
 import { AnalyticsEvent } from '../../serverTypes';
 import { printDate } from '../../helper';
 import { snackAlertError } from '../../slices/mainSlice';
@@ -66,7 +67,6 @@ export default function BasicSiteAnalytics() {
   const handleFetchMore = () => fetchEvents(next);
 
   const handleRenderItem = (item: Row) => {
-    console.log(item);
     return (
       <TableRow columns={14}>
         <div className="table-column">{printDate(item.createdAt)}</div>
@@ -108,21 +108,6 @@ export default function BasicSiteAnalytics() {
     );
   };
 
-  const isMobile = useIsMobile();
-
-  const [tableWidth, setTableWidth] = useState(345);
-  useLayoutEffect(() => {
-    if (isMobile) {
-      const el = document.querySelector('.page-dashboard-head .inner-wrap');
-      if (el) {
-        const styles = getComputedStyle(el);
-        setTableWidth(
-          el.scrollWidth - parseInt(styles.paddingLeft) - parseInt(styles.paddingRight)
-        );
-      }
-    }
-  }, [isMobile]);
-
   if (loading !== 'loaded') {
     return <PageLoading />;
   }
@@ -131,20 +116,15 @@ export default function BasicSiteAnalytics() {
   rows?.forEach((row) => feedItems.push({ item: row, key: row.createdAt.toString() }));
 
   return (
-    <div className="dashboard-page-analytics document">
-      <div className="dashboard-page-title">Analytics</div>
-      <div className="dashboard-page-content">
-        <div className="table-wrap" style={{ width: isMobile ? tableWidth : undefined }}>
-          <SimpleFeed
-            className="table"
-            items={feedItems}
-            onRenderItem={handleRenderItem}
-            onRenderHead={handleRenderHead}
-            hasMore={Boolean(next)}
-            onFetchMore={handleFetchMore}
-          />
-        </div>
-      </div>
-    </div>
+    <DashboardPage className="dashboard-page-analytics document" title="Analytics" fullWidth>
+      <SimpleFeed
+        className="table m-long"
+        items={feedItems}
+        onRenderItem={handleRenderItem}
+        onRenderHead={handleRenderHead}
+        hasMore={Boolean(next)}
+        onFetchMore={handleFetchMore}
+      />
+    </DashboardPage>
   );
 }
