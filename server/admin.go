@@ -313,3 +313,33 @@ func (s *Server) CancelExpiredIPBlocks(ctx context.Context) (int, error) {
 func (s *Server) CancelExpiredPasswordResetLinks(ctx context.Context) (int, error) {
 	return s.CancelExpiredResetLinks(ctx)
 }
+
+func (s *Server) getPasswordResetLogs(w *responseWriter, r *request) error {
+	_, err := getLoggedInAdmin(s.db, r)
+	if err != nil {
+		return err
+	}
+
+	limit, err := r.urlQueryParamsValueInt("limit", 250)
+	if err != nil {
+		return httperr.NewBadRequest("invalid-limit", "Invalid limit parameter.")
+	}
+	maxId, err := r.urlQueryParamsValueInt("maxId", 0)
+	if err != nil {
+		return httperr.NewBadRequest("invalid-maxid", "Invalid maxId parameter.")
+	}
+	events, nextMaxId, err := core.GetPasswordResetLogs(r.ctx, s.db, limit, maxId)
+	if err != nil {
+		return err
+	}
+
+	response := struct {
+		Events []*core.PasswordResetEvent `json:"events"`
+		MaxId  string                     `json:"maxId"`
+	}{
+		Events: events,
+		MaxId:  nextMaxId,
+	}
+
+	return w.writeJSON(response)
+}

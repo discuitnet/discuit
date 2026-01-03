@@ -20,7 +20,7 @@ import { FormField } from '../components/Form';
 import { InputPassword } from '../components/Input';
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { APIError, mfetch } from '../helper';
+import { mfetch } from '../helper';
 import { snackAlert, snackAlertError } from '../slices/mainSlice';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -74,45 +74,34 @@ const PasswordReset = () => {
   const [newPassword, setNewPassword] = useState('');
   const [repeatPassword, setRepeatPassword] = useState('');
   const changePassword = async () => {
-    console.log(1);
-    //const dispatch = useDispatch();
-    console.log("1b");
     if (newPassword !== repeatPassword) {
-      console.log("1c");
       alert('Passwords do not match.');
       return;
     }
-    console.log(2);
     if (newPassword.length < 8) {
       alert('Password too short.');
       return;
     }
-    console.log(3);
     try {
-      console.log(4);
       //!!! this section needs changing
-      const res = await mfetch(`/api/password_reset/{username}/{resetLink}`, {
+      const res = await mfetch(`/api/password_reset/${username}/${resetLink}`, {
         method: 'POST',
         body: JSON.stringify({
           newPassword,
           repeatPassword,
         }),
       });
-      console.log(5);
       if (!res.ok) {
-        console.log(6);
-        throw new APIError(res.status, await res.json());
+        const error = await res.json();
+        dispatch(snackAlert(error.message));
       } else {
-        console.log(7);
         dispatch(snackAlert('Password changed succesfully.'));
       }
     } catch (error) {
-      console.log(8);
       dispatch(snackAlertError(error));
     }
   };
 
-  console.log(username, resetLink);
   // check username-resetLink are valid on DB before sending, or on send?
   return (
     <div className="page-content page-passwordreset">
@@ -135,12 +124,15 @@ const PasswordReset = () => {
               onChange={(e) => setRepeatPassword(e.target.value)}
             />
           </FormField>
+          <FormField>
+            <div className="modal-card-actions">
+              <button className="button-main" onClick={changePassword}>
+                Change password
+              </button>
+            </div>
+          </FormField>
         </div>
-        <div className="modal-card-actions">
-          <button className="button-main" onClick={changePassword}>
-            Change password
-          </button>
-        </div>
+
     </div>
   );
 }

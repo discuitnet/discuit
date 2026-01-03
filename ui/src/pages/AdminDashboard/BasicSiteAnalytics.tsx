@@ -6,6 +6,7 @@ import { TableRow } from '../../components/Table';
 import { mfetchjson } from '../../helper';
 import { useIsMobile, useLoading } from '../../hooks';
 import { AnalyticsEvent } from '../../serverTypes';
+import { printDate } from '../../helper';
 import { snackAlertError } from '../../slices/mainSlice';
 
 interface BasicSiteStats {
@@ -33,12 +34,6 @@ interface Row {
 interface APIReponse {
   events: AnalyticsEvent[];
   next: string;
-}
-
-function printDate(date: Date): string {
-  // return timeAgo(date);
-  // return date.toLocaleString()
-  return `${date.getUTCFullYear()}-${date.getUTCMonth() + 1}-${date.getUTCDate()} ${date.getUTCHours()}-${date.getUTCMinutes()}`;
 }
 
 export default function BasicSiteAnalytics() {
@@ -71,6 +66,7 @@ export default function BasicSiteAnalytics() {
   const handleFetchMore = () => fetchEvents(next);
 
   const handleRenderItem = (item: Row) => {
+    console.log(item);
     return (
       <TableRow columns={14}>
         <div className="table-column">{printDate(item.createdAt)}</div>
@@ -96,7 +92,7 @@ export default function BasicSiteAnalytics() {
       <TableRow columns={14} head>
         <div className="table-column">Timestamp (UTC)</div>
         <div className="table-column">Signups</div>
-        <div className="table-column">PWA intalls</div>
+        <div className="table-column">PWA installs</div>
         <div className="table-column">Notifications enabled</div>
         <div className="table-column">Users 24h</div>
         <div className="table-column">Users 7d</div>
@@ -137,7 +133,7 @@ export default function BasicSiteAnalytics() {
   return (
     <div className="dashboard-page-analytics document">
       <div className="dashboard-page-title">Analytics</div>
-      <div className="bashboard-page-content">
+      <div className="dashboard-page-content">
         <div className="table-wrap" style={{ width: isMobile ? tableWidth : undefined }}>
           <SimpleFeed
             className="table"

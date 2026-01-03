@@ -10,6 +10,7 @@ import Comments from './Comments';
 import Communities from './Communities';
 import IPBlocks from './IPBlocks';
 import NewCommunityRequests from './NewCommunityRequests';
+import PasswordRequestLogs from './PasswordRequestLogs';
 import Settings from './Settings';
 import Sidebar from './Sidebar';
 import Users from './Users';
@@ -81,6 +82,9 @@ function AdminDashboard() {
             </Route>
             <Route exact path={`${path}/users`}>
               <Users />
+            </Route>
+            <Route exact path={`${path}/password-requests`}>
+              <PasswordRequestLogs />
             </Route>
             <Route exact path={`${path}/comments`}>
               <Comments />

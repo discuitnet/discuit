@@ -37,6 +37,9 @@ function Sidebar({
           <Link className="sidebar-item" to={dashboardLink('users')}>
             Users
           </Link>
+          <Link className="sidebar-item" to={dashboardLink('password-requests')}>
+            Password requests
+          </Link>
           <Link className="sidebar-item" to={dashboardLink('comments')}>
             Comments
           </Link>

@@ -728,12 +728,25 @@ func (s *Server) getResetPasswordLink(w *responseWriter, r *request) error {
 	// TODO: front-end tests email validity using /^[^\s@]+@[^\s@]+\.[^\s@]+$/, but back-end doesn't test
 	// so it's possible to use the site API to store an invalid email address
 	//fmt.Println("failed: del", user.Deleted, "ban", user.Banned, "email", !user.Email.Valid, "reset", user.ResetLink.Valid, "expiry", time.Now().Before(user.ResetExpiresAt.Time))
-	if user.Deleted || user.Banned || !user.Email.Valid || user.ResetLink.Valid || (user.ResetExpiresAt.Valid && time.Now().Before(user.ResetExpiresAt.Time)) {
+	currentTime := time.Now()
+	if user.Deleted || user.Banned || !user.Email.Valid || user.ResetLink.Valid || (user.ResetExpiresAt.Valid && currentTime.Before(user.ResetExpiresAt.Time)) {
 		return httperr.NewBadRequest("cannot_reset_password", "User is banned, deleted, has no registered email, or already has password reset in progress")
 	}
 
+	requestIP := httputil.GetIP(r.req)
+	/*
+		if err := s.rateLimit(r, "password_reset_request_"+requestIP, time.Hour*24, 100); err != nil {
+			return err
+		}
+		if err := s.rateLimit(r, "password_reset_request_"+username, time.Minute*10, 1); err != nil {
+			return err
+		}*/
+
+	if _, err := s.db.ExecContext(r.ctx, "INSERT INTO password_requests (ip, username) VALUES (?, ?)", requestIP, user.Username); err != nil {
+		return err
+	}
 	resetLink := utils.GenerateStringID(24)
-	if _, err := s.db.ExecContext(r.ctx, "UPDATE users SET reset_link = ?, reset_expires_at = ? WHERE id = ?", resetLink, time.Now().Add(time.Minute*10), user.ID); err != nil {
+	if _, err := s.db.ExecContext(r.ctx, "UPDATE users SET reset_link = ?, reset_expires_at = ? WHERE id = ?", resetLink, currentTime.Add(time.Minute*10), user.ID); err != nil {
 		return err
 	}
 	//// write sendEmail function... which could possibly return an asynch error, but then that's not reportable... unless user stays on the page?
@@ -752,14 +765,6 @@ func (s *Server) getResetPasswordLink(w *responseWriter, r *request) error {
 		if err = sendEmail(user.Email.String, resetLink); err != nil {
 			return err
 		}*/
-	// rate-limit only after successful reset requests
-
-	if err := s.rateLimit(r, "password_reset_request_"+httputil.GetIP(r.req), time.Hour*24, 100); err != nil {
-		return err
-	}
-	if err := s.rateLimit(r, "password_reset_request_"+username, time.Minute*10, 1); err != nil {
-		return err
-	}
 
 	return w.writeJSON(obfuscatedEmail)
 }
@@ -779,23 +784,18 @@ func (s *Server) handleResetPassword(w *responseWriter, r *request) error {
 	if newPassword != repeatPassword {
 		return httperr.NewBadRequest("password_not_match", "Passwords do not match.")
 	}
-	username := r.muxVar("username")
-	resetLink := r.muxVar("resetLink")
+	//query := r.urlQueryParams()
+	muxVars := mux.Vars(r.req)
+	username, resetLink := muxVars["username"], muxVars["resetLink"]
 
 	// !!! validate resetLink against database value: is link associated with username, is it expired (and if expired, clear it--or clear it elsewhere?)
 	user, err := core.GetUserByUsername(r.ctx, s.db, username, r.viewer)
 	if err != nil {
 		return err
 	}
-
-	if user.ResetExpiresAt.Valid && user.ResetExpiresAt.Time.After(time.Now()) {
-		if err := blankExpiredReset(r.ctx, s.db, user); err != nil {
-			return err
-		}
-		return httperr.NewBadRequest("invalid_reset_link", "Password reset link expired")
-	}
-	// !!! if an invalid link is traversed, consider it an attack and reset any existing link in the database
-	if !user.ResetLink.Valid || user.ResetLink.String != resetLink {
+	// (expired) or (visiting invalid reset link--assume it is an attack and reset the existing link)
+	if (user.ResetExpiresAt.Valid && user.ResetExpiresAt.Time.Before(time.Now())) ||
+		(!user.ResetLink.Valid || user.ResetLink.String != resetLink) {
 		if err := blankExpiredReset(r.ctx, s.db, user); err != nil {
 			return err
 		}

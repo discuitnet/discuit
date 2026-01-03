@@ -205,6 +205,7 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 
 	r.Handle("/api/users/{username}/reset_password", s.withHandler(s.getResetPasswordLink)).Methods("GET")
 	r.Handle("/api/password_reset/{username}/{resetLink}", s.withHandler(s.handleResetPassword)).Methods("POST")
+	r.Handle("/api/password_reset_logs", s.withHandler(s.getPasswordResetLogs)).Methods("GET")
 
 	r.NotFoundHandler = http.HandlerFunc(s.apiNotFoundHandler)
 	r.MethodNotAllowedHandler = http.HandlerFunc(s.apiMethodNotAllowedHandler)
