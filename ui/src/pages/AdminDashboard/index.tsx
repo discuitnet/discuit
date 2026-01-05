@@ -28,8 +28,10 @@ const SVGUsers = (
 
 const SVGPasswordRequests = (
   <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path fill="currentColor" d="M14 15c0 .74-.4 1.38-1 1.73V19c0 .55-.45 1-1 1s-1-.45-1-1v-2.27c-.6-.35-1-.99-1-1.73 0-1.1.9-2 2-2s2 .9 2 2z"/>
-    <path fill="currentColor" d="M19 9h-1V5c0-2.76-2.24-5-5-5h-2C8.24 0 6 2.24 6 5v4H5c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V11c0-1.1-.9-2-2-2zM8 5c0-1.65 1.35-3 3-3h2c1.65 0 3 1.35 3 3v4H8V5zm11 16.5c0 .28-.22.5-.5.5h-13c-.28 0-.5-.22-.5-.5v-10c0-.28.22-.5.5-.5h13c.28 0 .5.22.5.5v10z"/>
+    <path
+      d="m20.41,9.01l-1.64,0l0,-2.68c0,-2.96 -2.94,-5.36 -6.56,-5.36s-6.56,2.4 -6.56,5.36l0,2.68l-1.64,0c-0.91,0 -1.64,0.6 -1.64,1.34l0,10.72c0,0.74 0.73,1.34 1.64,1.34l16.41,0c0.91,0 1.64,-0.6 1.64,-1.34l0,-10.72c0,-0.74 -0.73,-1.34 -1.64,-1.34zm-8.2,8.04c-0.91,0 -1.64,-0.6 -1.64,-1.34s0.73,-1.34 1.64,-1.34s1.64,0.6 1.64,1.34s-0.73,1.34 -1.64,1.34zm3.28,-8.04l-6.56,0l0,-2.68c0,-1.48 1.47,-2.68 3.28,-2.68s3.28,1.2 3.28,2.68l0,2.68z"
+      fill="currentColor"
+    />
   </svg>
 );
 
@@ -106,6 +108,9 @@ function AdminDashboard() {
         </Route>
         <Route exact path={`${path}/users`}>
           <Users />
+        </Route>
+        <Route exact path={`${path}/password-requests`}>
+          <PasswordRequestLogs />
         </Route>
         <Route exact path={`${path}/comments`}>
           <Comments />

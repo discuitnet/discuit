@@ -1,10 +1,11 @@
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
+import DashboardPage from '../../components/Dashboard/DashboardPage';
 import PageLoading from '../../components/PageLoading';
 import SimpleFeed, { SimpleFeedItem } from '../../components/SimpleFeed';
 import { TableRow } from '../../components/Table';
 import { mfetchjson } from '../../helper';
-import { useIsMobile, useLoading } from '../../hooks';
+import { useLoading } from '../../hooks';
 import { printDate } from '../../helper';
 import { snackAlertError } from '../../slices/mainSlice';
 
@@ -78,21 +79,6 @@ export default function PasswordRequestLogs() {
     );
   };
 
-  const isMobile = useIsMobile();
-
-  const [tableWidth, setTableWidth] = useState(345);
-  useLayoutEffect(() => {
-    if (isMobile) {
-      const el = document.querySelector('.page-dashboard-head .inner-wrap');
-      if (el) {
-        const styles = getComputedStyle(el);
-        setTableWidth(
-          el.scrollWidth - parseInt(styles.paddingLeft) - parseInt(styles.paddingRight)
-        );
-      }
-    }
-  }, [isMobile]);
-
   if (loading !== 'loaded') {
     return <PageLoading />;
   }
@@ -101,20 +87,16 @@ export default function PasswordRequestLogs() {
   rows?.forEach((row) => feedItems.push({ item: row, key: row.createdAt.toString() }));
 
   return (
-    <div className="dashboard-page-analytics document">
-      <div className="dashboard-page-title">Password reset requests</div>
-      <div className="bashboard-page-content">
-        <div className="table-wrap" style={{ width: isMobile ? tableWidth : undefined }}>
-          <SimpleFeed
-            className="table"
-            items={feedItems}
-            onRenderItem={handleRenderItem}
-            onRenderHead={handleRenderHead}
-            hasMore={Boolean(maxId)}
-            onFetchMore={handleFetchMore}
-          />
-        </div>
-      </div>
-    </div>
+
+    <DashboardPage className="document" title="Password reset requests" fullWidth>
+      <SimpleFeed
+        className="table"
+        items={feedItems}
+        onRenderItem={handleRenderItem}
+        onRenderHead={handleRenderHead}
+        hasMore={Boolean(maxId)}
+        onFetchMore={handleFetchMore}
+      />
+    </DashboardPage>
   );
 }
