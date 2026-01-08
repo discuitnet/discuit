@@ -254,7 +254,7 @@ func scanComments(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.I
 		}
 		for _, comment := range comments {
 			for _, mute := range mutes {
-				if *mute.MutedUserID == comment.AuthorID {
+				if *mute.MutedUserID == comment.AuthorID && (!comment.Deleted || viewerAdmin) {
 					comment.IsAuthorMuted = true
 					break
 				}
