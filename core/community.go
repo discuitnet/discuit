@@ -1306,22 +1306,20 @@ func DeleteUnusedCommunities(ctx context.Context, db *sql.DB, n uint, dryRun boo
 	return deleted, nil
 }
 
-func requestExists(ctx context.Context, db *sql.DB, byUser, name string) (bool, error) {
+func communityRequestExists(ctx context.Context, db *sql.DB, byUser, name string) (bool, error) {
 	var id int
 	if err := db.QueryRowContext(ctx, `
 			SELECT id
 			FROM community_requests
-			WHERE deleted_at IS NULL AND by_user = ? AND community_name_lc = ? and denied_at IS NULL
+			WHERE deleted_at IS NULL AND by_user = ? AND community_name_lc = ? AND denied_at IS NULL
 			LIMIT 1`,
 		byUser,
 		strings.ToLower(name),
 	).Scan(&id); err != nil {
-		if err != nil {
-			if err != sql.ErrNoRows {
-				return true, err
-			}
-			return false, nil // no pending requests means the byUser:name request doesn't exist and can go forward
+		if err != sql.ErrNoRows {
+			return false, err
 		}
+		return false, nil
 	}
 	return true, nil
 }
@@ -1351,7 +1349,7 @@ func CreateCommunityRequest(ctx context.Context, db *sql.DB, byUser, name, note 
 		}
 	}
 
-	requested, err := requestExists(ctx, db, byUser, name)
+	requested, err := communityRequestExists(ctx, db, byUser, name)
 	if err != nil {
 		return err
 	}
