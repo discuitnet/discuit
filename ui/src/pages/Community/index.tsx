@@ -31,6 +31,7 @@ import PostsFeed from '../../views/PostsFeed';
 import NotFound from '../NotFound';
 import Banner from './Banner';
 import JoinButton from './JoinButton';
+import HelpingHand from './HelpingHand';
 import Rules from './Rules';
 
 const Community = () => {
@@ -316,6 +317,7 @@ const Community = () => {
 
             <div className="comm-main-top-bar">
               <JoinButton className="comm-main-top-join-button" community={community} />
+              <HelpingHand className="comm-main-top-join-button" community={community} />
               {/*loggedIn && (
                 <Dropdown target={<ButtonMore vertical />} aligned="right">
                   <div className="dropdown-list">
