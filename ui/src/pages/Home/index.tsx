@@ -23,6 +23,9 @@ const Home = () => {
   const getFeedType = (user: User | null, pathname: string): PostsFeedType => {
     let f: PostsFeedType = 'all';
     if (user !== null) {
+      if (pathname === '/moderating') {
+        return 'moderating';
+      }
       if (user.homeFeed === 'all') {
         f = pathname === '/' ? 'all' : 'subscriptions';
       } else {

@@ -1422,6 +1422,11 @@ html.no-wrap {
             }
         }
     }
+    &.m-long {
+        @include mixins.mobile {
+            width: 1200px;
+        }
+    }
 }
 
 table {

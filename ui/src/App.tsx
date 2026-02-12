@@ -8,6 +8,7 @@ import BottomNavbar from './components/BottomNavbar';
 import { ButtonClose } from './components/Button';
 import Chat from './components/Chat';
 import CreateCommunity from './components/CreateCommunity';
+import ExampleDashboard from './components/Dashboard/ExampleDashboard';
 import LoginPrompt from './components/LoginPrompt';
 import Modal from './components/Modal';
 import Navbar from './components/Navbar';
@@ -269,6 +270,11 @@ const AppSwitch = () => {
     <>
       <Switch>
         {import.meta.env.MODE !== 'production' && <Route path="/elements" component={Elements} />}
+        {import.meta.env.MODE !== 'production' && (
+          <Route path="/test-dashboard">
+            <ExampleDashboard />
+          </Route>
+        )}
         {/*
         <Route exact path="/search">
           <Search />
@@ -288,7 +294,7 @@ const AppSwitch = () => {
         <Route exact path="/login">
           <Login />
         </Route>
-        <Route exact path={['/', '/subscriptions', '/all']}>
+        <Route exact path={['/', '/subscriptions', '/all', '/moderating']}>
           <Home />
         </Route>
         <Route exact path="/communities">

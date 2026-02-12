@@ -34,7 +34,7 @@ func (s *Server) getUser(w *responseWriter, r *request) error {
 		user.Username = username
 	}
 
-	if err := user.LoadModdingList(r.ctx, s.db); err != nil {
+	if err := user.LoadModeratingCommunitiesList(r.ctx, s.db); err != nil {
 		return err
 	}
 
@@ -319,7 +319,7 @@ func (s *Server) getLoggedInUser(w *responseWriter, r *request) error {
 		return err
 	}
 
-	if err := user.LoadModdingList(r.ctx, s.db); err != nil {
+	if err := user.LoadModeratingCommunitiesList(r.ctx, s.db); err != nil {
 		return err
 	}
 
