@@ -61,6 +61,7 @@ To setup a development environment of Discuit on your local computer:
 1.  Create a file named `config.yaml` in the root directory and copy the contents
     of `config.default.yaml` into it. And enter the required config parameters in
     `config.yaml`.
+    
     ```shell
     cp config.default.yaml config.yaml
     ```
