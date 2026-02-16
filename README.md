@@ -55,7 +55,7 @@ To setup a development environment of Discuit on your local computer:
 1.  Clone this repository:
 
     ```shell
-    git clone https://github.com/discuitnet/discuit.git && cd discuit
+    git clone https://github.com/SienaSoftwareEngineering/discuit.git && cd discuit
     ```
 
 1.  Create a file named `config.yaml` in the root directory and copy the contents
