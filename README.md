@@ -84,6 +84,12 @@ To setup a development environment of Discuit on your local computer:
     ./discuit serve
     ```
 
+1.  In order to edit within your VM and make sure you're in the right place open the file with:
+
+    ```shell
+    code .
+    ```
+
 After creating an account, you can run `./discuit admin make username` to make
 a user an admin of the site.
 
