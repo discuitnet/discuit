@@ -1,47 +1,47 @@
-import clsx from 'clsx';
-import React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { mfetchjson } from '../../helper';
+import React, { useState } from 'react';
 import { Community } from '../../serverTypes';
-import { communityAdded } from '../../slices/communitiesSlice';
-import { loginPromptToggled, MainState, snackAlertError } from '../../slices/mainSlice';
-import { RootState } from '../../store';
+import Modal from '../../components/Modal';
 
-export interface JoinButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    community: Community;
+export interface HelpingHandProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  community: Community;
 }
 
-const JoinButton = ({ className, community, ...rest }: JoinButtonProps) => {
-    const loggedIn =
-        (useSelector<RootState>((state) => state.main.user) as MainState['user']) !== null;
-    const dispatch = useDispatch();
+const HelpingHand = ({ className, community, ...rest }: HelpingHandProps) => {
+  const [open, setOpen] = useState(false);
 
-    const joined = community ? community.userJoined : false;
-    const handleFollow = async () => {
-        if (!loggedIn) {
-            dispatch(loginPromptToggled());
-            return;
-        }
-        const message = `You will no longer be a moderator of '${community.name}' if you leave the community. Are you sure you want to leave?`;
-        if (community.userMod && !confirm(message)) {
-            return;
-        }
-        try {
-            const rcomm = await mfetchjson('/api/_joinCommunity', {
-                method: 'POST',
-                body: JSON.stringify({ communityId: community.id, leave: joined }),
-            });
-            dispatch(communityAdded(rcomm));
-        } catch (error) {
-            dispatch(snackAlertError(error));
-        }
-    };
+  const handleClick = () => {
+    setOpen(true);
+  };
 
-    return (
-        <button onClick={handleFollow} className={clsx(!joined && 'button-main', className)} {...rest}>
-            {joined ? 'Joined' : 'Join'}
-        </button>
-    );
+  return (
+    <>
+      <button onClick={handleClick} className={className} {...rest}>
+        Helping Hand
+      </button>
+
+      <Modal open={open} onClose={() => setOpen(false)}>
+        <div className="modal-card">
+          <header className="modal-card-head">
+            <p className="modal-card-title">Show Luv</p>
+            <button
+              className="delete"
+              aria-label="close"
+              onClick={() => setOpen(false)}
+            />
+          </header>
+          <section className="modal-card-body">
+            {/* you can customize the content below */}
+            <p>Donate to this community!</p>
+          </section>
+          <footer className="modal-card-foot">
+            <button className="button" onClick={() => setOpen(false)}>
+              Close
+            </button>
+          </footer>
+        </div>
+      </Modal>
+    </>
+  );
 };
 
-export default JoinButton;
+export default HelpingHand;
