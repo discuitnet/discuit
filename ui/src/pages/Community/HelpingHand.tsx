@@ -11,10 +11,14 @@ export interface HelpingHandProps extends React.ButtonHTMLAttributes<HTMLButtonE
 
 const HelpingHand = ({ className, community, ...rest }: HelpingHandProps) => {
   const [open, setOpen] = useState(false);
+  const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [donationAmount, setDonationAmount] = useState('');
   const [email, setEmail] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  // remember the values that were submitted so we can show a recap after
+  // the request succeeds; reset when the user explicitly closes the modal.
+  const [lastDonation, setLastDonation] = useState('');
+  const [lastEmail, setLastEmail] = useState('');
   const dispatch = useDispatch();
 
   const handleClick = () => {
@@ -38,7 +42,7 @@ const HelpingHand = ({ className, community, ...rest }: HelpingHandProps) => {
       setIsProcessing(true);
 
       // Call your backend to create a payment intent
-      const response = await mfetchjson('/api/donations/create-payment-intent', {
+      await mfetchjson('/api/donations/create-payment-intent', {
         method: 'POST',
         body: JSON.stringify({
           amount: Math.round(parseFloat(donationAmount) * 100), // Convert to cents
@@ -48,15 +52,16 @@ const HelpingHand = ({ className, community, ...rest }: HelpingHandProps) => {
       });
 
       // For now, show success and redirect. In production, handle Stripe checkout.
-      setPaymentSuccess(true);
+      setLastDonation(donationAmount);
+      setLastEmail(email);
       dispatch(snackAlert('Donation successful! Thank you for supporting this community.'));
 
-      setTimeout(() => {
-        setOpen(false);
-        setPaymentSuccess(false);
-        setDonationAmount('');
-        setEmail('');
-      }, 2000);
+      // close the entry modal and show a separate confirmation dialog
+      setOpen(false);
+      setConfirmationOpen(true);
+      // reset form fields for next time
+      setDonationAmount('');
+      setEmail('');
     } catch (error) {
       dispatch(snackAlertError(error));
     } finally {
@@ -82,83 +87,110 @@ const HelpingHand = ({ className, community, ...rest }: HelpingHandProps) => {
             />
           </header>
           <section className="modal-card-body">
-            {paymentSuccess ? (
-              <div style={{ textAlign: 'center', padding: '20px' }}>
-                <p style={{ fontSize: '18px', fontWeight: 'bold', color: 'green' }}>
-                  ✓ Thank you for your donation!
-                </p>
-                <p>Your support helps keep this community thriving.</p>
+            <form onSubmit={handleDonationSubmit}>
+              <div style={{ marginBottom: '15px' }}>
+                <label htmlFor="email" style={{ display: 'block', marginBottom: '5px' }}>
+                  Email Address
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc',
+                    boxSizing: 'border-box',
+                  }}
+                  disabled={isProcessing}
+                />
               </div>
-            ) : (
-              <form onSubmit={handleDonationSubmit}>
-                <div style={{ marginBottom: '15px' }}>
-                  <label htmlFor="email" style={{ display: 'block', marginBottom: '5px' }}>
-                    Email Address
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      borderRadius: '4px',
-                      border: '1px solid #ccc',
-                      boxSizing: 'border-box',
-                    }}
-                    disabled={isProcessing}
-                  />
-                </div>
 
-                <div style={{ marginBottom: '15px' }}>
-                  <label htmlFor="amount" style={{ display: 'block', marginBottom: '5px' }}>
-                    Donation Amount ($)
-                  </label>
-                  <input
-                    id="amount"
-                    type="number"
-                    placeholder="10.00"
-                    step="0.01"
-                    min="0.50"
-                    value={donationAmount}
-                    onChange={(e) => setDonationAmount(e.target.value)}
-                    required
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      borderRadius: '4px',
-                      border: '1px solid #ccc',
-                      boxSizing: 'border-box',
-                    }}
-                    disabled={isProcessing}
-                  />
-                </div>
+              <div style={{ marginBottom: '15px' }}>
+                <label htmlFor="amount" style={{ display: 'block', marginBottom: '5px' }}>
+                  Donation Amount ($)
+                </label>
+                <input
+                  id="amount"
+                  type="number"
+                  placeholder="10.00"
+                  step="0.01"
+                  min="0.50"
+                  value={donationAmount}
+                  onChange={(e) => setDonationAmount(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc',
+                    boxSizing: 'border-box',
+                  }}
+                  disabled={isProcessing}
+                />
+              </div>
 
-                <p style={{ fontSize: '14px', color: '#666' }}>
-                  Your donation will be processed securely via Stripe.
-                </p>
-              </form>
-            )}
+              <p style={{ fontSize: '14px', color: '#666' }}>
+                Your donation will be processed securely via Stripe.
+              </p>
+            </form>
           </section>
           <footer className="modal-card-foot">
-            {!paymentSuccess && (
-              <button
-                className="button button-main"
-                onClick={handleDonationSubmit}
-                disabled={isProcessing || !donationAmount || !email}
-              >
-                {isProcessing ? 'Processing...' : 'Donate'}
-              </button>
-            )}
+            <button
+              className="button button-main"
+              onClick={handleDonationSubmit}
+              disabled={isProcessing || !donationAmount || !email}
+            >
+              {isProcessing ? 'Processing...' : 'Donate'}
+            </button>
             <button
               className="button"
               onClick={() => setOpen(false)}
               disabled={isProcessing}
             >
-              {paymentSuccess ? 'Close' : 'Cancel'}
+              Cancel
+            </button>
+          </footer>
+        </div>
+      </Modal>
+      {/* confirmation dialog shown after the form closes */}
+      <Modal open={confirmationOpen} onClose={() => setConfirmationOpen(false)}>
+        <div className="modal-card">
+          <header className="modal-card-head">
+            <p className="modal-card-title">Donation received</p>
+            <button
+              className="delete"
+              aria-label="close"
+              onClick={() => setConfirmationOpen(false)}
+            />
+          </header>
+          <section className="modal-card-body" style={{ textAlign: 'center', padding: '20px' }}>
+            <p style={{ fontSize: '18px', fontWeight: 'bold', color: 'green' }}>
+              ✓ Thank you for your donation!
+            </p>
+            <p>Your support helps keep this community thriving.</p>
+            <p>
+              <strong>Amount:</strong> ${parseFloat(lastDonation).toFixed(2)}
+            </p>
+            <p>
+              <strong>Receipt:</strong> {lastEmail}
+            </p>
+          </section>
+          <footer className="modal-card-foot">
+            <button
+              className="button"
+              onClick={() => {
+                setConfirmationOpen(false);
+                // clear recap values when dismissed
+                setLastDonation('');
+                setLastEmail('');
+              }}
+            >
+              Close
             </button>
           </footer>
         </div>
