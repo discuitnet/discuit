@@ -1,0 +1,160 @@
+#######################################################################
+#                    DISCUIT INSTALLATION GUIDE                       #
+#                     CLEAN COPY–PASTE VERSION                        #
+#######################################################################
+
+############################
+#       PRE‑SETUP          #
+############################
+
+# Create or enter your working directory
+cd newWEL
+
+# Clone the Discuit repository
+git clone https://github.com/SienaSoftwareEngineering/discuit.git
+cd discuit
+
+
+############################
+#   STEP 1 — DEPENDENCIES  #
+############################
+
+# Update system
+sudo apt update -y
+
+# Remove any old Go installation
+sudo apt remove -y golang-go
+sudo rm -rf /usr/local/go
+sudo rm -rf /usr/lib/go
+sudo rm -rf /usr/bin/go
+
+# Install Go 1.22
+wget https://go.dev/dl/go1.22.2.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.22.2.linux-amd64.tar.gz
+echo 'export PATH=/usr/local/go/bin:$PATH' >> ~/.bashrc
+source ~/.bashrc
+
+# Install NVM (Node Version Manager)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+source ~/.bashrc
+
+# Install Node.js via NVM
+nvm install 24.13.1
+nvm use 24.13.1
+nvm alias default 24.13.1
+
+# Install Redis, MariaDB, and libvips
+sudo apt install -y redis-server mariadb-server mariadb-client libvips-dev
+
+
+############################
+#   STEP 2 — START SERVICES
+############################
+
+sudo systemctl start redis-server
+sudo systemctl start mariadb
+
+
+############################
+#   STEP 3 — DATABASE SETUP
+############################
+
+# Enter MariaDB (press ENTER for password)
+sudo mariadb -u root -p --binary-as-hex
+
+# Inside MariaDB:
+CREATE DATABASE discuit;
+EXIT;
+
+
+############################
+#   STEP 4 — CONFIGURE YAML
+############################
+
+# Copy default config
+cp config.default.yaml config.yaml
+
+# Open config.yaml
+nano config.yaml
+
+# --- IMPORTANT ---
+# config.yaml should be fine.
+# Only change these if they’re missing or wrong.
+#
+# Under the "database:" section, make sure you have:
+#
+#   user: discuit
+#   password: discuit
+#
+# If it already matches, you're good — no need to touch anything.
+# Save and exit nano.
+
+
+############################
+#   STEP 5 — CREATE USER
+############################
+
+# NOTE: The 'discuit' DB user should already exist.
+# If it does, these commands will just tell you it exists.
+
+sudo mariadb -u root -p --binary-as-hex
+
+# Inside MariaDB:
+CREATE USER 'discuit'@'localhost' IDENTIFIED BY 'discuit';
+GRANT ALL PRIVILEGES ON *.* TO 'discuit'@'localhost';
+GRANT ALL PRIVILEGES ON *.* TO 'discuit'@'localhost' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+SHOW GRANTS FOR 'discuit'@'localhost';
+EXIT;
+
+
+############################
+#   STEP 6 — BUILD PROJECT
+############################
+
+./build.sh
+
+
+############################
+#   STEP 7 — RUN MIGRATIONS
+############################
+
+./discuit migrate run
+
+
+############################
+#   STEP 8 — START SERVER
+############################
+
+./discuit serve
+
+# Access in browser:
+#   http://<your-external-ip>:8080
+# (External IP changes each VM restart)
+
+
+#######################################################################
+#                     POST‑SETUP (EVERY RESTART)                      #
+#######################################################################
+
+sudo systemctl start redis-server
+sudo systemctl start mariadb
+
+# Optional DB check
+sudo mariadb -u root -p --binary-as-hex
+# press ENTER
+exit
+
+# Rebuild if needed
+./build.sh
+
+# Re-run migrations (safe to run again)
+./discuit migrate run
+
+# Start Discuit
+./discuit serve
+
+# Visit:
+#   http://<external-ip>:8080
+#######################################################################
+
