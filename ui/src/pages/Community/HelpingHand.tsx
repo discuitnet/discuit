@@ -28,6 +28,10 @@ const HelpingHand = ({ className, community, ...rest }: HelpingHandProps) => {
   const handleDonationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // immediately show confirmation dialog; we'll still perform validation and
+    // the network request, but opening early avoids a blink if the call is fast.
+    setConfirmationOpen(true);
+
     if (!donationAmount || parseFloat(donationAmount) <= 0) {
       dispatch(snackAlertError('Please enter a valid donation amount'));
       return;
@@ -95,7 +99,7 @@ const HelpingHand = ({ className, community, ...rest }: HelpingHandProps) => {
                 <input
                   id="email"
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder="yourName@siena.edu"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -103,7 +107,7 @@ const HelpingHand = ({ className, community, ...rest }: HelpingHandProps) => {
                     width: '100%',
                     padding: '8px',
                     borderRadius: '4px',
-                    border: '1px solid #ccc',
+                    border: '1px solid #800000',
                     boxSizing: 'border-box',
                   }}
                   disabled={isProcessing}
@@ -117,7 +121,7 @@ const HelpingHand = ({ className, community, ...rest }: HelpingHandProps) => {
                 <input
                   id="amount"
                   type="number"
-                  placeholder="10.00"
+                  placeholder="Enter Amount"
                   step="0.01"
                   min="0.50"
                   value={donationAmount}
@@ -127,7 +131,7 @@ const HelpingHand = ({ className, community, ...rest }: HelpingHandProps) => {
                     width: '100%',
                     padding: '8px',
                     borderRadius: '4px',
-                    border: '1px solid #ccc',
+                    border: '1px solid #800000',
                     boxSizing: 'border-box',
                   }}
                   disabled={isProcessing}

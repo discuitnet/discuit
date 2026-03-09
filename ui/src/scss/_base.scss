@@ -51,7 +51,7 @@
     --base-8: 200, 200, 200;
     --base-9: 225, 225, 225;
     --base-10: 255, 255, 255;
-    --base-brand: 255, 105, 180; // Same as  #800000   DARK RED - BRAND COLOR
+    --base-brand: 128, 0, 0; // Same as  #800000   DARK RED - BRAND COLOR
     --base-white: var(--base-10);
     --base-black: var(--base-0);
     --base-red: 236, 72, 72; //#ec4848;
@@ -112,7 +112,7 @@
     // Modal
     --modal-box-shadow: rgba(var(--base-fg), 0.17) 0px 8px 16px 0px;
     --modal-box-border: none;
-    --modal-width: 360px;
+    --modal-width: 500px;
     --modal-bg-blur: blur(2px);
 
     --input-height: 3.2rem;
