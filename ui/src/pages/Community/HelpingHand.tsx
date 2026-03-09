@@ -99,7 +99,7 @@ const HelpingHand = ({ className, community, ...rest }: HelpingHandProps) => {
                 <input
                   id="email"
                   type="email"
-                  placeholder="yourName@siena.edu"
+                  placeholder="email@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
