@@ -131,6 +131,7 @@ EXIT;
 # Access in browser:
 #   http://<your-external-ip>:8080
 # (External IP changes each VM restart)
+# in the VM, cd to "newWEL", that's where the discuit repo is
 
 
 #######################################################################
@@ -157,4 +158,5 @@ exit
 # Visit:
 #   http://<external-ip>:8080
 #######################################################################
+
 
