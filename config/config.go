@@ -14,6 +14,8 @@ import (
 type Config struct {
 	IsDevelopment  bool `yaml:"isDevelopment"`
 	UseHTTPCookies bool `yaml:"useHttpCookies"`
+	StripeSecretKey     string
+    StripeWebhookSecret string
 
 	Addr    string `yaml:"addr"`
 	UIProxy string `yaml:"uiProxy"`

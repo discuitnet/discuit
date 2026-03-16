@@ -18,6 +18,8 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
+require github.com/stripe/stripe-go/v72 v72.122.0 // indirect
+
 require (
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
