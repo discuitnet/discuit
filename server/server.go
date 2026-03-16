@@ -203,6 +203,9 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/ipblocks", s.withHandler(s.handleIPBlocks)).Methods("GET", "POST", "DELETE")
 	r.Handle("/api/ipblocks/{blockID}", s.withHandler(s.handleSingleIPBlock)).Methods("GET", "DELETE")
 
+	//for stripe
+	r.Handle("/api/donations/create-payment-intent", s.withHandler(s.createDonationPaymentIntent)).Methods("POST")
+
 	r.NotFoundHandler = http.HandlerFunc(s.apiNotFoundHandler)
 	r.MethodNotAllowedHandler = http.HandlerFunc(s.apiMethodNotAllowedHandler)
 
