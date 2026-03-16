@@ -9,14 +9,14 @@ require (
 	github.com/gomodule/redigo v1.8.4
 	github.com/gorilla/mux v1.8.0
 	github.com/h2non/bimg v1.1.5
-	golang.org/x/crypto v0.11.0
+	github.com/stripe/stripe-go/v83 v83.2.1
+	github.com/yl2chen/cidranger v1.0.2
+	golang.org/x/crypto v0.21.0
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
 	golang.org/x/image v0.0.0-20210216034530-4410531fe030
-	golang.org/x/net v0.10.0
+	golang.org/x/net v0.23.0
 	gopkg.in/yaml.v2 v2.4.0
 )
-
-require github.com/yl2chen/cidranger v1.0.2 // indirect
 
 require (
 	github.com/Microsoft/go-winio v0.6.0 // indirect
@@ -31,7 +31,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
-	github.com/urfave/cli/v2 v2.27.2 // indirect
+	github.com/urfave/cli/v2 v2.27.2
 	github.com/xrash/smetrics v0.0.0-20240312152122-5f08fbb34913 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 )
