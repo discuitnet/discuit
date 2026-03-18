@@ -14,6 +14,7 @@ const HelpingHand = ({ className, community, ...rest }: HelpingHandProps) => {
   const [loading, setLoading] = useState(false);
 
   const handleClick = async () => {
+    console.log("Button clicked");
     try {
       setLoading(true);
       const res = await mfetchjson<{ clientSecret: string }>(
@@ -28,6 +29,7 @@ const HelpingHand = ({ className, community, ...rest }: HelpingHandProps) => {
       setOpen(true);
     } catch (err) {
       console.error('Failed to create payment intent', err);
+      alert("Payment intent failed");
     } finally {
       setLoading(false);
     }
