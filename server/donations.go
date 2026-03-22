@@ -150,6 +150,14 @@ func (s *Server) handleStripeWebhook(w *responseWriter, r *request) error {
 			log.Printf("ERROR saving donation %s: %v", pi.ID, dbErr)
 		}
 		}
+
+		// to test,
+		// install stripe, run
+		//stripe listen --forward-to localhost:8080/api/donations/webhook
+		// call
+		// stripe trigger payment_intent.succeeded (test webhook)
+		// check discuit database to see if `donations` table was updated
+
 	case "payment_intent.payment_failed":
 		// optionally handle failure
 	}
