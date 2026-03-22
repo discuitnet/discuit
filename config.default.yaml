@@ -9,7 +9,8 @@ substackURL:
 isDevelopment: true
 hmacSecret: <insert-your-secret-here>
 noLogToFile: false
-csrfOff: false
+csrfOff: true
+
 
 addr: :8080
 sessionCookieName: SID
