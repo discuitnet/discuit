@@ -9,7 +9,7 @@ substackURL:
 isDevelopment: true
 hmacSecret: <insert-your-secret-here>
 noLogToFile: false
-csrfOff: true
+csrfOff: false
 
 
 addr: :8080
