@@ -141,7 +141,14 @@ func (s *Server) handleStripeWebhook(w *responseWriter, r *request) error {
 		var pi stripe.PaymentIntent
 		if err := json.Unmarshal(event.Data.Raw, &pi); err == nil {
 			// TODO: record donation, send acknowledgement, etc.
-			_ = pi
+			_, dbErr := s.db.Exec(`
+			INSERT INTO donations (stripe_payment_intent_id, amount, currency, status, donor_email, created_at)
+			VALUES (?, ?, ?, ?, ?, ?)
+			ON DUPLICATE KEY UPDATE status = 'succeeded'
+		`, pi.ID, pi.Amount, string(pi.Currency), "succeeded", pi.ReceiptEmail, time.Now())
+		if dbErr != nil {
+			log.Printf("ERROR saving donation %s: %v", pi.ID, dbErr)
+		}
 		}
 	case "payment_intent.payment_failed":
 		// optionally handle failure
