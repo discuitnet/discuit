@@ -11,5 +11,6 @@ type CardFormProps = {
 export const CardForm = ({ clientSecret }: CardFormProps) => (
   <Elements stripe={stripePromise} options={{ clientSecret }}>
     <PaymentElement />
+    <button type="submit">Pay</button>
   </Elements>
 );
