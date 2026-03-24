@@ -124,6 +124,10 @@ func Parse(path string) (*Config, error) {
 		"DISCUIT_SITE_NAME":        &c.SiteName,
 		"DISCUIT_SITE_DESCRIPTION": &c.SiteDescription,
 
+		"DISCUIT_STRIPE_SECRET_KEY":     &c.StripeSecretKey,
+		"DISCUIT_STRIPE_WEBHOOK_SECRET": &c.StripeWebhookSecret,
+
+
 		// Primary DB credentials.
 		"DISCUIT_DB_ADDR":     &c.DBAddr,
 		"DISCUIT_DB_USER":     &c.DBUser,
