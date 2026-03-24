@@ -46,6 +46,9 @@ nvm alias default 24.13.1
 # Install Redis, MariaDB, and libvips
 sudo apt install -y redis-server mariadb-server mariadb-client libvips-dev
 
+# Update for stripe
+npm install @stripe/react-stripe-js @stripe/stripe-js
+
 
 ############################
 #   STEP 2 — START SERVICES
