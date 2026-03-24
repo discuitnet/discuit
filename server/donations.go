@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
+	"log"
 
 	"github.com/stripe/stripe-go/v72"
 	stripecheckout "github.com/stripe/stripe-go/v72/checkout/session"
@@ -121,11 +123,16 @@ func (s *Server) createCheckoutSession(w *responseWriter, r *request) error {
 	}{sess.URL})
 }
 
+
+
 // handleStripeWebhook verifies Stripe webhook signature and handles a
 // couple of events. You'll want to extend this with whatever business
 // logic (storing the donation, sending receipts, etc.) you need.
 
 func (s *Server) handleStripeWebhook(w *responseWriter, r *request) error {
+	// debug
+	log.Println("webhook hit")
+	//
 	payload, err := io.ReadAll(r.req.Body)
 	if err != nil {
 		return err
