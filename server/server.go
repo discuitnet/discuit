@@ -205,7 +205,8 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 
 	//for stripe
 	r.Handle("/api/donations/create-payment-intent", s.withHandler(s.createDonationPaymentIntent)).Methods("POST")
-	r.Handle("/api/donations/webhook", s.withHandler(s.handleStripeWebhook)).Methods("POST")
+	// attempt 2
+	r.HandleFunc("/api/donations/webhook", s.handleStripeWebhook).Methods("POST")
 
 	r.NotFoundHandler = http.HandlerFunc(s.apiNotFoundHandler)
 	r.MethodNotAllowedHandler = http.HandlerFunc(s.apiMethodNotAllowedHandler)
