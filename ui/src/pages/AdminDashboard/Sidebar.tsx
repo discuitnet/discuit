@@ -61,7 +61,7 @@ function Sidebar({
           </Link>
           <Link className="sidebar-item with-image" to={dashboardLink('communities')}>
             <SVGCommunities />
-            <span>Communities</span>
+            <span>Primary Pages</span>
           </Link>
           <Link className="sidebar-item with-image" to={dashboardLink('ipblocks')}>
             <svg

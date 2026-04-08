@@ -69,7 +69,7 @@ export default function Communities() {
 
   return (
     <div className="dashboard-page-communities document">
-      <div className="dashboard-page-title">Communities</div>
+      <div className="dashboard-page-title">Primary Pages</div>
       <div className="dashboard-page-content">
         <SimpleFeed className="table" items={feedItems} onRenderItem={handleRenderItem} />
       </div>

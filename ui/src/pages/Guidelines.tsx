@@ -1,9 +1,9 @@
 import StaticPage from '../components/StaticPage';
 
 const html = `
-<h1>Discuit site guidelines</h1>
+<h1>WEL guidelines</h1>
 <p>
-  For the purpose of keeping this place civil and friendly, Discuit will have certain
+  For the purpose of keeping this place civil and friendly, WEL will have certain
   restrictions on what is and isn't allowed on this platform. But these restrictions will
   still allow a wide range of opinions and different communities to exist. We have no desire
   to moderate people's opinions or censor dissenting views. We enjoy good-faith, respectful
@@ -11,16 +11,16 @@ const html = `
   all, no one learns anything if they only talk to people that always agree with them.
 </p>
 <p>
-  Discuit, being a forum of forums, will naturally have two levels of moderation: site-wide
+  WEL, being a forum of forums, will naturally have two levels of moderation: site-wide
   and community-wide. Community-wide rules are for each community to make and they can be as
   strict or as lax as they please, so long as they adhere to the site-wide rules.
 </p>
 <h2>Site-wide rules:</h2>
 <ol>
   <li>
-    <strong>No spam.</strong> Sharing anything you've created or done on Discuit is
+    <strong>No spam.</strong> Sharing anything you've created or done on WEL is
     completely fine but please don't repeatedly share the same link or submit to irrelevant
-    communities. And don't use Discuit solely for self-promotion.
+    communities. And don't use WEL solely for self-promotion.
   </li>
   <li>
     <strong>No porn.</strong> Please don't post anything with sexually explicit material,
@@ -69,7 +69,7 @@ const html = `
   or permanent suspension of the user accounts involved.
 </p>
 <p>
-  Discuit is a work in progress, and these rules are not set in stone. They may change in
+  WEL is a work in progress, and these rules are not set in stone. They may change in
   the future as we gain more experience.
 </p>
 

@@ -335,7 +335,7 @@ const Sidebar = ({ mobile = false }: { mobile?: boolean }) => {
             )}
             <Link to="/communities" className="sidebar-item with-image" onClick={handleClose}>
               <SVGCommunities />
-              <span>Communities</span>
+              <span>Primary Pages</span>
             </Link>
             <Link to="/guidelines" className="sidebar-item with-image" onClick={handleClose}>
               <svg
@@ -458,7 +458,7 @@ const Sidebar = ({ mobile = false }: { mobile?: boolean }) => {
                 ))}
               </>
             )}
-            <div className="sidebar-topic">{loggedIn ? 'My communities' : 'Communities'}</div>
+            <div className="sidebar-topic">{loggedIn ? 'My Pages' : 'Communities'}</div>
             {renderCommunitiesList()}
             {/*
           <div className="sidebar-topic">Social</div>
