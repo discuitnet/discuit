@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Button from '../../components/Button';
+import DashboardPage from '../../components/Dashboard/DashboardPage';
 import PageLoading from '../../components/PageLoading';
 import SimpleFeed, { SimpleFeedItem } from '../../components/SimpleFeed';
 import { mfetchjson } from '../../helper';
@@ -69,15 +70,12 @@ export default function Comments() {
   commentsState.comments!.forEach((comment) => feedItems.push({ item: comment, key: comment.id }));
 
   return (
-    <div className="dashboard-page-comments document">
-      <div className="dashboard-page-title">Comments</div>
-      <div className="dashboard-page-content">
-        <SimpleFeed items={feedItems} onRenderItem={handleRenderItem} />
-        <Button className="is-more-button" loading={feedReloading} onClick={fetchNextItems}>
-          More
-        </Button>
-      </div>
-    </div>
+    <DashboardPage className="dashboard-page-comments document" title="Comments">
+      <SimpleFeed items={feedItems} onRenderItem={handleRenderItem} />
+      <Button className="is-more-button" loading={feedReloading} onClick={fetchNextItems}>
+        More
+      </Button>
+    </DashboardPage>
   );
 }
 

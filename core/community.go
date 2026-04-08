@@ -215,8 +215,8 @@ func scanCommunities(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *ui
 	return comms, nil
 }
 
-// countUserModdingCommunities returns the number of communities user moderates.
-func countUserModdingCommunities(ctx context.Context, db *sql.DB, user uid.ID) (n int, err error) {
+// countUserModeratingCommunities returns the number of communities user moderates.
+func countUserModeratingCommunities(ctx context.Context, db *sql.DB, user uid.ID) (n int, err error) {
 	row := db.QueryRowContext(ctx, "SELECT COUNT(community_id) FROM community_mods WHERE user_id = ?", user)
 	err = row.Scan(&n)
 	return
@@ -246,7 +246,7 @@ func CreateCommunity(ctx context.Context, db *sql.DB, creator uid.ID, reqPoints,
 		if user.Points < reqPoints {
 			return nil, httperr.NewForbidden("not-enough-points", "You don't have enough points to create a community.")
 		}
-		n, err := countUserModdingCommunities(ctx, db, creator)
+		n, err := countUserModeratingCommunities(ctx, db, creator)
 		if err != nil {
 			return nil, err
 		}
@@ -1306,6 +1306,24 @@ func DeleteUnusedCommunities(ctx context.Context, db *sql.DB, n uint, dryRun boo
 	return deleted, nil
 }
 
+func communityRequestExists(ctx context.Context, db *sql.DB, byUser, name string) (bool, error) {
+	var id int
+	if err := db.QueryRowContext(ctx, `
+			SELECT id
+			FROM community_requests
+			WHERE deleted_at IS NULL AND by_user = ? AND community_name_lc = ? AND denied_at IS NULL
+			LIMIT 1`,
+		byUser,
+		strings.ToLower(name),
+	).Scan(&id); err != nil {
+		if err != sql.ErrNoRows {
+			return false, err
+		}
+		return false, nil
+	}
+	return true, nil
+}
+
 type CommunityRequest struct {
 	ID              int             `json:"id"`
 	ByUser          string          `json:"byUser"`
@@ -1328,6 +1346,18 @@ func CreateCommunityRequest(ctx context.Context, db *sql.DB, byUser, name, note 
 			HTTPStatus: http.StatusConflict,
 			Code:       "community-already-exists",
 			Message:    "The community you're requesting to create already exists",
+		}
+	}
+
+	requested, err := communityRequestExists(ctx, db, byUser, name)
+	if err != nil {
+		return err
+	}
+	if requested {
+		return &httperr.Error{
+			HTTPStatus: http.StatusConflict,
+			Code:       "community-already-requested",
+			Message:    "You already have a pending request for that community",
 		}
 	}
 

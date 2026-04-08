@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
@@ -31,6 +31,7 @@ import PostsFeed from '../../views/PostsFeed';
 import NotFound from '../NotFound';
 import Banner from './Banner';
 import JoinButton from './JoinButton';
+import HelpingHand from './HelpingHand';
 import Rules from './Rules';
 
 const Community = () => {
@@ -41,8 +42,27 @@ const Community = () => {
   const dispatch = useDispatch();
 
   const community = useSelector(selectCommunity(name));
+  // We keep a ref to the bar containing the two header buttons so we can
+  // make them equal width, based on the larger label.  This avoids having
+  // to forward refs through the child components.
+  const barRef = useRef<HTMLDivElement | null>(null);
   const loading = !(community && Array.isArray(community.mods) && Array.isArray(community.rules));
   const [error, setError] = useState<string | null>(null);
+
+  // whenever the join state or community changes we re‑measure the buttons
+  useEffect(() => {
+    if (!barRef.current) return;
+    const buttons = barRef.current.querySelectorAll<HTMLButtonElement>('.comm-main-top-join-button');
+    if (buttons.length === 0) return;
+
+    // reset in case text shrank
+    buttons.forEach((btn) => (btn.style.width = 'auto'));
+    let maxw = 0;
+    buttons.forEach((btn) => {
+      maxw = Math.max(maxw, btn.offsetWidth);
+    });
+    buttons.forEach((btn) => (btn.style.width = `${maxw}px`));
+  }, [community?.userJoined, community?.name]);
   useEffect(() => {
     if (!loading) return;
     setError(null);
@@ -314,8 +334,9 @@ const Community = () => {
               onEdit={() => setCommunityPicModalOpen(true)}
             />
 
-            <div className="comm-main-top-bar">
+            <div className="comm-main-top-bar" ref={barRef}>
               <JoinButton className="comm-main-top-join-button" community={community} />
+              <HelpingHand className="comm-main-top-join-button" community={community} />
               {/*loggedIn && (
                 <Dropdown target={<ButtonMore vertical />} aligned="right">
                   <div className="dropdown-list">

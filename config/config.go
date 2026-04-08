@@ -14,6 +14,8 @@ import (
 type Config struct {
 	IsDevelopment  bool `yaml:"isDevelopment"`
 	UseHTTPCookies bool `yaml:"useHttpCookies"`
+	StripeSecretKey     string
+    StripeWebhookSecret string
 
 	Addr    string `yaml:"addr"`
 	UIProxy string `yaml:"uiProxy"`
@@ -121,6 +123,10 @@ func Parse(path string) (*Config, error) {
 
 		"DISCUIT_SITE_NAME":        &c.SiteName,
 		"DISCUIT_SITE_DESCRIPTION": &c.SiteDescription,
+
+		"DISCUIT_STRIPE_SECRET_KEY":     &c.StripeSecretKey,
+		"DISCUIT_STRIPE_WEBHOOK_SECRET": &c.StripeWebhookSecret,
+
 
 		// Primary DB credentials.
 		"DISCUIT_DB_ADDR":     &c.DBAddr,

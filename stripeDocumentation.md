@@ -1,0 +1,1 @@
+<a href = "https://docs.stripe.com/sdks/stripejs-react">Stripe elements</a>
