@@ -17,7 +17,6 @@ import (
 	"github.com/discuitnet/discuit/internal/hcaptcha"
 	"github.com/discuitnet/discuit/internal/httperr"
 	"github.com/discuitnet/discuit/internal/httputil"
-	msql "github.com/discuitnet/discuit/internal/sql"
 	"github.com/discuitnet/discuit/internal/uid"
 	"github.com/discuitnet/discuit/internal/utils"
 	"github.com/gorilla/mux"
@@ -285,7 +284,9 @@ func (s *Server) signup(w *responseWriter, r *request) error {
 	captchaToken := values["captchaToken"]
 
 	// Verify captcha.
+	fmt.Println("in s.signup", captchaToken)
 	if s.config.CaptchaSecret != "" {
+		fmt.Println("checking captcha")
 		if ok, err := hcaptcha.VerifyReCaptcha(s.config.CaptchaSecret, captchaToken); err != nil {
 			return httperr.NewForbidden("captcha_verify_fail_1", "Captha verification failed.")
 		} else if !ok {
@@ -294,10 +295,10 @@ func (s *Server) signup(w *responseWriter, r *request) error {
 	}
 
 	ip := httputil.GetIP(r.req)
-	if err := s.rateLimit(r, "signup_1_"+ip, time.Minute, 2); err != nil {
+	if err := s.rateLimit(r, "signup_1_"+ip, time.Minute, 2000000); err != nil {
 		return err
 	}
-	if err := s.rateLimit(r, "signup_2_"+ip, time.Hour*6, 10); err != nil {
+	if err := s.rateLimit(r, "signup_2_"+ip, time.Hour*6, 10000000); err != nil {
 		return err
 	}
 
@@ -700,17 +701,9 @@ func (s *Server) unhidePost(w *responseWriter, r *request) error {
 	return w.writeString(`{"success":true}`)
 }
 
-// flow: user lands on the link provided by email
-// page provides new-password and verify-new-password fields
-// username, reset-link, passwords are posted to this API endpoint
-// verification/writing to db
-
-// need to separate all the DB work into core library?
-
 // null out reset_link and reset_expires_at for a single user when the process flows into an expired link
 func blankExpiredReset(ctx context.Context, db *sql.DB, user *core.User) error {
 	if _, err := db.ExecContext(ctx, "UPDATE users SET reset_link = null, reset_expires_at = null WHERE id = ?", user.ID); err != nil {
-		// !!! is it better to silently log instead of propagating error information to possible attacker?
 		log.Printf("Could not null password reset fields for user %s", user.Username)
 		return err
 	}
@@ -718,30 +711,40 @@ func blankExpiredReset(ctx context.Context, db *sql.DB, user *core.User) error {
 }
 
 // /api/users/{username}/reset_password [GET]
-// !!! requests should be logged
 func (s *Server) getResetPasswordLink(w *responseWriter, r *request) error {
-	// !!! check somewhere that the current session is not requesting a password reset for the user?
+	if s.config.TransactionalEmail == "" {
+		return httperr.NewNotFound("server_no_email", "Server not set up to email.")
+	}
+
 	username := r.muxVar("username")
 	user, err := core.GetUserByUsername(r.ctx, s.db, username, nil)
 	if err != nil {
 		return err
 	}
+	query := r.urlQueryParams()
+	captchaToken := query.Get("captchaToken")
+	if s.config.CaptchaSecret != "" {
+		if ok, err := hcaptcha.VerifyReCaptcha(s.config.CaptchaSecret, captchaToken); err != nil {
+			return httperr.NewForbidden("captcha_verify_fail_1", "Captha verification failed.")
+		} else if !ok {
+			return httperr.NewForbidden("captcha_verify_fail_2", "Captha verification failed.")
+		}
+	}
+
 	// TODO: front-end tests email validity using /^[^\s@]+@[^\s@]+\.[^\s@]+$/, but back-end doesn't test
 	// so it's possible to use the site API to store an invalid email address
-	//fmt.Println("failed: del", user.Deleted, "ban", user.Banned, "email", !user.Email.Valid, "reset", user.ResetLink.Valid, "expiry", time.Now().Before(user.ResetExpiresAt.Time))
 	currentTime := time.Now()
 	if user.Deleted || user.Banned || !user.Email.Valid || user.ResetLink.Valid || (user.ResetExpiresAt.Valid && currentTime.Before(user.ResetExpiresAt.Time)) {
 		return httperr.NewBadRequest("cannot_reset_password", "User is banned, deleted, has no registered email, or already has password reset in progress")
 	}
 
 	requestIP := httputil.GetIP(r.req)
-	/*
-		if err := s.rateLimit(r, "password_reset_request_"+requestIP, time.Hour*24, 100); err != nil {
-			return err
-		}
-		if err := s.rateLimit(r, "password_reset_request_"+username, time.Minute*10, 1); err != nil {
-			return err
-		}*/
+	if err := s.rateLimit(r, "password_reset_request_"+requestIP, time.Hour*24, 100); err != nil {
+		return err
+	}
+	if err := s.rateLimit(r, "password_reset_request_"+username, time.Minute*10, 1); err != nil {
+		return err
+	}
 
 	if _, err := s.db.ExecContext(r.ctx, "INSERT INTO password_requests (ip, username) VALUES (?, ?)", requestIP, user.Username); err != nil {
 		return err
@@ -750,8 +753,6 @@ func (s *Server) getResetPasswordLink(w *responseWriter, r *request) error {
 	if _, err := s.db.ExecContext(r.ctx, "UPDATE users SET reset_link = ?, reset_expires_at = ? WHERE id = ?", resetLink, currentTime.Add(time.Minute*10), user.ID); err != nil {
 		return err
 	}
-	//// write sendEmail function... which could possibly return an asynch error, but then that's not reportable... unless user stays on the page?
-	// maybe do max three retries depending on error from email service?
 	type ObfuscatedEmail struct {
 		ObfuscatedEmail *string `json:"obfuscatedEmail"`
 	}
@@ -761,20 +762,18 @@ func (s *Server) getResetPasswordLink(w *responseWriter, r *request) error {
 		return err
 		//log.Printf("Could not obfuscate email for user", username)
 	}
-	fmt.Println("pretend email sent to", obfuscatedEmail)
-	/*
-		if err = sendEmail(user.Email.String, resetLink); err != nil {
-			return err
-		}*/
+	title := "Password reset for Discuit"
+	message := fmt.Sprintf("Password reset link for Discuit user %s: https://www.discuit.org/reset-password?username=%s&resetLink=%s", user.Username, user.Username, resetLink)
+	fmt.Println(title, message) // disable email send for testing
+	/*	if err = s.sendEmail(w, &s.config.TransactionalEmail, &user.Email.String, &title, &message); err != nil {
+		return err
+	}*/
 
 	return w.writeJSON(obfuscatedEmail)
 }
 
-// !!! this should be POST: take new, verified password, validate against requirements, then write to DB
 // /api/password_reset/{username}/{resetLink} [POST]
-// pass in password reset details to this endpoint to write new password to DB
-// !!! this should be rate-limited and logged...
-func (s *Server) handleResetPassword(w *responseWriter, r *request) error {
+func (s *Server) resetPassword(w *responseWriter, r *request) error {
 	values, err := r.unmarshalJSONBodyToStringsMap(true)
 	if err != nil {
 		return err
@@ -785,11 +784,9 @@ func (s *Server) handleResetPassword(w *responseWriter, r *request) error {
 	if newPassword != repeatPassword {
 		return httperr.NewBadRequest("password_not_match", "Passwords do not match.")
 	}
-	//query := r.urlQueryParams()
 	muxVars := mux.Vars(r.req)
 	username, resetLink := muxVars["username"], muxVars["resetLink"]
 
-	// !!! validate resetLink against database value: is link associated with username, is it expired (and if expired, clear it--or clear it elsewhere?)
 	user, err := core.GetUserByUsername(r.ctx, s.db, username, r.viewer)
 	if err != nil {
 		return err
@@ -807,44 +804,8 @@ func (s *Server) handleResetPassword(w *responseWriter, r *request) error {
 		return err
 	}
 
-	// manually expire the link on a successful reset
 	if err := blankExpiredReset(r.ctx, s.db, user); err != nil {
 		return err
 	}
 	return w.writeString(`{"success": true}`)
-}
-
-func (s *Server) CancelExpiredResetLinks(ctx context.Context) (int, error) {
-	numCancelled := 0
-	err := msql.Transact(ctx, s.db, func(tx *sql.Tx) error {
-		rows, err := tx.QueryContext(ctx, "SELECT id FROM users WHERE reset_link IS NOT NULL AND reset_expires_at <= current_timestamp()")
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-
-		users := []*uid.ID{}
-		for rows.Next() {
-			var id = &uid.ID{}
-			if err := rows.Scan(&id); err != nil {
-				return err
-			}
-			users = append(users, id)
-		}
-		numCancelled = len(users)
-		if numCancelled == 0 {
-			return nil
-		}
-
-		var ids []any
-		for _, id := range users {
-			ids = append(ids, id)
-		}
-		query := "UPDATE users SET reset_link = null, reset_expires_at = null WHERE id IN %s"
-		if _, err := tx.ExecContext(ctx, fmt.Sprintf(query, msql.InClauseQuestionMarks(numCancelled)), ids...); err != nil {
-			return err
-		}
-		return nil
-	})
-	return numCancelled, err
 }

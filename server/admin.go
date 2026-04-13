@@ -332,11 +332,6 @@ func (s *Server) CancelExpiredIPBlocks(ctx context.Context) (int, error) {
 	return s.ipblocks.CancelExpiredBlocks(ctx)
 }
 
-// !!! not really needed? having the reset/expiry fields in the user table are irrelevant until a reset is requested/carried out
-func (s *Server) CancelExpiredPasswordResetLinks(ctx context.Context) (int, error) {
-	return s.CancelExpiredResetLinks(ctx)
-}
-
 func (s *Server) getPasswordResetLogs(w *responseWriter, r *request) error {
 	_, err := getLoggedInAdmin(s.db, r)
 	if err != nil {

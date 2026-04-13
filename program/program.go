@@ -120,20 +120,6 @@ func (pg *Program) startBackgroundTasks(delay time.Duration) {
 		}
 		return nil
 	}, time.Second*100, false)
-	pg.tr.New("Remove expired password resets", func(ctx context.Context) error {
-		count, err := pg.server.CancelExpiredPasswordResetLinks(context.Background())
-		if err != nil {
-			return err
-		}
-		if count > 0 {
-			s := ""
-			if count > 1 {
-				s = "s"
-			}
-			log.Printf("Cancelled %d expired password reset%s\n", count, s)
-		}
-		return nil
-	}, time.Second*100, false)
 
 	go func() {
 		time.Sleep(delay)

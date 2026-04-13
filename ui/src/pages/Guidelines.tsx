@@ -1,4 +1,6 @@
 import StaticPage from '../components/StaticPage';
+//import RecaptchaV2Example from '../components/RecaptchaTest';
+import Short from '../components/RecaptchaTest2';
 
 const html = `
 <h1>Discuit site guidelines</h1>
@@ -77,9 +79,12 @@ const html = `
 
 const Guidelines = () => {
   return (
+    <div>
+            <Short />
     <StaticPage className="page-guidelines" title="Guidelines">
       <main className="document" dangerouslySetInnerHTML={{ __html: html }} />
     </StaticPage>
+    </div>
   );
 };
 

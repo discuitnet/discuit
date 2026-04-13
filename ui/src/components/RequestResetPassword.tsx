@@ -1,17 +1,16 @@
 import clsx from 'clsx';
 import PropTypes from 'prop-types';
-import { /*useCallback, /*useEffect, useRef,*/ useState } from 'react';
-//import ReCAPTCHA from 'react-google-recaptcha';
+import { useRef, useState } from 'react';
+import ReCAPTCHA from 'react-google-recaptcha';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch/*, useSelector*/ } from 'react-redux';
 import { usernameMaxLength } from '../config';
-import { /*APIError,*/ mfetch } from '../helper';
-import { /*useDelayedEffect,*/ useInputUsername } from '../hooks';
+import { mfetch } from '../helper';
+import { useInputUsername } from '../hooks';
 import { snackAlertError } from '../slices/mainSlice';
-//import { RootState } from '../store';
 import { ButtonClose } from './Button';
 import { Form, FormField } from './Form';
-import /*Input,*/ { InputWithCount } from './Input';
+import { InputWithCount } from './Input';
 import Modal from './Modal';
 
 const RequestResetPassword = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
@@ -21,7 +20,7 @@ const RequestResetPassword = ({ open, onClose }: { open: boolean; onClose: () =>
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [hint, setHint] = useState('');
 
-  /*
+  
   const CAPTCHA_ENABLED = import.meta.env.VITE_CAPTCHASITEKEY ? true : false;
   const captchaRef = useRef<ReCAPTCHA>(null);
   const handleCaptchaVerify = (token: string | null) => {
@@ -29,13 +28,35 @@ const RequestResetPassword = ({ open, onClose }: { open: boolean; onClose: () =>
       dispatch(snackAlertError(new Error('Empty captcha token')));
       return;
     }
-   //signInUser(username, email, password, token);
+    console.log("requesting reset with token");
+    requestPasswordReset(username, token);
   };
-  */
-/*
+  
+  const requestPasswordReset = async (
+    username: string,
+    captchaToken?: string
+  ) => {
+    try {
+      const res = await mfetch(`/api/users/${username}/reset_password?captchaToken=${captchaToken}`);
+      if (!res.ok) {
+        setUsernameError(null);
+        const error = await res.json();
+        setUsernameError(error.message)
+        setHint('');
+        dispatch(snackAlertError(error.message));
+      } else {
+        setUsernameError("");
+        const emailHint = await res.json();
+        setHint(`Reset email sent to ${emailHint.obfuscatedEmail}`);
+      }
+    } catch (error) {
+      dispatch(snackAlertError(error));
+    }
+  }
+
   const handleCaptchaError = (error: unknown) => {
     dispatch(snackAlertError(error));
-  };*/
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -52,10 +73,10 @@ const RequestResetPassword = ({ open, onClose }: { open: boolean; onClose: () =>
       setHint('');
       return;
     }
-    /*
+    
     if (!CAPTCHA_ENABLED) {
-      //signInUser(username, email, password);
-      console.log("not captcha enabled");
+      console.log("requesting reset withOUT token");
+      requestPasswordReset(username);
       return;
     }
     if (!captchaRef.current) {
@@ -65,24 +86,6 @@ const RequestResetPassword = ({ open, onClose }: { open: boolean; onClose: () =>
     }
     captchaRef.current.execute();
     console.log("finished captcharef");
-    */
-
-    try {
-      const res = await mfetch(`/api/users/${username}/reset_password`);
-      if (!res.ok) {
-        setUsernameError(null);
-        const error = await res.json();
-        setUsernameError(error.message)
-        setHint('');
-        //dispatch(snackAlertError(error.message));
-      } else {
-        setUsernameError("");
-        const emailHint = await res.json();
-        setHint(`Reset email sent to ${emailHint.obfuscatedEmail}`);
-      }
-    } catch (error) {
-      dispatch(snackAlertError(error));
-    }
   };
 
 
@@ -120,7 +123,6 @@ const RequestResetPassword = ({ open, onClose }: { open: boolean; onClose: () =>
                 {hint}
               </p>
             </FormField>
-            {/*
             {CAPTCHA_ENABLED && (
               <div style={{ margin: 0 }}>
                 <ReCAPTCHA
@@ -145,7 +147,7 @@ const RequestResetPassword = ({ open, onClose }: { open: boolean; onClose: () =>
                 apply.
               </p>
             </FormField>
-            */}
+
             <FormField className="is-submit">
               <input type="submit" className="button button-main" value="Request password reset" />
             </FormField>

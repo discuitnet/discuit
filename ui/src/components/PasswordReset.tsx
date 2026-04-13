@@ -83,7 +83,6 @@ const PasswordReset = () => {
       return;
     }
     try {
-      //!!! this section needs changing
       const res = await mfetch(`/api/password_reset/${username}/${resetLink}`, {
         method: 'POST',
         body: JSON.stringify({

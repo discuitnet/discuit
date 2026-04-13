@@ -19,6 +19,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ses"
 	"github.com/discuitnet/discuit/config"
 	"github.com/discuitnet/discuit/core"
 	"github.com/discuitnet/discuit/core/ipblocks"
@@ -58,6 +61,7 @@ type Server struct {
 	staticRouter *mux.Router
 
 	sessions *sessions.RedisStore
+	/*emailSession *ses*/
 
 	ipblocks *ipblocks.Blocker
 
@@ -81,6 +85,9 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 		return nil, err
 	}
 	redisStore.Secure = !conf.UseHTTPCookies
+
+	/*	sess, err := session.NewSessionWithOptions(session.Options{SharedConfigState: session.SharedConfigEnable})
+		svc := ses.New(sess)*/
 
 	s := &Server{
 		db: db,
@@ -204,7 +211,7 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/ipblocks/{blockID}", s.withHandler(s.handleSingleIPBlock)).Methods("GET", "DELETE")
 
 	r.Handle("/api/users/{username}/reset_password", s.withHandler(s.getResetPasswordLink)).Methods("GET")
-	r.Handle("/api/password_reset/{username}/{resetLink}", s.withHandler(s.handleResetPassword)).Methods("POST")
+	r.Handle("/api/password_reset/{username}/{resetLink}", s.withHandler(s.resetPassword)).Methods("POST")
 	r.Handle("/api/password_reset_logs", s.withHandler(s.getPasswordResetLogs)).Methods("GET")
 
 	r.NotFoundHandler = http.HandlerFunc(s.apiNotFoundHandler)
@@ -1175,4 +1182,35 @@ func (s *Server) handleAnalytics(w *responseWriter, r *request) error {
 	}
 
 	return w.writeString(`{"success":true}`)
+}
+
+func (s *Server) sendEmail(w *responseWriter, sender *string, recipient *string, title *string, message *string) error {
+	sess, err := session.NewSessionWithOptions(session.Options{SharedConfigState: session.SharedConfigEnable})
+	svc := ses.New(sess)
+	input := &ses.SendEmailInput{
+		Destination: &ses.Destination{
+			ToAddresses: []*string{
+				aws.String(*recipient),
+			},
+		},
+		Message: &ses.Message{
+			Body: &ses.Body{
+				Text: &ses.Content{
+					Charset: aws.String("UTF-8"),
+					Data:    aws.String(*message),
+				},
+			},
+			Subject: &ses.Content{
+				Charset: aws.String("UTF-8"),
+				Data:    aws.String(*title),
+			},
+		},
+		Source: aws.String(*sender),
+	}
+	result, err := svc.SendEmail(input)
+	if err != nil {
+		return err
+	}
+	log.Printf("Sent test email with MessageId: %s\n", *result.MessageId)
+	return nil
 }
