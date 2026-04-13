@@ -163,7 +163,7 @@ In the root directory are these directories:
   - [ ] Filter link-posts by URL or domain.
 - Moderation:
   - [x] Pinned posts and comments.
-  - [ ] Lock individual comments (so they cannot be replied to).
+  - [x] Lock individual comments (so they cannot be replied to).
   - [ ] A single page for handling reports for users who moderate multiple communities.
   - [ ] Temporary bans.
 - [ ] User and community mentions (@user and +community).
