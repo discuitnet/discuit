@@ -69,17 +69,8 @@ export default function Communities() {
   );
 
   return (
-<<<<<<< HEAD
-    <div className="dashboard-page-communities document">
-      <div className="dashboard-page-title">Primary Pages</div>
-      <div className="dashboard-page-content">
-        <SimpleFeed className="table" items={feedItems} onRenderItem={handleRenderItem} />
-      </div>
-    </div>
-=======
     <DashboardPage className="dashboard-page-communities document" title="Communities">
       <SimpleFeed className="table" items={feedItems} onRenderItem={handleRenderItem} />
     </DashboardPage>
->>>>>>> upstream/main
   );
 }

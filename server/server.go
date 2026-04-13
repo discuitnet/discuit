@@ -205,7 +205,7 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 
 	//for stripe
 	r.Handle("/api/donations/create-payment-intent", s.withHandler(s.createDonationPaymentIntent)).Methods("POST")
-	r.Handle("/api/payment-intent/{id}", s.withHandler(s.getPaymentIntent)).Methods("GET")
+	//r.Handle("/api/payment-intent/{id}", s.withHandler(s.getPaymentIntent)).Methods("GET")
 	
 	
 	// bypass csrf
