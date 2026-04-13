@@ -35,7 +35,7 @@ func (s *Server) createDonationPaymentIntent(w *responseWriter, r *request) erro
 
 	amount := body.Amount
 	if amount <= 0 {
-		amount = 500 // default: $5.00
+		amount = 1000 // default: $10.00
 	}
 
 	pi, err := paymentintent.New(&stripe.PaymentIntentParams{
