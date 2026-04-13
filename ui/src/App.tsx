@@ -54,6 +54,9 @@ import {
 } from './slices/mainSlice';
 import { RootState } from './store';
 import LoginForm from './views/LoginForm';
+import HelpingHand from './pages/Community/HelpingHand';
+import PaymentComplete from './pages/PaymentComplete'; // Create this page
+
 
 // Value taken from _mixins.scss file.
 const tabletBreakpoint = 1170;
@@ -339,6 +342,12 @@ const AppSwitch = () => {
         <Route exact path={['/:name/post/:id', '/:name/post/:id/:commentId']}>
           <Post />
         </Route>
+        
+      <Switch>
+        <Route exact path="/" component={HelpingHand} />
+        <Route path="/payment-complete" component={PaymentComplete} />
+      </Switch>
+    
         <Route path="*">
           <NotFound />
         </Route>

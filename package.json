@@ -1,6 +1,10 @@
 {
   "dependencies": {
     "@stripe/react-stripe-js": "^5.6.1",
-    "@stripe/stripe-js": "^8.10.0"
+    "@stripe/stripe-js": "^8.10.0",
+    "@types/express": "^5.0.6",
+    "express": "^5.2.1",
+    "stripe": "^22.0.1",
+    "typescript": "^6.0.2"
   }
 }
