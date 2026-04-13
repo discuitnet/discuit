@@ -28,7 +28,7 @@ var (
 
 	errCommentDeleted  = httperr.NewForbidden("comment_deleted", "Comment(s) deleted.")
 	errCommentNotFound = httperr.NewNotFound("comment_not_found", "Comment(s) not found.")
-	errCommentLocked   = httperr.NewForbidden("comment-locked", "Comment is locked.")
+	errCommentLocked   = httperr.NewForbidden("comment_locked", "Comment is locked.")
 
 	errPostNotFound        = httperr.NewNotFound("post/not-found", "Post(s) not found.")
 	errPostLocked          = httperr.NewForbidden("post-locked", "Post is locked.")

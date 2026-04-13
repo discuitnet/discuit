@@ -155,7 +155,10 @@ const Comment = ({
     }
   };
 
+  const [isLocking, setIsLocking] = useState(false);
   const handleLockComment = async (lockAs: string) => {
+    if (isLocking) return;
+    setIsLocking(true);
     const action = comment.locked ? 'unlock' : 'lock';
     try {
       const rcomm = await mfetchjson(
@@ -165,6 +168,8 @@ const Comment = ({
       setComment(rcomm);
     } catch (error) {
       dispatch(snackAlertError(error));
+    } finally {
+      setIsLocking(false);
     }
   };
 
@@ -449,8 +454,8 @@ const Comment = ({
         <div className={cls()} onClick={() => !disabled && setConfirmDeleteOpen(true, 'mods')}>
           Delete
         </div>
-        <div className={cls()} onClick={() => !disabled && handleLockComment('mods')}>
-          {comment.locked ? 'Unlock comment' : 'Lock comment'}
+        <div className={cls()} onClick={() => !disabled && !isLocking && handleLockComment('mods')}>
+          {isLocking ? 'Locking...' : comment.locked ? 'Unlock comment' : 'Lock comment'}
         </div>
         {user && user.id === comment.userId && (
           <div className={cls('is-non-reactive')}>
@@ -477,8 +482,8 @@ const Comment = ({
         <div className="dropdown-item" onClick={() => setConfirmDeleteOpen(true, 'admins')}>
           Delete
         </div>
-        <div className="dropdown-item" onClick={() => handleLockComment('admins')}>
-          {comment.locked ? 'Unlock comment' : 'Lock comment'}
+        <div className={`dropdown-item${isLocking ? ' is-disabled' : ''}`} onClick={() => !isLocking && handleLockComment('admins')}>
+          {isLocking ? 'Locking...' : comment.locked ? 'Unlock comment' : 'Lock comment'}
         </div>
         {user && user.id === comment.userId && (
           <div className="dropdown-item is-non-reactive">

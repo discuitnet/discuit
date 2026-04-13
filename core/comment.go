@@ -618,7 +618,7 @@ func (c *Comment) Unlock(ctx context.Context, db *sql.DB, user uid.ID) error {
 		return httperr.NewForbidden("not-mod-not-admin", "User is neither a moderator nor an admin.")
 	}
 
-	_, err = db.ExecContext(ctx, "UPDATE comments SET locked_at = null, locked_by = null, locked_by_group = ? WHERE id = ?", UserGroupNaN, c.ID)
+	_, err = db.ExecContext(ctx, "UPDATE comments SET locked_at = NULL, locked_by = NULL, locked_by_group = 0 WHERE id = ?", c.ID)
 	if err == nil {
 		c.Locked = false
 		c.LockedAt.Valid = false
