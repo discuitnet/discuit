@@ -38,6 +38,7 @@ func (s *Server) createDonationPaymentIntent(w *responseWriter, r *request) erro
 		amount = 500 // default: $5.00
 	}
 
+	
 	pi, err := paymentintent.New(&stripe.PaymentIntentParams{
 		Amount:   stripe.Int64(amount),
 		Currency: stripe.String("usd"),

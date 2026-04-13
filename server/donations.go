@@ -8,13 +8,12 @@ import (
 	"time"
 	"log"
 
-    "github.com/gorilla/mux"
-    "github.com/stripe/stripe-go/v76"
+    //"github.com/gorilla/mux"
 
-	"github.com/stripe/stripe-go/v72"
-	stripecheckout "github.com/stripe/stripe-go/v72/checkout/session"
-	"github.com/stripe/stripe-go/v72/paymentintent"
-	"github.com/stripe/stripe-go/v72/webhook"
+	"github.com/stripe/stripe-go/v85"
+	stripecheckout "github.com/stripe/stripe-go/v85/checkout/session"
+	"github.com/stripe/stripe-go/v85/paymentintent"
+	"github.com/stripe/stripe-go/v85/webhook"
 
 	"github.com/discuitnet/discuit/internal/httperr"
 )

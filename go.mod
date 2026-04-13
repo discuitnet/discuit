@@ -1,6 +1,8 @@
 module github.com/discuitnet/discuit
 
-go 1.21
+go 1.22
+
+toolchain go1.24.2
 
 require (
 	github.com/SherClockHolmes/webpush-go v1.2.0
@@ -18,7 +20,11 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
-require github.com/stripe/stripe-go/v72 v72.122.0 // indirect
+require (
+	github.com/stripe/stripe-go/v72 v72.122.0 // indirect
+	github.com/stripe/stripe-go/v76 v76.25.0 // indirect
+	github.com/stripe/stripe-go/v85 v85.0.1 // indirect
+)
 
 require (
 	github.com/Microsoft/go-winio v0.6.0 // indirect

@@ -51,11 +51,7 @@
     --base-8: 200, 200, 200;
     --base-9: 225, 225, 225;
     --base-10: 255, 255, 255;
-<<<<<<< HEAD
-    --base-brand: 59, 130, 246; // Same as #6b02f2;
-=======
     --base-brand: 128, 0, 0; // Same as  #800000   DARK RED - BRAND COLOR
->>>>>>> upstream/main
     --base-white: var(--base-10);
     --base-black: var(--base-0);
     --base-red: 236, 72, 72; //#ec4848;
@@ -84,16 +80,6 @@
     --color-button: rgba(180, 200, 255, 0.7); // Normal, gray button
     --color-button-hover: rgba(180, 200, 255, 0.9); // #b5b5b5
     --color-button-main: var(--color-brand);
-<<<<<<< HEAD
-    --color-button-main-hover: #2563eb;
-    --color-button-red: var(--color-red);
-    --color-button-red-hover: rgb(207, 64, 64);
-
-    --color-input: rgba(150, 180, 255, 0.15);
-    --color-input-active: rgba(150, 180, 255, 0.1);
-    --color-input-border-hover: #c7d4f2;
-    --color-input-border-focus: #7f6bff;
-=======
     --color-button-main-hover: #550000; // rgb(102, 0, 0);
     --color-button-red: var(--color-red);
     --color-button-red-hover: rgb(207, 64, 64);
@@ -102,7 +88,6 @@
     --color-input-active: rgba(var(--base-4), 0.1);
     --color-input-border-hover: #d7d7d7;
     --color-input-border-focus: #800000;
->>>>>>> upstream/main
     --color-checkbox-border: #bbc1e1;
     --color-checkbox-disabled: #eef4ff;
     --color-checkbox-disabled-inner: rgba(var(--base-brand), 0.8); // #e1e6f9;
@@ -177,51 +162,28 @@
 }
 
 html.theme-dark {
-<<<<<<< HEAD
-    --base-brand: 93, 140, 255;
-    --base-bg: 20, 25, 50;
-=======
     --base-brand: 128, 0, 0;
     --base-bg: 32, 32, 32;
->>>>>>> upstream/main
     --base-fg: var(--base-white);
 
     --color-body: rgb(15, 20, 40);
     --color-text: var(--color-text-white);
-<<<<<<< HEAD
-    --color-text-light: rgb(200, 210, 255);
-    --color-link: rgb(59, 130, 246); // 93, 140, 255
-    --color-button: rgba(var(--base-2), 0.7);
-    --color-input-border-focus: #7f6bff;
-    --color-scrollbar: rgb(140, 160, 210);
-=======
     --color-text-light: rgb(var(--base-8));
     --color-link: rgb(128, 0, 0); // rgb(117, 110, 255);
     --color-button: rgba(var(--base-2), 0.7);
     --color-input-border-focus: #800000;
     --color-scrollbar: rgb(var(--base-6));
->>>>>>> upstream/main
 
     --color-button: rgba(var(--base-4), 0.7);
     --color-button-text: var(--color-white);
     --color-button-hover: rgba(var(--base-4), 1);
-<<<<<<< HEAD
-    --color-button-main: rgb(59, 130, 246);
-    --color-button-main-hover: rgb(37, 99, 235);
-=======
     --color-button-main: rgb(128, 0, 0);
     --color-button-main-hover: rgb(102, 0, 0);
->>>>>>> upstream/main
 
     --color-input: rgba(150, 180, 255, 0.25);
     --color-input-active: rgba(var(--base-4), 0.3);
-<<<<<<< HEAD
-    --color-input-border-hover: #5a6fa0;
-    --color-input-border-focus: #7f6bff;
-=======
     --color-input-border-hover: #4f4f4f;
     --color-input-border-focus: #800000;
->>>>>>> upstream/main
     --color-checkbox-border: #bbc1e1;
     --color-checkbox-disabled: #eef4ff;
     --color-checkbox-disabled-inner: #d7e2ff;
@@ -584,19 +546,11 @@ code {
         border: 2px solid #3b82f6;
         border-radius: 8px;
         padding: 10px 20px;
-<<<<<<< HEAD
-        > h1,
-        > h2,
-        > h3 {
-            border-bottom: 1px solid #93b4ff
-;
-=======
 
         >h1,
         >h2,
         >h3 {
             border-bottom: 1px solid gray;
->>>>>>> upstream/main
             margin-bottom: 8px;
             font-size: var(--fs-2xl);
         }
@@ -619,18 +573,11 @@ code {
 
         .test-elements-section {
             margin-top: 10px;
-<<<<<<< HEAD
-            border-color: #93b4ff;
-            > h2,
-            > h2,
-            > h3 {
-=======
             border-color: rgb(177, 177, 177);
 
             >h2,
             >h2,
             >h3 {
->>>>>>> upstream/main
                 font-size: var(--fs-xl);
             }
         }
