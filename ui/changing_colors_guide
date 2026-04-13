@@ -1,0 +1,7 @@
+DASHBOARD COLORS
+
+background → --color-bg
+sidebar → --base-fg
+overlay → --base-5
+borders → --seperator / --card-border
+shadows → --box-shadow-navbar
