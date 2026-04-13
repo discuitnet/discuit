@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"time"
 	"log"
-	"os"
+
+    "github.com/gorilla/mux"
+    "github.com/stripe/stripe-go/v76"
 
 	"github.com/stripe/stripe-go/v72"
 	stripecheckout "github.com/stripe/stripe-go/v72/checkout/session"
@@ -15,7 +17,6 @@ import (
 	"github.com/stripe/stripe-go/v72/webhook"
 
 	"github.com/discuitnet/discuit/internal/httperr"
-	
 )
 
 // createPaymentIntent creates a Stripe PaymentIntent and returns the
@@ -131,54 +132,6 @@ func (s *Server) createCheckoutSession(w *responseWriter, r *request) error {
 // couple of events. You'll want to extend this with whatever business
 // logic (storing the donation, sending receipts, etc.) you need.
 
-// temp retry
-func (s *Server) handleStripeWebhook(w http.ResponseWriter, r *http.Request) {
-	log.Println("webhook hit")
-	for _, e := range os.Environ() {
-    log.Println(e)
-	}
-
-	log.Println("Webhook secret:", s.config.StripeWebhookSecret)
-
-	
-
-	payload, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "read error", http.StatusBadRequest)
-		return
-	}
-
-	sig := r.Header.Get("Stripe-Signature")
-
-	event, err := webhook.ConstructEvent(payload, sig, s.config.StripeWebhookSecret)
-	if err != nil {
-		http.Error(w, "invalid signature", http.StatusBadRequest)
-		return
-	}
-
-	switch event.Type {
-	case "payment_intent.succeeded":
-		var pi stripe.PaymentIntent
-		if err := json.Unmarshal(event.Data.Raw, &pi); err == nil {
-			_, dbErr := s.db.Exec(`
-				INSERT INTO donations (stripe_payment_intent_id, amount, currency, status, donor_email, created_at)
-				VALUES (?, ?, ?, ?, ?, ?)
-				ON DUPLICATE KEY UPDATE status = 'succeeded'
-			`, pi.ID, pi.Amount, string(pi.Currency), "succeeded", pi.ReceiptEmail, time.Now())
-
-			if dbErr != nil {
-				log.Printf("ERROR saving donation %s: %v", pi.ID, dbErr)
-			}
-		}
-
-	case "payment_intent.payment_failed":
-		// optional
-	}
-
-	w.WriteHeader(http.StatusOK)
-}
-
-/*
 func (s *Server) handleStripeWebhook(w *responseWriter, r *request) error {
 	// debug
 	log.Println("webhook hit")
@@ -222,4 +175,3 @@ func (s *Server) handleStripeWebhook(w *responseWriter, r *request) error {
 	w.WriteHeader(http.StatusOK)
 	return nil
 }
-*/

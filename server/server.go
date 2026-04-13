@@ -205,8 +205,16 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 
 	//for stripe
 	r.Handle("/api/donations/create-payment-intent", s.withHandler(s.createDonationPaymentIntent)).Methods("POST")
-	// attempt 2
-	r.HandleFunc("/api/donations/webhook", s.handleStripeWebhook).Methods("POST")
+	r.Handle("/api/payment-intent/{id}", s.withHandler(s.getPaymentIntent)).Methods("GET")
+	
+	
+	// bypass csrf
+	r.HandleFunc("/api/donations/webhook", func(w http.ResponseWriter, r *http.Request) {
+    rw := &responseWriter{w: w}
+    if err := s.handleStripeWebhook(rw, &request{req: r, ctx: r.Context()}); err != nil {
+        s.writeError(w, r, err)
+    }
+	}).Methods("POST")
 
 	r.NotFoundHandler = http.HandlerFunc(s.apiNotFoundHandler)
 	r.MethodNotAllowedHandler = http.HandlerFunc(s.apiMethodNotAllowedHandler)
