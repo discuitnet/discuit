@@ -158,19 +158,16 @@ func GetBasicSiteStats(ctx context.Context, db *sql.DB, limit int, next string) 
 	return events, "", nil
 }
 
-///////////////////////////////////////////////////////////////
-
 type PasswordResetEvent struct {
 	Username  string      `json:"username"`
 	IP        msql.NullIP `json:"ip"`
 	CreatedAt time.Time   `json:"createdAt"`
 }
 
-// // need to format ip address for v4?
 // Fetch password reset logs from newest. Return log records, next offset, error.
 func GetPasswordResetLogs(ctx context.Context, db *sql.DB, limit, maxId int) ([]*PasswordResetEvent, string, error) {
-	//// use id instead of offset to bypass issues with new records screwing up the offset
-	//// maxId == 0 restarts from the top
+	// use id instead of offset to bypass issues with new records screwing up the offset
+	// maxId == 0 restarts from the top
 	limitQuery := ""
 	if limit > 0 {
 		limitQuery = "LIMIT " + strconv.Itoa(limit)
