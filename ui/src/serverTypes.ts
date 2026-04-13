@@ -178,6 +178,10 @@ export interface Comment {
   postTitle?: string;
   postDeleted: boolean;
   postDeletedAs?: UserGroup;
+  locked: boolean;
+  lockedBy: string | null;
+  lockedByGroup?: UserGroup;
+  lockedAt: string | null;
 }
 
 export type ListSort = 'addedDsc' | 'addedAsc' | 'createdDsc' | 'createdAsc';

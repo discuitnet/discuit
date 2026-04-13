@@ -42,6 +42,7 @@ export interface CommentProps {
   isBanned: boolean;
   canVote: boolean;
   canComment: boolean;
+  isAncestorLocked?: boolean;
 }
 
 const Comment = ({
@@ -56,6 +57,7 @@ const Comment = ({
   isBanned,
   canVote,
   canComment,
+  isAncestorLocked = false,
 }: CommentProps) => {
   const dispatch = useDispatch();
 
@@ -65,6 +67,7 @@ const Comment = ({
 
   const { noRepliesRendered, children } = node;
   const [comment, _setComment] = useState(node.comment!);
+  const isCommentLocked = comment.locked || isAncestorLocked;
   const setComment = (comment: CommentType) => {
     // Beware: In place data mutation.
     node.comment = {
@@ -149,6 +152,19 @@ const Comment = ({
       dispatch(snackAlertError(error));
     } finally {
       setConfirmDeleteOpen(false);
+    }
+  };
+
+  const handleLockComment = async (lockAs: string) => {
+    const action = comment.locked ? 'unlock' : 'lock';
+    try {
+      const rcomm = await mfetchjson(
+        `/api/posts/${comment.postId}/comments/${comment.id}?action=${action}&lockAs=${lockAs}`,
+        { method: 'PUT' }
+      );
+      setComment(rcomm);
+    } catch (error) {
+      dispatch(snackAlertError(error));
     }
   };
 
@@ -433,6 +449,9 @@ const Comment = ({
         <div className={cls()} onClick={() => !disabled && setConfirmDeleteOpen(true, 'mods')}>
           Delete
         </div>
+        <div className={cls()} onClick={() => !disabled && handleLockComment('mods')}>
+          {comment.locked ? 'Unlock comment' : 'Lock comment'}
+        </div>
         {user && user.id === comment.userId && (
           <div className={cls('is-non-reactive')}>
             <div className="checkbox">
@@ -457,6 +476,9 @@ const Comment = ({
       <>
         <div className="dropdown-item" onClick={() => setConfirmDeleteOpen(true, 'admins')}>
           Delete
+        </div>
+        <div className="dropdown-item" onClick={() => handleLockComment('admins')}>
+          {comment.locked ? 'Unlock comment' : 'Lock comment'}
         </div>
         {user && user.id === comment.userId && (
           <div className="dropdown-item is-non-reactive">
@@ -531,6 +553,11 @@ const Comment = ({
           {!purged && ['normal', 'null'].find((v) => v === comment.userGroup) === undefined && (
             <div className="post-comment-head-item post-comment-user-group">
               {`${toTitleCase(userGroupSingular(comment.userGroup, isMobile))}`}
+            </div>
+          )}
+          {comment.locked && (
+            <div className="post-comment-head-item post-comment-locked" title="This comment is locked. No new replies can be added.">
+              Locked
             </div>
           )}
           {loggedIn && postLastVisitAt && (
@@ -633,8 +660,14 @@ const Comment = ({
             <button
               className="button-text"
               onClick={handleOnReply}
-              title={comment.depth === MaxCommentDepth ? 'Thread too deep.' : ''}
-              disabled={!canComment || comment.depth === MaxCommentDepth}
+              title={
+                isCommentLocked
+                  ? 'Comment is locked.'
+                  : comment.depth === MaxCommentDepth
+                    ? 'Thread too deep.'
+                    : ''
+              }
+              disabled={!canComment || comment.depth === MaxCommentDepth || isCommentLocked}
             >
               Reply
             </button>
@@ -729,7 +762,7 @@ const Comment = ({
             </>
           )}
         </div>
-        {loggedIn && isReplying && canComment && (
+        {loggedIn && isReplying && canComment && !isCommentLocked && (
           <AddComment
             isMod={userMod}
             post={post}
@@ -754,6 +787,7 @@ const Comment = ({
               isBanned={isBanned}
               canVote={canVote}
               canComment={canComment}
+              isAncestorLocked={isCommentLocked}
             />
           ))}
         {noMoreComments > 0 && (

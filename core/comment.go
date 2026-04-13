@@ -93,6 +93,12 @@ type Comment struct {
 	DeletedBy uid.NullID    `json:"-"`
 	DeletedAs UserGroup     `json:"deletedAs,omitempty"`
 
+	// Locked is derived from LockedAt.Valid (not stored as a separate DB column).
+	Locked   bool          `json:"locked"`
+	LockedBy uid.NullID    `json:"lockedBy,omitempty"`
+	LockedAs UserGroup     `json:"lockedByGroup,omitempty"`
+	LockedAt msql.NullTime `json:"lockedAt"`
+
 	Author *User `json:"author,omitempty"`
 
 	// Reports whether the author of this comment is muted by the viewer.
@@ -130,6 +136,9 @@ func buildSelectCommentsQuery(loggedIn bool, where string) string {
 		"comments.edited_at",
 		"comments.deleted_at",
 		"comments.deleted_as",
+		"comments.locked_at",
+		"comments.locked_by",
+		"comments.locked_by_group",
 	}
 	var joins []string
 	if loggedIn {
@@ -217,6 +226,9 @@ func scanComments(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.I
 			&comment.EditedAt,
 			&comment.DeletedAt,
 			&comment.DeletedAs,
+			&comment.LockedAt,
+			&comment.LockedBy,
+			&comment.LockedAs,
 		}
 		if loggedIn {
 			dest = append(dest, &comment.ViewerVoted, &comment.ViewerVotedUp)
@@ -227,6 +239,7 @@ func scanComments(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.I
 		}
 
 		comment.Deleted = comment.DeletedAt.Valid
+		comment.Locked = comment.LockedAt.Valid
 		if comment.Deleted {
 			comment.setStrippedContent(false)
 		}
@@ -329,6 +342,24 @@ func addComment(ctx context.Context, db *sql.DB, post *Post, author *User, paren
 		}
 		if parent.Depth == maxCommentDepth {
 			return nil, httperr.NewBadRequest("comment-max-depth-reached", "Cannot reply because match depth is reached.")
+		}
+		if parent.Locked {
+			return nil, errCommentLocked
+		}
+		// Check if any ancestor comment is locked.
+		if len(parent.Ancestors) > 0 {
+			qs := msql.InClauseQuestionMarks(len(parent.Ancestors))
+			args := make([]any, len(parent.Ancestors))
+			for i := range parent.Ancestors {
+				args[i] = parent.Ancestors[i]
+			}
+			var count int
+			if err := db.QueryRowContext(ctx, fmt.Sprintf("SELECT COUNT(*) FROM comments WHERE id IN %s AND locked_at IS NOT NULL", qs), args...).Scan(&count); err != nil {
+				return nil, err
+			}
+			if count > 0 {
+				return nil, errCommentLocked
+			}
 		}
 		ancestors = parent.Ancestors
 		ancestors = append(ancestors, parent.ID)
@@ -530,6 +561,70 @@ func (c *Comment) Delete(ctx context.Context, db *sql.DB, user uid.ID, g UserGro
 	c.DeletedAs = g
 	c.StripContent()
 	RemoveAllReportsOfComment(ctx, db, c.ID)
+	return err
+}
+
+// Lock locks the comment on behalf of user who's locking the comment in his or
+// her capacity as g. Prevents new replies to this comment and its descendants.
+func (c *Comment) Lock(ctx context.Context, db *sql.DB, user uid.ID, g UserGroup) error {
+	if c.Deleted {
+		return errCommentDeleted
+	}
+
+	switch g {
+	case UserGroupMods:
+		is, err := UserMod(ctx, db, c.CommunityID, user)
+		if err != nil {
+			return err
+		}
+		if !is {
+			return errNotMod
+		}
+	case UserGroupAdmins:
+		u, err := GetUser(ctx, db, user, nil)
+		if err != nil {
+			return err
+		}
+		if !u.Admin {
+			return errNotAdmin
+		}
+	default:
+		return errInvalidUserGroup
+	}
+
+	now := time.Now()
+	_, err := db.ExecContext(ctx, "UPDATE comments SET locked_at = ?, locked_by = ?, locked_by_group = ? WHERE id = ?", now, user, g, c.ID)
+	if err == nil {
+		c.Locked = true
+		c.LockedAt = msql.NewNullTime(now)
+		c.LockedBy.Valid, c.LockedBy.ID = true, user
+		c.LockedAs = g
+	}
+	return err
+}
+
+// Unlock unlocks the comment on behalf of user.
+func (c *Comment) Unlock(ctx context.Context, db *sql.DB, user uid.ID) error {
+	isMod, err := UserMod(ctx, db, c.CommunityID, user)
+	if err != nil {
+		return err
+	}
+	u, err := GetUser(ctx, db, user, nil)
+	if err != nil {
+		return err
+	}
+
+	if !(isMod || u.Admin) {
+		return httperr.NewForbidden("not-mod-not-admin", "User is neither a moderator nor an admin.")
+	}
+
+	_, err = db.ExecContext(ctx, "UPDATE comments SET locked_at = null, locked_by = null, locked_by_group = ? WHERE id = ?", UserGroupNaN, c.ID)
+	if err == nil {
+		c.Locked = false
+		c.LockedAt.Valid = false
+		c.LockedBy.Valid = false
+		c.LockedAs = UserGroupNaN
+	}
 	return err
 }
 
