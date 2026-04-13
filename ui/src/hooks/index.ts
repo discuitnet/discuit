@@ -77,8 +77,8 @@ export function useInputUsername(
 export function useWindowSize() {
   const getSize = () => {
     return {
-      width: document.documentElement.clientWidth,
-      height: document.documentElement.clientHeight,
+      width: window.innerWidth,
+      height: window.innerHeight,
     };
   };
   const [size, setSize] = useState(getSize());
