@@ -9,7 +9,16 @@ const PaymentComplete = () => {
   }, []);
 
   return (
-    <div>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        textAlign: 'center',
+      }}
+    >
       <h1>Thank you for your donation!</h1>
       <p>Your donation has been successfully processed.</p>
     </div>
