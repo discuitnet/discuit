@@ -336,6 +336,14 @@ const AppSwitch = () => {
         <Route exact path="/:name">
           <Community />
         </Route>
+        {/*
+          Explicit `payment-complete` route must be defined before the
+          dynamic `/:name` route so React Router matches the exact
+          `/payment-complete` path instead of treating it as a community
+          name (which caused a 404). */}
+        <Route exact path="/payment-complete">
+          <PaymentComplete />
+        </Route>
         <ProtectedRoute path="/:name/modtools">
           <Modtools />
         </ProtectedRoute>
