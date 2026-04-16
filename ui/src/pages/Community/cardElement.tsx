@@ -30,10 +30,12 @@ const CheckoutForm = ({ amount }: { amount: number }) => {
     setIsProcessing(true); // Start processing payment
 
     try {
+      // Use the current origin so Stripe always redirects to the correct frontend route.
+      // This ensures the user lands on /payment-complete, which is handled by the React app.
       const { error } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: `http://localhost:8080`,
+          return_url: `${window.location.origin}/payment-complete`,
         },
       });
 
