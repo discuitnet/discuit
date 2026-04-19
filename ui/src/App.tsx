@@ -13,7 +13,7 @@ import LoginPrompt from './components/LoginPrompt';
 import Modal from './components/Modal';
 import Navbar from './components/Navbar';
 import NotificationsView from './components/Navbar/NotificationsView';
-import PasswordReset from './components/PasswordReset';
+import ResetPassword from './components/ResetPassword';
 import RequestResetPassword from './components/RequestResetPassword';
 import SaveToListModal from './components/SaveToListModal';
 import Sidebar from './components/Sidebar';
@@ -338,7 +338,7 @@ const AppSwitch = () => {
           <List />
         </Route>
         <Route exact path="/reset-password">
-          <PasswordReset />
+          <ResetPassword />
         </Route>
         <Route exact path="/:name">
           <Community />

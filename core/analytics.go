@@ -158,15 +158,15 @@ func GetBasicSiteStats(ctx context.Context, db *sql.DB, limit int, next string) 
 	return events, "", nil
 }
 
-type PasswordResetEvent struct {
+type RequestPasswordEvent struct {
 	Username  string      `json:"username"`
 	IP        msql.NullIP `json:"ip"`
 	CreatedAt time.Time   `json:"createdAt"`
 }
 
 // Fetch password reset logs from newest. Return log records, next offset, error.
-func GetPasswordResetLogs(ctx context.Context, db *sql.DB, limit, maxId int) ([]*PasswordResetEvent, string, error) {
-	// use id instead of offset to bypass issues with new records screwing up the offset
+func GetRequestPasswordLogs(ctx context.Context, db *sql.DB, limit, maxId int) ([]*RequestPasswordEvent, string, error) {
+	// use id instead of offset to bypass issues with new records messing up the offset
 	// maxId == 0 restarts from the top
 	limitQuery := ""
 	if limit > 0 {
@@ -187,10 +187,10 @@ func GetPasswordResetLogs(ctx context.Context, db *sql.DB, limit, maxId int) ([]
 	}
 	defer rows.Close()
 
-	var events []*PasswordResetEvent
+	var events []*RequestPasswordEvent
 	var minId int
 	for rows.Next() {
-		e := &PasswordResetEvent{}
+		e := &RequestPasswordEvent{}
 		if err := rows.Scan(&minId, &e.Username, &e.IP, &e.CreatedAt); err != nil {
 			return nil, "", err
 		}

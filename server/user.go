@@ -284,9 +284,7 @@ func (s *Server) signup(w *responseWriter, r *request) error {
 	captchaToken := values["captchaToken"]
 
 	// Verify captcha.
-	fmt.Println("in s.signup", captchaToken)
 	if s.config.CaptchaSecret != "" {
-		fmt.Println("checking captcha")
 		if ok, err := hcaptcha.VerifyReCaptcha(s.config.CaptchaSecret, captchaToken); err != nil {
 			return httperr.NewForbidden("captcha_verify_fail_1", "Captha verification failed.")
 		} else if !ok {
@@ -295,10 +293,10 @@ func (s *Server) signup(w *responseWriter, r *request) error {
 	}
 
 	ip := httputil.GetIP(r.req)
-	if err := s.rateLimit(r, "signup_1_"+ip, time.Minute, 2000000); err != nil {
+	if err := s.rateLimit(r, "signup_1_"+ip, time.Minute, 2); err != nil {
 		return err
 	}
-	if err := s.rateLimit(r, "signup_2_"+ip, time.Hour*6, 10000000); err != nil {
+	if err := s.rateLimit(r, "signup_2_"+ip, time.Hour*6, 10); err != nil {
 		return err
 	}
 
@@ -710,7 +708,7 @@ func blankExpiredReset(ctx context.Context, db *sql.DB, user *core.User) error {
 	return nil
 }
 
-// /api/users/{username}/reset_password [GET]
+// /api/users/{username}/request_password [GET]
 func (s *Server) getResetPasswordLink(w *responseWriter, r *request) error {
 	if s.config.TransactionalEmail == "" {
 		return httperr.NewNotFound("server_no_email", "Server not set up to email.")
@@ -721,9 +719,10 @@ func (s *Server) getResetPasswordLink(w *responseWriter, r *request) error {
 	if err != nil {
 		return err
 	}
-	query := r.urlQueryParams()
-	captchaToken := query.Get("captchaToken")
+
 	if s.config.CaptchaSecret != "" {
+		query := r.urlQueryParams()
+		captchaToken := query.Get("captchaToken")
 		if ok, err := hcaptcha.VerifyReCaptcha(s.config.CaptchaSecret, captchaToken); err != nil {
 			return httperr.NewForbidden("captcha_verify_fail_1", "Captha verification failed.")
 		} else if !ok {
@@ -731,8 +730,6 @@ func (s *Server) getResetPasswordLink(w *responseWriter, r *request) error {
 		}
 	}
 
-	// TODO: front-end tests email validity using /^[^\s@]+@[^\s@]+\.[^\s@]+$/, but back-end doesn't test
-	// so it's possible to use the site API to store an invalid email address
 	currentTime := time.Now()
 	if user.Deleted || user.Banned || !user.Email.Valid || user.ResetLink.Valid || (user.ResetExpiresAt.Valid && currentTime.Before(user.ResetExpiresAt.Time)) {
 		return httperr.NewBadRequest("cannot_reset_password", "User is banned, deleted, has no registered email, or already has password reset in progress")
@@ -753,6 +750,16 @@ func (s *Server) getResetPasswordLink(w *responseWriter, r *request) error {
 	if _, err := s.db.ExecContext(r.ctx, "UPDATE users SET reset_link = ?, reset_expires_at = ? WHERE id = ?", resetLink, currentTime.Add(time.Minute*10), user.ID); err != nil {
 		return err
 	}
+
+	title := "Password reset for Discuit"
+	message := fmt.Sprintf("Please do not reply; this email address is not monitored.\n\nPassword reset link for Discuit user %s: https://www.discuit.org/reset-password?username=%s&resetLink=%s", user.Username, user.Username, resetLink)
+	// TODO: front-end tests email validity using /^[^\s@]+@[^\s@]+\.[^\s@]+$/, but back-end doesn't test
+	// so it's possible to use the site API to store an invalid email address
+	// AWS SES does not support above 7-byte ASCII; would be a good idea to sanitise email inputs in a later project
+	if err = s.sendEmail(w, &s.config.TransactionalEmail, &user.Email.String, &title, &message); err != nil {
+		return httperr.NewBadRequest("send_email_error", err.Error())
+	}
+
 	type ObfuscatedEmail struct {
 		ObfuscatedEmail *string `json:"obfuscatedEmail"`
 	}
@@ -760,19 +767,12 @@ func (s *Server) getResetPasswordLink(w *responseWriter, r *request) error {
 	obfuscatedEmail.ObfuscatedEmail, err = user.GetObfuscatedEmail()
 	if err != nil {
 		return err
-		//log.Printf("Could not obfuscate email for user", username)
 	}
-	title := "Password reset for Discuit"
-	message := fmt.Sprintf("Password reset link for Discuit user %s: https://www.discuit.org/reset-password?username=%s&resetLink=%s", user.Username, user.Username, resetLink)
-	fmt.Println(title, message) // disable email send for testing
-	/*	if err = s.sendEmail(w, &s.config.TransactionalEmail, &user.Email.String, &title, &message); err != nil {
-		return err
-	}*/
 
 	return w.writeJSON(obfuscatedEmail)
 }
 
-// /api/password_reset/{username}/{resetLink} [POST]
+// /api/reset_password/{username}/{resetLink} [POST]
 func (s *Server) resetPassword(w *responseWriter, r *request) error {
 	values, err := r.unmarshalJSONBodyToStringsMap(true)
 	if err != nil {
@@ -791,7 +791,7 @@ func (s *Server) resetPassword(w *responseWriter, r *request) error {
 	if err != nil {
 		return err
 	}
-	// (expired) or (visiting invalid reset link--assume it is an attack and reset the existing link)
+	// (expired) or (visiting invalid reset link)--assume it is an attack and reset the existing link
 	if (user.ResetExpiresAt.Valid && user.ResetExpiresAt.Time.Before(time.Now())) ||
 		(!user.ResetLink.Valid || user.ResetLink.String != resetLink) {
 		if err := blankExpiredReset(r.ctx, s.db, user); err != nil {

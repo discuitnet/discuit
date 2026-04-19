@@ -8,7 +8,7 @@ import { loginModalOpened, signupModalOpened, resetPasswordModalOpened, snackAle
 
 const LoginForm = ({ isModal = false }: { isModal?: boolean }) => {
   const dispatch = useDispatch();
-
+  const serverCanEmail = import.meta.env.VITE_TRANSACTIONALEMAIL ? true : false;
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -104,9 +104,7 @@ const LoginForm = ({ isModal = false }: { isModal?: boolean }) => {
         <button className="button-link" onClick={handleOnSignup}>
           {"Don't have an account? Signup"}
         </button>
-        <button className="button-link" onClick={handleRequestReset}>
-          {"Forgot password?"}
-        </button>
+        {serverCanEmail ? <button className="button-link" onClick={handleRequestReset}>{"Forgot password?"}</button> : ''}
       </FormField>
     </Form>
   );

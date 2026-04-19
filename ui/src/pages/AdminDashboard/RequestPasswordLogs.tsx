@@ -10,7 +10,7 @@ import { printDate } from '../../helper';
 import { snackAlertError } from '../../slices/mainSlice';
 
 
-interface PasswordResetRecord {
+interface RequestPasswordRecord {
   username: string;
   ip: string;
   createdAt: string;
@@ -23,11 +23,11 @@ interface Row {
 }
 
 interface APIReponse {
-  events: PasswordResetRecord[];
+  events: RequestPasswordRecord[];
   maxId: string;
 }
 
-export default function PasswordRequestLogs() {
+export default function RequestPasswordLogs() {
   const [rows, setRows] = useState<Row[]>([]);
   const [maxId, setMaxId] = useState('');
   const [loading, setLoading] = useLoading('loading');
@@ -36,7 +36,7 @@ export default function PasswordRequestLogs() {
   const fetchEvents = async (maxId = '') => {
     const limit = 250;
     try {
-      const res = (await mfetchjson(`/api/password_reset_logs?limit=${limit}&maxId=${maxId}`)) as APIReponse;
+      const res = (await mfetchjson(`/api/request_password_logs?limit=${limit}&maxId=${maxId}`)) as APIReponse;
       const items = res.events.map((event) => {
         return {
           username: event.username,
@@ -59,7 +59,6 @@ export default function PasswordRequestLogs() {
   const handleFetchMore = () => fetchEvents(maxId);
 
   const handleRenderItem = (item: Row) => {
-    console.log(item);
     return (
       <TableRow columns={3}>
         <div className="table-column">{printDate(item.createdAt)}</div>
@@ -87,7 +86,6 @@ export default function PasswordRequestLogs() {
   rows?.forEach((row) => feedItems.push({ item: row, key: row.createdAt.toString() }));
 
   return (
-
     <DashboardPage className="document" title="Password reset requests" fullWidth>
       <SimpleFeed
         className="table"

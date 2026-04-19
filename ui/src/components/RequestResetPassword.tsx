@@ -28,7 +28,6 @@ const RequestResetPassword = ({ open, onClose }: { open: boolean; onClose: () =>
       dispatch(snackAlertError(new Error('Empty captcha token')));
       return;
     }
-    console.log("requesting reset with token");
     requestPasswordReset(username, token);
   };
   
@@ -37,7 +36,7 @@ const RequestResetPassword = ({ open, onClose }: { open: boolean; onClose: () =>
     captchaToken?: string
   ) => {
     try {
-      const res = await mfetch(`/api/users/${username}/reset_password?captchaToken=${captchaToken}`);
+      const res = await mfetch(`/api/users/${username}/request_password?captchaToken=${captchaToken}`);
       if (!res.ok) {
         setUsernameError(null);
         const error = await res.json();
@@ -75,20 +74,15 @@ const RequestResetPassword = ({ open, onClose }: { open: boolean; onClose: () =>
     }
     
     if (!CAPTCHA_ENABLED) {
-      console.log("requesting reset withOUT token");
       requestPasswordReset(username);
       return;
     }
     if (!captchaRef.current) {
       dispatch(snackAlertError(new Error('captcha API not found')));
-      console.log("not captcha current");
       return;
     }
     captchaRef.current.execute();
-    console.log("finished captcharef");
   };
-
-
 
   return (
     <>

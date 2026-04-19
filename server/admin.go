@@ -332,7 +332,8 @@ func (s *Server) CancelExpiredIPBlocks(ctx context.Context) (int, error) {
 	return s.ipblocks.CancelExpiredBlocks(ctx)
 }
 
-func (s *Server) getPasswordResetLogs(w *responseWriter, r *request) error {
+// /api/request_password_logs [GET]
+func (s *Server) getRequestPasswordLogs(w *responseWriter, r *request) error {
 	_, err := getLoggedInAdmin(s.db, r)
 	if err != nil {
 		return err
@@ -346,14 +347,14 @@ func (s *Server) getPasswordResetLogs(w *responseWriter, r *request) error {
 	if err != nil {
 		return httperr.NewBadRequest("invalid-maxid", "Invalid maxId parameter.")
 	}
-	events, nextMaxId, err := core.GetPasswordResetLogs(r.ctx, s.db, limit, maxId)
+	events, nextMaxId, err := core.GetRequestPasswordLogs(r.ctx, s.db, limit, maxId)
 	if err != nil {
 		return err
 	}
 
 	response := struct {
-		Events []*core.PasswordResetEvent `json:"events"`
-		MaxId  string                     `json:"maxId"`
+		Events []*core.RequestPasswordEvent `json:"events"`
+		MaxId  string                       `json:"maxId"`
 	}{
 		Events: events,
 		MaxId:  nextMaxId,

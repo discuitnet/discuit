@@ -1,38 +1,15 @@
-/*
-import clsx from 'clsx';
-import PropTypes from 'prop-types';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
-import { useDispatch, useSelector } from 'react-redux';
-import { usernameMaxLength } from '../config';
-import { APIError, mfetch } from '../helper';
-import { useDelayedEffect, useInputUsername } from '../hooks';
-
-import { ButtonClose } from './Button';
-import { Form, FormField } from './Form';
-import Input, { InputWithCount } from './Input';
-import Modal from './Modal';
-*/
-//import { useDispatch, useSelector } from 'react-redux';
-//import { snackAlertError } from '../slices/mainSlice';
 import { useQuery } from '../hooks';
-import { FormField } from '../components/Form';
-import { InputPassword } from '../components/Input';
+import { FormField } from './Form';
+import { InputPassword } from './Input';
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { mfetch } from '../helper';
 import { snackAlert, snackAlertError } from '../slices/mainSlice';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import Sidebar from '../components/Sidebar';
+import Sidebar from './Sidebar';
 
-/*
-/api/users/{username}/reset_password
-
-/@username/reset_password/:resetLink
-*/
-
-const PasswordReset = () => {
+const ResetPassword = () => {
   const dispatch = useDispatch();
   const query = useQuery();
   let [username, resetLink, err] = ['', '', false];
@@ -83,7 +60,7 @@ const PasswordReset = () => {
       return;
     }
     try {
-      const res = await mfetch(`/api/password_reset/${username}/${resetLink}`, {
+      const res = await mfetch(`/api/reset_password/${username}/${resetLink}`, {
         method: 'POST',
         body: JSON.stringify({
           newPassword,
@@ -101,11 +78,10 @@ const PasswordReset = () => {
     }
   };
 
-  // check username-resetLink are valid on DB before sending, or on send?
   return (
     <div className="page-content page-passwordreset">
         <Helmet>
-          <title>Bad password reset link</title>
+          <title>Password reset</title>
           <meta name="robots" content="noindex" />
         </Helmet>
         <Sidebar />
@@ -136,4 +112,4 @@ const PasswordReset = () => {
   );
 }
 
-export default PasswordReset;
+export default ResetPassword;

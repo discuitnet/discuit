@@ -61,7 +61,6 @@ type Server struct {
 	staticRouter *mux.Router
 
 	sessions *sessions.RedisStore
-	/*emailSession *ses*/
 
 	ipblocks *ipblocks.Blocker
 
@@ -85,9 +84,6 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 		return nil, err
 	}
 	redisStore.Secure = !conf.UseHTTPCookies
-
-	/*	sess, err := session.NewSessionWithOptions(session.Options{SharedConfigState: session.SharedConfigEnable})
-		svc := ses.New(sess)*/
 
 	s := &Server{
 		db: db,
@@ -210,9 +206,9 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 	r.Handle("/api/ipblocks", s.withHandler(s.handleIPBlocks)).Methods("GET", "POST", "DELETE")
 	r.Handle("/api/ipblocks/{blockID}", s.withHandler(s.handleSingleIPBlock)).Methods("GET", "DELETE")
 
-	r.Handle("/api/users/{username}/reset_password", s.withHandler(s.getResetPasswordLink)).Methods("GET")
-	r.Handle("/api/password_reset/{username}/{resetLink}", s.withHandler(s.resetPassword)).Methods("POST")
-	r.Handle("/api/password_reset_logs", s.withHandler(s.getPasswordResetLogs)).Methods("GET")
+	r.Handle("/api/users/{username}/request_password", s.withHandler(s.getResetPasswordLink)).Methods("GET")
+	r.Handle("/api/reset_password/{username}/{resetLink}", s.withHandler(s.resetPassword)).Methods("POST")
+	r.Handle("/api/request_password_logs", s.withHandler(s.getRequestPasswordLogs)).Methods("GET")
 
 	r.NotFoundHandler = http.HandlerFunc(s.apiNotFoundHandler)
 	r.MethodNotAllowedHandler = http.HandlerFunc(s.apiMethodNotAllowedHandler)
@@ -1211,6 +1207,6 @@ func (s *Server) sendEmail(w *responseWriter, sender *string, recipient *string,
 	if err != nil {
 		return err
 	}
-	log.Printf("Sent test email with MessageId: %s\n", *result.MessageId)
+	log.Printf("Sent email with MessageId: %s\n", *result.MessageId)
 	return nil
 }
