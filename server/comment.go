@@ -170,6 +170,18 @@ func (s *Server) updateComment(w *responseWriter, r *request) error {
 			if err = comment.ChangeUserGroup(r.ctx, s.db, *r.viewer, g); err != nil {
 				return err
 			}
+		case "lock":
+			var as core.UserGroup
+			if err = as.UnmarshalText([]byte(query.Get("lockAs"))); err != nil {
+				return err
+			}
+			if err = comment.Lock(r.ctx, s.db, *r.viewer, as); err != nil {
+				return err
+			}
+		case "unlock":
+			if err = comment.Unlock(r.ctx, s.db, *r.viewer); err != nil {
+				return err
+			}
 		default:
 			return httperr.NewBadRequest("invalid_action", "Unsupported action.")
 		}

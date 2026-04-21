@@ -149,6 +149,7 @@ const CommentSection = ({
           isBanned={isBanned}
           canVote={canVote}
           canComment={canComment}
+          isAncestorLocked={false}
         />
       );
     }
