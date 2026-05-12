@@ -98,8 +98,10 @@ Note: Do not install the discuit binary using `go install` or move it somewhere 
 
    > **Note**: The following command while having a persistent database, the included config.yaml file is not. You will need to mount the file to the container if you want to persist the configuration.
 
+  > **Note**: Discuit runs on port 8080 inside the container, so the 8080 outside the container doesn't matter, so long as it maps to 8080 on the inside.
+
    ```shell
-   docker run -d --name discuit -v discuit-db:/var/lib/mysql -v discuit-redis:/var/lib/redis -v discuit-images:/app/images -p 8080:80 discuit
+   docker run -d --name discuit -v discuit-db:/var/lib/mysql -v discuit-redis:/var/lib/redis -v discuit-images:/app/images -p 8080:8080 discuit
    ```
 
 3. **Accessing Discuit**: After the container starts, you can access Discuit by navigating to `http://localhost:8080` on your web browser, or to the specific port if you customized the port mapping.
