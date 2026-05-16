@@ -482,7 +482,10 @@ const Comment = ({
         <div className="dropdown-item" onClick={() => setConfirmDeleteOpen(true, 'admins')}>
           Delete
         </div>
-        <div className={`dropdown-item${isLocking ? ' is-disabled' : ''}`} onClick={() => !isLocking && handleLockComment('admins')}>
+        <div
+          className={`dropdown-item${isLocking ? ' is-disabled' : ''}`}
+          onClick={() => !isLocking && handleLockComment('admins')}
+        >
           {isLocking ? 'Locking...' : comment.locked ? 'Unlock comment' : 'Lock comment'}
         </div>
         {user && user.id === comment.userId && (
@@ -512,6 +515,9 @@ const Comment = ({
   const style = {
     zIndex,
   };
+  const rainbowColors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet'];
+  const colorIndex = comment.depth % rainbowColors.length;
+  const collapseColor = rainbowColors[colorIndex];
 
   const handleLineClick: React.MouseEventHandler = (event) => {
     if (proPicRef.current) {
@@ -543,7 +549,7 @@ const Comment = ({
         <div className="post-comment-collapse" onClick={handleLineClick}>
           {/*<div className="post-comment-collapse-minus"></div>*/}
           {renderAuthorProPic()}
-          <div className="post-comment-line"></div>
+          <div className="post-comment-line" style={`--collapse-color:${collapseColor}`}></div>
         </div>
       </div>
       <div className="post-comment-body">
@@ -561,7 +567,10 @@ const Comment = ({
             </div>
           )}
           {comment.locked && (
-            <div className="post-comment-head-item post-comment-locked" title="This comment is locked. No new replies can be added.">
+            <div
+              className="post-comment-head-item post-comment-locked"
+              title="This comment is locked. No new replies can be added."
+            >
               Locked
             </div>
           )}
