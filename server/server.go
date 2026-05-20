@@ -19,6 +19,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ses"
 	"github.com/discuitnet/discuit/config"
 	"github.com/discuitnet/discuit/core"
 	"github.com/discuitnet/discuit/core/ipblocks"
@@ -202,6 +205,10 @@ func New(db *sql.DB, conf *config.Config) (*Server, error) {
 
 	r.Handle("/api/ipblocks", s.withHandler(s.handleIPBlocks)).Methods("GET", "POST", "DELETE")
 	r.Handle("/api/ipblocks/{blockID}", s.withHandler(s.handleSingleIPBlock)).Methods("GET", "DELETE")
+
+	r.Handle("/api/users/{username}/request_password", s.withHandler(s.getResetPasswordLink)).Methods("GET")
+	r.Handle("/api/reset_password/{username}/{resetLink}", s.withHandler(s.resetPassword)).Methods("POST")
+	r.Handle("/api/request_password_logs", s.withHandler(s.getRequestPasswordLogs)).Methods("GET")
 
 	r.NotFoundHandler = http.HandlerFunc(s.apiNotFoundHandler)
 	r.MethodNotAllowedHandler = http.HandlerFunc(s.apiMethodNotAllowedHandler)
@@ -1171,4 +1178,35 @@ func (s *Server) handleAnalytics(w *responseWriter, r *request) error {
 	}
 
 	return w.writeString(`{"success":true}`)
+}
+
+func (s *Server) sendEmail(w *responseWriter, sender *string, recipient *string, title *string, message *string) error {
+	sess, err := session.NewSessionWithOptions(session.Options{SharedConfigState: session.SharedConfigEnable})
+	svc := ses.New(sess)
+	input := &ses.SendEmailInput{
+		Destination: &ses.Destination{
+			ToAddresses: []*string{
+				aws.String(*recipient),
+			},
+		},
+		Message: &ses.Message{
+			Body: &ses.Body{
+				Text: &ses.Content{
+					Charset: aws.String("UTF-8"),
+					Data:    aws.String(*message),
+				},
+			},
+			Subject: &ses.Content{
+				Charset: aws.String("UTF-8"),
+				Data:    aws.String(*title),
+			},
+		},
+		Source: aws.String(*sender),
+	}
+	result, err := svc.SendEmail(input)
+	if err != nil {
+		return err
+	}
+	log.Printf("Sent email with MessageId: %s\n", *result.MessageId)
+	return nil
 }
