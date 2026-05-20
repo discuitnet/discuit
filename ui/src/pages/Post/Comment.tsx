@@ -546,7 +546,7 @@ const Comment = ({
         <div className="post-comment-collapse" onClick={handleLineClick}>
           {/*<div className="post-comment-collapse-minus"></div>*/}
           {renderAuthorProPic()}
-          <div className="post-comment-line" style={`--collapse-color:${collapseColor}`}></div>
+          <div className="post-comment-line" style={{ '--collapse-color': collapseColor }}></div>
         </div>
       </div>
       <div className="post-comment-body">
