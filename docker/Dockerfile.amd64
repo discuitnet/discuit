@@ -19,7 +19,7 @@ COPY . .
 RUN go build -o discuit .
 
 # Use official Node image for the frontend build
-FROM node:18 AS frontend-builder
+FROM node:24 AS frontend-builder
 
 # Copy required configuration files and build files
 WORKDIR /app
@@ -34,7 +34,7 @@ RUN npm ci
 COPY ui/ . 
 
 # Final stage: setup the runtime environment
-FROM node:18
+FROM node:24
 # Avoid prompts from the package manager during build
 ENV DEBIAN_FRONTEND=noninteractive
 
