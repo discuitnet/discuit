@@ -295,6 +295,7 @@ const NewPost = () => {
         if (!res.ok) {
           const error = await res.json();
           dispatch(snackAlert(error.message));
+          setIsSubmitting(false);
           return;
         }
         newPost = await res.json();
@@ -641,6 +642,13 @@ const NewPost = () => {
             Submit
           </button>
           <button onClick={handleCancel}>Cancel</button>
+          {
+            isAltMissing()
+              ? <div className="form-field">
+                  <div className="form-error text-center">Your settings require alt text.</div>
+                </div>
+              : ''
+          }
         </div>
       </div>
     </div>

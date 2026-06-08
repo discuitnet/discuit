@@ -103,6 +103,7 @@ const AddComment = ({
         } else {
           const error = await res.json();
           dispatch(snackAlert(error.message));
+          setSendingRequest(false);
           return;
         }
       }
