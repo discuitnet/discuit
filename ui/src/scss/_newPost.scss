@@ -288,6 +288,10 @@
                         left: 8px;
                         background-color: var(--button-background);
                         color: var(--color);
+                        &.is-error {
+                            color: var(--color-red);
+                            text-decoration: underline;
+                        }
                     }
                     .button-close,
                     .button-alt-text {

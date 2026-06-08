@@ -2,10 +2,9 @@ import { useCallback, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import MarkdownTextarea from '../../components/MarkdownTextarea';
-import { APIError, mfetch } from '../../helper';
+import { mfetch } from '../../helper';
 import { Comment } from '../../serverTypes';
 import {
-  bannedFromAdded,
   loginPromptToggled,
   snackAlert,
   snackAlertError,
@@ -97,19 +96,15 @@ const AddComment = ({
         });
       }
       if (!res.ok) {
-        if (res.status === 403) {
-          const json = await res.json();
-          if (json.code === 'banned_from_community') {
-            alert('You are banned from this community.');
-            dispatch(bannedFromAdded(post.communityId));
-            return;
-          }
-        } else if (res.status === 429) {
+        if (res.status === 429) {
           // Try again in 2 seconds.
           timer.current = window.setTimeout(handleSubmit, 2000);
           return;
+        } else {
+          const error = await res.json();
+          dispatch(snackAlert(error.message));
+          return;
         }
-        throw new APIError(res.status, await res.json());
       }
       const comm = (await res.json()) as Comment;
       reset();
