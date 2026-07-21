@@ -156,6 +156,10 @@ const cacheFirst = async ({ request, preloadResponsePromise }) => {
 };
 
 self.addEventListener('fetch', (e) => {
+  if (e.request.method !== 'GET') {
+    return;
+  }
+
   e.respondWith(cacheFirst({ request: e.request, preloadResponsePromise: e.preloadResponse }));
 });
 
