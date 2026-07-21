@@ -232,7 +232,7 @@ const NewPost = () => {
       alert('Title is too short');
       return;
     }
-    if (postType === 'image') {
+    if (postType === 'image' && !isEditPost) {
       if (images.length === 0) {
         alert("You haven't uploaded an image");
         return;
