@@ -1,8 +1,11 @@
 package server
 
 import (
+	"context"
 	"database/sql"
+	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -15,6 +18,7 @@ import (
 	"github.com/discuitnet/discuit/internal/httperr"
 	"github.com/discuitnet/discuit/internal/httputil"
 	"github.com/discuitnet/discuit/internal/uid"
+	"github.com/discuitnet/discuit/internal/utils"
 	"github.com/gorilla/mux"
 )
 
@@ -693,4 +697,115 @@ func (s *Server) unhidePost(w *responseWriter, r *request) error {
 	}
 
 	return w.writeString(`{"success":true}`)
+}
+
+// null out reset_link and reset_expires_at for a single user when the process flows into an expired link
+func blankExpiredReset(ctx context.Context, db *sql.DB, user *core.User) error {
+	if _, err := db.ExecContext(ctx, "UPDATE users SET reset_link = null, reset_expires_at = null WHERE id = ?", user.ID); err != nil {
+		log.Printf("Could not null password reset fields for user %s", user.Username)
+		return err
+	}
+	return nil
+}
+
+// /api/users/{username}/request_password [GET]
+func (s *Server) getResetPasswordLink(w *responseWriter, r *request) error {
+	if s.config.TransactionalEmail == "" {
+		return httperr.NewNotFound("server_no_email", "Server not set up to email.")
+	}
+
+	username := r.muxVar("username")
+	user, err := core.GetUserByUsername(r.ctx, s.db, username, nil)
+	if err != nil {
+		return err
+	}
+
+	if s.config.CaptchaSecret != "" {
+		query := r.urlQueryParams()
+		captchaToken := query.Get("captchaToken")
+		if ok, err := hcaptcha.VerifyReCaptcha(s.config.CaptchaSecret, captchaToken); err != nil {
+			return httperr.NewForbidden("captcha_verify_fail_1", "Captha verification failed.")
+		} else if !ok {
+			return httperr.NewForbidden("captcha_verify_fail_2", "Captha verification failed.")
+		}
+	}
+
+	currentTime := time.Now()
+	if user.Deleted || user.Banned || !user.Email.Valid || user.ResetLink.Valid || (user.ResetExpiresAt.Valid && currentTime.Before(user.ResetExpiresAt.Time)) {
+		return httperr.NewBadRequest("cannot_reset_password", "User is banned, deleted, has no registered email, or already has password reset in progress")
+	}
+
+	requestIP := httputil.GetIP(r.req)
+	if err := s.rateLimit(r, "password_reset_request_"+requestIP, time.Hour*24, 100); err != nil {
+		return err
+	}
+	if err := s.rateLimit(r, "password_reset_request_"+username, time.Minute*10, 1); err != nil {
+		return err
+	}
+
+	if _, err := s.db.ExecContext(r.ctx, "INSERT INTO password_requests (ip, username) VALUES (?, ?)", requestIP, user.Username); err != nil {
+		return err
+	}
+	resetLink := utils.GenerateStringID(24)
+	if _, err := s.db.ExecContext(r.ctx, "UPDATE users SET reset_link = ?, reset_expires_at = ? WHERE id = ?", resetLink, currentTime.Add(time.Minute*10), user.ID); err != nil {
+		return err
+	}
+
+	title := "Password reset for Discuit"
+	message := fmt.Sprintf("Please do not reply; this email address is not monitored.\n\nPassword reset link for Discuit user %s: https://www.discuit.org/reset-password?username=%s&resetLink=%s", user.Username, user.Username, resetLink)
+	// TODO: front-end tests email validity using /^[^\s@]+@[^\s@]+\.[^\s@]+$/, but back-end doesn't test
+	// so it's possible to use the site API to store an invalid email address
+	// AWS SES does not support above 7-byte ASCII; would be a good idea to sanitise email inputs in a later project
+	if err = s.sendEmail(w, &s.config.TransactionalEmail, &user.Email.String, &title, &message); err != nil {
+		return httperr.NewBadRequest("send_email_error", err.Error())
+	}
+
+	type ObfuscatedEmail struct {
+		ObfuscatedEmail *string `json:"obfuscatedEmail"`
+	}
+	var obfuscatedEmail ObfuscatedEmail
+	obfuscatedEmail.ObfuscatedEmail, err = user.GetObfuscatedEmail()
+	if err != nil {
+		return err
+	}
+
+	return w.writeJSON(obfuscatedEmail)
+}
+
+// /api/reset_password/{username}/{resetLink} [POST]
+func (s *Server) resetPassword(w *responseWriter, r *request) error {
+	values, err := r.unmarshalJSONBodyToStringsMap(true)
+	if err != nil {
+		return err
+	}
+	newPassword := values["newPassword"]
+	repeatPassword := values["repeatPassword"]
+
+	if newPassword != repeatPassword {
+		return httperr.NewBadRequest("password_not_match", "Passwords do not match.")
+	}
+	muxVars := mux.Vars(r.req)
+	username, resetLink := muxVars["username"], muxVars["resetLink"]
+
+	user, err := core.GetUserByUsername(r.ctx, s.db, username, r.viewer)
+	if err != nil {
+		return err
+	}
+	// (expired) or (visiting invalid reset link)--assume it is an attack and reset the existing link
+	if (user.ResetExpiresAt.Valid && user.ResetExpiresAt.Time.Before(time.Now())) ||
+		(!user.ResetLink.Valid || user.ResetLink.String != resetLink) {
+		if err := blankExpiredReset(r.ctx, s.db, user); err != nil {
+			return err
+		}
+		return httperr.NewBadRequest("invalid_reset_link", "Password reset link not valid; please request a new link")
+	}
+
+	if err = user.ResetPassword(r.ctx, s.db, newPassword); err != nil {
+		return err
+	}
+
+	if err := blankExpiredReset(r.ctx, s.db, user); err != nil {
+		return err
+	}
+	return w.writeString(`{"success": true}`)
 }
