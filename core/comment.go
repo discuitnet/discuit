@@ -939,13 +939,11 @@ func populateCommentAuthors(ctx context.Context, db *sql.DB, comments []*Comment
 		return err
 	}
 
-	if !viewerAdmin {
-		// If the author account is deleted, some of it's values are set to
-		// ghost values, including the ID of the author. Undo this so that the
-		// authors can be matched with the comments.
-		for _, author := range authors {
-			author.UnsetToGhost()
-		}
+	// If the author account is deleted, some of its values are set to
+	// ghost values, including the ID of the author. Undo this so that the
+	// authors can be matched with the comments.
+	for _, author := range authors {
+		author.UnsetToGhost()
 	}
 
 	for _, comment := range comments {
