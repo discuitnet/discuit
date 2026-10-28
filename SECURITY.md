@@ -1,6 +1,6 @@
 # Security Policy
 
-If you discover a security vulnerability, please report it privately using GitHub's Report a Vulnerability feature under the repository’s Security tab, or email us directly at hello@discut.org.
+If you discover a security vulnerability, please report it privately using GitHub's Report a Vulnerability feature under the repository’s Security tab, or email us directly at hello@discuit.org.
 
 Please include:
 
