@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useHistory } from 'react-router';
 import { mfetchjson } from '../../helper';
@@ -16,6 +16,26 @@ import TimeAgo from '../TimeAgo';
 export interface NotificationItemProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   notification: NotificationView;
 }
+
+// renderTitle converts the HTML title of a notification to safe/non-dangerous React elements.
+const renderTitle = (title: string): React.ReactNode => {
+  const doc = new DOMParser().parseFromString(title, 'text/html');
+  const convert = (nodes: NodeListOf<ChildNode>): React.ReactNode[] =>
+    Array.from(nodes).map((node, i) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        return node.textContent;
+      }
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const children = convert(node.childNodes);
+        if (node.nodeName === 'B') {
+          return <b key={i}>{children}</b>;
+        }
+        return <React.Fragment key={i}>{children}</React.Fragment>;
+      }
+      return null;
+    });
+  return convert(doc.body.childNodes);
+};
 
 const NotificationItem = ({ notification, ...rest }: NotificationItemProps) => {
   const { seen, createdAt } = notification;
@@ -56,7 +76,7 @@ const NotificationItem = ({ notification, ...rest }: NotificationItemProps) => {
     }
   };
 
-  const html = { __html: notification.title };
+  const title = useMemo(() => renderTitle(notification.title), [notification.title]);
   const to = notification.toURL;
   const image = {
     url: notification.icons[0],
@@ -78,7 +98,7 @@ const NotificationItem = ({ notification, ...rest }: NotificationItemProps) => {
         <Image src={image.url} backgroundColor={image.backgroundColor} alt="" />
       </div>
       <div className="notif-body">
-        <div className="notif-text" dangerouslySetInnerHTML={html}></div>
+        <div className="notif-text">{title}</div>
         <div className="notif-time">
           <TimeAgo time={createdAt} inline={false} />
         </div>

@@ -337,6 +337,9 @@ func addComment(ctx context.Context, db *sql.DB, post *Post, author *User, paren
 		if err != nil {
 			return nil, err
 		}
+		if !parent.PostID.EqualsTo(post.ID) {
+			return nil, httperr.NewBadRequest("comment-parent-not-in-post", "Parent comment does not belong to this post.")
+		}
 		if parent.Deleted {
 			return nil, httperr.NewBadRequest("comment-reply-to-deleted", "Cannot reply to a deleted comment.")
 		}

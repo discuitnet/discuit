@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"log"
 	"net/url"
 	"slices"
@@ -115,7 +116,7 @@ func SaveWebPushSubscription(ctx context.Context, db *sql.DB, sessionID string, 
 	if err != nil {
 		return err
 	}
-	_, err = db.ExecContext(ctx, `INSERT INTO web_push_subscriptions (session_id, user_id, push_subscription) 
+	_, err = db.ExecContext(ctx, `INSERT INTO web_push_subscriptions (session_id, user_id, push_subscription)
 		VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE push_subscription = ?, updated_at = CURRENT_TIMESTAMP()`,
 		sessionID, user, rawJSON, rawJSON)
 
@@ -732,10 +733,19 @@ func (n NotificationNewComment) marshalJSONForAPI(ctx context.Context, db *sql.D
 	return json.Marshal(out)
 }
 
+// escapeText escapes text (which may be user-supplied, i.e. post title) so
+// that it can be safely embedded in a notification title of format.
+func escapeText(format TextFormat, text string) string {
+	if format == TextFormatsHTML {
+		return html.EscapeString(text)
+	}
+	return text
+}
+
 func encloseInBold(format TextFormat, text string) string {
 	switch format {
 	case TextFormatsHTML:
-		return fmt.Sprintf("<b>%s</b>", text)
+		return fmt.Sprintf("<b>%s</b>", escapeText(format, text))
 	case TextFormatsMarkdown:
 		return fmt.Sprintf("**%s**", text)
 	}
@@ -1133,7 +1143,7 @@ func (n NotificationModAdd) marshalJSONForAPI(ctx context.Context, db *sql.DB) (
 func (n NotificationModAdd) view(ctx context.Context, db *sql.DB, format TextFormat) (*NotificationView, error) {
 	view := &NotificationView{
 		ToURL: "/" + n.CommunityName,
-		Title: fmt.Sprintf("You are added as a moderator of %s by %s", n.CommunityName, encloseInBold(format, "@"+n.AddedBy)),
+		Title: fmt.Sprintf("You are added as a moderator of %s by %s", escapeText(format, n.CommunityName), encloseInBold(format, "@"+n.AddedBy)),
 	}
 	view.setIcon(nil)
 	return view, nil
@@ -1292,7 +1302,7 @@ func (n NotificationDeniedComm) marshalJSONForAPI(ctx context.Context, db *sql.D
 
 func (n NotificationDeniedComm) view(ctx context.Context, db *sql.DB, format TextFormat) (*NotificationView, error) {
 	view := &NotificationView{
-		Title: n.Body,
+		Title: escapeText(format, n.Body),
 		ToURL: "#",
 	}
 	view.setIcon(nil)
