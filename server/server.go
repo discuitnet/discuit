@@ -455,6 +455,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add("Content-Type", "application/json; charset=UTF-8")
 			w.Header().Add("Cache-Control", "no-store")
 			httputil.GzipHandler(s.router).ServeHTTP(w, r)
+		} else if strings.HasPrefix(r.URL.Path, "/.well-known/") {
+			http.StripPrefix("/.well-known/", httputil.FileServer(http.Dir("./.well-known/"))).ServeHTTP(w, r)
 		} else {
 			s.staticRouter.ServeHTTP(w, r)
 		}
