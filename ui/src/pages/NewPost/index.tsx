@@ -293,14 +293,9 @@ const NewPost = () => {
           }),
         });
         if (!res.ok) {
-          if (res.status === 400) {
-            const error = await res.json();
-            if (error.code === 'invalid-url') {
-              dispatch(snackAlert('The URL you provided is not a valid URL.'));
-              return;
-            }
-          }
-          throw new APIError(res.status, await res.json());
+          const error = await res.json();
+          dispatch(snackAlert(error.message));
+          return;
         }
         newPost = await res.json();
       }
@@ -623,6 +618,14 @@ const NewPost = () => {
               Submit
             </button>
             <button onClick={handleCancel}>Cancel</button>
+            {
+              isAltMissing()
+                ? <div className="form-field">
+                    <div className="form-error text-center">Your settings require alt text.</div>
+                  </div>
+                : ''
+            }
+
           </div>
         </div>
         <div className="new-page-sidebar">

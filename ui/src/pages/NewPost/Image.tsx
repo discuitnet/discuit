@@ -76,7 +76,7 @@ const Image = ({
         />
       )}
       {(!disabled || isEditMode) && (
-        <Button className="button-alt-text" onClick={() => setModalOpen(true)}>
+        <Button className={clsx("button-alt-text", missingAltText && 'is-error')} onClick={() => setModalOpen(true)}>
           Alt text
         </Button>
       )}
