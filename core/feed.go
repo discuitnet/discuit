@@ -641,7 +641,7 @@ func getPostsTop(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedResul
 			return nil, err
 		}
 	case FeedTypeCommunity:
-		where += "AND community_id = ? "
+		where += "community_id = ? "
 		args = append(args, *opts.Community)
 
 	}
