@@ -759,6 +759,9 @@
         background: var(--blockquote-bg);
         padding: var(--gap);
         border-radius: var(--border-radius);
+        blockquote blockquote {
+            padding-inline: 0;
+        }
     }
     code {
         padding: 3px 5px;
