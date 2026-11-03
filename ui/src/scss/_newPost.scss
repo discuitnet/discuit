@@ -332,6 +332,12 @@
             }
             @include mixins.mobile() {
                 flex-direction: row-reverse;
+                flex-wrap: wrap;
+
+                > .form-field {
+                    flex-basis: 100%;
+                    margin: 8px 0 0;
+                }
             }
         }
     }
