@@ -2,7 +2,6 @@ import clsx from 'clsx';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useLocation } from 'react-router-dom';
-import { clearNotificationsLocalStorage } from '../../PushNotifications';
 import { getGlobalAppData } from '../../appData';
 import { isDeviceStandalone, kRound, mfetch, onKeyEnter, stringCount } from '../../helper';
 import { mobileBreakpointWidth, useTheme, useWindowWidth } from '../../hooks';
@@ -160,7 +159,6 @@ const Navbar = ({ offline = false }: { offline?: boolean }) => {
   ) as MainState['notifications']['newCount'];
 
   const handleLogout = async () => {
-    clearNotificationsLocalStorage();
     try {
       const res = await mfetch('/api/_login?action=logout', {
         method: 'POST',

@@ -18,7 +18,7 @@ export const shouldAskForNotificationsPermissions = (
   if (!('serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window))
     return false;
 
-  if (Notification.permission === 'granted') return false;
+  if (Notification.permission !== 'default') return false;
 
   if (considerLastAsked) {
     const ts = parseInt(localStorage.getItem(timestampKey) || '', 10);
@@ -33,10 +33,6 @@ export const shouldAskForNotificationsPermissions = (
   }
 
   return true;
-};
-
-export const clearNotificationsLocalStorage = () => {
-  localStorage.removeItem(timestampKey);
 };
 
 const updatePushSubscription = async (loggedIn: boolean, applicationServerKey: string) => {
