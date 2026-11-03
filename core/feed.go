@@ -170,7 +170,7 @@ func newFeedResultSet(posts []*Post, limit int, sort FeedSort) *FeedResultSet {
 		case FeedSortHot:
 			nextnext = strconv.Itoa(posts[limit].Hotness) + "." + posts[limit].ID.String()
 		case FeedSortActivity:
-			nextnext = posts[limit].LastActivityAt.UnixNano()
+			nextnext = strconv.FormatInt(posts[limit].LastActivityAt.UnixNano(), 10) + "." + posts[limit].ID.String()
 		default:
 			// Shouldn't happen, ever.
 			panic("invalid feed sort")
@@ -317,13 +317,20 @@ func (o *FeedOptions) nextPointsID() (int, uid.ID, error) {
 	return i, id, err
 }
 
-// nextInt64 parses o.Next assuming it contains an int64.
-func (o *FeedOptions) nextInt64() (i int64, err error) {
-	i, err = strconv.ParseInt(o.Next, 10, 64)
+func (o *FeedOptions) nextActivity() (int64, *uid.ID, error) {
+	timestamp, textID, hasID := strings.Cut(o.Next, ".")
+	i, err := strconv.ParseInt(timestamp, 10, 64)
 	if err != nil {
-		err = ErrInvalidFeedCursor
+		return 0, nil, ErrInvalidFeedCursor
 	}
-	return
+	if !hasID {
+		return i, nil, nil
+	}
+	id, err := uid.FromString(textID)
+	if err != nil {
+		return 0, nil, ErrInvalidFeedCursor
+	}
+	return i, &id, nil
 }
 
 func GetFeed(ctx context.Context, db *sql.DB, opts *FeedOptions) (_ *FeedResultSet, err error) {
@@ -720,16 +727,21 @@ func getPostsActivity(ctx context.Context, db *sql.DB, opts *FeedOptions) (*Feed
 		where, args = whereMutedAndHidden(where, "posts", args, *opts.Viewer, opts.Feed == FeedTypeAll)
 	}
 	if opts.Next != "" {
-		next, err := opts.nextInt64()
+		next, id, err := opts.nextActivity()
 		if err != nil {
 			return nil, err
 		}
 		if next > -1 {
-			where += "AND posts.last_activity_at <= ? "
-			args = append(args, time.Unix(0, next))
+			if id == nil {
+				where += "AND posts.last_activity_at <= ? "
+				args = append(args, time.Unix(0, next))
+			} else {
+				where += "AND (posts.last_activity_at < ? OR (posts.last_activity_at = ? AND posts.id <= ?)) "
+				args = append(args, time.Unix(0, next), time.Unix(0, next), *id)
+			}
 		}
 	}
-	where += "ORDER BY posts.last_activity_at DESC LIMIT ?"
+	where += "ORDER BY posts.last_activity_at DESC, posts.id DESC LIMIT ?"
 	query := buildSelectPostQuery(loggedIn, where)
 
 	var rows *sql.Rows
