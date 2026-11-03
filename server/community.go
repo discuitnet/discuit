@@ -13,6 +13,7 @@ import (
 	"github.com/discuitnet/discuit/internal/httperr"
 	msql "github.com/discuitnet/discuit/internal/sql"
 	"github.com/discuitnet/discuit/internal/uid"
+	"github.com/discuitnet/discuit/internal/utils"
 	"github.com/gorilla/mux"
 )
 
@@ -858,10 +859,7 @@ func (s *Server) createCommunityRequest(w *responseWriter, r *request) error {
 			return err
 		}
 
-		note := body["note"]
-		if len(note) > 2048 {
-			note = note[:2048]
-		}
+		note := utils.TruncateUnicodeString(body["note"], 2048)
 
 		if err := core.CreateCommunityRequest(r.ctx, s.db, user.Username, body["name"], note); err != nil {
 			return err
