@@ -378,6 +378,21 @@ func GetListItem(ctx context.Context, db *sql.DB, listID, itemID int) (*ListItem
 func GetListItems(ctx context.Context, db *sql.DB, listID, limit int, sort ListItemsSort, next *string, viewer *uid.ID) (*ListItemsResultSet, error) {
 	query := buildSelectListItemsQuery("WHERE list_id = ?")
 	args := []any{listID}
+	if viewer != nil {
+		for _, target := range []struct {
+			table string
+			kind  ContentType
+		}{{"posts", ContentTypePost}, {"comments", ContentTypeComment}} {
+			query += fmt.Sprintf(` AND NOT EXISTS (
+				SELECT 1 FROM %s AS target
+				WHERE list_items.target_type = ? AND target.id = list_items.target_id
+				AND EXISTS (SELECT 1 FROM lists WHERE lists.id = list_items.list_id AND lists.public = TRUE)
+				AND (target.user_id IN (SELECT muted_user_id FROM muted_users WHERE user_id = ?)
+				OR target.community_id IN (SELECT community_id FROM muted_communities WHERE user_id = ?))
+			)`, target.table)
+			args = append(args, target.kind, *viewer, *viewer)
+		}
+	}
 
 	// Parse the pagination cursor, if present.
 	if next != nil {
