@@ -3,7 +3,7 @@ import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { mfetchjson } from '../../helper';
 import { Community } from '../../serverTypes';
-import { communityAdded } from '../../slices/communitiesSlice';
+import { communityAdded, selectCommunity } from '../../slices/communitiesSlice';
 import { loginPromptToggled, MainState, snackAlertError } from '../../slices/mainSlice';
 import { RootState } from '../../store';
 
@@ -11,7 +11,8 @@ export interface JoinButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
   community: Community;
 }
 
-const JoinButton = ({ className, community, ...rest }: JoinButtonProps) => {
+const JoinButton = ({ className, community: initialCommunity, ...rest }: JoinButtonProps) => {
+  const community = useSelector(selectCommunity(initialCommunity.name)) || initialCommunity;
   const loggedIn =
     (useSelector<RootState>((state) => state.main.user) as MainState['user']) !== null;
   const dispatch = useDispatch();

@@ -1,5 +1,6 @@
-import { Post } from '../serverTypes';
+import { Community, Post } from '../serverTypes';
 import { AppDispatch, RootState, UnknownAction } from '../store';
+import { communityAdded } from './communitiesSlice';
 import { multiplePostsAdded } from './postsSlice';
 
 export interface Feed {
@@ -161,11 +162,15 @@ export const selectFeedInViewItems = (url: string) => (state: RootState) => {
 export const feedUpdated =
   (url: string, items: FeedItem[], next: string | null) => (dispatch: AppDispatch) => {
     const posts = items.filter((item) => item.type === 'post').map((item) => item.item) as Post[];
+    const communities = items
+      .filter((item) => item.type === 'community')
+      .map((item) => item.item) as Community[];
     items = items.map((item) => {
       if (item.type === 'post') item.item = (item.item as Post).publicId;
       return item;
     });
     dispatch(multiplePostsAdded(posts));
+    communities.forEach((community) => dispatch(communityAdded(community)));
     dispatch({ type: typeFeedUpdated, payload: { url, items, next } });
   };
 
