@@ -656,7 +656,7 @@ func getPostsTop(ctx context.Context, db *sql.DB, opts *FeedOptions) (*FeedResul
 		if where != "" {
 			where += " AND "
 		}
-		where += "(points, id) <= (?, ?) "
+		where += "(points, post_id) <= (?, ?) "
 		args = append(args, nextPoints)
 		args = append(args, nextID)
 	}
