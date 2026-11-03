@@ -274,7 +274,6 @@ const Comment = ({
 
   const location = useLocation();
   const params = new URLSearchParams(location.search);
-  
   const highlighted = (() => {
     const ts = new Date(comment.createdAt).getTime() / 1000,
       from = parseInt(params.get('highlightFrom') || ''),

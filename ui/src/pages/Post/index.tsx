@@ -179,11 +179,9 @@ const Post = () => {
 
   const [userGroup, setUserGroup] = useState(post ? post.userGroup : null);
   useEffect(() => {
-    console.log("useEffect: post");
     if (post) setUserGroup(post.userGroup);
   }, [post]);
   useEffect(() => {
-    console.log("useEffect: userGroup");
     if (userGroup === null || post.userGroup === userGroup) return;
     (async () => {
       try {
