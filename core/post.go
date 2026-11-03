@@ -475,10 +475,8 @@ func populatePostAuthors(ctx context.Context, db *sql.DB, posts []*Post, viewerA
 		return err
 	}
 
-	if !viewerAdmin {
-		for _, author := range authors {
-			author.UnsetToGhost()
-		}
+	for _, author := range authors {
+		author.UnsetToGhost()
 	}
 
 	for _, post := range posts {
