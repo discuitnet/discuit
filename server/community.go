@@ -191,7 +191,11 @@ func (s *Server) updateCommunity(w *responseWriter, r *request) error {
 		return err
 	}
 
-	rcomm := core.Community{}
+	rcomm := core.Community{
+		NSFW:              comm.NSFW,
+		About:             comm.About,
+		PostingRestricted: comm.PostingRestricted,
+	}
 	if err = r.unmarshalJSONBody(&rcomm); err != nil {
 		return err
 	}
