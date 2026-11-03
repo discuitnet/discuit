@@ -1019,6 +1019,9 @@ func (p *Post) Delete(ctx context.Context, db *sql.DB, user uid.ID, g UserGroup,
 
 	now := time.Now()
 	err := msql.Transact(ctx, db, func(tx *sql.Tx) (err error) {
+		if _, err := tx.ExecContext(ctx, "UPDATE posts_comments SET deleted = TRUE WHERE target_id = ? AND user_id = ? AND target_type = ?", p.ID, p.AuthorID, ContentTypePost); err != nil {
+			return err
+		}
 		if !deleteContent || (deleteContent && !p.Deleted) {
 			q := "UPDATE posts SET deleted = ?, deleted_at = ?, deleted_by = ?, deleted_as = ? WHERE id = ?"
 			if _, err := tx.ExecContext(ctx, q, true, now, user, g, p.ID); err != nil {
