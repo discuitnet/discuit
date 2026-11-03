@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import MarkdownTextarea from '../../components/MarkdownTextarea';
 import { mfetch } from '../../helper';
@@ -10,7 +10,10 @@ import {
   snackAlertError,
 } from '../../slices/mainSlice';
 import { Post } from '../../slices/postsSlice';
+import { RootState } from '../../store';
 import AsUser from './AsUser';
+
+const drafts = new Map<string, { body: string }>();
 
 function appendTextSelection(comment: string, textSelection?: string) {
   if (comment || !textSelection) {
@@ -50,7 +53,20 @@ const AddComment = ({
 }: AddCommentProps) => {
   const dispatch = useDispatch();
 
-  const [body, setBody] = useState(appendTextSelection(commentBody, textSelection));
+  const userId = useSelector((state: RootState) => state.main.user?.id);
+  const draftKey = JSON.stringify([userId, post.publicId, editing, editing ? id : parentCommentId]);
+  const currentDraftKey = useRef(draftKey);
+  currentDraftKey.current = draftKey;
+  const [body, setBody] = useState(
+    () => drafts.get(draftKey)?.body ?? appendTextSelection(commentBody, textSelection)
+  );
+  useEffect(() => {
+    setBody(drafts.get(draftKey)?.body ?? appendTextSelection(commentBody, textSelection));
+  }, [draftKey, commentBody, textSelection]);
+  const handleBodyChange = (body: string) => {
+    drafts.set(draftKey, { body });
+    setBody(body);
+  };
   const empty = body.length === 0;
 
   const postId = post.publicId;
@@ -61,11 +77,16 @@ const AddComment = ({
   const [sendingRequest, setSendingRequest] = useState(false);
   const timer: React.MutableRefObject<number | null> = useRef(null);
 
+  const draft = drafts.get(draftKey);
   const textareaNode: React.MutableRefObject<HTMLTextAreaElement | null> = useRef(null);
-  const reset = () => {
+  const reset = (draft: { body: string } | undefined) => {
     if (timer.current) clearTimeout(timer.current);
-    setClicked(false);
     setSendingRequest(false);
+    // Keep edits made while an earlier request was pending.
+    if (drafts.get(draftKey) !== draft) return;
+    drafts.delete(draftKey);
+    if (currentDraftKey.current !== draftKey) return;
+    setClicked(false);
     setBody('');
     if (textareaNode.current) {
       textareaNode.current.style.height = 'auto';
@@ -108,7 +129,7 @@ const AddComment = ({
         }
       }
       const comm = (await res.json()) as Comment;
-      reset();
+      reset(draft);
       onSuccess(comm);
     } catch (error) {
       dispatch(snackAlertError(error));
@@ -137,7 +158,7 @@ const AddComment = ({
   };
 
   const handleCancel = () => {
-    reset();
+    reset(drafts.get(draftKey));
     if (onCancel) onCancel();
   };
 
@@ -152,9 +173,9 @@ const AddComment = ({
         value={body}
         onClick={handleTextareaClick}
         disabled={disabled || sendingRequest}
-        onChange={(e) => setBody(e.target.value)}
+        onChange={(e) => handleBodyChange(e.target.value)}
         onQuickSubmit={handleSubmit}
-        onCancel={onCancel}
+        onCancel={handleCancel}
       />
       {(!main || (main && clicked)) && (
         <div className="post-comments-new-buttons">
