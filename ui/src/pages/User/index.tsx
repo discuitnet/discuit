@@ -265,6 +265,9 @@ const User = () => {
           <title>{`@${user.username}`}</title>
         </Helmet>
         <h1>Account suspended.</h1>
+        {loggedIn && viewer.id !== user.id && (
+          <button onClick={toggleMute}>{isMuted ? 'Unmute user' : 'Mute user'}</button>
+        )}
         <Link to="/">Go home</Link>
       </div>
     );
