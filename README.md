@@ -18,7 +18,7 @@ To setup a development environment of Discuit on your local computer:
 
 1.  Install Go (1.21 or higher) by following the instructions at
     [go.dev.](https://go.dev/doc/install)
-1.  Install MariaDB (11.3 or higher), Redis, Node.js (and NPM). On Ubuntu, for
+1.  Install MariaDB (11.3 or higher), Redis, pnpm. On Ubuntu, for
     instance, you might have to run the following commands:
 
     ```shell
@@ -33,7 +33,7 @@ To setup a development environment of Discuit on your local computer:
     sudo systemctl start redis.service
 
     # Install Node.js and NPM
-    sudo apt install nodejs npm
+    curl -fsSL https://get.pnpm.io | sh -
     ```
 
 1.  Create a MariaDB database.

@@ -25,12 +25,12 @@ COPY server/ ./server/
 RUN go build -o discuit .
 
 # Use official Node image for the frontend build
-FROM node:24 AS frontend-builder
+FROM ghcr.io/pnpm/pnpm:12 AS frontend-builder
 
 # The entrypoint builds the UI so it can use the deployment's config.
 WORKDIR /app/ui
-COPY ui/package*.json ./
-RUN npm ci --prefer-offline --no-audit --no-fund
+COPY ui/package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm ci --prefer-offline
 COPY ui/ . 
 
 # Final stage: setup the runtime environment
