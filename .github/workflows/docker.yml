@@ -2,67 +2,92 @@ name: Publish Docker Image
 
 on:
   push:
-    branches:
-      - 'main'
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.github/FUNDING.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Let the current release finish, then build the latest pending revision.
+concurrency:
+  group: docker-publish-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  build-and-push-docker-image:
-    runs-on: ubuntu-latest
+  checks:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    name: Build ${{ matrix.arch }} image
+    needs: checks
+    if: github.repository == 'discuitnet/discuit' && github.ref == 'refs/heads/main'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
     steps:
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-        
-      - name: Build and push Docker image for ARM64
-        uses: docker/build-push-action@v5
+
+      - name: Build and push image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
-          platforms: linux/arm64
+          context: .
+          file: docker/Dockerfile.${{ matrix.arch }}
+          platforms: linux/${{ matrix.arch }}
           push: true
-          file: docker/Dockerfile.arm64
-          tags: |
-            discuit/discuit:${{ github.sha }}-arm64
-
-      - name: Build and push Docker image for AMD64
-        uses: docker/build-push-action@v5
-        with:
-          platforms: linux/amd64
-          push: true
-          file: docker/Dockerfile.amd64
-          tags: |
-            discuit/discuit:${{ github.sha }}-amd64
-
-      - name: Create and push Docker manifest
-        uses: int128/docker-manifest-create-action@v2
-        with:
-          tags: |
-            discuit/discuit:latest
-            discuit/discuit:${{ github.sha }}
-          sources: |
-            discuit/discuit:${{ github.sha }}-arm64
-            discuit/discuit:${{ github.sha }}-amd64
-
-      - name: Authenticate and obtain Docker Hub JWT token (for cleanup)
-        id: get_token
-        run: |
-          TOKEN=$(curl -s -H "Content-Type: application/json" \
-          -X POST -d '{"username": "${{ secrets.DOCKERHUB_USERNAME }}", "password": "${{ secrets.DOCKERHUB_TOKEN }}"}' \
-          https://hub.docker.com/v2/users/login/ | jq -r .token)
-          echo "::add-mask::$TOKEN" # Mask the token in the logs
-          echo "TOKEN=$TOKEN" >> $GITHUB_ENV
+          tags: discuit/discuit:${{ github.sha }}-${{ matrix.arch }}
+          cache-from: type=gha,scope=docker-${{ matrix.arch }}
+          cache-to: type=gha,scope=docker-${{ matrix.arch }},mode=max,ignore-error=true
         env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          # Build records use artifact storage, so skip them.
+          DOCKER_BUILD_RECORD_UPLOAD: 'false'
 
-      - name: Clean up old images
+  manifest:
+    name: Publish multi-platform manifest
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Publish manifest
         env:
-          TOKEN: ${{ env.TOKEN }}
+          IMAGE: discuit/discuit
+          COMMIT_SHA: ${{ github.sha }}
         run: |
-          curl -s -H "Authorization: JWT $TOKEN" -X DELETE "https://hub.docker.com/v2/repositories/discuit/discuit/tags/${{ github.sha }}-arm64/"
-          curl -s -H "Authorization: JWT $TOKEN" -X DELETE "https://hub.docker.com/v2/repositories/discuit/discuit/tags/${{ github.sha }}-amd64/"
+          docker buildx imagetools create \
+            --tag "$IMAGE:latest" \
+            --tag "$IMAGE:$COMMIT_SHA" \
+            "$IMAGE:$COMMIT_SHA-amd64" \
+            "$IMAGE:$COMMIT_SHA-arm64"

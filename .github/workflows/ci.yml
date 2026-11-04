@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+# Release runs use separate groups so PR updates can't cancel them.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build and test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      # Run this job for docs-only PRs too, since branch protection needs a result.
+      - name: Check for code changes
+        id: changes
+        shell: bash
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            git diff --name-only --no-renames HEAD^1 HEAD > "$RUNNER_TEMP/changed-files"
+            if ! grep -vE '(^docs/|\.md$|^LICENSE$|^\.github/FUNDING\.yml$)' "$RUNNER_TEMP/changed-files"; then
+              echo 'code=false' >> "$GITHUB_OUTPUT"
+              echo 'Skipping build and tests for documentation changes.'
+              exit 0
+            fi
+          fi
+          echo 'code=true' >> "$GITHUB_OUTPUT"
+
+      - name: Set up Go
+        if: steps.changes.outputs.code == 'true'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Install libvips
+        if: steps.changes.outputs.code == 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libvips-dev
+
+      - name: Build backend
+        if: steps.changes.outputs.code == 'true'
+        run: go build -mod=readonly -o discuit .
+
+      - name: Test backend
+        if: steps.changes.outputs.code == 'true'
+        run: go test -mod=readonly -count=1 -timeout=5m ./...
+
+      - name: Vet backend
+        if: steps.changes.outputs.code == 'true'
+        run: go vet -mod=readonly ./...
+
+      - name: Set up Node.js
+        if: steps.changes.outputs.code == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install frontend dependencies
+        if: steps.changes.outputs.code == 'true'
+        working-directory: ui
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: Build frontend and service worker
+        if: steps.changes.outputs.code == 'true'
+        run: |
+          cp config.default.yaml config.yaml
+          npm --prefix ui run build
+          test -s ui/dist/index.html
+          test -s ui/dist/service-worker.js

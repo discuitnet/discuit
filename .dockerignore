@@ -1,4 +1,4 @@
-node_modules
+**/node_modules
 .vscode
 /ui/dist/
 /config.yaml
@@ -8,3 +8,13 @@ node_modules
 /logs
 /discuit
 /images
+/.git
+/.github
+/.aws
+/.idea
+/.mysql
+/.redis
+/.secrets
+/.well-known
+/dump.rdb
+/ui/dist-sw/
