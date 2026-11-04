@@ -15,22 +15,22 @@ ENV GOARCH=amd64
 WORKDIR /app
 COPY go.* ./
 RUN go mod download
-COPY . .
+COPY *.go ./
+COPY cli/ ./cli/
+COPY config/ ./config/
+COPY core/ ./core/
+COPY internal/ ./internal/
+COPY program/ ./program/
+COPY server/ ./server/
 RUN go build -o discuit .
 
 # Use official Node image for the frontend build
 FROM node:24 AS frontend-builder
 
-# Copy required configuration files and build files
-WORKDIR /app
-COPY config.default.yaml .
-RUN mv config.default.yaml config.yaml
-COPY --from=backend-builder /app/discuit /app/discuit
-
-# Copy the source code and build the frontend
+# The entrypoint builds the UI so it can use the deployment's config.
 WORKDIR /app/ui
 COPY ui/package*.json ./
-RUN npm ci
+RUN npm ci --prefer-offline --no-audit --no-fund
 COPY ui/ . 
 
 # Final stage: setup the runtime environment

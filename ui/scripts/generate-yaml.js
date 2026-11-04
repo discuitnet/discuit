@@ -1,29 +1,13 @@
-import { exec } from 'child_process';
+import { execFileSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
-// Get the root path
-const rootPath = path.join(import.meta.dirname, '../../');
+const rootPath = path.resolve(import.meta.dirname, '../..');
 
-// Run the command to get the config
-(async () => {
-  await exec('./discuit inject-config', { cwd: '../' }, async (error, stdout, stderr) => {
-    if (error) {
-      console.error(`exec error: ${error}`);
-      return;
-    }
-    if (stderr) {
-      console.error(`stderr: ${stderr}`);
-      return;
-    }
-
-    // Make ui-config.yaml
-    await fs.writeFile(path.join(rootPath, 'ui-config.yaml'), stdout, (err) => {
-      if (err) {
-        console.error(err);
-      } else {
-        console.log('ui-config.yaml has been written');
-      }
-    });
-  });
-})();
+// Fail here so a broken backend can't leave the build using old config.
+const yaml = execFileSync(path.join(rootPath, 'discuit'), ['inject-config'], {
+  cwd: rootPath,
+  encoding: 'utf8',
+});
+fs.writeFileSync(path.join(rootPath, 'ui-config.yaml'), yaml);
+console.log('ui-config.yaml has been written');
