@@ -37,7 +37,7 @@ export function useDelayedEffect(effect: () => void, delay = 1000) {
     return () => {
       window.clearTimeout(timer);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [effect, delay]);
 }
 
@@ -273,7 +273,7 @@ export function useCanonicalTag(href: string, deps?: React.DependencyList) {
       tag.setAttribute('href', href);
       document.head.append(tag);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
   useEffect(() => {
     return () => {
@@ -285,7 +285,7 @@ export function useCanonicalTag(href: string, deps?: React.DependencyList) {
 export function useRemoveCanonicalTag(deps?: React.DependencyList) {
   useEffect(() => {
     removeCanonicalTag();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 }
 

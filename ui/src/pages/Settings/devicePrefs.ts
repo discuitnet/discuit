@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* oxlint-disable @typescript-eslint/no-explicit-any */
 const localStorageKey = 'preferences';
 
 let cache: { [key: string]: any } | null = null;

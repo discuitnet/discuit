@@ -1,4 +1,4 @@
-/* eslint-disable react/display-name */
+/* oxlint-disable react/display-name */
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useLocation } from 'react-router-dom';

@@ -99,7 +99,7 @@ function Feed<FeedItemType>({
     if (!loading && hasMore && spinnerInView) {
       handleLoadMoreClick();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, hasMore, spinnerInView]);
 
   const windowWidth = useWindowWidth();
@@ -115,7 +115,7 @@ function Feed<FeedItemType>({
         dispatch(feedInViewItemsUpdated(feedId, [...itemsInView.current]));
       };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
   const handleItemViewChange = (itemKey: string, inView: boolean) => {
     let list = itemsInView.current;
