@@ -10,7 +10,7 @@
     "build": "pnpm run generate-yaml && tsc -b && vite build && pnpm run build-sw && pnpm run copy-sw",
     "lint": "oxlint --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "format": "prettier . --write",
+    "format": "oxfmt --write",
     "generate-yaml": "node scripts/generate-yaml.js",
     "copy-sw": "node scripts/copy-sw.js",
     "clean": "rm -rf dist/*"
@@ -40,8 +40,8 @@
     "@types/react-google-recaptcha": "^2.1.9",
     "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^4.3.4",
+    "oxfmt": "^0.76.0",
     "oxlint": "^1.91.0",
-    "prettier": "^3.4.2",
     "sass-embedded": "^1.83.4",
     "typescript": "^5.7.3",
     "vite": "^6.0.11",
