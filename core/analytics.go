@@ -157,3 +157,53 @@ func GetBasicSiteStats(ctx context.Context, db *sql.DB, limit int, next string) 
 
 	return events, "", nil
 }
+
+type RequestPasswordEvent struct {
+	Username  string      `json:"username"`
+	IP        msql.NullIP `json:"ip"`
+	CreatedAt time.Time   `json:"createdAt"`
+}
+
+// Fetch password reset logs from newest. Return log records, next offset, error.
+func GetRequestPasswordLogs(ctx context.Context, db *sql.DB, limit, maxId int) ([]*RequestPasswordEvent, string, error) {
+	// use id instead of offset to bypass issues with new records messing up the offset
+	// maxId == 0 restarts from the top
+	limitQuery := ""
+	if limit > 0 {
+		limitQuery = "LIMIT " + strconv.Itoa(limit)
+	}
+	args := []any{}
+	maxQuery := ""
+	if maxId > 0 {
+		maxQuery = "WHERE id <= ?"
+		args = append(args, maxId)
+	}
+
+	query := "SELECT id, username, ip, created_at FROM password_requests"
+	query = fmt.Sprintf("%s %s ORDER BY id DESC %s", query, maxQuery, limitQuery)
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, "", err
+	}
+	defer rows.Close()
+
+	var events []*RequestPasswordEvent
+	var minId int
+	for rows.Next() {
+		e := &RequestPasswordEvent{}
+		if err := rows.Scan(&minId, &e.Username, &e.IP, &e.CreatedAt); err != nil {
+			return nil, "", err
+		}
+		events = append(events, e)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, "", err
+	}
+	minIdStr := strconv.Itoa(minId - 1)
+	if minIdStr == "0" {
+		minIdStr = ""
+	}
+	return events, minIdStr, nil
+
+}

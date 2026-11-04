@@ -9,6 +9,7 @@ import Comments from './Comments';
 import Communities from './Communities';
 import IPBlocks from './IPBlocks';
 import NewCommunityRequests from './NewCommunityRequests';
+import RequestPasswordLogs from './RequestPasswordLogs';
 import Settings from './Settings';
 import Users from './Users';
 
@@ -20,6 +21,15 @@ const SVGUsers = (
     />
     <path
       d="M12.0002 14.5C6.99016 14.5 2.91016 17.86 2.91016 22C2.91016 22.28 3.13016 22.5 3.41016 22.5H20.5902C20.8702 22.5 21.0902 22.28 21.0902 22C21.0902 17.86 17.0102 14.5 12.0002 14.5Z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
+const SVGPasswordRequests = (
+  <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="m20.41,9.01l-1.64,0l0,-2.68c0,-2.96 -2.94,-5.36 -6.56,-5.36s-6.56,2.4 -6.56,5.36l0,2.68l-1.64,0c-0.91,0 -1.64,0.6 -1.64,1.34l0,10.72c0,0.74 0.73,1.34 1.64,1.34l16.41,0c0.91,0 1.64,-0.6 1.64,-1.34l0,-10.72c0,-0.74 -0.73,-1.34 -1.64,-1.34zm-8.2,8.04c-0.91,0 -1.64,-0.6 -1.64,-1.34s0.73,-1.34 1.64,-1.34s1.64,0.6 1.64,1.34s-0.73,1.34 -1.64,1.34zm3.28,-8.04l-6.56,0l0,-2.68c0,-1.48 1.47,-2.68 3.28,-2.68s3.28,1.2 3.28,2.68l0,2.68z"
       fill="currentColor"
     />
   </svg>
@@ -80,6 +90,7 @@ function AdminDashboard() {
       sidebarMenu={[
         { name: 'Settings', to: '/admin', icon: <SVGSettings /> },
         { name: 'Users', to: '/admin/users', icon: SVGUsers },
+        { name: 'Password requests', to: '/admin/password-requests', icon: SVGPasswordRequests},
         { name: 'Comments', to: '/admin/comments', icon: <SVGComment /> },
         { name: 'Communities', to: '/admin/communities', icon: <SVGCommunities /> },
         { name: 'IP blocks', to: '/admin/ipblocks', icon: SVGIPBlocks },
@@ -97,6 +108,9 @@ function AdminDashboard() {
         </Route>
         <Route exact path={`${path}/users`}>
           <Users />
+        </Route>
+        <Route exact path={`${path}/password-requests`}>
+          <RequestPasswordLogs />
         </Route>
         <Route exact path={`${path}/comments`}>
           <Comments />

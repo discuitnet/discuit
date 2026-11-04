@@ -13,6 +13,8 @@ import LoginPrompt from './components/LoginPrompt';
 import Modal from './components/Modal';
 import Navbar from './components/Navbar';
 import NotificationsView from './components/Navbar/NotificationsView';
+import ResetPassword from './components/ResetPassword';
+import RequestResetPassword from './components/RequestResetPassword';
 import SaveToListModal from './components/SaveToListModal';
 import Sidebar from './components/Sidebar';
 import Signup from './components/Signup';
@@ -49,6 +51,7 @@ import {
   MainState,
   markNotificationAsSeen,
   signupModalOpened,
+  resetPasswordModalOpened,
   snackAlert,
   userLoggedIn,
 } from './slices/mainSlice';
@@ -170,6 +173,9 @@ const App = () => {
   const signupModalOpen = useSelector<RootState>(
     (state) => state.main.signupModalOpen
   ) as MainState['signupModalOpen'];
+  const resetPasswordModalOpen = useSelector<RootState>(
+    (state) => state.main.resetPasswordModalOpen
+  ) as MainState['resetPasswordModalOpen']
 
   const createCommunityOpen = useSelector<RootState>(
     (state) => state.main.createCommunityModalOpen
@@ -255,6 +261,7 @@ const App = () => {
           <LoginForm isModal />
         </div>
       </Modal>
+      <RequestResetPassword open={resetPasswordModalOpen} onClose={() => dispatch(resetPasswordModalOpened(false))} />
       <CreateCommunity
         open={createCommunityOpen}
         onClose={() => dispatch(createCommunityModalOpened(false))}
@@ -329,6 +336,9 @@ const AppSwitch = () => {
         </Route>
         <Route exact path="/@:username/lists/:listName">
           <List />
+        </Route>
+        <Route exact path="/reset-password">
+          <ResetPassword />
         </Route>
         <Route exact path="/:name">
           <Community />

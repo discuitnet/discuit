@@ -86,7 +86,8 @@ type Config struct {
 	GithubURL      string `yaml:"githubURL"`
 	SubstackURL    string `yaml:"substackURL"`
 
-	WelcomeCommunity string `yaml:"welcomeCommunity"`
+	WelcomeCommunity   string `yaml:"welcomeCommunity"`
+	TransactionalEmail string `yaml:"transactionalEmail"`
 
 	// This email address is provided to the Web Push services (of the browser
 	// vendors) in case they need to reach out. If this field is empty, push

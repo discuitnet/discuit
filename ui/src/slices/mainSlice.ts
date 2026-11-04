@@ -67,6 +67,7 @@ export interface MainState {
   bannedFrom: string[]; // List of community ids.
   loginModalOpen: boolean;
   signupModalOpen: boolean;
+  resetPasswordModalOpen: boolean;
   createCommunityModalOpen: boolean;
   mutes: Mutes;
   lists: {
@@ -120,6 +121,7 @@ const initialState: MainState = {
   bannedFrom: [],
   loginModalOpen: false,
   signupModalOpen: false,
+  resetPasswordModalOpen: false,
   createCommunityModalOpen: false,
   mutes: {
     userMutes: [],
@@ -354,6 +356,12 @@ export default function mainReducer(
       return {
         ...state,
         signupModalOpen: action.payload as boolean,
+      };
+    }
+    case 'main/resetPasswordModalOpened': {
+      return {
+        ...state,
+        resetPasswordModalOpen: action.payload as boolean,
       };
     }
     case 'main/loginModalOpened': {
@@ -647,6 +655,10 @@ export const notificationsReloaded = () => {
 
 export const signupModalOpened = (open = true) => {
   return { type: 'main/signupModalOpened', payload: open };
+};
+
+export const resetPasswordModalOpened = (open = true) => {
+  return { type: 'main/resetPasswordModalOpened', payload: open };
 };
 
 export const loginModalOpened = (open = true) => {

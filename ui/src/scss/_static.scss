@@ -265,6 +265,19 @@ html.theme-dark {
     }
 }
 
+.page-passwordreset {
+    width: 100%;
+    margin: 0 auto;
+    min-height: calc(100vh - var(--page-top-margin));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    .sidebar {
+        display: none;
+    }
+}
+
 .page-offline {
     > * {
         margin-bottom: var(--gap);
