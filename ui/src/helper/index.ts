@@ -1,5 +1,5 @@
 import { Image, UserGroup } from '../serverTypes.js';
-import * as React from 'react';
+import React from 'react';
 
 export function stringCount(
   num: number,
