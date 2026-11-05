@@ -32,7 +32,7 @@ To setup a development environment of Discuit on your local computer:
     sudo apt install redis-server
     sudo systemctl start redis.service
 
-    # Install Node.js and NPM
+    # Install pnpm
     curl -fsSL https://get.pnpm.io | sh -
     ```
 
