@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@redux-devtools/extension':
+        specifier: ^4.0.0
+        version: 4.0.0(redux@4.2.1)
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -53,9 +56,6 @@ importers:
       redux:
         specifier: ^4.2.1
         version: 4.2.1
-      redux-devtools-extension:
-        specifier: ^2.13.9
-        version: 2.13.9(redux@4.2.1)
       redux-thunk:
         specifier: ^2.4.2
         version: 2.4.2(redux@4.2.1)
@@ -705,6 +705,11 @@ packages:
   '@parcel/watcher@2.6.0':
     resolution: {integrity: sha512-7FNeNl8NCE7aINx7WXiKQrPYZWC/hvrTsmk6zmxbI7LTXE7hVek/n8AfVgpe2y82zl3w0HvCHN0bVKMBoJcC0w==}
     engines: {node: '>= 10.0.0'}
+
+  '@redux-devtools/extension@4.0.0':
+    resolution: {integrity: sha512-pLIzgo5MvqdDLe5D1pzHLgmr8THra/DOyRf5MvOEPZnKKDn6RhFbNSS5oXZ3Cal0cpx08kx7sR6zD8QgoXEnZA==}
+    peerDependencies:
+      redux: ^3.1.0 || ^4.0.0 || ^5.0.0
 
   '@rolldown/binding-android-arm-eabi@1.2.16':
     resolution: {integrity: sha512-ia3DwAs0OsMGS7+IConptSiyk9pEXkOx/AbJ2n/lAGxH3QkWQus1t8d7gnAT38FCU2sQu8lUbeR6AiZFv4JxaA==}
@@ -1700,12 +1705,6 @@ packages:
     resolution: {integrity: sha512-Kko+Y5XQ6fM+Ce3dq3m9YGxnacYZYl9cA1wZjaF3Vbry2L3i1qVg8+CAgNPsXRArPMUMCaOR7oa9Nqntc43JKA==}
     engines: {node: '>= 20.19.0'}
 
-  redux-devtools-extension@2.13.9:
-    resolution: {integrity: sha512-cNJ8Q/EtjhQaZ71c8I9+BPySIBVEKssbPpskBfsXqb8HJ002A3KRVHfeRzwRo6mGPqsm7XuHTqNSNeS1Khig0A==}
-    deprecated: Package moved to @redux-devtools/extension.
-    peerDependencies:
-      redux: ^3.1.0 || ^4.0.0
-
   redux-thunk@2.4.2:
     resolution: {integrity: sha512-+P3TjtnP0k/FEjcBL5FZpoovtvrTNT/UXd4/sluaSyrURlSlhLSzEdfsTBW7WsKB6yPvgd7q/iZPICFjW4o57Q==}
     peerDependencies:
@@ -2358,6 +2357,10 @@ snapshots:
       '@parcel/watcher-win32-arm64': 2.6.0
       '@parcel/watcher-win32-x64': 2.6.0
     optional: true
+
+  '@redux-devtools/extension@4.0.0(redux@4.2.1)':
+    dependencies:
+      redux: 4.2.1
 
   '@rolldown/binding-android-arm-eabi@1.2.16':
     optional: true
@@ -3389,10 +3392,6 @@ snapshots:
 
   readdirp@5.1.1:
     optional: true
-
-  redux-devtools-extension@2.13.9(redux@4.2.1):
-    dependencies:
-      redux: 4.2.1
 
   redux-thunk@2.4.2(redux@4.2.1):
     dependencies:
