@@ -1,4 +1,4 @@
-import { Image, UserGroup } from '../serverTypes';
+import { Image, UserGroup } from '../serverTypes.js';
 
 export function stringCount(
   num: number,
