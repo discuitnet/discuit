@@ -52,7 +52,7 @@
     "oxlint": "^1.91.0",
     "sass-embedded": "^1.83.4",
     "typescript": "^7.0.2",
-    "vite": "^8.3.5",
+    "vite": "^8.3.6",
     "vite-plugin-compression": "^0.5.1",
     "yaml": "^2.7.0"
   },
