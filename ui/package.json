@@ -26,7 +26,7 @@
     "react-error-boundary": "^4.1.2",
     "react-google-recaptcha": "^3.1.0",
     "react-helmet-async": "^3.0.0",
-    "react-intersection-observer": "^9.15.1",
+    "react-intersection-observer": "^11.0.1",
     "react-markdown": "^10.1.0",
     "react-redux": "^7.2.9",
     "react-router": "^5.3.4",
