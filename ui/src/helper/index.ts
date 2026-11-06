@@ -1,4 +1,5 @@
-import { Image, UserGroup } from '../serverTypes';
+import { Image, UserGroup } from '../serverTypes.js';
+import React from 'react';
 
 export function stringCount(
   num: number,
@@ -31,7 +32,7 @@ export function kRound(num: number) {
 
 export function timeAgo(date: string | Date, suffix = ' ago', justNow = true, short = false) {
   if (!(date instanceof Date)) {
-    // eslint-disable-next-line no-param-reassign
+    // oxlint-disable-next-line no-param-reassign
     date = new Date(date);
   }
 
@@ -328,7 +329,7 @@ export function mfetch(url: string | URL, options: RequestInit = {}): Promise<Re
   });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line @typescript-eslint/no-explicit-any
 export async function mfetchjson<T = any>(
   url: string | URL,
   options: RequestInit = {}
@@ -343,7 +344,7 @@ export function isValidHttpUrl(string: string): boolean {
 
   try {
     url = new URL(string);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // oxlint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     return false;
   }
@@ -361,7 +362,7 @@ export function omitWWWFromHostname(host: string): string {
 // For the Web Push API's applicationServerKey option.
 export function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  // eslint-disable-next-line no-useless-escape
+  // oxlint-disable-next-line no-useless-escape
   const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
 
   const rawData = window.atob(base64);

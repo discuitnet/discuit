@@ -29,7 +29,7 @@ const Modal = ({
       });
       return () => unlisten();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [open, history]);
 
   const [el] = useState(document.createElement('el'));
@@ -51,7 +51,7 @@ const Modal = ({
         document.removeEventListener('keydown', handleKeyDown);
       };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   useLayoutEffect(() => {
