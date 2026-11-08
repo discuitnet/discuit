@@ -33,28 +33,28 @@
     "react-router-dom": "^5.3.4",
     "redux": "^4.2.1",
     "redux-thunk": "^2.4.2",
-    "remark-gfm": "^4.0.0"
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@types/history": "^4.7.11",
     "@types/node": "^26.6.6",
     "@types/prop-types": "^15.7.15",
     "@types/pulltorefreshjs": "^0.1.7",
-    "@types/react": "^18.3.18",
-    "@types/react-dom": "^18.3.5",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
     "@types/react-google-recaptcha": "^2.1.9",
     "@types/react-redux": "^7.1.35",
     "@types/react-router": "^5.1.20",
     "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^6.2.1",
     "knip": "^6.44.1",
-    "oxfmt": "^0.76.0",
-    "oxlint": "^1.91.0",
-    "sass-embedded": "^1.83.4",
+    "oxfmt": "^0.77.0",
+    "oxlint": "^1.92.0",
+    "sass-embedded": "^1.108.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.6",
     "vite-plugin-compression": "^0.5.1",
-    "yaml": "^2.7.0"
+    "yaml": "^2.9.1"
   },
   "devEngines": {
     "runtime": {
