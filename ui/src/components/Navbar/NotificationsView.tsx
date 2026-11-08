@@ -99,16 +99,12 @@ const NotificationsView = () => {
 
   const className = 'notifs is-custom-scrollbar is-v2 is-non-reactive';
   if (!loaded) {
-    const renderSkeletons = () => {
-      const items = [];
-      for (let i = 0; i < 10; i++)
-        items.push(
-          <div className="notif-skeleton" key={i}>
-            <div className="skeleton-bar"></div>
-          </div>
-        );
-      return items;
-    };
+    const renderSkeletons = () =>
+      Array.from({ length: 10 }, (_, i) => (
+        <div className="notif-skeleton" key={i}>
+          <div className="skeleton-bar"></div>
+        </div>
+      ));
     return (
       <div className={className}>
         <div className="notifs-head">

@@ -85,18 +85,15 @@ const Lists = () => {
     lastAdded: 'Last added',
   };
   const renderOrderDropdown = () => {
-    const items = [];
-    for (const [key, value] of Object.entries(orderOptions)) {
-      items.push(
-        <div
-          key={key}
-          className="dropdown-item"
-          onClick={() => dispatch(listsOrderChanged(username, key as ListsOrder))}
-        >
-          {value}
-        </div>
-      );
-    }
+    const items = Object.entries(orderOptions).map(([key, value]) => (
+      <div
+        key={key}
+        className="dropdown-item"
+        onClick={() => dispatch(listsOrderChanged(username, key as ListsOrder))}
+      >
+        {value}
+      </div>
+    ));
     return (
       <Dropdown target={orderOptions[order]}>
         <div className="dropdown-list">{items}</div>
@@ -110,18 +107,15 @@ const Lists = () => {
     private: 'Private',
   };
   const renderFilterDropdown = () => {
-    const items = [];
-    for (const [key, value] of Object.entries(filterOptions)) {
-      items.push(
-        <div
-          key={key}
-          className="dropdown-item"
-          onClick={() => dispatch(listsFilterChanged(username, key as ListsFilter))}
-        >
-          {value}
-        </div>
-      );
-    }
+    const items = Object.entries(filterOptions).map(([key, value]) => (
+      <div
+        key={key}
+        className="dropdown-item"
+        onClick={() => dispatch(listsFilterChanged(username, key as ListsFilter))}
+      >
+        {value}
+      </div>
+    ));
     return (
       <Dropdown target={filterOptions[filter]}>
         <div className="dropdown-list">{items}</div>

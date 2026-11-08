@@ -126,16 +126,15 @@ const CommentSection = ({
   // const zIndexTop = useSelector((state) => state.comments.items[postId].zIndexTop);
   const zIndexTop = commentsObj ? commentsObj.zIndexTop : defaultCommentZIndex;
   const renderComments = () => {
-    const rendered = [];
     let _toRender = toRender;
     const children: Node[] = (comments && comments.children) || [];
     if (_toRender > children.length) {
       _toRender = children.length;
       setToRender(children.length);
     }
-    for (let i = 0; i < _toRender; i++) {
-      const node = children[i];
-      rendered.push(
+    const rendered = children
+      .slice(0, _toRender)
+      .map((node, i) => (
         <MemorizedComment
           post={post}
           user={user || null}
@@ -151,8 +150,7 @@ const CommentSection = ({
           canComment={canComment}
           isAncestorLocked={false}
         />
-      );
-    }
+      ));
     if (noRootComments > _toRender) {
       if (noRootComments - _toRender === 1) {
         setToRender(noRootComments);

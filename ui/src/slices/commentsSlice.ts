@@ -92,16 +92,9 @@ export default function commentsReducer(
         while (rootNode.parent!.parent) {
           rootNode = rootNode.parent!;
         }
-        const children = root.children;
-        const newChildren = [];
-        for (let i = 0; i < children.length; i++) {
-          if (children[i].comment!.id === rootNode.comment!.id) {
-            newChildren.push({ ...rootNode });
-          } else {
-            newChildren.push(children[i]);
-          }
-        }
-        root.children = newChildren;
+        root.children = root.children.map((child) =>
+          child.comment!.id === rootNode.comment!.id ? { ...rootNode } : child
+        );
       } else {
         updateZIndex = true;
       }
@@ -121,11 +114,8 @@ export default function commentsReducer(
     }
     case typeReplyCommentsAdded: {
       const { postId, comments } = action.payload as { postId: string; comments: Comment[] };
-      const newComments: Comment[] = [];
       const root = state.items[postId].comments;
-      comments.forEach((comment) => {
-        if (searchTree(root, comment.id) === null) newComments.push(comment);
-      });
+      const newComments = comments.filter((comment) => searchTree(root, comment.id) === null);
       return {
         ...state,
         items: {
