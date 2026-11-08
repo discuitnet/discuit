@@ -34,7 +34,7 @@ export default function Users() {
       }
     };
     f();
-  }, []);
+  }, [setLoading, dispatch]);
 
   const [nextUsersLoading, setNextUsersLoading] = useState(false);
   const fetchNextUsers = async () => {

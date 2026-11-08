@@ -50,7 +50,7 @@ export default function IPBlocks() {
       }
     };
     f();
-  }, [dispatch, loading]);
+  }, [dispatch, loading, setLoading]);
 
   const torBlockChangeInProgress = useRef(false);
   const handleTorBlockedOnChange = async (event: React.ChangeEvent<HTMLInputElement>) => {

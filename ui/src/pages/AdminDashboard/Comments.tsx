@@ -37,7 +37,7 @@ export default function Comments() {
       }
     };
     f();
-  }, []);
+  }, [dispatch, setLoading]);
 
   const [feedReloading, setFeedReloading] = useState(false);
   const fetchNextItems = async () => {

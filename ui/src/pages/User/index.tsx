@@ -25,7 +25,7 @@ import {
 } from '../../helper';
 import { useFetchUsersLists, useMuteUser } from '../../hooks';
 import { useImageEdit } from '../../hooks/useImageEdit';
-import type { Comment, User } from '../../serverTypes';
+import type { Comment, User as UserType } from '../../serverTypes';
 import { FeedItem } from '../../slices/feedsSlice';
 import { MainState, snackAlert, snackAlertError, userLoggedIn } from '../../slices/mainSlice';
 import { Post } from '../../slices/postsSlice';
@@ -73,7 +73,7 @@ const User = () => {
     handleUpload: handleUploadProfilePic,
     handleDelete: handleDeleteProfilePic,
     handleSaveAltText,
-  } = useImageEdit<User>(`/api/users/${username}/pro_pic`, (res) => {
+  } = useImageEdit<UserType>(`/api/users/${username}/pro_pic`, (res) => {
     dispatch(userLoggedIn(res));
     dispatch(userAdded(res));
   });
@@ -112,7 +112,7 @@ const User = () => {
     }
   };
 
-  const isUserFeedAvailable = (user: User, viewer: User | null) => {
+  const isUserFeedAvailable = (user: UserType, viewer: UserType | null) => {
     return !user.isBanned || (user.isBanned && viewer !== null && viewerAdmin);
   };
 
@@ -148,7 +148,7 @@ const User = () => {
         dispatch(snackAlertError(error));
       }
     })();
-  }, [username, url, feedId]);
+  }, [username, url, feedId, dispatch, history, user]);
 
   const handleFeedFetch = async (next: string | null | undefined = null) => {
     const url = next === null ? feedId : `${feedId}&next=${next}`;
@@ -647,7 +647,8 @@ const User = () => {
 
 export default User;
 
-export function userHasSupporterBadge(user: User | null): boolean {
+// oxlint-disable react/only-export-components
+export function userHasSupporterBadge(user: UserType | null): boolean {
   return Boolean(
     user && (user.badges || []).find((badge) => badge.type === 'supporter') !== undefined
   );

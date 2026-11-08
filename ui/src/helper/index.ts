@@ -32,7 +32,6 @@ export function kRound(num: number) {
 
 export function timeAgo(date: string | Date, suffix = ' ago', justNow = true, short = false) {
   if (!(date instanceof Date)) {
-    // oxlint-disable-next-line no-param-reassign
     date = new Date(date);
   }
 

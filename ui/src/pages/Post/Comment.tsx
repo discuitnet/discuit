@@ -1,5 +1,4 @@
-/* oxlint-disable react/display-name */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import Dropdown from '../../components/Dropdown';
@@ -68,19 +67,22 @@ const Comment = ({
   const { noRepliesRendered, children } = node;
   const [comment, _setComment] = useState(node.comment!);
   const isCommentLocked = comment.locked || isAncestorLocked;
-  const setComment = (comment: CommentType) => {
-    // Beware: In place data mutation.
-    node.comment = {
-      ...node.comment,
-      ...comment,
-    };
-    _setComment((c) => {
-      return {
-        ...c,
+  const setComment = useCallback(
+    (comment: CommentType) => {
+      // Beware: In place data mutation.
+      node.comment = {
+        ...node.comment,
         ...comment,
       };
-    });
-  };
+      _setComment((c) => {
+        return {
+          ...c,
+          ...comment,
+        };
+      });
+    },
+    [node.comment]
+  );
 
   const commentShareURL = `/${community.name}/post/${postId}/${comment.id}`;
 
@@ -222,7 +224,7 @@ const Comment = ({
         dispatch(snackAlertError(error));
       }
     })();
-  }, [userGroup]);
+  }, [userGroup, comment.id, comment.postId, comment.userGroup, dispatch, setComment]);
 
   const [collapsed, setCollapsed] = useState(node.collapsed || false);
   const collapsedRef = useRef<HTMLDivElement>(null);
@@ -246,7 +248,7 @@ const Comment = ({
     if (comment.isAuthorMuted) {
       setCollapsed(true);
     }
-  }, []);
+  }, [comment.isAuthorMuted]);
 
   const [isRepliesLoading, setIsRepliesLoading] = useState(false);
   const handleLoadReplies = async () => {

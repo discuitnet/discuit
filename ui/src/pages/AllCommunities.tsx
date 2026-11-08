@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import Button, { ButtonClose } from '../components/Button';
@@ -50,14 +50,17 @@ const AllCommunities = () => {
     (state) => state.main.allCommunitiesSearchQuery
   ) as MainState['allCommunitiesSearchQuery'];
   const [isSearching, setIsSearching] = useState(searchQuery !== '');
-  const setSearchQuery = (query: string) => {
-    dispatch(allCommunitiesSearchQueryChanged(query));
-  };
+  const setSearchQuery = useCallback(
+    (query: string) => {
+      dispatch(allCommunitiesSearchQueryChanged(query));
+    },
+    [dispatch]
+  );
   useEffect(() => {
     if (!isSearching) {
       setSearchQuery('');
     }
-  }, [isSearching]);
+  }, [isSearching, setSearchQuery]);
 
   const sort = useSelector<RootState>(
     (state) => state.main.allCommunitiesSort
@@ -242,8 +245,8 @@ const RequestCommunityButton = ({
         dispatch(snackAlert('Requested!'));
         handleClose();
       } else {
-          const error = await res.json();
-          dispatch(snackAlert(error.message));
+        const error = await res.json();
+        dispatch(snackAlert(error.message));
       }
     } catch (error) {
       dispatch(snackAlertError(error));

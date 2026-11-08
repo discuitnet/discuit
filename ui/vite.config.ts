@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import { defineConfig } from 'vite';

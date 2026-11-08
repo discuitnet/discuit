@@ -45,7 +45,7 @@ export default function Communities() {
       }
     };
     f();
-  }, []);
+  }, [dispatch, setLoading]);
 
   const handleRenderItem = (item: Community): React.ReactNode => {
     const community = item;

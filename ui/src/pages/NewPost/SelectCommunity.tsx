@@ -47,7 +47,7 @@ const SelectCommunity = ({
         dispatch(snackAlertError(error));
       }
     })();
-  }, [location]);
+  }, [location, dispatch, onChange]);
 
   const handleChange: React.ChangeEventHandler<HTMLInputElement> = (event) =>
     setValue(event.target.value);

@@ -30,7 +30,6 @@ export function useDelayedEffect(effect: () => void, delay = 1000) {
     return () => {
       window.clearTimeout(timer);
     };
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [effect, delay]);
 }
 
@@ -159,6 +158,7 @@ export function useQuery() {
 
 export function useIsChanged(deps: unknown[] = []): [boolean, () => void] {
   const [c, setC] = useState(0);
+  // oxlint-disable react-hooks/exhaustive-deps
   useEffect(() => {
     if (c < 3) setC((c) => c + 1);
   }, deps);
@@ -429,7 +429,7 @@ export function useFetchUser(username: string, showSnackAlertOnError = true) {
       }
     };
     f();
-  }, [username]);
+  }, [username, user, dispatch, showSnackAlertOnError]);
 
   return {
     user,
@@ -470,7 +470,7 @@ export function useFetchUsersLists(username: string, showSnackAlertOnError = tru
       }
     };
     f();
-  }, [username, order, filter]);
+  }, [username, order, filter, dispatch, lists, showSnackAlertOnError]);
 
   return {
     lists,

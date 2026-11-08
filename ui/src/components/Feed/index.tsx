@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useDispatch, useSelector } from 'react-redux';
 import { useWindowWidth } from '../../hooks';
@@ -55,36 +55,40 @@ function Feed<FeedItemType>({
   const loading = feed ? feed.loading : true;
   const hasMore = feed ? Boolean(feed.next) : false;
   const [, /*error*/ setError] = useState<unknown>(null);
+  const dispatch = useDispatch();
 
   const [fetching, setFetching] = useState(false);
   const fetchingRef = useRef(false);
-  const fetchFeedAndDispatch = async (next: string | null) => {
-    if (fetchingRef.current) {
-      return;
-    }
-    try {
-      setFetching(true);
-      fetchingRef.current = true;
-      const res = await onFetch(next);
-      if (res) {
-        dispatch(feedUpdated(feedId, res.items, res.next));
-      } else {
-        throw new Error(`onFetch (feedId: ${feedId}) returned null`);
+  const fetchFeedAndDispatch = useCallback(
+    async (next: string | null) => {
+      if (fetchingRef.current) {
+        return;
       }
-    } catch (error: unknown) {
-      setError(error);
-      dispatch(snackAlertError(error));
-    } finally {
-      fetchingRef.current = false;
-      setFetching(false);
-    }
-  };
+      try {
+        setFetching(true);
+        fetchingRef.current = true;
+        const res = await onFetch(next);
+        if (res) {
+          dispatch(feedUpdated(feedId, res.items, res.next));
+        } else {
+          throw new Error(`onFetch (feedId: ${feedId}) returned null`);
+        }
+      } catch (error: unknown) {
+        setError(error);
+        dispatch(snackAlertError(error));
+      } finally {
+        fetchingRef.current = false;
+        setFetching(false);
+      }
+    },
+    [feedId, onFetch, dispatch]
+  );
 
   useEffect(() => {
     if (loading) {
       fetchFeedAndDispatch(null);
     }
-  }, [feedId, loading]);
+  }, [feedId, loading, fetchFeedAndDispatch]);
 
   const handleLoadMoreClick = () => {
     if (feed && feed.next) {
@@ -107,7 +111,6 @@ function Feed<FeedItemType>({
 
   const itemsInitiallyInView = useSelector(selectFeedInViewItems(feedId));
 
-  const dispatch = useDispatch();
   const itemsInView = useRef<string[]>([]);
   useEffect(() => {
     if (!loading) {

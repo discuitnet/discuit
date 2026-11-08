@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useParams } from 'react-router-dom';
@@ -70,13 +70,13 @@ const Post = () => {
   }) as Community;
 
   const [postLoading, setPostLoading] = useState(post ? 'loaded' : 'loading');
-  const shouldCommentsLoad = () => {
+  const shouldCommentsLoad = useCallback(() => {
     if (!(comments && post)) return true;
     const isPop = history.action === 'POP';
     if (fromNotifications) return !isPop;
     if (post.fetchedAt > comments.fetchedAt) return !isPop;
     return false;
-  };
+  }, [post, history.action, fromNotifications, comments]);
   const [commentsLoading, setCommentsLoading] = useState(
     shouldCommentsLoad() ? 'loading' : 'loaded'
   );
@@ -108,7 +108,7 @@ const Post = () => {
     return () => {
       dispatch({ type: 'post/cleared' });
     };
-  }, [id, location]);
+  }, [id, location, shouldCommentsLoad, community, dispatch, fromNotifications, post]);
 
   useEffect(() => {
     if (community && post) {
@@ -121,7 +121,7 @@ const Post = () => {
         history.replace(`${newPathname}${location.search}${location.hash}`);
       }
     }
-  }, [location, community, post]);
+  }, [location, community, post, history]);
 
   const handleAddCommentSuccess = (comment: Comment) => {
     dispatch(newCommentAdded(post.publicId, comment));
@@ -196,7 +196,7 @@ const Post = () => {
         dispatch(snackAlertError(error));
       }
     })();
-  }, [userGroup]);
+  }, [userGroup, post.publicId, post.userGroup, dispatch]);
 
   const [isPinned, setIsPinned] = useState(post ? post.isPinned : false);
   useEffect(() => {

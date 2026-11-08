@@ -11,6 +11,7 @@ import { isDeviceIos } from './helper';
 import './scss/styles.scss';
 import store from './store';
 
+// oxlint-disable react/only-export-components
 const Fallback = ({ error }: { error: Error }) => {
   useEffect(() => {
     forceSwUpdate();

@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useHistory } from 'react-router-dom';
@@ -105,64 +105,67 @@ const NewPost = () => {
     } else {
       setLoading('loaded');
     }
-  }, [editPostId]);
+  }, [editPostId, dispatch, setLoading, isEditPost]);
 
   const [isUploading, setIsUploading] = useState(false);
   const abortController = useRef(new AbortController());
-  const handleImagesUpload = async (files?: FileList | null) => {
-    if (isUploading || !files) {
-      return;
-    }
-    // Check to see if uploading these images would reach the max image limit.
-    if (images.length + files.length > maxNumOfImages) {
-      alert(
-        `Image posts cannot contain more than ${maxNumOfImages} images. Please select fewer images and continue.`
-      );
-      return;
-    }
-    setIsUploading(true);
-    for (const file of files) {
-      try {
-        const data = new FormData();
-        data.append('image', file);
-        const res = await mfetch('/api/_uploads', {
-          signal: abortController.current.signal,
-          method: 'POST',
-          body: data,
-        });
-        if (!res.ok) {
-          setIsUploading(false);
-          if (res.status === 400) {
-            const error = await res.json();
-            if (error.code === 'file_size_exceeded') {
-              dispatch(snackAlert('Maximum file size exceeded.'));
-              break;
-            } else if (error.code === 'unsupported-image-format') {
-              console.log(file.name);
-              dispatch(
-                snackAlert(
-                  `File '${truncateStringWithDots(file.name, 20)}' is of an unsupported type.`
-                )
-              );
-              break;
-            }
-          }
-          throw new APIError(res.status, await res.json());
-        }
-        const resImage = (await res.json()) as ServerImage;
-        SetImages((images) => {
-          return [...images, resImage];
-        });
-      } catch (error) {
-        if (!(error instanceof DOMException && error.name === 'AbortError')) {
-          dispatch(snackAlertError(error));
-        }
-        setIsUploading(false);
-        break;
+  const handleImagesUpload = useCallback(
+    async (files?: FileList | null) => {
+      if (isUploading || !files) {
+        return;
       }
-    }
-    setIsUploading(false);
-  };
+      // Check to see if uploading these images would reach the max image limit.
+      if (images.length + files.length > maxNumOfImages) {
+        alert(
+          `Image posts cannot contain more than ${maxNumOfImages} images. Please select fewer images and continue.`
+        );
+        return;
+      }
+      setIsUploading(true);
+      for (const file of files) {
+        try {
+          const data = new FormData();
+          data.append('image', file);
+          const res = await mfetch('/api/_uploads', {
+            signal: abortController.current.signal,
+            method: 'POST',
+            body: data,
+          });
+          if (!res.ok) {
+            setIsUploading(false);
+            if (res.status === 400) {
+              const error = await res.json();
+              if (error.code === 'file_size_exceeded') {
+                dispatch(snackAlert('Maximum file size exceeded.'));
+                break;
+              } else if (error.code === 'unsupported-image-format') {
+                console.log(file.name);
+                dispatch(
+                  snackAlert(
+                    `File '${truncateStringWithDots(file.name, 20)}' is of an unsupported type.`
+                  )
+                );
+                break;
+              }
+            }
+            throw new APIError(res.status, await res.json());
+          }
+          const resImage = (await res.json()) as ServerImage;
+          SetImages((images) => {
+            return [...images, resImage];
+          });
+        } catch (error) {
+          if (!(error instanceof DOMException && error.name === 'AbortError')) {
+            dispatch(snackAlertError(error));
+          }
+          setIsUploading(false);
+          break;
+        }
+      }
+      setIsUploading(false);
+    },
+    [isUploading, maxNumOfImages, dispatch, images.length]
+  );
   useEffect(() => {
     // This hooks adds image clipboard pasting functionality.
     const listener = async (event: ClipboardEvent) => {
@@ -176,22 +179,25 @@ const NewPost = () => {
     return () => {
       document.removeEventListener('paste', listener);
     };
-  }, []);
+  }, [handleImagesUpload]);
   const deleteImage = (imageId: string) => {
     // TODO: send DELETE request to server.
     SetImages((images) => images.filter((image) => image.id !== imageId));
   };
 
   // For only when editing a post.
-  const returnToWhence = (post: Post) => {
-    const state = location.state as { fromPostPage: boolean };
-    if (state && state.fromPostPage) {
-      // fromPostPage property is set manually upon edit button click.
-      history.goBack();
-    } else {
-      history.replace(`/${post.communityName}/post/${post.publicId}`);
-    }
-  };
+  const returnToWhence = useCallback(
+    (post: Post) => {
+      const state = location.state as { fromPostPage: boolean };
+      if (state && state.fromPostPage) {
+        // fromPostPage property is set manually upon edit button click.
+        history.goBack();
+      } else {
+        history.replace(`/${post.communityName}/post/${post.publicId}`);
+      }
+    },
+    [location.state, history]
+  );
 
   const isPostingDisabled =
     community !== null &&
@@ -207,13 +213,13 @@ const NewPost = () => {
   };
 
   const [altTextChanges, setAltTextChanges] = useState<Record<string, string>>({});
-  const isAltMissing = () => {
+  const isAltMissing = useCallback(() => {
     return user.requireAltText && images.some((img) => !img.altText || img.altText.trim() === '');
-  };
+  }, [user.requireAltText, images]);
 
   const [_isSubmitDisabled, setIsSubmitting] = useState(false);
   const isSubmitDisabled = _isSubmitDisabled || isUploading || isPostingDisabled || isAltMissing();
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (isSubmitDisabled) return;
     if (isBanned) {
       alert('You are banned from community');
@@ -306,7 +312,24 @@ const NewPost = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [
+    isEditPost,
+    isBanned,
+    title,
+    isSubmitDisabled,
+    dispatch,
+    link,
+    altTextChanges,
+    postType,
+    isAltMissing,
+    community,
+    user.requireAltText,
+    images,
+    returnToWhence,
+    body,
+    editPostId,
+    userGroup,
+  ]);
   useEffect(() => {
     const listner = (event: KeyboardEvent) => {
       if (event.key === 'Enter' && event.ctrlKey) {

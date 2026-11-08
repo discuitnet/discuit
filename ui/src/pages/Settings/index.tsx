@@ -131,7 +131,7 @@ const Settings = () => {
     setCanEnableWebPushNotifications(
       shouldAskForNotificationsPermissions(loggedIn, applicationServerKey, false)
     );
-  }, [notificationsPermissions]);
+  }, [notificationsPermissions, loggedIn, applicationServerKey]);
 
   const handleEnablePushNotifications = async () => {
     await getNotificationsPermissions(loggedIn, applicationServerKey!);

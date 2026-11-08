@@ -389,7 +389,7 @@ const ScrollToTop = () => {
       window.scrollTo(0, 0);
     }
     getGlobalAppData().historyLength!++;
-  }, [location.pathname, history]);
+  }, [location.pathname, history, location.state]);
 
   return null;
 };

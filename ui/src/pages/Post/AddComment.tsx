@@ -134,15 +134,18 @@ const AddComment = ({
   };
 
   const textareaRef: React.MutableRefObject<HTMLTextAreaElement | null> = useRef(null);
-  const textareaCallbackRef: React.RefCallback<HTMLTextAreaElement> = useCallback((node) => {
-    if (node !== null) {
-      if (!main) {
-        node.focus();
+  const textareaCallbackRef: React.RefCallback<HTMLTextAreaElement> = useCallback(
+    (node) => {
+      if (node !== null) {
+        if (!main) {
+          node.focus();
+        }
+        textareaNode.current = node;
+        textareaRef.current = node;
       }
-      textareaNode.current = node;
-      textareaRef.current = node;
-    }
-  }, []);
+    },
+    [main]
+  );
 
   const handleTextareaClick = () => {
     if (!loggedIn) {

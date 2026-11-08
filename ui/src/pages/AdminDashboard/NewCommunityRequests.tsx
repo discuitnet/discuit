@@ -83,7 +83,7 @@ export default function NewCommunityRequests() {
       }
     };
     f();
-  }, []);
+  }, [setLoading, dispatch]);
 
   if (loading !== 'loaded') {
     return <PageLoading />;
