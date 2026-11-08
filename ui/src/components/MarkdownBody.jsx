@@ -1,15 +1,12 @@
 /* oxlint-disable no-unused-vars */
-import PropTypes from "prop-types";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import Link from "./Link";
+import PropTypes from 'prop-types';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import Link from './Link';
 
 const isInternalLink = (link) => {
   try {
-    const url = new URL(
-      link,
-      `${window.location.protocol}//${window.location.host}`,
-    );
+    const url = new URL(link, `${window.location.protocol}//${window.location.host}`);
     if (
       url.hostname === window.location.hostname &&
       url.protocol === window.location.protocol &&
@@ -26,20 +23,10 @@ const isInternalLink = (link) => {
 const MarkdownBody = ({ children, noLinks = false, veryBasic = false }) => {
   const renderLink = ({ node, ...props }) => {
     if (isInternalLink(props.href)) {
-      const url = new URL(
-        props.href,
-        `${window.location.protocol}//${window.location.host}`,
-      );
+      const url = new URL(props.href, `${window.location.protocol}//${window.location.host}`);
       const to = `${url.pathname}${url.search}${url.hash}`;
-      if (to.startsWith("/images/")) {
-        return (
-          <a
-            href={to}
-            rel="noreferrer noopener nofollow"
-            target="_blank"
-            {...props}
-          />
-        );
+      if (to.startsWith('/images/')) {
+        return <a href={to} rel="noreferrer noopener nofollow" target="_blank" {...props} />;
       }
       return <Link to={to} {...props} />;
     }
@@ -52,9 +39,7 @@ const MarkdownBody = ({ children, noLinks = false, veryBasic = false }) => {
     h4: ({ node, ...props }) => <div className="h4" {...props} />,
     h5: ({ node, ...props }) => <div className="h5" {...props} />,
     h6: ({ node, ...props }) => <div className="h6" {...props} />,
-    a: noLinks
-      ? ({ node, ...props }) => <span className="anchor" {...props} />
-      : renderLink,
+    a: noLinks ? ({ node, ...props }) => <span className="anchor" {...props} /> : renderLink,
     img: noLinks
       ? ({ node, src }) => <span className="anchor">{src}</span>
       : ({ node, src }) => (
@@ -75,9 +60,7 @@ const MarkdownBody = ({ children, noLinks = false, veryBasic = false }) => {
     h4: ({ node, ...props }) => <div className="" {...props} />,
     h5: ({ node, ...props }) => <div className="" {...props} />,
     h6: ({ node, ...props }) => <div className="" {...props} />,
-    a: noLinks
-      ? ({ node, ...props }) => <span className="anchor" {...props} />
-      : renderLink,
+    a: noLinks ? ({ node, ...props }) => <span className="anchor" {...props} /> : renderLink,
     img: noLinks
       ? ({ node, src }) => <span className="anchor">{src}</span>
       : ({ node, src }) => (

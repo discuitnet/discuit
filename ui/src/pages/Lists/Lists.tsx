@@ -138,7 +138,9 @@ const Lists = () => {
             <div className="left">
               {renderOrderDropdown()}
               {authedUser && authedUser.username === username && renderFilterDropdown()}
-              {authedUser && authedUser.username === username && <button onClick={toggleNewListForm}>New list</button>}
+              {authedUser && authedUser.username === username && (
+                <button onClick={toggleNewListForm}>New list</button>
+              )}
             </div>
           </div>
           <Modal open={isNewListOpen} onClose={toggleNewListForm}>
