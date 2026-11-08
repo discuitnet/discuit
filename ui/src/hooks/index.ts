@@ -1,12 +1,5 @@
 import { Location } from 'history';
-import {
-  MouseEventHandler,
-  useEffect,
-  useInsertionEffect,
-  useReducer,
-  useRef,
-  useState,
-} from 'react';
+import { MouseEventHandler, useEffect, useInsertionEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useLocation } from 'react-router';
 import { APIError, mfetch, mfetchjson, usernameLegalLetters } from '../helper';

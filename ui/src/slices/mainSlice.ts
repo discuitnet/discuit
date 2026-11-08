@@ -12,7 +12,6 @@ import {
   User,
 } from '../serverTypes';
 import { AppDispatch, RootState, UnknownAction } from '../store';
-import { communitiesAdded } from './communitiesSlice';
 
 interface Alert {
   id: string | number | null;

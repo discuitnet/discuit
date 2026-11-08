@@ -1,5 +1,5 @@
 import { Community } from '../serverTypes';
-import { AppDispatch, RootState, UnknownAction } from '../store';
+import { RootState, UnknownAction } from '../store';
 
 export interface CommunitiesState {
   names: string[];
@@ -41,9 +41,3 @@ export const selectCommunity = (name: string) => (state: RootState) =>
 export const communityAdded = (community: Community) => {
   return { type: typeCommunityAdded, payload: community };
 };
-
-export const communitiesAdded =
-  (list: Community[] = []) =>
-  (dispatch: AppDispatch) => {
-    list.forEach((item) => dispatch(communityAdded(item)));
-  };

@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import React, { useRef } from 'react';
+import React from 'react';
 import { SVGClose, SVGNotification, SVGSearch } from '../SVGs';
 import Spinner from './Spinner';
 
