@@ -68,7 +68,7 @@ jobs:
         if: steps.changes.outputs.code == 'true'
         uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
         with:
-          version: '12'
+          version: "12"
 
       - name: Set up Node.js
         if: steps.changes.outputs.code == 'true'
@@ -90,3 +90,9 @@ jobs:
           pnpm --dir ui run build
           test -s ui/dist/index.html
           test -s ui/dist/service-worker.js
+
+      - name: Run linting and formatting checks
+        if: steps.changes.outputs.code == 'true'
+        run: |
+          pnpm --dir ui run lint
+          pnpm --dir ui oxfmt --check
