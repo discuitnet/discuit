@@ -16,7 +16,7 @@
     "clean": "rm -rf dist/*"
   },
   "dependencies": {
-    "@redux-devtools/extension": "^4.0.0",
+    "@reduxjs/toolkit": "^2.14.0",
     "clsx": "^2.1.1",
     "history": "^4.10.1",
     "prop-types": "^15.8.1",
@@ -31,8 +31,6 @@
     "react-redux": "^7.2.9",
     "react-router": "^5.3.4",
     "react-router-dom": "^5.3.4",
-    "redux": "^4.2.1",
-    "redux-thunk": "^2.4.2",
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {

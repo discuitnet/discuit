@@ -1,4 +1,3 @@
-import { ThunkDispatch } from 'redux-thunk';
 import { APIError, mfetch, mfetchjson } from '../helper';
 import { getDevicePreference, setDevicePreference } from '../pages/Settings/devicePrefs';
 import {
@@ -525,7 +524,7 @@ export const sidebarCommunitiesUpdated = (communities?: Community[] | null) => {
 
 export const allCommunitiesUpdated =
   (communities: Community[] = []) =>
-  (dispatch: ThunkDispatch<RootState, unknown, UnknownAction>) => {
+  (dispatch: AppDispatch) => {
     communities = communities || [];
     const names = communities.map((item) => item.name);
     dispatch({
@@ -669,7 +668,7 @@ export const showAppInstallButton = (show: boolean, deferredPrompt?: Event) => {
 
 export const muteUser =
   (userId: string, username: string) =>
-  async (dispatch: ThunkDispatch<RootState, unknown, UnknownAction>) => {
+  async (dispatch: AppDispatch) => {
     try {
       const mutes = await mfetchjson('/api/mutes', {
         method: 'POST',
@@ -692,7 +691,7 @@ export const muteUser =
 
 export const unmuteUser =
   (userId: string, username: string) =>
-  async (dispatch: ThunkDispatch<RootState, unknown, UnknownAction>) => {
+  async (dispatch: AppDispatch) => {
     try {
       const res = await mfetch(`/api/mutes/users/${userId}`, {
         method: 'DELETE',
@@ -710,7 +709,7 @@ export const unmuteUser =
 
 export const muteCommunity =
   (communityId: string, communityName: string) =>
-  async (dispatch: ThunkDispatch<RootState, unknown, UnknownAction>) => {
+  async (dispatch: AppDispatch) => {
     try {
       const mutes = await mfetchjson('/api/mutes', {
         method: 'POST',
@@ -727,7 +726,7 @@ export const muteCommunity =
 
 export const unmuteCommunity =
   (communityId: string, communityName: string) =>
-  async (dispatch: ThunkDispatch<RootState, unknown, UnknownAction>) => {
+  async (dispatch: AppDispatch) => {
     try {
       const res = await mfetch(`/api/mutes/communities/${communityId}`, {
         method: 'DELETE',
