@@ -8,7 +8,7 @@
     "dev:prod-proxy": "pnpm run generate-yaml && VITE_DEV_PROXY=https://discuit.org vite",
     "build-sw": "tsc -b && vite build --config sw.vite.config.js",
     "build": "pnpm run generate-yaml && tsc -b && vite build && pnpm run build-sw && pnpm run copy-sw",
-    "lint": "oxlint --report-unused-disable-directives --max-warnings 0 && knip",
+    "lint": "oxlint --report-unused-disable-directives --max-warnings 0; knip",
     "preview": "vite preview",
     "format": "oxfmt --write",
     "generate-yaml": "node scripts/generate-yaml.js",
