@@ -43,7 +43,7 @@
     "@types/react-redux": "^7.1.35",
     "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^6.2.1",
-    "knip": "^6.44.1",
+    "knip": "^6.44.2",
     "oxfmt": "^0.77.0",
     "oxlint": "^1.92.0",
     "sass-embedded": "^1.108.1",
