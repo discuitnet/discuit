@@ -6,7 +6,7 @@ import { RootState } from '../store';
 import { ButtonClose } from './Button';
 import Modal from './Modal';
 
-export interface ReportModalProps {
+interface ReportModalProps {
   target: { id: unknown } & unknown;
   targetType: string;
   noButton?: boolean;

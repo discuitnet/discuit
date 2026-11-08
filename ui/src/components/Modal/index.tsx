@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { useHistory } from 'react-router-dom';
 import { getScrollbarWidth } from '../../helper';
 
-export interface ModalProps {
+interface ModalProps {
   open: boolean;
   onClose: () => void;
   noEscapeClose?: boolean;

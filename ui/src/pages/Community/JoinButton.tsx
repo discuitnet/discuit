@@ -7,7 +7,7 @@ import { communityAdded, selectCommunity } from '../../slices/communitiesSlice';
 import { loginPromptToggled, MainState, snackAlertError } from '../../slices/mainSlice';
 import { RootState } from '../../store';
 
-export interface JoinButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface JoinButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   community: Community;
 }
 

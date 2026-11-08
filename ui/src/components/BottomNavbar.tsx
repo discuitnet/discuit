@@ -129,7 +129,7 @@ function useNavbarItem(to: string): {
 const defaultVariant = 'bold';
 
 // This element is copy-pasted and slightly modified from SVGs.tsx.
-export function SVGHome({ variant = defaultVariant, ...props }: SVGProps) {
+function SVGHome({ variant = defaultVariant, ...props }: SVGProps) {
   const _props = {
     width: '24',
     height: '24',
@@ -166,7 +166,7 @@ export function SVGHome({ variant = defaultVariant, ...props }: SVGProps) {
   );
 }
 
-export function SVGCommunities({ variant = defaultVariant, ...props }: SVGProps) {
+function SVGCommunities({ variant = defaultVariant, ...props }: SVGProps) {
   const _props = {
     width: '24',
     height: '24',
@@ -209,7 +209,7 @@ export function SVGCommunities({ variant = defaultVariant, ...props }: SVGProps)
   );
 }
 
-export function SVGAdd({ variant = defaultVariant, ...props }: SVGProps) {
+function SVGAdd({ variant = defaultVariant, ...props }: SVGProps) {
   const _props = {
     width: '24',
     height: '24',
@@ -252,7 +252,7 @@ export function SVGAdd({ variant = defaultVariant, ...props }: SVGProps) {
   );
 }
 
-export function SVGSearch({ variant = defaultVariant, ...props }: SVGProps) {
+function SVGSearch({ variant = defaultVariant, ...props }: SVGProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

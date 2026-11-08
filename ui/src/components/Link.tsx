@@ -1,6 +1,6 @@
 import { useLinkClick } from '../hooks';
 
-export interface LinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
+interface LinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   to: string;
   replace?: boolean;
   children?: React.ReactNode;

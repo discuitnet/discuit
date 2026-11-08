@@ -3,7 +3,7 @@ import { onEscapeKey } from '../helper';
 import { useIsMobile } from '../hooks';
 import Modal from './Modal';
 
-export interface DropdownProps extends React.HTMLAttributes<HTMLDivElement> {
+interface DropdownProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
   style?: React.CSSProperties;
   target: React.ReactNode;
@@ -130,7 +130,7 @@ const Dropdown = ({
 
 export default Dropdown;
 
-export const DropdownDefaultTarget = ({ children }: { children: React.ReactNode }) => {
+const DropdownDefaultTarget = ({ children }: { children: React.ReactNode }) => {
   return (
     <button className="button-with-icon is-text-first">
       <svg

@@ -61,6 +61,4 @@ const Comment = ({
   );
 };
 
-export default Comment;
-
 export const MemorizedComment = React.memo(Comment);

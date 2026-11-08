@@ -1,7 +1,7 @@
 import { Image as ImageType } from '../serverTypes';
 import Image, { ImageProps } from './Image';
 
-export interface ServerImageProps extends ImageProps {
+interface ServerImageProps extends ImageProps {
   image: ImageType;
 }
 

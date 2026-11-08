@@ -3,7 +3,7 @@ import React from 'react';
 import Modal from '.';
 import { ButtonClose } from '../Button';
 
-export interface ModalConfirmProps {
+interface ModalConfirmProps {
   open: boolean;
   onClose: () => void;
   onConfirm: () => void;

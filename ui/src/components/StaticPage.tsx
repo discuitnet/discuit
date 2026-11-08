@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import Footer from './Footer';
 
-export interface StaticPageProps extends React.HTMLAttributes<HTMLDivElement> {
+interface StaticPageProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   title?: string;
   noWrap?: boolean;

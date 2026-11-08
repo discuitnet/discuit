@@ -74,7 +74,7 @@ export function useInputUsername(
   return [value, handleChange];
 }
 
-export function useWindowSize() {
+function useWindowSize() {
   const getSize = () => {
     return {
       width: window.innerWidth,
@@ -93,10 +93,6 @@ export function useWindowSize() {
 
 export function useWindowWidth() {
   return useWindowSize().width;
-}
-
-export function useWindowHeight() {
-  return useWindowSize().height;
 }
 
 export const mobileBreakpointWidth = 768;
@@ -366,11 +362,6 @@ export function useTheme() {
   }, []);
   const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
   return { theme, setTheme, toggleTheme };
-}
-
-export function useForceUpdate() {
-  const [, forceUpdate] = useReducer((x) => x + 1, 0);
-  return forceUpdate;
 }
 
 export function useMuteUser({ userId, username }: { userId: string; username: string }) {

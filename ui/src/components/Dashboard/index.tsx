@@ -11,7 +11,7 @@ interface DashboardSidebarItem {
   to?: string;
 }
 
-export interface DashboardProps {
+interface DashboardProps {
   className?: string;
   title?: React.ReactNode;
   children?: React.ReactNode;

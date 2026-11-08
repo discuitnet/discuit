@@ -9,7 +9,7 @@ import { Post } from '../../slices/postsSlice';
 import { RootState } from '../../store';
 import { MemorizedComment } from './Comment';
 
-export interface CommentSectionProps {
+interface CommentSectionProps {
   post: Post;
   community: Community;
   user: User | null;

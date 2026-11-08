@@ -210,34 +210,3 @@ export const ButtonNotifications = ({
     </Button>
   );
 };
-
-export const ButtonUpload = ({
-  children,
-  onChange,
-  ...rest
-}: {
-  children?: React.ReactNode;
-  onChange?: (files: FileList | null) => void;
-}) => {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const handleInputChange = () => {
-    if (!(onChange && inputRef.current)) {
-      return;
-    }
-    onChange(inputRef.current.files);
-  };
-  return (
-    <div className="button-upload">
-      <button onClick={() => inputRef.current && inputRef.current.click()} {...rest}>
-        {children}
-      </button>
-      <input
-        ref={inputRef}
-        type="file"
-        name="image"
-        style={{ visibility: 'hidden', width: 0, height: 0 }}
-        onChange={handleInputChange}
-      />
-    </div>
-  );
-};

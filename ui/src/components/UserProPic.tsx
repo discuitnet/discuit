@@ -6,7 +6,7 @@ import { Image } from '../serverTypes';
 import { SVGEdit } from '../SVGs';
 import Link from './Link';
 
-export interface ProfilePictureProps extends React.HTMLAttributes<HTMLDivElement> {
+interface ProfilePictureProps extends React.HTMLAttributes<HTMLDivElement> {
   name: string;
   proPic?: Image;
   size?: 'small' | 'standard' | 'large';
@@ -52,7 +52,7 @@ ProfilePicture.propTypes = {
   size: PropTypes.string,
 };
 
-export interface DefaultProfilePictureProps extends React.HTMLAttributes<HTMLDivElement> {
+interface DefaultProfilePictureProps extends React.HTMLAttributes<HTMLDivElement> {
   name: string;
 }
 
@@ -103,7 +103,7 @@ DefaultProfilePicture.propTypes = {
   name: PropTypes.string.isRequired,
 };
 
-export interface UserProPicProps extends React.HTMLAttributes<HTMLDivElement> {
+interface UserProPicProps extends React.HTMLAttributes<HTMLDivElement> {
   username: string;
   proPic: Image | null;
   size?: ProfilePictureProps['size'];

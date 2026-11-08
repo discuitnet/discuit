@@ -4,11 +4,7 @@ import { Link } from 'react-router-dom';
 import MarkdownTextarea from '../../components/MarkdownTextarea';
 import { mfetch } from '../../helper';
 import { Comment } from '../../serverTypes';
-import {
-  loginPromptToggled,
-  snackAlert,
-  snackAlertError,
-} from '../../slices/mainSlice';
+import { loginPromptToggled, snackAlert, snackAlertError } from '../../slices/mainSlice';
 import { Post } from '../../slices/postsSlice';
 import { RootState } from '../../store';
 import AsUser from './AsUser';
@@ -22,7 +18,7 @@ function appendTextSelection(comment: string, textSelection?: string) {
   return `> ${textSelection}\n\n`;
 }
 
-export interface AddCommentProps {
+interface AddCommentProps {
   post: Post;
   parentCommentId: string | null;
   onSuccess: (comment: Comment) => void;

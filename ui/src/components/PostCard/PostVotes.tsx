@@ -6,7 +6,7 @@ import { loginPromptToggled, snackAlertError } from '../../slices/mainSlice';
 import { postAdded } from '../../slices/postsSlice';
 import { RootState } from '../../store';
 
-export interface PostVotesProps {
+interface PostVotesProps {
   className?: string;
   post: Post;
   sticky?: boolean;

@@ -1,7 +1,7 @@
 import React, { useEffect, useImperativeHandle, useRef } from 'react';
 import { adjustTextareaHeight, isValidHttpUrl } from '../helper';
 
-export interface MarkdownTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+interface MarkdownTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   autoAdjustHeight?: boolean;
   onQuickSubmit?: () => void;
   onCancel?: () => void;

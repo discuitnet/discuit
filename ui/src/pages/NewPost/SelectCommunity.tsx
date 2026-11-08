@@ -6,7 +6,7 @@ import { useDelayedEffect } from '../../hooks';
 import { Community } from '../../serverTypes';
 import { snackAlertError } from '../../slices/mainSlice';
 
-export interface SelectCommunityProps {
+interface SelectCommunityProps {
   initial?: string;
   onFocus?: () => void;
   onChange: (community: Community) => void;

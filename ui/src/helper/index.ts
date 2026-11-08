@@ -62,10 +62,6 @@ export function timeAgo(date: string | Date, suffix = ' ago', justNow = true, sh
   return `${y}${short ? 'y' : ' year'}${short || y === 1 ? '' : 's'}${suffix}`;
 }
 
-export function isScrollbarVisible() {
-  return document.documentElement.clientHeight < document.body.scrollHeight;
-}
-
 let scrollWidth: number | null = null;
 
 export function getScrollbarWidth(): number {
@@ -91,15 +87,6 @@ export function getScrollbarWidth(): number {
 
   scrollWidth = scrollbarWidth;
   return scrollbarWidth;
-}
-
-export function randWords(noWords = 5): string {
-  const words = ['apple', 'tree', 'nikola', 'fun', 'gatsby', 'team', 'sensei', 'water', 'air'];
-  let str = '';
-  for (let i = 0; i < noWords; i++) {
-    str += words[Math.floor(Math.random() * (words.length - 1))] + ' ';
-  }
-  return str;
 }
 
 export function onKeyEnter<T = HTMLDivElement>(
@@ -227,11 +214,6 @@ export function userGroupSingular(type: UserGroup, long = false): string {
     case 'normal':
       return long ? 'user' : 'user';
   }
-}
-
-export function capitalizeFirstWord(str: string): string {
-  if (str === '') return '';
-  return str[0].toUpperCase() + str.substring(1);
 }
 
 export function toTitleCase(str: string): string {

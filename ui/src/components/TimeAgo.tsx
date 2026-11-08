@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { timeAgo } from '../helper';
 
-export interface TimeAgoProps extends React.HTMLAttributes<HTMLElement> {
+interface TimeAgoProps extends React.HTMLAttributes<HTMLElement> {
   time: string | Date;
   inline?: boolean;
   prefix?: string;

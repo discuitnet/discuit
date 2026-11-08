@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import React, { FormEvent, useCallback } from 'react';
 import { adjustTextareaHeight } from '../helper';
 
-export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   adjustable?: boolean;
   onInput?: React.FormEventHandler<HTMLTextAreaElement>;
 }

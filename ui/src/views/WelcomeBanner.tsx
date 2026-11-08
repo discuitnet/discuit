@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { createCommunityModalOpened, MainState, signupModalOpened } from '../slices/mainSlice';
 import { RootState } from '../store';
 
-export interface WelcomeBannerProps extends React.HTMLAttributes<HTMLDivElement> {
+interface WelcomeBannerProps extends React.HTMLAttributes<HTMLDivElement> {
   hideIfMember?: boolean;
 }
 

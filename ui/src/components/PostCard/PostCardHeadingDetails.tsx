@@ -11,7 +11,7 @@ import TimeAgo from '../TimeAgo';
 import { UserLink } from '../UserProPic';
 import CommunityLink from './CommunityLink';
 
-export interface PostCardHeadingDetailsProps {
+interface PostCardHeadingDetailsProps {
   post: Post;
   userGroup?: UserGroup | null;
   showEdited?: boolean;

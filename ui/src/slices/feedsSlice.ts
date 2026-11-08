@@ -3,7 +3,7 @@ import { AppDispatch, RootState, UnknownAction } from '../store';
 import { communityAdded } from './communitiesSlice';
 import { multiplePostsAdded } from './postsSlice';
 
-export interface Feed {
+interface Feed {
   keys: string[];
   next: string | null;
   inView: string[];
@@ -39,10 +39,10 @@ export class FeedItem<T = unknown> {
   }
 }
 
-export const typeFeedUpdated = 'feeds/feedUpdated';
-export const typeFeedReloaded = 'feeds/feedReloaded';
-export const typeFeedItemHeightChanged = 'feeds/feedItemHeightChanged';
-export const typeFeedItemsInViewUpdated = 'feeds/feedItemsInViewUpdated';
+const typeFeedUpdated = 'feeds/feedUpdated';
+const typeFeedReloaded = 'feeds/feedReloaded';
+const typeFeedItemHeightChanged = 'feeds/feedItemHeightChanged';
+const typeFeedItemsInViewUpdated = 'feeds/feedItemsInViewUpdated';
 
 export default function feedsReducer(
   state: FeedsState = initialState,

@@ -17,7 +17,7 @@ import Spinner from '../Spinner';
 import FeedItemComponent from './FeedItem';
 import FeedSkeleton from './FeedSkeleton';
 
-export interface FeedProps<FeedItemType> {
+interface FeedProps<FeedItemType> {
   className?: string;
   compact?: boolean;
   feedId: string;

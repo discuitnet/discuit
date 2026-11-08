@@ -274,7 +274,7 @@ const Comment = ({
 
   const location = useLocation();
   const params = new URLSearchParams(location.search);
-  
+
   const highlighted = (() => {
     const ts = new Date(comment.createdAt).getTime() / 1000,
       from = parseInt(params.get('highlightFrom') || ''),
@@ -482,7 +482,10 @@ const Comment = ({
         <div className="dropdown-item" onClick={() => setConfirmDeleteOpen(true, 'admins')}>
           Delete
         </div>
-        <div className={`dropdown-item${isLocking ? ' is-disabled' : ''}`} onClick={() => !isLocking && handleLockComment('admins')}>
+        <div
+          className={`dropdown-item${isLocking ? ' is-disabled' : ''}`}
+          onClick={() => !isLocking && handleLockComment('admins')}
+        >
           {isLocking ? 'Locking...' : comment.locked ? 'Unlock comment' : 'Lock comment'}
         </div>
         {user && user.id === comment.userId && (
@@ -561,7 +564,10 @@ const Comment = ({
             </div>
           )}
           {comment.locked && (
-            <div className="post-comment-head-item post-comment-locked" title="This comment is locked. No new replies can be added.">
+            <div
+              className="post-comment-head-item post-comment-locked"
+              title="This comment is locked. No new replies can be added."
+            >
               Locked
             </div>
           )}
@@ -808,8 +814,6 @@ const Comment = ({
     </div>
   );
 };
-
-export default Comment;
 
 export const MemorizedComment = React.memo(Comment);
 

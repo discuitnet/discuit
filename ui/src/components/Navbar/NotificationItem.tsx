@@ -13,7 +13,7 @@ import Dropdown from '../Dropdown';
 import Image from '../Image';
 import TimeAgo from '../TimeAgo';
 
-export interface NotificationItemProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
+interface NotificationItemProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   notification: NotificationView;
 }
 
