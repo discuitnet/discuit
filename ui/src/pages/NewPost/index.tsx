@@ -2,8 +2,7 @@ import clsx from 'clsx';
 import React, { useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
-import { useHistory } from 'react-router';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useHistory } from 'react-router-dom';
 import { getGlobalAppData } from '../../appData';
 import Link from '../../components/Link';
 import MarkdownTextarea from '../../components/MarkdownTextarea';
@@ -619,14 +618,13 @@ const NewPost = () => {
               Submit
             </button>
             <button onClick={handleCancel}>Cancel</button>
-            {
-              isAltMissing()
-                ? <div className="form-field">
-                    <div className="form-error text-center">Your settings require alt text.</div>
-                  </div>
-                : ''
-            }
-
+            {isAltMissing() ? (
+              <div className="form-field">
+                <div className="form-error text-center">Your settings require alt text.</div>
+              </div>
+            ) : (
+              ''
+            )}
           </div>
         </div>
         <div className="new-page-sidebar">
@@ -642,13 +640,13 @@ const NewPost = () => {
             Submit
           </button>
           <button onClick={handleCancel}>Cancel</button>
-          {
-            isAltMissing()
-              ? <div className="form-field">
-                  <div className="form-error text-center">Your settings require alt text.</div>
-                </div>
-              : ''
-          }
+          {isAltMissing() ? (
+            <div className="form-field">
+              <div className="form-error text-center">Your settings require alt text.</div>
+            </div>
+          ) : (
+            ''
+          )}
         </div>
       </div>
     </div>

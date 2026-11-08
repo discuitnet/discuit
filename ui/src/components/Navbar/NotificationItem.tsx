@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { useHistory } from 'react-router';
+import { useHistory } from 'react-router-dom';
 import { mfetchjson } from '../../helper';
 import { NotificationView } from '../../serverTypes';
 import {

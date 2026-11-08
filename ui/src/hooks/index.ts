@@ -1,7 +1,7 @@
 import { Location } from 'history';
 import { MouseEventHandler, useEffect, useInsertionEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useHistory, useLocation } from 'react-router';
+import { useHistory, useLocation } from 'react-router-dom';
 import { APIError, mfetch, mfetchjson, usernameLegalLetters } from '../helper';
 import { List } from '../serverTypes';
 import { ListsFilter, ListsOrder, selectUsersLists, usersListsAdded } from '../slices/listsSlice';

@@ -29,7 +29,6 @@
     "react-intersection-observer": "^11.0.1",
     "react-markdown": "^10.1.0",
     "react-redux": "^7.2.9",
-    "react-router": "^5.3.4",
     "react-router-dom": "^5.3.4",
     "remark-gfm": "^4.0.1"
   },
@@ -42,7 +41,6 @@
     "@types/react-dom": "^18.3.7",
     "@types/react-google-recaptcha": "^2.1.9",
     "@types/react-redux": "^7.1.35",
-    "@types/react-router": "^5.1.20",
     "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^6.2.1",
     "knip": "^6.44.1",
