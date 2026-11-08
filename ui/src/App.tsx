@@ -269,7 +269,11 @@ const AppSwitch = () => {
   return (
     <>
       <Switch>
-        {import.meta.env.MODE !== 'production' && <Route path="/elements" component={Elements} />}
+        {import.meta.env.MODE !== 'production' && (
+          <Route path="/elements">
+            <Elements />
+          </Route>
+        )}
         {import.meta.env.MODE !== 'production' && (
           <Route path="/test-dashboard">
             <ExampleDashboard />
@@ -280,17 +284,23 @@ const AppSwitch = () => {
           <Search />
         </Route>
         */}
-        <ProtectedRoute path="/notifications">
-          <div className="page-content page-notifications wrap">
-            <NotificationsView />
-          </div>
-        </ProtectedRoute>
-        <ProtectedRoute path="/new">
-          <NewPost />
-        </ProtectedRoute>
-        <ProtectedRoute path="/settings">
-          <Settings />
-        </ProtectedRoute>
+        <Route path="/notifications">
+          <Protected>
+            <div className="page-content page-notifications wrap">
+              <NotificationsView />
+            </div>
+          </Protected>
+        </Route>
+        <Route path="/new">
+          <Protected>
+            <NewPost />
+          </Protected>
+        </Route>
+        <Route path="/settings">
+          <Protected>
+            <Settings />
+          </Protected>
+        </Route>
         <Route exact path="/login">
           <Login />
         </Route>
@@ -300,9 +310,11 @@ const AppSwitch = () => {
         <Route exact path="/communities">
           <AllCommunities />
         </Route>
-        <ProtectedRoute path="/admin">
-          <AdminDashboard />
-        </ProtectedRoute>
+        <Route path="/admin">
+          <Protected>
+            <AdminDashboard />
+          </Protected>
+        </Route>
         <Route exact path="/about">
           <About />
         </Route>
@@ -333,9 +345,11 @@ const AppSwitch = () => {
         <Route exact path="/:name">
           <Community />
         </Route>
-        <ProtectedRoute path="/:name/modtools">
-          <Modtools />
-        </ProtectedRoute>
+        <Route path="/:name/modtools">
+          <Protected>
+            <Modtools />
+          </Protected>
+        </Route>
         <Route exact path={['/:name/post/:id', '/:name/post/:id/:commentId']}>
           <Post />
         </Route>
@@ -351,25 +365,19 @@ const AppSwitch = () => {
  * Redirects the logged out user to the login page.
  *
  */
-const ProtectedRoute = ({ children, path }: { children: React.ReactNode; path: string }) => {
+const Protected = ({ children }: { children: React.ReactNode }) => {
   const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const loggedIn = user !== null;
+  const location = useLocation();
 
-  return (
-    <Route
-      path={path}
-      render={({ location }) =>
-        loggedIn ? (
-          children
-        ) : (
-          <Redirect
-            to={{
-              pathname: '/login',
-              state: { from: location },
-            }}
-          />
-        )
-      }
+  return loggedIn ? (
+    children
+  ) : (
+    <Redirect
+      to={{
+        pathname: '/login',
+        state: { from: location },
+      }}
     />
   );
 };
