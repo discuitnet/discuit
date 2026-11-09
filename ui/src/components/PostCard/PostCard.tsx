@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { mfetchjson, omitWWWFromHostname, stringCount } from '../../helper';
 import { useIsMobile } from '../../hooks';
 import { snackAlertError } from '../../slices/mainSlice';
@@ -42,7 +42,7 @@ const PostCard = ({
   feedItemKey,
   canHideFromFeed = false,
 }: PostCardProps) => {
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const [post, setPost] = useState(initialPost);
   useEffect(() => {
@@ -67,7 +67,7 @@ const PostCard = ({
       if (target !== '_self') {
         window.open(postURL);
       } else {
-        history.push(postURL);
+        navigate(postURL);
       }
     }
   };

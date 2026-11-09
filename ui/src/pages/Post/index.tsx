@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
-import { useHistory, useParams } from 'react-router-dom';
+import {
+  Location,
+  NavigationType,
+  useNavigate,
+  useNavigationType,
+  useParams,
+} from 'react-router-dom';
 import Dropdown from '../../components/Dropdown';
 import MiniFooter from '../../components/MiniFooter';
 import PostVotes from '../../components/PostCard/PostVotes';
@@ -47,11 +53,14 @@ import PostVotesBar from './PostVotesBar';
 
 const Post = () => {
   const { id, commentId, communityName } = useParams<{ [key: string]: string }>(); // id is post.publicId
+  if (!id) throw new Error('id param is required');
+  if (!communityName) throw new Error('community name param is required');
 
   const dispatch = useDispatch();
-  const history = useHistory();
+  const navigate = useNavigate();
+  const navigationType = useNavigationType();
 
-  const location = useLocation<{ fromNotifications: boolean }>();
+  const location: Location<{ fromNotifications: boolean }> = useLocation();
   const fromNotifications = Boolean(location.state ? location.state.fromNotifications : false);
 
   const user = useSelector<RootState>(
@@ -72,11 +81,11 @@ const Post = () => {
   const [postLoading, setPostLoading] = useState(post ? 'loaded' : 'loading');
   const shouldCommentsLoad = useCallback(() => {
     if (!(comments && post)) return true;
-    const isPop = history.action === 'POP';
+    const isPop = navigationType === NavigationType.Pop;
     if (fromNotifications) return !isPop;
     if (post.fetchedAt > comments.fetchedAt) return !isPop;
     return false;
-  }, [post, history.action, fromNotifications, comments]);
+  }, [post, navigationType, fromNotifications, comments]);
   const [commentsLoading, setCommentsLoading] = useState(
     shouldCommentsLoad() ? 'loading' : 'loaded'
   );
@@ -118,10 +127,10 @@ const Post = () => {
         let newPathname = '';
         seps.forEach((sep) => (newPathname += `${sep}/`));
         newPathname = newPathname.substring(0, newPathname.length - 1);
-        history.replace(`${newPathname}${location.search}${location.hash}`);
+        navigate(`${newPathname}${location.search}${location.hash}`, { replace: true });
       }
     }
-  }, [location, community, post, history]);
+  }, [location, community, post, navigate]);
 
   const handleAddCommentSuccess = (comment: Comment) => {
     dispatch(newCommentAdded(post.publicId, comment));
@@ -440,7 +449,7 @@ const Post = () => {
                   <button
                     className="button-text"
                     onClick={() =>
-                      history.push(`/new?edit=${post.publicId}`, { fromPostPage: true })
+                      navigate(`/new?edit=${post.publicId}`, { state: { fromPostPage: true } })
                     }
                   >
                     Edit

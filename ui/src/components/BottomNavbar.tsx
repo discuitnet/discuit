@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { cloneElement, useLayoutEffect, useMemo } from 'react';
 import { useSelector } from 'react-redux';
-import { useHistory, useLocation } from 'react-router-dom';
+import { NavigationType, useLocation, useNavigationType } from 'react-router-dom';
 import { useLinkClick } from '../hooks';
 import { RootState } from '../store';
 import { SVGProps } from '../SVGs';
@@ -20,12 +20,12 @@ export default function BottomNavbar() {
     return [homePath, communitiesPath, notificationsPath, searchPath];
   }, []);
 
-  const history = useHistory();
+  const navigationType = useNavigationType();
   const location = useLocation();
   useLayoutEffect(() => {
     const state = location.state as { fromBottomNav: boolean };
     if (
-      history.action !== 'POP' &&
+      navigationType !== NavigationType.Pop &&
       tabPaths.includes(location.pathname) &&
       state &&
       state.fromBottomNav
@@ -39,7 +39,7 @@ export default function BottomNavbar() {
         scrollPositions[location.pathname] = window.scrollY;
       }
     };
-  }, [location, history, tabPaths]);
+  }, [location, navigationType, tabPaths]);
 
   return (
     <div className="bottom-navbar">

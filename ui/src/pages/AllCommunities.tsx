@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Button, { ButtonClose } from '../components/Button';
 import CommunityProPic from '../components/CommunityProPic';
 import Dropdown from '../components/Dropdown';
@@ -304,12 +304,12 @@ const RequestCommunityButton = ({
 const ListItem = React.memo(function ListItem({ community }: { community: Community }) {
   const to = `/${community.name}`;
 
-  const history = useHistory();
+  const navigate = useNavigate();
   const ref = useRef(null);
 
   const handleClick: React.MouseEventHandler = (event) => {
     if ((event.target as Element).tagName !== 'BUTTON') {
-      history.push(to);
+      navigate(to);
     }
   };
 

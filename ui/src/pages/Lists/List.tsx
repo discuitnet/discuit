@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
-import { useHistory, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ButtonClose, ButtonMore } from '../../components/Button';
 import Dropdown from '../../components/Dropdown';
 import Feed from '../../components/Feed';
@@ -30,6 +30,8 @@ import { MemorizedComment } from '../User/Comment';
 const List = () => {
   const dispatch = useDispatch();
   const { username, listName: listname } = useParams<{ [key: string]: string }>();
+  if (!username) throw new Error('username param is required');
+  if (!listname) throw new Error('list name param is required');
 
   const [editModalOpen, setEditModalOpen] = useState(false);
 
@@ -139,7 +141,7 @@ const List = () => {
     }
   };
 
-  const history = useHistory();
+  const navigate = useNavigate();
   const handleDeleteList = async () => {
     if (!confirm('Are you sure you want to delete the list?')) {
       return;
@@ -148,7 +150,7 @@ const List = () => {
       await mfetchjson(listEndpoint, { method: 'DELETE' });
       const res = await mfetchjson('/api/_initial');
       dispatch(listsAdded(res.lists));
-      history.replace(`/@${list?.username}/lists/${name}`);
+      navigate(`/@${list?.username}/lists/${listname}`, { replace: true });
     } catch (error) {
       dispatch(snackAlertError(error));
     }
@@ -410,7 +412,7 @@ export const EditListForm = ({
     dispatch(listsAdded(newLists));
   };
 
-  const history = useHistory();
+  const navigate = useNavigate();
   const updateList = async () => {
     if (!list) {
       return;
@@ -426,7 +428,7 @@ export const EditListForm = ({
     });
     const res = await mfetchjson('/api/_initial');
     dispatch(listsAdded(res.lists));
-    history.replace(`/@${list.username}/lists/${name}`);
+    navigate(`/@${list.username}/lists/${name}`, { replace: true });
     dispatch(listAdded(list.username, newList));
   };
 

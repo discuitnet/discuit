@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { mfetchjson } from '../../helper';
 import { NotificationView } from '../../serverTypes';
 import {
@@ -57,7 +57,7 @@ const NotificationItem = ({ notification, ...rest }: NotificationItemProps) => {
   };
 
   const actionsRef = useRef<HTMLDivElement>(null);
-  const history = useHistory();
+  const navigate = useNavigate();
   const handleClick = (event: React.MouseEvent, to: string) => {
     event.preventDefault();
     const target = event.target as Node | null;
@@ -70,8 +70,10 @@ const NotificationItem = ({ notification, ...rest }: NotificationItemProps) => {
       if (to === '#') {
         return;
       }
-      history.push(to, {
-        fromNotifications: true,
+      navigate(to, {
+        state: {
+          fromNotifications: true,
+        },
       });
     }
   };

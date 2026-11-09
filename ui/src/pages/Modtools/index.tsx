@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, Redirect, Route, Switch, useParams, useRouteMatch } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useParams } from 'react-router-dom';
 import Dashboard from '../../components/Dashboard';
 import { APIError, mfetch } from '../../helper';
 import { communityAdded, selectCommunity } from '../../slices/communitiesSlice';
@@ -103,6 +103,7 @@ const svgs = {
 const Modtools = () => {
   const dispatch = useDispatch();
   const { name: communityName } = useParams<{ [key: string]: string }>();
+  if (!communityName) throw new Error('community name param is required');
 
   // Modtools resides in a protected router; hence there is always a logged in user.
   const user = (useSelector<RootState>((state) => state.main.user) as MainState['user'])!;
@@ -133,8 +134,6 @@ const Modtools = () => {
   }, [communityName, community, dispatch]);
 
   const getSidebarMenuItemLink = (page: string) => `/${communityName}/modtools/${page}`;
-
-  const { path } = useRouteMatch();
 
   if (loading !== 'loaded') {
     return <PageNotLoaded loading={loading} />;
@@ -174,35 +173,26 @@ const Modtools = () => {
       <Helmet>
         <title>Modtools</title>
       </Helmet>
-      <Switch>
-        <Route exact path={path}>
-          <Redirect to={`/${communityName}/modtools/settings`} />
-        </Route>
-        <Route exact path={`${path}/settings`}>
-          <Settings community={community} />
-        </Route>
-        <Route path={`${path}/reports`}>
-          <Reports community={community} />
-        </Route>
-        <Route path={`${path}/removed`}>
-          <Removed community={community} filter="deleted" title="Removed" />
-        </Route>
-        <Route path={`${path}/locked`}>
-          <Removed community={community} filter="locked" title="Locked" />
-        </Route>
-        <Route path={`${path}/banned`}>
-          <Banned community={community} />
-        </Route>
-        <Route path={`${path}/mods`}>
-          <Mods community={community} />
-        </Route>
-        <Route path={`${path}/rules`}>
-          <Rules community={community} />
-        </Route>
-        <Route path="*">
-          <div className="modtools-content flex flex-center">Not found.</div>
-        </Route>
-      </Switch>
+      <Routes>
+        <Route path="/" element={<Navigate to={`/${communityName}/modtools/settings`} replace />} />
+        <Route path="/settings" element={<Settings community={community} />} />
+        <Route path="/reports" element={<Reports community={community} />} />
+        <Route
+          path="/removed"
+          element={<Removed community={community} filter="deleted" title="Removed" />}
+        />
+        <Route
+          path="/locked"
+          element={<Removed community={community} filter="locked" title="Locked" />}
+        />
+        <Route path="/banned" element={<Banned community={community} />} />
+        <Route path="/mods" element={<Mods community={community} />} />
+        <Route path="/rules" element={<Rules community={community} />} />
+        <Route
+          path="*"
+          element={<div className="modtools-content flex flex-center">Not found.</div>}
+        />
+      </Routes>
     </Dashboard>
   );
 };

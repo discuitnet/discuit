@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
-import { Redirect, Route, Switch, useHistory, useLocation } from 'react-router-dom';
+import {
+  Location,
+  Navigate,
+  NavigationType,
+  Route,
+  Routes,
+  useLocation,
+  useNavigationType,
+} from 'react-router-dom';
 import { getGlobalAppData } from './appData';
 import AppUpdate from './AppUpdate';
 import BottomNavbar from './components/BottomNavbar';
@@ -268,95 +276,74 @@ export default App;
 const AppSwitch = () => {
   return (
     <>
-      <Switch>
+      <Routes>
+        {import.meta.env.MODE !== 'production' && <Route path="/elements" element={<Elements />} />}
         {import.meta.env.MODE !== 'production' && (
-          <Route path="/elements">
-            <Elements />
-          </Route>
-        )}
-        {import.meta.env.MODE !== 'production' && (
-          <Route path="/test-dashboard">
+          <Route path="/test-dashboard/*">
             <ExampleDashboard />
           </Route>
         )}
         {/*
-        <Route exact path="/search">
+        <Route path="/search">
           <Search />
         </Route>
         */}
-        <Route path="/notifications">
-          <Protected>
-            <div className="page-content page-notifications wrap">
-              <NotificationsView />
-            </div>
-          </Protected>
-        </Route>
-        <Route path="/new">
-          <Protected>
-            <NewPost />
-          </Protected>
-        </Route>
-        <Route path="/settings">
-          <Protected>
-            <Settings />
-          </Protected>
-        </Route>
-        <Route exact path="/login">
-          <Login />
-        </Route>
-        <Route exact path={['/', '/subscriptions', '/all', '/moderating']}>
-          <Home />
-        </Route>
-        <Route exact path="/communities">
-          <AllCommunities />
-        </Route>
+        <Route
+          path="/notifications"
+          element={
+            <Protected>
+              <div className="page-content page-notifications wrap">
+                <NotificationsView />
+              </div>
+            </Protected>
+          }
+        />
+        <Route
+          path="/new"
+          element={
+            <Protected>
+              <NewPost />
+            </Protected>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <Protected>
+              <Settings />
+            </Protected>
+          }
+        />
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/subscriptions" element={<Home />} />
+        <Route path="/all" element={<Home />} />
+        <Route path="/moderating" element={<Home />} />
+        <Route path="/communities" element={<AllCommunities />} />
         <Route path="/admin">
           <Protected>
             <AdminDashboard />
           </Protected>
         </Route>
-        <Route exact path="/about">
-          <About />
-        </Route>
-        <Route exact path="/guidelines">
-          <Guidelines />
-        </Route>
-        <Route exact path="/moderator-guidelines">
-          <ModeratorGuidelines />
-        </Route>
-        <Route exact path="/terms">
-          <Terms />
-        </Route>
-        <Route exact path="/privacy-policy">
-          <PrivacyPolicy />
-        </Route>
-        <Route exact path="/markdown_guide">
-          <MarkdownGuide />
-        </Route>
-        <Route exact path="/@:username">
-          <User />
-        </Route>
-        <Route exact path="/@:username/lists">
-          <Lists />
-        </Route>
-        <Route exact path="/@:username/lists/:listName">
-          <List />
-        </Route>
-        <Route exact path="/:name">
-          <Community />
-        </Route>
-        <Route path="/:name/modtools">
+        <Route path="/about" element={<About />} />
+        <Route path="/guidelines" element={<Guidelines />} />
+        <Route path="/moderator-guidelines" element={<ModeratorGuidelines />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/markdown_guide" element={<MarkdownGuide />} />
+        <Route path="/@:username" element={<User />} />
+        <Route path="/@:username/lists" element={<Lists />} />
+        <Route path="/@:username/lists/:listName" element={<List />} />
+        <Route path="/:name" element={<Community />} />
+        <Route path="/:name/modtools/*">
           <Protected>
             <Modtools />
           </Protected>
         </Route>
-        <Route exact path={['/:name/post/:id', '/:name/post/:id/:commentId']}>
-          <Post />
-        </Route>
-        <Route path="*">
-          <NotFound />
-        </Route>
-      </Switch>
+        <Route path="/:name/post/:id" element={<Post />} />
+        <Route path="/:name/post/:id/:commentId" element={<Post />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
     </>
   );
 };
@@ -368,18 +355,8 @@ const AppSwitch = () => {
 const Protected = ({ children }: { children: React.ReactNode }) => {
   const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const loggedIn = user !== null;
-  const location = useLocation();
 
-  return loggedIn ? (
-    children
-  ) : (
-    <Redirect
-      to={{
-        pathname: '/login',
-        state: { from: location },
-      }}
-    />
-  );
+  return loggedIn ? children : <Navigate to="/login" state={{ from: location }} replace />;
 };
 
 /*
@@ -389,15 +366,18 @@ const Protected = ({ children }: { children: React.ReactNode }) => {
  *
  */
 const ScrollToTop = () => {
-  const location = useLocation<{ fromBottomNav: boolean }>();
-  const history = useHistory();
+  const location: Location<{ fromBottomNav: boolean }> = useLocation();
+  const navigationType = useNavigationType();
 
   useEffect(() => {
-    if (history.action !== 'POP' && !(location.state && location.state.fromBottomNav)) {
+    if (
+      navigationType !== NavigationType.Pop &&
+      !(location.state && location.state.fromBottomNav)
+    ) {
       window.scrollTo(0, 0);
     }
     getGlobalAppData().historyLength!++;
-  }, [location.pathname, history, location.state]);
+  }, [location.pathname, navigationType, location.state]);
 
   return null;
 };

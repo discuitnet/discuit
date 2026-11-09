@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ButtonMore } from '../../components/Button';
 import Dropdown from '../../components/Dropdown';
 import Feed from '../../components/Feed';
@@ -57,9 +57,10 @@ function formatFilterText(filter = '') {
 
 const User = () => {
   const { username } = useParams<{ username: string }>();
+  if (!username) throw new Error('username param is required');
 
   const dispatch = useDispatch();
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const viewer = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const viewerAdmin = viewer ? viewer.isAdmin : false;
@@ -108,7 +109,7 @@ const User = () => {
   }
   const handleSelectBarChange = (id: string) => {
     if (feedFilter !== id) {
-      history.replace(selectBarOptions.filter((item) => item.id === id)[0].to);
+      navigate(selectBarOptions.filter((item) => item.id === id)[0].to, { replace: true });
     }
   };
 
@@ -142,13 +143,13 @@ const User = () => {
         setUserLoading('loaded');
         if (username !== user.username && username.toLowerCase() === user.username.toLowerCase()) {
           // Username case mismatch.
-          history.replace(`/@${user.username}`);
+          navigate(`/@${user.username}`, { replace: true });
         }
       } catch (error) {
         dispatch(snackAlertError(error));
       }
     })();
-  }, [username, url, feedId, dispatch, history, user]);
+  }, [username, url, feedId, dispatch, navigate, user]);
 
   const handleFeedFetch = async (next: string | null | undefined = null) => {
     const url = next === null ? feedId : `${feedId}&next=${next}`;

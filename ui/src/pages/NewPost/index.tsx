@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
-import { useLocation, useHistory } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { getGlobalAppData } from '../../appData';
 import Link from '../../components/Link';
 import MarkdownTextarea from '../../components/MarkdownTextarea';
@@ -23,14 +23,14 @@ import SelectCommunity from './SelectCommunity';
 
 const NewPost = () => {
   const dispatch = useDispatch();
-  const history = useHistory();
+  const navigate = useNavigate();
   const location = useLocation();
 
   const user = (useSelector<RootState>((state) => state.main.user) as MainState['user'])!;
   const loggedIn = user !== null;
   useEffect(() => {
-    if (!loggedIn) history.push('/login');
-  }, [loggedIn, history]);
+    if (!loggedIn) navigate('/login');
+  }, [loggedIn, navigate]);
 
   const query = useQuery();
   const isEditPost = query.has('edit');
@@ -62,10 +62,10 @@ const NewPost = () => {
     try {
       const rcomm = await mfetchjson(`/api/communities/${ncomm.id}`);
       setCommunity(rcomm);
-      const query = new URLSearchParams(history.location.search);
+      const query = new URLSearchParams(location.search);
       if (query.get('community') !== ncomm.name) {
         query.set('community', ncomm.name);
-        history.replace(`${history.location.pathname}?${query.toString()}`);
+        navigate(`${location.pathname}?${query.toString()}`, { replace: true });
       }
     } catch (error) {
       snackAlertError(error);
@@ -191,12 +191,12 @@ const NewPost = () => {
       const state = location.state as { fromPostPage: boolean };
       if (state && state.fromPostPage) {
         // fromPostPage property is set manually upon edit button click.
-        history.goBack();
+        navigate(-1);
       } else {
-        history.replace(`/${post.communityName}/post/${post.publicId}`);
+        navigate(`/${post.communityName}/post/${post.publicId}`, { replace: true });
       }
     },
-    [location.state, history]
+    [location.state, navigate]
   );
 
   const isPostingDisabled =
@@ -344,9 +344,9 @@ const NewPost = () => {
       if (isUploading) abortController.current.abort();
       const historyLength = getGlobalAppData().historyLength || 0;
       if (historyLength > 1) {
-        history.goBack();
+        navigate(-1);
       } else {
-        history.replace('/');
+        navigate('/', { replace: true });
       }
     }
   };

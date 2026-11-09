@@ -1,7 +1,6 @@
-import { Location } from 'history';
 import { MouseEventHandler, useEffect, useInsertionEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useHistory, useLocation } from 'react-router-dom';
+import { Location, useLocation, useNavigate } from 'react-router-dom';
 import { APIError, mfetch, mfetchjson, usernameLegalLetters } from '../helper';
 import { List } from '../serverTypes';
 import { ListsFilter, ListsOrder, selectUsersLists, usersListsAdded } from '../slices/listsSlice';
@@ -123,7 +122,8 @@ export function useLoading(
 export function usePagination(
   initial = 1
 ): [number, (n: number, clearOtherParms?: boolean) => void] {
-  const history = useHistory();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const query = useQuery();
   let page = initial;
@@ -140,13 +140,13 @@ export function usePagination(
   const setPage = (n: number, clearOtherParms = false) => {
     let path = '';
     if (clearOtherParms) {
-      path = `${history.location.pathname}?page=${n}`;
+      path = `${location.pathname}?page=${n}`;
     } else {
-      const params = new URLSearchParams(history.location.search);
+      const params = new URLSearchParams(location.search);
       params.set('page', n.toString());
-      path = `${history.location.pathname}?${params.toString()}`;
+      path = `${location.pathname}?${params.toString()}`;
     }
-    history.push(path);
+    navigate(path);
   };
 
   return [page, setPage];
@@ -492,7 +492,7 @@ export function useLinkClick<T = Element>(
   replace = false,
   state?: unknown
 ): React.MouseEventHandler<T> {
-  const history = useHistory();
+  const navigate = useNavigate();
   const location = useLocation();
 
   const handleClick: MouseEventHandler<T> = (event) => {
@@ -504,9 +504,9 @@ export function useLinkClick<T = Element>(
       return;
     }
     if (replace) {
-      history.replace(to, state);
+      navigate(to, { state, replace: true });
     } else {
-      history.push(to, state);
+      navigate(to, { state });
     }
   };
 

@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { communityAboutMaxLength, communityNameMaxLength } from '../config';
 import { mfetch } from '../helper';
 import { useInputUsername } from '../hooks';
@@ -22,7 +22,7 @@ const CreateCommunity = ({ open, onClose }: { open: boolean; onClose: () => void
   ) as Community[];
 
   const dispatch = useDispatch();
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const [formError, setFormError] = useState('');
 
@@ -40,7 +40,7 @@ const CreateCommunity = ({ open, onClose }: { open: boolean; onClose: () => void
         const community = await res.json();
         dispatch(sidebarCommunitiesUpdated([...communities, community]));
         onClose();
-        history.push(`/${name}`);
+        navigate(`/${name}`);
       } else if (res.status === 409) {
         setFormError('A community by that name already exists.');
       } else {

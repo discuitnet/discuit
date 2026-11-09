@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useHistory, useLocation } from 'react-router-dom';
+import { Location, useLocation, useNavigate } from 'react-router-dom';
 import { getGlobalAppData } from '../../appData';
 import { isDeviceStandalone, kRound, mfetch, onKeyEnter, stringCount } from '../../helper';
 import { mobileBreakpointWidth, useTheme, useWindowWidth } from '../../hooks';
@@ -131,7 +131,7 @@ const Navbar = ({ offline = false }: { offline?: boolean }) => {
 
   const [bottomNavbarNavigation, setBottomNavbarNavigation] = useState(true);
 
-  const location = useLocation<{ fromBottomNav: boolean }>();
+  const location: Location<{ fromBottomNav: boolean }> = useLocation();
   useLayoutEffect(() => {
     recentLocationChange.current = true;
     setTimeout(() => {
@@ -194,7 +194,7 @@ const Navbar = ({ offline = false }: { offline?: boolean }) => {
     setTheme(checked ? 'dark' : 'light');
   };
 
-  const history = useHistory();
+  const navigate = useNavigate();
 
   return (
     <header
@@ -205,7 +205,7 @@ const Navbar = ({ offline = false }: { offline?: boolean }) => {
         <div className="left">
           {renderGoBackNavbar ? (
             <Button
-              onClick={() => history.goBack()}
+              onClick={() => navigate(-1)}
               variant="text"
               noBackground
               icon={<SVGLongArrow />}

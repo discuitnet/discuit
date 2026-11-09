@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
-import { useHistory, useLocation, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ButtonMore } from '../../components/Button';
 import CommunityProPic from '../../components/CommunityProPic';
 import Dropdown from '../../components/Dropdown';
@@ -35,8 +35,9 @@ import Rules from './Rules';
 
 const Community = () => {
   const { name } = useParams<{ [key: string]: string }>();
+  if (!name) throw new Error('community name param is required');
 
-  const history = useHistory();
+  const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
 
@@ -62,14 +63,14 @@ const Community = () => {
 
         const pathname = `/${rcomm.name}`;
         if (location.pathname !== pathname) {
-          history.replace(`${pathname}${location.search}${location.hash}`);
+          navigate(`${pathname}${location.search}${location.hash}`, { replace: true });
         }
       } catch (error) {
         setError((error as Error).toString());
         dispatch(snackAlertError(error));
       }
     })();
-  }, [name, loading, location, dispatch, history]);
+  }, [name, loading, location, dispatch, navigate]);
 
   const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const loggedIn = user !== null;
