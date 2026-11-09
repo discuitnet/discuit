@@ -1,7 +1,7 @@
 import PullToRefresh from 'pulltorefreshjs';
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ErrorBoundary } from 'react-error-boundary';
+import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { Provider } from 'react-redux';
 import { BrowserRouter as Router } from 'react-router';
 import App from './App';
@@ -11,7 +11,7 @@ import './scss/styles.scss';
 import store from './store';
 
 // oxlint-disable react/only-export-components
-const Fallback = ({ error }: { error: Error }) => {
+const Fallback = ({ error }: FallbackProps) => {
   useEffect(() => {
     forceSwUpdate();
   }, []);
@@ -31,7 +31,7 @@ const Fallback = ({ error }: { error: Error }) => {
   return (
     <div className="page-app-error">
       <h1>Something went wrong</h1>
-      <p>{error.toString()}</p>
+      <p>{String(error)}</p>
       <button onClick={handleReload} disabled={reloadDisabled}>
         Try reloading page
       </button>
