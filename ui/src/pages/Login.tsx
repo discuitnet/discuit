@@ -1,5 +1,5 @@
 import { useSelector } from 'react-redux';
-import { Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router';
 import { MainState } from '../slices/mainSlice';
 import { RootState } from '../store';
 import LoginForm from '../views/LoginForm';

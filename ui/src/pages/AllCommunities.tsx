@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import Button, { ButtonClose } from '../components/Button';
 import CommunityProPic from '../components/CommunityProPic';
 import Dropdown from '../components/Dropdown';

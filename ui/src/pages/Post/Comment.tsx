@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import Dropdown from '../../components/Dropdown';
 import MarkdownBody from '../../components/MarkdownBody';
 import ModalConfirm from '../../components/Modal/ModalConfirm';

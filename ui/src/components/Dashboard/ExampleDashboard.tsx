@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router';
 import Dashboard from '.';
 import { SVGComment } from '../../SVGs';
 import DashboardPage from './DashboardPage';

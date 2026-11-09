@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import Button from '../../components/Button';
 import DashboardPage from '../../components/Dashboard/DashboardPage';
 import PageLoading from '../../components/PageLoading';

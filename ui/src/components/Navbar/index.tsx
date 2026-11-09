@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Location, useLocation, useNavigate } from 'react-router-dom';
+import { Location, useLocation, useNavigate } from 'react-router';
 import { getGlobalAppData } from '../../appData';
 import { isDeviceStandalone, kRound, mfetch, onKeyEnter, stringCount } from '../../helper';
 import { mobileBreakpointWidth, useTheme, useWindowWidth } from '../../hooks';

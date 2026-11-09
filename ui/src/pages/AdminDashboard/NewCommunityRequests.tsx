@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { ButtonClose } from '../../components/Button';
 import DashboardPage from '../../components/Dashboard/DashboardPage';
 import { FormField } from '../../components/Form';

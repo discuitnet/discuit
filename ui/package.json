@@ -28,7 +28,7 @@
     "react-intersection-observer": "^11.0.1",
     "react-markdown": "^10.1.0",
     "react-redux": "^7.2.9",
-    "react-router-dom": "^6.30.6",
+    "react-router": "^7.18.5",
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {

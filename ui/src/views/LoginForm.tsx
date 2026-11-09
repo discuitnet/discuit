@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { Form, FormField } from '../components/Form';
 import Input, { InputPassword } from '../components/Input';
 import { APIError, mfetch } from '../helper';

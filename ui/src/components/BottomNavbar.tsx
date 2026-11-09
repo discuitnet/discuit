@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { cloneElement, useLayoutEffect, useMemo } from 'react';
 import { useSelector } from 'react-redux';
-import { NavigationType, useLocation, useNavigationType } from 'react-router-dom';
+import { NavigationType, useLocation, useNavigationType } from 'react-router';
 import { useLinkClick } from '../hooks';
 import { RootState } from '../store';
 import { SVGProps } from '../SVGs';

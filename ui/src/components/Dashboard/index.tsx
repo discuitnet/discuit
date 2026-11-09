@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { ButtonHamburger } from '../Button';
 import Sidebar, { SidebarMenuItem, SidebarTopic } from './Sidebar';
 

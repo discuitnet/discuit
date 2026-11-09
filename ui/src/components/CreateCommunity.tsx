@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { communityAboutMaxLength, communityNameMaxLength } from '../config';
 import { mfetch } from '../helper';
 import { useInputUsername } from '../hooks';

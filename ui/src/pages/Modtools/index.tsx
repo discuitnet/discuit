@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, Navigate, Route, Routes, useParams } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useParams } from 'react-router';
 import Dashboard from '../../components/Dashboard';
 import { APIError, mfetch } from '../../helper';
 import { communityAdded, selectCommunity } from '../../slices/communitiesSlice';

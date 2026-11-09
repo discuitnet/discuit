@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { mfetchjson, omitWWWFromHostname, stringCount } from '../../helper';
 import { useIsMobile } from '../../hooks';
 import { snackAlertError } from '../../slices/mainSlice';

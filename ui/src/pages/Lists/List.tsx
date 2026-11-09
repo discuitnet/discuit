@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { ButtonClose, ButtonMore } from '../../components/Button';
 import Dropdown from '../../components/Dropdown';
 import Feed from '../../components/Feed';

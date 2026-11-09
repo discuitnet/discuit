@@ -1,13 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  Location,
-  NavigationType,
-  useNavigate,
-  useNavigationType,
-  useParams,
-} from 'react-router-dom';
+import { Location, NavigationType, useNavigate, useNavigationType, useParams } from 'react-router';
 import Dropdown from '../../components/Dropdown';
 import MiniFooter from '../../components/MiniFooter';
 import PostVotes from '../../components/PostCard/PostVotes';
@@ -33,7 +27,7 @@ import CommentSection from './CommentSection';
 import PostDeleteModal, { PostContentDeleteModal } from './PostDeleteModal';
 import PostShareButton from './PostShareButton';
 // import CommentsSortButton from './CommentsSortButton';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import MarkdownBody from '../../components/MarkdownBody';
 import embeddedElement from '../../components/PostCard/embed';
 import LinkImage from '../../components/PostCard/LinkImage';

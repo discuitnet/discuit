@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { ErrorBoundary } from 'react-error-boundary';
 import { HelmetProvider } from 'react-helmet-async';
 import { Provider } from 'react-redux';
-import { BrowserRouter as Router } from 'react-router-dom';
+import { BrowserRouter as Router } from 'react-router';
 import App from './App';
 import { forceSwUpdate } from './AppUpdate';
 import { isDeviceIos } from './helper';
@@ -52,7 +52,7 @@ root.render(
   <Provider store={store}>
     <HelmetProvider>
       <ErrorBoundary FallbackComponent={Fallback} onError={logAppError}>
-        <Router>
+        <Router useTransitions={false}>
           <App />
         </Router>
       </ErrorBoundary>

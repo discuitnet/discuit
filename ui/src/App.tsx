@@ -10,7 +10,7 @@ import {
   useLocation,
   useNavigationType,
   useParams,
-} from 'react-router-dom';
+} from 'react-router';
 import { getGlobalAppData } from './appData';
 import AppUpdate from './AppUpdate';
 import BottomNavbar from './components/BottomNavbar';

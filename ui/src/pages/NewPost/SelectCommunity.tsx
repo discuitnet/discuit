@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { kRound, mfetchjson, selectImageCopyURL } from '../../helper';
 import { useDelayedEffect } from '../../hooks';
 import { Community } from '../../serverTypes';

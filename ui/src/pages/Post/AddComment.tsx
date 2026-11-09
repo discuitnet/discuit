@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import MarkdownTextarea from '../../components/MarkdownTextarea';
 import { mfetch } from '../../helper';
 import { Comment } from '../../serverTypes';

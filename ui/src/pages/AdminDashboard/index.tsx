@@ -1,5 +1,5 @@
 import { useSelector } from 'react-redux';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router';
 import Dashboard from '../../components/Dashboard';
 import { RootState } from '../../store';
 import { SVGComment, SVGCommunities, SVGSettings } from '../../SVGs';

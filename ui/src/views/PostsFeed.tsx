@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import Feed from '../components/Feed';
 import { MemorizedPostCard } from '../components/PostCard/PostCard';
 import SelectBar from '../components/SelectBar';
