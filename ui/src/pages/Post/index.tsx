@@ -199,7 +199,10 @@ const Post = () => {
         dispatch(snackAlertError(error));
       }
     })();
-  }, [userGroup, post?.publicId, post?.userGroup, dispatch]);
+    // Lint disabled as adding `post` as a dep causes PUT requests to be sent when
+    // navigating between posts.
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, [userGroup]);
 
   const [isPinned, setIsPinned] = useState(post ? post.isPinned : false);
   useEffect(() => {
