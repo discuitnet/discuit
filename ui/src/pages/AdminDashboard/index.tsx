@@ -1,5 +1,5 @@
 import { useSelector } from 'react-redux';
-import { Route, Switch, useRouteMatch } from 'react-router-dom';
+import { Route, Routes } from 'react-router';
 import Dashboard from '../../components/Dashboard';
 import { RootState } from '../../store';
 import { SVGComment, SVGCommunities, SVGSettings } from '../../SVGs';
@@ -62,8 +62,6 @@ const SVGNewCommunityRequests = (
 );
 
 function AdminDashboard() {
-  const { path } = useRouteMatch();
-
   const user = useSelector((state: RootState) => state.main.user)!; // user is never not null at this point
   if (!user.isAdmin) {
     return <Forbidden />;
@@ -91,34 +89,23 @@ function AdminDashboard() {
         },
       ]}
     >
-      <Switch>
-        <Route exact path={path}>
-          <Settings />
-        </Route>
-        <Route exact path={`${path}/users`}>
-          <Users />
-        </Route>
-        <Route exact path={`${path}/comments`}>
-          <Comments />
-        </Route>
-        <Route exact path={`${path}/communities`}>
-          <Communities />
-        </Route>
-        <Route exact path={`${path}/ipblocks`}>
-          <IPBlocks />
-        </Route>
-        <Route exact path={`${path}/bss`}>
-          <BasicSiteAnalytics />
-        </Route>
-        <Route exact path={`${path}/new-community-requests`}>
-          <NewCommunityRequests />
-        </Route>
-        <Route path="*">
-          <div className="dashboard-page-404">
-            <p>Not found</p>
-          </div>
-        </Route>
-      </Switch>
+      <Routes>
+        <Route path="/" element={<Settings />} />
+        <Route path="/users" element={<Users />} />
+        <Route path="/comments" element={<Comments />} />
+        <Route path="/communities" element={<Communities />} />
+        <Route path="/ipblocks" element={<IPBlocks />} />
+        <Route path="/bss" element={<BasicSiteAnalytics />} />
+        <Route path="/new-community-requests" element={<NewCommunityRequests />} />
+        <Route
+          path="*"
+          element={
+            <div className="dashboard-page-404">
+              <p>Not found</p>
+            </div>
+          }
+        />
+      </Routes>
     </Dashboard>
   );
 

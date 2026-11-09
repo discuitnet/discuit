@@ -6,10 +6,10 @@ import { CommentsState, defaultCommentZIndex, moreCommentsAdded } from '../../sl
 import { commentsTree, countChildrenReplies, Node } from '../../slices/commentsTree';
 import { snackAlertError } from '../../slices/mainSlice';
 import { Post } from '../../slices/postsSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import { MemorizedComment } from './Comment';
 
-export interface CommentSectionProps {
+interface CommentSectionProps {
   post: Post;
   community: Community;
   user: User | null;
@@ -32,7 +32,7 @@ const CommentSection = ({
   canVote,
   canComment,
 }: CommentSectionProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const postId = post.publicId;
   // const comments = useSelector((state) => {
@@ -126,16 +126,15 @@ const CommentSection = ({
   // const zIndexTop = useSelector((state) => state.comments.items[postId].zIndexTop);
   const zIndexTop = commentsObj ? commentsObj.zIndexTop : defaultCommentZIndex;
   const renderComments = () => {
-    const rendered = [];
     let _toRender = toRender;
     const children: Node[] = (comments && comments.children) || [];
     if (_toRender > children.length) {
       _toRender = children.length;
       setToRender(children.length);
     }
-    for (let i = 0; i < _toRender; i++) {
-      const node = children[i];
-      rendered.push(
+    const rendered = children
+      .slice(0, _toRender)
+      .map((node, i) => (
         <MemorizedComment
           post={post}
           user={user || null}
@@ -151,8 +150,7 @@ const CommentSection = ({
           canComment={canComment}
           isAncestorLocked={false}
         />
-      );
-    }
+      ));
     if (noRootComments > _toRender) {
       if (noRootComments - _toRender === 1) {
         setToRender(noRootComments);

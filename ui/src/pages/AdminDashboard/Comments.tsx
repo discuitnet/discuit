@@ -9,6 +9,7 @@ import { useLoading } from '../../hooks';
 import { Comment } from '../../serverTypes';
 import { snackAlertError } from '../../slices/mainSlice';
 import { MemorizedComment } from '../User/Comment';
+import { AppDispatch } from '../../store';
 
 interface SiteCommentsState {
   comments: Comment[] | null;
@@ -22,7 +23,7 @@ export default function Comments() {
   });
   const [loading, setLoading] = useLoading('loading');
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   useEffect(() => {
     console.log('Running ');
     const f = async () => {
@@ -37,7 +38,7 @@ export default function Comments() {
       }
     };
     f();
-  }, []);
+  }, [dispatch, setLoading]);
 
   const [feedReloading, setFeedReloading] = useState(false);
   const fetchNextItems = async () => {

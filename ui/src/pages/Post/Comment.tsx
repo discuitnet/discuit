@@ -1,7 +1,6 @@
-/* eslint-disable react/display-name */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import Dropdown from '../../components/Dropdown';
 import MarkdownBody from '../../components/MarkdownBody';
 import ModalConfirm from '../../components/Modal/ModalConfirm';
@@ -25,6 +24,7 @@ import { Post } from '../../slices/postsSlice';
 import { userHasSupporterBadge } from '../User';
 import AddComment from './AddComment';
 import CommentShareButton, { CommentShareDropdownItems } from './CommentShareButton';
+import { AppDispatch } from '../../store';
 
 const Diagnostics = false; // import.meta.env.MODE !== 'production';
 const MaxCommentDepth = 15;
@@ -59,7 +59,7 @@ const Comment = ({
   canComment,
   isAncestorLocked = false,
 }: CommentProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const postId = post.publicId;
   const loggedIn = user !== null;
@@ -68,19 +68,22 @@ const Comment = ({
   const { noRepliesRendered, children } = node;
   const [comment, _setComment] = useState(node.comment!);
   const isCommentLocked = comment.locked || isAncestorLocked;
-  const setComment = (comment: CommentType) => {
-    // Beware: In place data mutation.
-    node.comment = {
-      ...node.comment,
-      ...comment,
-    };
-    _setComment((c) => {
-      return {
-        ...c,
+  const setComment = useCallback(
+    (comment: CommentType) => {
+      // Beware: In place data mutation.
+      node.comment = {
+        ...node.comment,
         ...comment,
       };
-    });
-  };
+      _setComment((c) => {
+        return {
+          ...c,
+          ...comment,
+        };
+      });
+    },
+    [node.comment]
+  );
 
   const commentShareURL = `/${community.name}/post/${postId}/${comment.id}`;
 
@@ -222,7 +225,7 @@ const Comment = ({
         dispatch(snackAlertError(error));
       }
     })();
-  }, [userGroup]);
+  }, [userGroup, comment.id, comment.postId, comment.userGroup, dispatch, setComment]);
 
   const [collapsed, setCollapsed] = useState(node.collapsed || false);
   const collapsedRef = useRef<HTMLDivElement>(null);
@@ -246,7 +249,7 @@ const Comment = ({
     if (comment.isAuthorMuted) {
       setCollapsed(true);
     }
-  }, []);
+  }, [comment.isAuthorMuted]);
 
   const [isRepliesLoading, setIsRepliesLoading] = useState(false);
   const handleLoadReplies = async () => {
@@ -274,7 +277,7 @@ const Comment = ({
 
   const location = useLocation();
   const params = new URLSearchParams(location.search);
-  
+
   const highlighted = (() => {
     const ts = new Date(comment.createdAt).getTime() / 1000,
       from = parseInt(params.get('highlightFrom') || ''),
@@ -482,7 +485,10 @@ const Comment = ({
         <div className="dropdown-item" onClick={() => setConfirmDeleteOpen(true, 'admins')}>
           Delete
         </div>
-        <div className={`dropdown-item${isLocking ? ' is-disabled' : ''}`} onClick={() => !isLocking && handleLockComment('admins')}>
+        <div
+          className={`dropdown-item${isLocking ? ' is-disabled' : ''}`}
+          onClick={() => !isLocking && handleLockComment('admins')}
+        >
           {isLocking ? 'Locking...' : comment.locked ? 'Unlock comment' : 'Lock comment'}
         </div>
         {user && user.id === comment.userId && (
@@ -561,7 +567,10 @@ const Comment = ({
             </div>
           )}
           {comment.locked && (
-            <div className="post-comment-head-item post-comment-locked" title="This comment is locked. No new replies can be added.">
+            <div
+              className="post-comment-head-item post-comment-locked"
+              title="This comment is locked. No new replies can be added."
+            >
               Locked
             </div>
           )}
@@ -808,8 +817,6 @@ const Comment = ({
     </div>
   );
 };
-
-export default Comment;
 
 export const MemorizedComment = React.memo(Comment);
 

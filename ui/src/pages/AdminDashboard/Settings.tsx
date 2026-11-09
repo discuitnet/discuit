@@ -8,9 +8,10 @@ import PageLoading from '../../components/PageLoading';
 import { mfetch, mfetchjson } from '../../helper';
 import { SiteSettings } from '../../serverTypes';
 import { createCommunityModalOpened, snackAlertError } from '../../slices/mainSlice';
+import { AppDispatch } from '../../store';
 
 export default function Settings() {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const [settings, _setSettings] = useState<SiteSettings | null>(null);
   useEffect(() => {

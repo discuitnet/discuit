@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { mfetchjson } from '../helper';
 import { snackAlert, snackAlertError } from '../slices/mainSlice';
+import { AppDispatch } from '../store';
 
 export function useImageEdit<T = unknown>(apiEndpoint: string, onComplete?: (data: T) => void) {
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const handleUpload = async (file: File) => {
     if (isUploading) return;

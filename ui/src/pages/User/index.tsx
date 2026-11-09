@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { ButtonMore } from '../../components/Button';
 import Dropdown from '../../components/Dropdown';
 import Feed from '../../components/Feed';
@@ -25,12 +24,12 @@ import {
 } from '../../helper';
 import { useFetchUsersLists, useMuteUser } from '../../hooks';
 import { useImageEdit } from '../../hooks/useImageEdit';
-import type { Comment, User } from '../../serverTypes';
+import type { Comment, User as UserType } from '../../serverTypes';
 import { FeedItem } from '../../slices/feedsSlice';
 import { MainState, snackAlert, snackAlertError, userLoggedIn } from '../../slices/mainSlice';
 import { Post } from '../../slices/postsSlice';
 import { selectUser, userAdded } from '../../slices/usersSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import { SVGComment } from '../../SVGs';
 import NotFound from '../NotFound';
 import { isInfiniteScrollingDisabled } from '../Settings/devicePrefs';
@@ -38,6 +37,7 @@ import BadgesList from './BadgesList';
 import BanUserButton from './BanUserButton';
 import { MemorizedComment } from './Comment';
 import UserAdminsViewModal from './UserAdminsViewModal';
+import PageTitle from '../../components/PageTitle';
 
 interface UserFeedAPIResponse {
   items: {
@@ -56,10 +56,12 @@ function formatFilterText(filter = '') {
 }
 
 const User = () => {
-  const { username } = useParams<{ username: string }>();
+  let { name: username } = useParams<{ name: string }>();
+  if (!username) throw new Error('username param is required');
+  username = username.slice(1); // @username -> username
 
-  const dispatch = useDispatch();
-  const history = useHistory();
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
 
   const viewer = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const viewerAdmin = viewer ? viewer.isAdmin : false;
@@ -73,7 +75,7 @@ const User = () => {
     handleUpload: handleUploadProfilePic,
     handleDelete: handleDeleteProfilePic,
     handleSaveAltText,
-  } = useImageEdit<User>(`/api/users/${username}/pro_pic`, (res) => {
+  } = useImageEdit<UserType>(`/api/users/${username}/pro_pic`, (res) => {
     dispatch(userLoggedIn(res));
     dispatch(userAdded(res));
   });
@@ -108,11 +110,11 @@ const User = () => {
   }
   const handleSelectBarChange = (id: string) => {
     if (feedFilter !== id) {
-      history.replace(selectBarOptions.filter((item) => item.id === id)[0].to);
+      navigate(selectBarOptions.filter((item) => item.id === id)[0].to, { replace: true });
     }
   };
 
-  const isUserFeedAvailable = (user: User, viewer: User | null) => {
+  const isUserFeedAvailable = (user: UserType, viewer: UserType | null) => {
     return !user.isBanned || (user.isBanned && viewer !== null && viewerAdmin);
   };
 
@@ -142,13 +144,13 @@ const User = () => {
         setUserLoading('loaded');
         if (username !== user.username && username.toLowerCase() === user.username.toLowerCase()) {
           // Username case mismatch.
-          history.replace(`/@${user.username}`);
+          navigate(`/@${user.username}`, { replace: true });
         }
       } catch (error) {
         dispatch(snackAlertError(error));
       }
     })();
-  }, [username, url, feedId]);
+  }, [username, url, feedId, dispatch, navigate, user]);
 
   const handleFeedFetch = async (next: string | null | undefined = null) => {
     const url = next === null ? feedId : `${feedId}&next=${next}`;
@@ -247,9 +249,7 @@ const User = () => {
   if (user.deleted && !viewerAdmin) {
     return (
       <div className="page-content page-notfound wrap">
-        <Helmet>
-          <title>{`@${user.username}`}</title>
-        </Helmet>
+        <PageTitle title={`@${user.username}`} />
         <h1>Account deleted.</h1>
         <Link to="/">Go home</Link>
       </div>
@@ -261,9 +261,7 @@ const User = () => {
     // User is banned and the viewer is no admin
     return (
       <div className="page-content page-notfound wrap">
-        <Helmet>
-          <title>{`@${user.username}`}</title>
-        </Helmet>
+        <PageTitle title={`@${user.username}`} />
         <h1>Account suspended.</h1>
         {loggedIn && viewer.id !== user.id && (
           <button onClick={toggleMute}>{isMuted ? 'Unmute user' : 'Mute user'}</button>
@@ -483,9 +481,7 @@ const User = () => {
 
   return (
     <div className="page-content page-user wrap page-grid">
-      <Helmet>
-        <title>{`@${user.username}`}</title>
-      </Helmet>
+      <PageTitle title={`@${user.username}`} />
       <Sidebar />
       <UserAdminsViewModal
         user={userAdminsView}
@@ -647,7 +643,8 @@ const User = () => {
 
 export default User;
 
-export function userHasSupporterBadge(user: User | null): boolean {
+// oxlint-disable react/only-export-components
+export function userHasSupporterBadge(user: UserType | null): boolean {
   return Boolean(
     user && (user.badges || []).find((badge) => badge.type === 'supporter') !== undefined
   );

@@ -9,6 +9,7 @@ import { RootState } from './store';
 
 const timestampKey = 'notifPermsLastAskedAt';
 
+// oxlint-disable react/only-export-components
 export const shouldAskForNotificationsPermissions = (
   loggedIn: boolean,
   applicationServerKey: string | null,
@@ -63,6 +64,7 @@ const updatePushSubscription = async (loggedIn: boolean, applicationServerKey: s
 
 // Gets device notification permissions and sends the PushSubscription to the
 // server for persistence.
+// oxlint-disable react/only-export-components
 export const getNotificationsPermissions = async (
   loggedIn: boolean,
   applicationServerKey: string

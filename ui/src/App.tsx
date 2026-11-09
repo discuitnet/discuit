@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
-import { Redirect, Route, Switch, useHistory, useLocation } from 'react-router-dom';
+import {
+  Location,
+  Navigate,
+  NavigationType,
+  Route,
+  Routes,
+  useLocation,
+  useNavigationType,
+  useParams,
+} from 'react-router';
 import { getGlobalAppData } from './appData';
 import AppUpdate from './AppUpdate';
 import BottomNavbar from './components/BottomNavbar';
@@ -52,8 +60,9 @@ import {
   snackAlert,
   userLoggedIn,
 } from './slices/mainSlice';
-import { RootState } from './store';
+import { AppDispatch, RootState } from './store';
 import LoginForm from './views/LoginForm';
+import PageTitle from './components/PageTitle';
 
 // Value taken from _mixins.scss file.
 const tabletBreakpoint = 1170;
@@ -61,7 +70,7 @@ const tabletBreakpoint = 1170;
 getGlobalAppData().historyLength = 0;
 
 const App = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   // Note that window.navigator.onLine cannot always be trusted. It's false
   // value can be trusted, but it's true value cannot be.
@@ -158,12 +167,6 @@ const App = () => {
   const width = useWindowWidth();
   const chatOpen = useSelector<RootState>((state) => state.main.chatOpen) as MainState['chatOpen'];
 
-  const notifsNewCount = useSelector<RootState>(
-    (state) => state.main.notifications.newCount
-  ) as MainState['notifications']['newCount'];
-  const notifsNewCountStr = notifsNewCount > 0 ? `(${notifsNewCount}) ` : '';
-  const titleTemplate = `${notifsNewCountStr} %s - ${import.meta.env.VITE_SITENAME}`;
-
   const loginModalOpen = useSelector<RootState>(
     (state) => state.main.loginModalOpen
   ) as MainState['loginModalOpen'];
@@ -223,12 +226,8 @@ const App = () => {
 
   return (
     <>
-      <Helmet
-        defaultTitle={`${notifsNewCountStr} ${import.meta.env.VITE_SITENAME}`}
-        titleTemplate={titleTemplate}
-      >
-        <meta property="og:site_name" content={import.meta.env.VITE_SITENAME} />
-      </Helmet>
+      <PageTitle />
+      <meta property="og:site_name" content={import.meta.env.VITE_SITENAME} />
       <ScrollToTop />
       <CanonicalTag />
       <Navbar />
@@ -268,110 +267,115 @@ export default App;
 const AppSwitch = () => {
   return (
     <>
-      <Switch>
-        {import.meta.env.MODE !== 'production' && <Route path="/elements" component={Elements} />}
+      <Routes>
+        {import.meta.env.MODE !== 'production' && <Route path="/elements" element={<Elements />} />}
         {import.meta.env.MODE !== 'production' && (
-          <Route path="/test-dashboard">
-            <ExampleDashboard />
-          </Route>
+          <Route path="/test-dashboard/*" element={<ExampleDashboard />} />
         )}
         {/*
-        <Route exact path="/search">
+        <Route path="/search">
           <Search />
         </Route>
         */}
-        <ProtectedRoute path="/notifications">
-          <div className="page-content page-notifications wrap">
-            <NotificationsView />
-          </div>
-        </ProtectedRoute>
-        <ProtectedRoute path="/new">
-          <NewPost />
-        </ProtectedRoute>
-        <ProtectedRoute path="/settings">
-          <Settings />
-        </ProtectedRoute>
-        <Route exact path="/login">
-          <Login />
-        </Route>
-        <Route exact path={['/', '/subscriptions', '/all', '/moderating']}>
-          <Home />
-        </Route>
-        <Route exact path="/communities">
-          <AllCommunities />
-        </Route>
-        <ProtectedRoute path="/admin">
-          <AdminDashboard />
-        </ProtectedRoute>
-        <Route exact path="/about">
-          <About />
-        </Route>
-        <Route exact path="/guidelines">
-          <Guidelines />
-        </Route>
-        <Route exact path="/moderator-guidelines">
-          <ModeratorGuidelines />
-        </Route>
-        <Route exact path="/terms">
-          <Terms />
-        </Route>
-        <Route exact path="/privacy-policy">
-          <PrivacyPolicy />
-        </Route>
-        <Route exact path="/markdown_guide">
-          <MarkdownGuide />
-        </Route>
-        <Route exact path="/@:username">
-          <User />
-        </Route>
-        <Route exact path="/@:username/lists">
-          <Lists />
-        </Route>
-        <Route exact path="/@:username/lists/:listName">
-          <List />
-        </Route>
-        <Route exact path="/:name">
-          <Community />
-        </Route>
-        <ProtectedRoute path="/:name/modtools">
-          <Modtools />
-        </ProtectedRoute>
-        <Route exact path={['/:name/post/:id', '/:name/post/:id/:commentId']}>
-          <Post />
-        </Route>
-        <Route path="*">
-          <NotFound />
-        </Route>
-      </Switch>
+        <Route
+          path="/notifications"
+          element={
+            <Protected>
+              <div className="page-content page-notifications wrap">
+                <NotificationsView />
+              </div>
+            </Protected>
+          }
+        />
+        <Route
+          path="/new"
+          element={
+            <Protected>
+              <NewPost />
+            </Protected>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <Protected>
+              <Settings />
+            </Protected>
+          }
+        />
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/subscriptions" element={<Home />} />
+        <Route path="/all" element={<Home />} />
+        <Route path="/moderating" element={<Home />} />
+        <Route path="/communities" element={<AllCommunities />} />
+        <Route
+          path="/admin/*"
+          element={
+            <Protected>
+              <AdminDashboard />
+            </Protected>
+          }
+        />
+        <Route path="/about" element={<About />} />
+        <Route path="/guidelines" element={<Guidelines />} />
+        <Route path="/moderator-guidelines" element={<ModeratorGuidelines />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/markdown_guide" element={<MarkdownGuide />} />
+        <Route
+          path="/:username/lists"
+          element={
+            <UserRoute>
+              <Lists />
+            </UserRoute>
+          }
+        />
+        <Route
+          path="/:username/lists/:listName"
+          element={
+            <UserRoute>
+              <List />
+            </UserRoute>
+          }
+        />
+        <Route path="/:name" element={<UserCommunityRoute />} />
+        <Route
+          path="/:name/modtools/*"
+          element={
+            <Protected>
+              <Modtools />
+            </Protected>
+          }
+        />
+        <Route path="/:name/post/:id" element={<Post />} />
+        <Route path="/:name/post/:id/:commentId" element={<Post />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
     </>
   );
+};
+
+const UserCommunityRoute = () => {
+  const { name } = useParams<{ name: string }>();
+  if (!name) throw new Error('name param is required');
+  return name.startsWith('@') ? <User /> : <Community />;
+};
+const UserRoute = ({ children }: { children: React.ReactNode }) => {
+  const { username } = useParams();
+  return username?.startsWith('@') ? children : <NotFound />;
 };
 
 /*
  * Redirects the logged out user to the login page.
  *
  */
-const ProtectedRoute = ({ children, path }: { children: React.ReactNode; path: string }) => {
+const Protected = ({ children }: { children: React.ReactNode }) => {
+  const location = useLocation();
   const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const loggedIn = user !== null;
 
-  return (
-    <Route
-      path={path}
-      render={({ location }) =>
-        loggedIn ? (
-          children
-        ) : (
-          <Redirect
-            to={{
-              pathname: '/login',
-              state: { from: location },
-            }}
-          />
-        )
-      }
-    />
-  );
+  return loggedIn ? children : <Navigate to="/login" state={{ from: location }} replace />;
 };
 
 /*
@@ -381,15 +385,18 @@ const ProtectedRoute = ({ children, path }: { children: React.ReactNode; path: s
  *
  */
 const ScrollToTop = () => {
-  const location = useLocation<{ fromBottomNav: boolean }>();
-  const history = useHistory();
+  const location: Location<{ fromBottomNav: boolean }> = useLocation();
+  const navigationType = useNavigationType();
 
   useEffect(() => {
-    if (history.action !== 'POP' && !(location.state && location.state.fromBottomNav)) {
+    if (
+      navigationType !== NavigationType.Pop &&
+      !(location.state && location.state.fromBottomNav)
+    ) {
       window.scrollTo(0, 0);
     }
     getGlobalAppData().historyLength!++;
-  }, [location.pathname, history]);
+  }, [location.pathname, navigationType, location.state]);
 
   return null;
 };

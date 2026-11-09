@@ -1,4 +1,4 @@
-export interface PaginationProps {
+interface PaginationProps {
   onClick: (page: number) => void;
   noPages: number;
   current: number;

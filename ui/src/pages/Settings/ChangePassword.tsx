@@ -6,6 +6,7 @@ import { InputPassword } from '../../components/Input';
 import Modal from '../../components/Modal';
 import { APIError, mfetch } from '../../helper';
 import { snackAlert, snackAlertError } from '../../slices/mainSlice';
+import { AppDispatch } from '../../store';
 
 const ChangePassword = () => {
   const [open, setOpen] = useState(false);
@@ -20,7 +21,7 @@ const ChangePassword = () => {
     setRepeatPassword('');
   }, [open]);
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const changePassword = async () => {
     if (newPassword !== repeatPassword) {
       alert('Passwords do not match.');

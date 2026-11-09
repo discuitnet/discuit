@@ -9,9 +9,10 @@ import { Comment, Community, CommunityReportDetails, Report } from '../../server
 import { snackAlert, snackAlertError } from '../../slices/mainSlice';
 import { Post } from '../../slices/postsSlice';
 import ReportsView from './ReportsView';
+import { AppDispatch } from '../../store';
 
 const Reports = ({ community }: { community: Community }) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const [page, setPage] = usePagination();
   const limit = 10;

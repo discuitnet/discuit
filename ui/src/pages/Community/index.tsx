@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
-import { useHistory, useLocation, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router';
 import { ButtonMore } from '../../components/Button';
 import CommunityProPic from '../../components/CommunityProPic';
 import Dropdown from '../../components/Dropdown';
@@ -26,19 +25,21 @@ import { MainState, snackAlert, snackAlertError } from '../../slices/mainSlice';
 import { SVGEdit } from '../../SVGs';
 
 import ImageEditModal from '../../components/ImageEditModal';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import PostsFeed from '../../views/PostsFeed';
 import NotFound from '../NotFound';
 import Banner from './Banner';
 import JoinButton from './JoinButton';
 import Rules from './Rules';
+import PageTitle from '../../components/PageTitle';
 
 const Community = () => {
   const { name } = useParams<{ [key: string]: string }>();
+  if (!name) throw new Error('community name param is required');
 
-  const history = useHistory();
+  const navigate = useNavigate();
   const location = useLocation();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const community = useSelector(selectCommunity(name));
   const loading = !(community && Array.isArray(community.mods) && Array.isArray(community.rules));
@@ -62,14 +63,14 @@ const Community = () => {
 
         const pathname = `/${rcomm.name}`;
         if (location.pathname !== pathname) {
-          history.replace(`${pathname}${location.search}${location.hash}`);
+          navigate(`${pathname}${location.search}${location.hash}`, { replace: true });
         }
       } catch (error) {
         setError((error as Error).toString());
         dispatch(snackAlertError(error));
       }
     })();
-  }, [name, loading, location, dispatch, history]);
+  }, [name, loading, location, dispatch, navigate]);
 
   const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const loggedIn = user !== null;
@@ -286,9 +287,7 @@ const Community = () => {
 
   return (
     <div className="page-content page-community wrap page-grid">
-      <Helmet>
-        <title>{`${community.name}`}</title>
-      </Helmet>
+      <PageTitle title={`${community.name}`} />
       <Sidebar />
       <main className="comm-content">
         <header className="comm-main">

@@ -4,7 +4,7 @@ import { ButtonClose } from '../../components/Button';
 import Modal from '../../components/Modal';
 import { Post } from '../../serverTypes';
 
-export interface PostDeleteModalProps {
+interface PostDeleteModalProps {
   open: boolean;
   onClose: () => void;
   onDelete: (deleteContent: boolean) => void;

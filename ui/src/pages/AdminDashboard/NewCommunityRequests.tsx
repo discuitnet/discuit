@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { ButtonClose } from '../../components/Button';
 import DashboardPage from '../../components/Dashboard/DashboardPage';
 import { FormField } from '../../components/Form';
@@ -13,7 +13,7 @@ import { declineCommNoteMaxLength } from '../../config';
 import { mfetch, mfetchjson } from '../../helper';
 import { useLoading } from '../../hooks';
 import { loginPromptToggled, snackAlert, snackAlertError } from '../../slices/mainSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 
 interface CommunityRequest {
   id: number;
@@ -64,7 +64,7 @@ const MemoStatusCell = memo(StatusCell);
 export default function NewCommunityRequests() {
   const [requests, setRequests] = useState<CommunityRequest[] | null>(null);
   const [loading, setLoading] = useLoading();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   useEffect(() => {
     const f = async () => {
       try {
@@ -83,7 +83,7 @@ export default function NewCommunityRequests() {
       }
     };
     f();
-  }, []);
+  }, [setLoading, dispatch]);
 
   if (loading !== 'loaded') {
     return <PageLoading />;
@@ -154,7 +154,7 @@ const DenyCommunityButton = ({
   ...props
 }: DenyCommunityButtonProps) => {
   const user = useSelector<RootState>((state) => state.main.user);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const [open, setOpen] = useState(false);
   const handleClose = () => setOpen(false);
   const [note, handleNoteChange] = useInputMaxLength(declineCommNoteMaxLength);

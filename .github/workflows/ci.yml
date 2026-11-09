@@ -64,23 +64,35 @@ jobs:
         if: steps.changes.outputs.code == 'true'
         run: go vet -mod=readonly ./...
 
+      - name: Set up pnpm
+        if: steps.changes.outputs.code == 'true'
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          version: "12"
+
       - name: Set up Node.js
         if: steps.changes.outputs.code == 'true'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
-          cache: npm
-          cache-dependency-path: ui/package-lock.json
+          node-version-file: ui/package.json
+          cache: pnpm
+          cache-dependency-path: ui/pnpm-lock.yaml
 
       - name: Install frontend dependencies
         if: steps.changes.outputs.code == 'true'
         working-directory: ui
-        run: npm ci --prefer-offline --no-audit --no-fund
+        run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Build frontend and service worker
         if: steps.changes.outputs.code == 'true'
         run: |
           cp config.default.yaml config.yaml
-          npm --prefix ui run build
+          pnpm --dir ui run build
           test -s ui/dist/index.html
           test -s ui/dist/service-worker.js
+
+      - name: Run linting and formatting checks
+        if: steps.changes.outputs.code == 'true'
+        run: |
+          pnpm --dir ui run lint
+          pnpm --dir ui oxfmt --check

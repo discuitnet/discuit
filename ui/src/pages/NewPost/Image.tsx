@@ -7,7 +7,7 @@ import Textarea from '../../components/Textarea';
 import { useIsMobile, useWindowWidth } from '../../hooks';
 import { Image as ServerImage } from '../../serverTypes';
 
-export interface ImageProps {
+interface ImageProps {
   image: ServerImage;
   onClose: () => void;
   disabled?: boolean;
@@ -76,7 +76,10 @@ const Image = ({
         />
       )}
       {(!disabled || isEditMode) && (
-        <Button className={clsx("button-alt-text", missingAltText && 'is-error')} onClick={() => setModalOpen(true)}>
+        <Button
+          className={clsx('button-alt-text', missingAltText && 'is-error')}
+          onClick={() => setModalOpen(true)}
+        >
           Alt text
         </Button>
       )}

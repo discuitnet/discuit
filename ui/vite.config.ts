@@ -1,10 +1,9 @@
-/* eslint-disable no-undef */
 import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import { defineConfig } from 'vite';
 import viteCompression from 'vite-plugin-compression';
 import YAML from 'yaml';
-import { hostnameToURL } from './src/helper';
+import { hostnameToURL } from './src/helper/index.js';
 
 const { define: yamlConfigDefine, config: yamlConfig } = parseYamlConfigFile();
 

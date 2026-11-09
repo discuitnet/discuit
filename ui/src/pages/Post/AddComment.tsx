@@ -1,16 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import MarkdownTextarea from '../../components/MarkdownTextarea';
 import { mfetch } from '../../helper';
 import { Comment } from '../../serverTypes';
-import {
-  loginPromptToggled,
-  snackAlert,
-  snackAlertError,
-} from '../../slices/mainSlice';
+import { loginPromptToggled, snackAlert, snackAlertError } from '../../slices/mainSlice';
 import { Post } from '../../slices/postsSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import AsUser from './AsUser';
 
 const drafts = new Map<string, { body: string }>();
@@ -22,7 +18,7 @@ function appendTextSelection(comment: string, textSelection?: string) {
   return `> ${textSelection}\n\n`;
 }
 
-export interface AddCommentProps {
+interface AddCommentProps {
   post: Post;
   parentCommentId: string | null;
   onSuccess: (comment: Comment) => void;
@@ -51,7 +47,7 @@ const AddComment = ({
   disabled = false,
   textSelection = '',
 }: AddCommentProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const userId = useSelector((state: RootState) => state.main.user?.id);
   const draftKey = JSON.stringify([userId, post.publicId, editing, editing ? id : parentCommentId]);
@@ -138,15 +134,18 @@ const AddComment = ({
   };
 
   const textareaRef: React.MutableRefObject<HTMLTextAreaElement | null> = useRef(null);
-  const textareaCallbackRef: React.RefCallback<HTMLTextAreaElement> = useCallback((node) => {
-    if (node !== null) {
-      if (!main) {
-        node.focus();
+  const textareaCallbackRef: React.RefCallback<HTMLTextAreaElement> = useCallback(
+    (node) => {
+      if (node !== null) {
+        if (!main) {
+          node.focus();
+        }
+        textareaNode.current = node;
+        textareaRef.current = node;
       }
-      textareaNode.current = node;
-      textareaRef.current = node;
-    }
-  }, []);
+    },
+    [main]
+  );
 
   const handleTextareaClick = () => {
     if (!loggedIn) {

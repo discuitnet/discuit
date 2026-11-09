@@ -11,13 +11,13 @@ import { useImageEdit } from '../../hooks/useImageEdit';
 import { Community } from '../../serverTypes';
 import { communityAdded } from '../../slices/communitiesSlice';
 import { MainState, snackAlert, snackAlertError } from '../../slices/mainSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import Banner from '../Community/Banner';
 
 const descriptionMaxLength = 2000;
 
 const Settings = ({ community }: { community: Community }) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
 

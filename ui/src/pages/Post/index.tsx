@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
+import { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useHistory, useParams } from 'react-router-dom';
+import { Location, NavigationType, useNavigate, useNavigationType, useParams } from 'react-router';
 import Dropdown from '../../components/Dropdown';
 import MiniFooter from '../../components/MiniFooter';
 import PostVotes from '../../components/PostCard/PostVotes';
@@ -27,7 +26,7 @@ import CommentSection from './CommentSection';
 import PostDeleteModal, { PostContentDeleteModal } from './PostDeleteModal';
 import PostShareButton from './PostShareButton';
 // import CommentsSortButton from './CommentsSortButton';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import MarkdownBody from '../../components/MarkdownBody';
 import embeddedElement from '../../components/PostCard/embed';
 import LinkImage from '../../components/PostCard/LinkImage';
@@ -39,19 +38,23 @@ import { Comment, Community } from '../../serverTypes';
 import { commentsAdded, CommentsState, newCommentAdded } from '../../slices/commentsSlice';
 import { communityAdded } from '../../slices/communitiesSlice';
 import { postAdded, PostsState, Post as PostType } from '../../slices/postsSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import { SVGExternalLink } from '../../SVGs';
 import CommunityCard from './CommunityCard';
 import PostImage from './PostImage';
 import PostVotesBar from './PostVotesBar';
+import PageTitle from '../../components/PageTitle';
 
 const Post = () => {
-  const { id, commentId, communityName } = useParams<{ [key: string]: string }>(); // id is post.publicId
+  const { id, commentId, name: communityName } = useParams<{ [key: string]: string }>(); // id is post.publicId
+  if (!id) throw new Error('id param is required');
+  if (!communityName) throw new Error('community name param is required');
 
-  const dispatch = useDispatch();
-  const history = useHistory();
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
+  const navigationType = useNavigationType();
 
-  const location = useLocation<{ fromNotifications: boolean }>();
+  const location: Location<{ fromNotifications: boolean }> = useLocation();
   const fromNotifications = Boolean(location.state ? location.state.fromNotifications : false);
 
   const user = useSelector<RootState>(
@@ -70,13 +73,13 @@ const Post = () => {
   }) as Community;
 
   const [postLoading, setPostLoading] = useState(post ? 'loaded' : 'loading');
-  const shouldCommentsLoad = () => {
+  const shouldCommentsLoad = useCallback(() => {
     if (!(comments && post)) return true;
-    const isPop = history.action === 'POP';
+    const isPop = navigationType === NavigationType.Pop;
     if (fromNotifications) return !isPop;
     if (post.fetchedAt > comments.fetchedAt) return !isPop;
     return false;
-  };
+  }, [post, navigationType, fromNotifications, comments]);
   const [commentsLoading, setCommentsLoading] = useState(
     shouldCommentsLoad() ? 'loading' : 'loaded'
   );
@@ -108,7 +111,7 @@ const Post = () => {
     return () => {
       dispatch({ type: 'post/cleared' });
     };
-  }, [id, location]);
+  }, [id, location, shouldCommentsLoad, community, dispatch, fromNotifications, post]);
 
   useEffect(() => {
     if (community && post) {
@@ -118,10 +121,10 @@ const Post = () => {
         let newPathname = '';
         seps.forEach((sep) => (newPathname += `${sep}/`));
         newPathname = newPathname.substring(0, newPathname.length - 1);
-        history.replace(`${newPathname}${location.search}${location.hash}`);
+        navigate(`${newPathname}${location.search}${location.hash}`, { replace: true });
       }
     }
-  }, [location, community, post]);
+  }, [location, community, post, navigate]);
 
   const handleAddCommentSuccess = (comment: Comment) => {
     dispatch(newCommentAdded(post.publicId, comment));
@@ -196,6 +199,9 @@ const Post = () => {
         dispatch(snackAlertError(error));
       }
     })();
+    // Lint disabled as adding `post` as a dep causes PUT requests to be sent when
+    // navigating between posts.
+    // oxlint-disable-next-line react/exhaustive-deps
   }, [userGroup]);
 
   const [isPinned, setIsPinned] = useState(post ? post.isPinned : false);
@@ -315,10 +321,8 @@ const Post = () => {
 
   return (
     <div className="page-content page-post wrap">
-      <Helmet>
-        <title>{post.title}</title>
-        {commentId && <meta name="robots" content="noindex" />}
-      </Helmet>
+      <PageTitle title={post.title} />
+      {commentId && <meta name="robots" content="noindex" />}
       <Sidebar />
       <main className="left">
         <div className="post post-card">
@@ -440,7 +444,7 @@ const Post = () => {
                   <button
                     className="button-text"
                     onClick={() =>
-                      history.push(`/new?edit=${post.publicId}`, { fromPostPage: true })
+                      navigate(`/new?edit=${post.publicId}`, { state: { fromPostPage: true } })
                     }
                   >
                     Edit

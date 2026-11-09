@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { useHistory } from 'react-router';
+import { useNavigate } from 'react-router';
 import { mfetchjson } from '../../helper';
 import { NotificationView } from '../../serverTypes';
 import {
@@ -12,8 +12,9 @@ import { ButtonMore } from '../Button';
 import Dropdown from '../Dropdown';
 import Image from '../Image';
 import TimeAgo from '../TimeAgo';
+import { AppDispatch } from '../../store';
 
-export interface NotificationItemProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
+interface NotificationItemProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   notification: NotificationView;
 }
 
@@ -43,7 +44,7 @@ const NotificationItem = ({ notification, ...rest }: NotificationItemProps) => {
   const [actionBtnHovering, setActionBtnHovering] = useState(false);
   const [dropdownActive, setDropdownActive] = useState(false);
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const handleMarkAsSeen = () => dispatch(markNotificationAsSeen(notification, !seen));
   const handleDelete = async () => {
     try {
@@ -57,7 +58,7 @@ const NotificationItem = ({ notification, ...rest }: NotificationItemProps) => {
   };
 
   const actionsRef = useRef<HTMLDivElement>(null);
-  const history = useHistory();
+  const navigate = useNavigate();
   const handleClick = (event: React.MouseEvent, to: string) => {
     event.preventDefault();
     const target = event.target as Node | null;
@@ -70,8 +71,10 @@ const NotificationItem = ({ notification, ...rest }: NotificationItemProps) => {
       if (to === '#') {
         return;
       }
-      history.push(to, {
-        fromNotifications: true,
+      navigate(to, {
+        state: {
+          fromNotifications: true,
+        },
       });
     }
   };

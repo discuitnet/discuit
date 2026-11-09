@@ -1,4 +1,4 @@
-/* eslint-disable no-unused-vars */
+/* oxlint-disable no-unused-vars */
 import PropTypes from 'prop-types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -22,9 +22,7 @@ const isInternalLink = (link) => {
 
 const MarkdownBody = ({ children, noLinks = false, veryBasic = false }) => {
   const renderLink = ({ node, ...props }) => {
-    // eslint-disable-next-line react/prop-types
     if (isInternalLink(props.href)) {
-      // eslint-disable-next-line react/prop-types
       const url = new URL(props.href, `${window.location.protocol}//${window.location.host}`);
       const to = `${url.pathname}${url.search}${url.hash}`;
       if (to.startsWith('/images/')) {

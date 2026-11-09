@@ -80,6 +80,7 @@ export type InputMaxLengthChangeEventHandler = (
   event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | string
 ) => void;
 
+// oxlint-disable react/only-export-components
 export function useInputMaxLength(
   maxLength: number,
   initial = ''

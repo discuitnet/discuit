@@ -1,7 +1,7 @@
 import clsx from 'clsx';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import Button, { ButtonClose } from '../components/Button';
 import CommunityProPic from '../components/CommunityProPic';
 import Dropdown from '../components/Dropdown';
@@ -26,7 +26,7 @@ import {
   snackAlert,
   snackAlertError,
 } from '../slices/mainSlice';
-import { RootState } from '../store';
+import { AppDispatch, RootState } from '../store';
 import { SVGClose, SVGSearch } from '../SVGs';
 import LoginForm from '../views/LoginForm';
 import JoinButton from './Community/JoinButton';
@@ -50,14 +50,17 @@ const AllCommunities = () => {
     (state) => state.main.allCommunitiesSearchQuery
   ) as MainState['allCommunitiesSearchQuery'];
   const [isSearching, setIsSearching] = useState(searchQuery !== '');
-  const setSearchQuery = (query: string) => {
-    dispatch(allCommunitiesSearchQueryChanged(query));
-  };
+  const setSearchQuery = useCallback(
+    (query: string) => {
+      dispatch(allCommunitiesSearchQueryChanged(query));
+    },
+    [dispatch]
+  );
   useEffect(() => {
     if (!isSearching) {
       setSearchQuery('');
     }
-  }, [isSearching]);
+  }, [isSearching, setSearchQuery]);
 
   const sort = useSelector<RootState>(
     (state) => state.main.allCommunitiesSort
@@ -201,7 +204,7 @@ const RequestCommunityButton = ({
   ...props
 }: RequestCommunityButtonProps) => {
   const loggedIn = useSelector<RootState>((state) => state.main.user) !== null;
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const [open, setOpen] = useState(false);
   const handleClose = () => setOpen(false);
@@ -242,8 +245,8 @@ const RequestCommunityButton = ({
         dispatch(snackAlert('Requested!'));
         handleClose();
       } else {
-          const error = await res.json();
-          dispatch(snackAlert(error.message));
+        const error = await res.json();
+        dispatch(snackAlert(error.message));
       }
     } catch (error) {
       dispatch(snackAlertError(error));
@@ -301,12 +304,12 @@ const RequestCommunityButton = ({
 const ListItem = React.memo(function ListItem({ community }: { community: Community }) {
   const to = `/${community.name}`;
 
-  const history = useHistory();
+  const navigate = useNavigate();
   const ref = useRef(null);
 
   const handleClick: React.MouseEventHandler = (event) => {
     if ((event.target as Element).tagName !== 'BUTTON') {
-      history.push(to);
+      navigate(to);
     }
   };
 

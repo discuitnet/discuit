@@ -9,6 +9,7 @@ import { Community } from '../../serverTypes';
 import { snackAlertError } from '../../slices/mainSlice';
 import { Post } from '../../slices/postsSlice';
 import ReportsView from './ReportsView';
+import { AppDispatch } from '../../store';
 
 const Removed = ({
   community,
@@ -19,7 +20,7 @@ const Removed = ({
   filter: string;
   title: string;
 }) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const [loading, setLoading] = useLoading();
 
   const limit = 10;

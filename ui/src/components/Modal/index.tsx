@@ -1,9 +1,8 @@
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { useHistory } from 'react-router-dom';
 import { getScrollbarWidth } from '../../helper';
 
-export interface ModalProps {
+interface ModalProps {
   open: boolean;
   onClose: () => void;
   noEscapeClose?: boolean;
@@ -20,17 +19,14 @@ const Modal = ({
   children,
   onKeyDown,
 }: ModalProps) => {
-  const history = useHistory();
-
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   useEffect(() => {
-    if (open) {
-      const unlisten = history.listen((_, action) => {
-        if (action === 'POP') onClose();
-      });
-      return () => unlisten();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, history]);
+    if (!open) return;
+    const handlePop = () => onCloseRef.current();
+    window.addEventListener('popstate', handlePop);
+    return () => window.removeEventListener('popstate', handlePop);
+  }, [open]);
 
   const [el] = useState(document.createElement('el'));
   useEffect(() => {
@@ -51,7 +47,7 @@ const Modal = ({
         document.removeEventListener('keydown', handleKeyDown);
       };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   useLayoutEffect(() => {

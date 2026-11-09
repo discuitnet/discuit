@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [viteCompression(), viteCompression({ algorithm: 'brotliCompress' })],
   build: {
     outDir: 'dist-sw',
-    rollupOptions: {
+    rolldownOptions: {
       input: './service-worker.js',
       output: {
         entryFileNames: '[name].js',

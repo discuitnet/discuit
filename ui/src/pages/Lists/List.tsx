@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
-import { useHistory, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { ButtonClose, ButtonMore } from '../../components/Button';
 import Dropdown from '../../components/Dropdown';
 import Feed from '../../components/Feed';
@@ -22,14 +21,19 @@ import { listAdded, selectList } from '../../slices/listsSlice';
 import { listsAdded, MainState, snackAlertError } from '../../slices/mainSlice';
 import { Post } from '../../slices/postsSlice';
 import { selectUser } from '../../slices/usersSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import NotFound from '../NotFound';
 import { isInfiniteScrollingDisabled } from '../Settings/devicePrefs';
 import { MemorizedComment } from '../User/Comment';
+import PageTitle from '../../components/PageTitle';
 
 const List = () => {
-  const dispatch = useDispatch();
-  const { username, listName: listname } = useParams<{ [key: string]: string }>();
+  const dispatch = useDispatch<AppDispatch>();
+  let { username, listName: listname } = useParams<{ [key: string]: string }>();
+  if (!username) throw new Error('username param is required');
+  if (!listname) throw new Error('list name param is required');
+
+  username = username.slice(1); // @username -> username
 
   const [editModalOpen, setEditModalOpen] = useState(false);
 
@@ -139,7 +143,7 @@ const List = () => {
     }
   };
 
-  const history = useHistory();
+  const navigate = useNavigate();
   const handleDeleteList = async () => {
     if (!confirm('Are you sure you want to delete the list?')) {
       return;
@@ -148,7 +152,7 @@ const List = () => {
       await mfetchjson(listEndpoint, { method: 'DELETE' });
       const res = await mfetchjson('/api/_initial');
       dispatch(listsAdded(res.lists));
-      history.replace(`/@${list?.username}/lists/${name}`);
+      navigate(`/@${list?.username}/lists`, { replace: true });
     } catch (error) {
       dispatch(snackAlertError(error));
     }
@@ -169,9 +173,7 @@ const List = () => {
   return (
     <div className="page-content wrap page-grid page-list">
       <EditListModal list={list} open={editModalOpen} onClose={() => setEditModalOpen(false)} />
-      <Helmet>
-        <title>{`${listname} of @${username}`}</title>
-      </Helmet>
+      <PageTitle title={`${listname} of @${username}`} />
       <Sidebar />
       <main className="page-middle">
         <header className="card card-padding list-head">
@@ -368,7 +370,7 @@ export const EditListForm = ({
   onSuccess?: () => void;
 }) => {
   const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const [isPublic, setIsPublic] = useState(list ? list.public : false);
 
@@ -410,7 +412,7 @@ export const EditListForm = ({
     dispatch(listsAdded(newLists));
   };
 
-  const history = useHistory();
+  const navigate = useNavigate();
   const updateList = async () => {
     if (!list) {
       return;
@@ -426,7 +428,7 @@ export const EditListForm = ({
     });
     const res = await mfetchjson('/api/_initial');
     dispatch(listsAdded(res.lists));
-    history.replace(`/@${list.username}/lists/${name}`);
+    navigate(`/@${list.username}/lists/${name}`, { replace: true });
     dispatch(listAdded(list.username, newList));
   };
 

@@ -9,9 +9,10 @@ import { APIError, mfetch, mfetchjson } from '../../helper';
 import { useLoading } from '../../hooks';
 import { Community, User } from '../../serverTypes';
 import { snackAlert, snackAlertError } from '../../slices/mainSlice';
+import { AppDispatch } from '../../store';
 
 const Banned = ({ community }: { community: Community }) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const baseURL = `/api/communities/${community.id}`;
   const [users, setUsers] = useState<User[]>([]);

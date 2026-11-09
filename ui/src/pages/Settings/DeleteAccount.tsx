@@ -7,9 +7,10 @@ import Modal from '../../components/Modal';
 import { APIError, mfetch } from '../../helper';
 import { User } from '../../serverTypes';
 import { snackAlertError } from '../../slices/mainSlice';
+import { AppDispatch } from '../../store';
 
 const DeleteAccount = ({ user }: { user: User }) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const [open, setOpen] = useState(false);
   const handleClose = () => setOpen(false);

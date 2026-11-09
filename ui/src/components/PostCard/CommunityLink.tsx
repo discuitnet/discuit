@@ -1,9 +1,9 @@
 import clsx from 'clsx';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Community } from '../../serverTypes';
 import CommunityProPic from '../CommunityProPic';
 
-export interface CommunityLinkProps {
+interface CommunityLinkProps {
   className?: string;
   target?: HTMLAnchorElement['target'];
   name: string;

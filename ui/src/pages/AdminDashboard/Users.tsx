@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import Button from '../../components/Button';
 import DashboardPage from '../../components/Dashboard/DashboardPage';
 import PageLoading from '../../components/PageLoading';
@@ -11,6 +11,7 @@ import { mfetchjson } from '../../helper';
 import { useLoading } from '../../hooks';
 import { User } from '../../serverTypes';
 import { snackAlertError } from '../../slices/mainSlice';
+import { AppDispatch } from '../../store';
 
 interface UsersState {
   users: User[] | null;
@@ -21,7 +22,7 @@ export default function Users() {
   const [loading, setLoading] = useLoading('loading');
   const [usersState, setUsersState] = useState<UsersState>({ users: null, next: null });
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   useEffect(() => {
     const f = async () => {
       try {
@@ -34,7 +35,7 @@ export default function Users() {
       }
     };
     f();
-  }, []);
+  }, [setLoading, dispatch]);
 
   const [nextUsersLoading, setNextUsersLoading] = useState(false);
   const fetchNextUsers = async () => {

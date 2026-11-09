@@ -32,7 +32,7 @@ export default function ImageGallery({
     if (onIndexChange) {
       onIndexChange(currentImageIndex);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [currentImageIndex]);
 
   const renderImages = () => {
@@ -58,15 +58,12 @@ export default function ImageGallery({
   };
 
   const renderDots = () => {
-    const dots = [];
-    for (let i = 0; i < numImages; i++) {
-      dots.push(
-        <div
-          className={'image-gallery-dot' + (currentImageIndex === i ? ' is-highlighted' : '')}
-          key={`dot-${i}`}
-        ></div>
-      );
-    }
+    const dots = Array.from({ length: numImages }, (_, i) => (
+      <div
+        className={'image-gallery-dot' + (currentImageIndex === i ? ' is-highlighted' : '')}
+        key={`dot-${i}`}
+      ></div>
+    ));
     return <div className="image-gallery-dots">{dots}</div>;
   };
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import DashboardPage from '../../components/Dashboard/DashboardPage';
 import PageLoading from '../../components/PageLoading';
 import SimpleFeed, { SimpleFeedItem } from '../../components/SimpleFeed';
@@ -9,6 +9,7 @@ import { mfetchjson } from '../../helper';
 import { useLoading } from '../../hooks';
 import { Community } from '../../serverTypes';
 import { snackAlertError } from '../../slices/mainSlice';
+import { AppDispatch } from '../../store';
 
 interface CommunitiesState {
   communities: Community[] | null;
@@ -26,7 +27,7 @@ export default function Communities() {
     return items.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
   };
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   useEffect(() => {
     const f = async () => {
       try {
@@ -45,7 +46,7 @@ export default function Communities() {
       }
     };
     f();
-  }, []);
+  }, [dispatch, setLoading]);
 
   const handleRenderItem = (item: Community): React.ReactNode => {
     const community = item;

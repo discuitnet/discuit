@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { mfetchjson, omitWWWFromHostname, stringCount } from '../../helper';
 import { useIsMobile } from '../../hooks';
 import { snackAlertError } from '../../slices/mainSlice';
@@ -16,6 +16,7 @@ import LinkImage from './LinkImage';
 import PostCardHeadingDetails from './PostCardHeadingDetails';
 import PostCardImage from './PostCardImage';
 import PostVotes from './PostVotes';
+import { AppDispatch } from '../../store';
 
 export interface PostCardProps {
   index?: number; // Index in the feed.
@@ -42,7 +43,7 @@ const PostCard = ({
   feedItemKey,
   canHideFromFeed = false,
 }: PostCardProps) => {
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const [post, setPost] = useState(initialPost);
   useEffect(() => {
@@ -67,7 +68,7 @@ const PostCard = ({
       if (target !== '_self') {
         window.open(postURL);
       } else {
-        history.push(postURL);
+        navigate(postURL);
       }
     }
   };
@@ -78,7 +79,7 @@ const PostCard = ({
     }
   };
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const handleHidePost = async () => {
     try {
       await mfetchjson('/api/hidden_posts', {

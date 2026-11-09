@@ -1,4 +1,3 @@
-import { ThunkDispatch } from 'redux-thunk';
 import { APIError, mfetch, mfetchjson } from '../helper';
 import { getDevicePreference, setDevicePreference } from '../pages/Settings/devicePrefs';
 import {
@@ -13,9 +12,8 @@ import {
   User,
 } from '../serverTypes';
 import { AppDispatch, RootState, UnknownAction } from '../store';
-import { communitiesAdded } from './communitiesSlice';
 
-export interface Alert {
+interface Alert {
   id: string | number | null;
   text: string;
   timer?: number;
@@ -503,7 +501,7 @@ export default function mainReducer(
 
 // miscInitialValuesAdded sets all the values that were not set by other
 // dispatch calls previously.
-export const miscInitialValuesAdded = (payload: InitialValues) => {
+const miscInitialValuesAdded = (payload: InitialValues) => {
   return { type: 'main/initialValuesAdded', payload };
 };
 
@@ -515,28 +513,9 @@ export const userLoggedIn = (user: User) => {
   return { type: 'main/userLoggedIn', payload: user };
 };
 
-export const userLoggedOut = () => {
-  return { type: 'main/userLoggedOut' };
-};
-
 export const sidebarCommunitiesUpdated = (communities?: Community[] | null) => {
   return { type: 'main/sidebarCommunitiesUpdated', payload: communities || [] };
 };
-
-export const allCommunitiesUpdated =
-  (communities: Community[] = []) =>
-  (dispatch: ThunkDispatch<RootState, unknown, UnknownAction>) => {
-    communities = communities || [];
-    const names = communities.map((item) => item.name);
-    dispatch({
-      type: 'main/allCommunitiesUpdated',
-      payload: {
-        items: names || [],
-        loading: false,
-      },
-    });
-    dispatch(communitiesAdded(communities));
-  };
 
 export const snackAlert =
   (text: string, id?: string | number | null, timeout = 3000) =>
@@ -565,7 +544,7 @@ export const loginPromptToggled = () => {
   return { type: 'main/loginPromptToggled' };
 };
 
-export const reportReasonsUpdated = (reasons: ReportReason[] | null) => {
+const reportReasonsUpdated = (reasons: ReportReason[] | null) => {
   return { type: 'main/reportReasonsUpdated', payload: reasons || [] };
 };
 
@@ -573,12 +552,8 @@ export const toggleSidebarOpen = () => {
   return { type: 'main/toggleSidebarOpen' };
 };
 
-export const bannedFromUpdated = (communities: string[]) => {
+const bannedFromUpdated = (communities: string[]) => {
   return { type: 'main/bannedFromUpdated', payload: communities };
-};
-
-export const bannedFromAdded = (community: string) => {
-  return { type: 'main/bannedFromAdded', payload: community };
 };
 
 export const notificationsLoaded = (notifications: NotificationsResponse) => {
@@ -667,50 +642,45 @@ export const showAppInstallButton = (show: boolean, deferredPrompt?: Event) => {
   };
 };
 
-export const muteUser =
-  (userId: string, username: string) =>
-  async (dispatch: ThunkDispatch<RootState, unknown, UnknownAction>) => {
-    try {
-      const mutes = await mfetchjson('/api/mutes', {
-        method: 'POST',
-        body: JSON.stringify({
-          userId: userId,
-        }),
-      });
-      dispatch(mutesAdded(mutes));
-      dispatch(
-        snackAlert(
-          `Posts from @${username} won't appear on any of your feeds from now on.`,
-          null,
-          5000
-        )
-      );
-    } catch (error) {
-      dispatch(snackAlertError(error));
-    }
-  };
+export const muteUser = (userId: string, username: string) => async (dispatch: AppDispatch) => {
+  try {
+    const mutes = await mfetchjson('/api/mutes', {
+      method: 'POST',
+      body: JSON.stringify({
+        userId: userId,
+      }),
+    });
+    dispatch(mutesAdded(mutes));
+    dispatch(
+      snackAlert(
+        `Posts from @${username} won't appear on any of your feeds from now on.`,
+        null,
+        5000
+      )
+    );
+  } catch (error) {
+    dispatch(snackAlertError(error));
+  }
+};
 
-export const unmuteUser =
-  (userId: string, username: string) =>
-  async (dispatch: ThunkDispatch<RootState, unknown, UnknownAction>) => {
-    try {
-      const res = await mfetch(`/api/mutes/users/${userId}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        dispatch(muteRemoved('user', userId));
-        dispatch(snackAlert(`Unmuted @${username}`, null));
-      } else {
-        throw new Error('Failed unmuting user: ' + (await res.text()));
-      }
-    } catch (error) {
-      dispatch(snackAlertError(error));
+export const unmuteUser = (userId: string, username: string) => async (dispatch: AppDispatch) => {
+  try {
+    const res = await mfetch(`/api/mutes/users/${userId}`, {
+      method: 'DELETE',
+    });
+    if (res.ok) {
+      dispatch(muteRemoved('user', userId));
+      dispatch(snackAlert(`Unmuted @${username}`, null));
+    } else {
+      throw new Error('Failed unmuting user: ' + (await res.text()));
     }
-  };
+  } catch (error) {
+    dispatch(snackAlertError(error));
+  }
+};
 
 export const muteCommunity =
-  (communityId: string, communityName: string) =>
-  async (dispatch: ThunkDispatch<RootState, unknown, UnknownAction>) => {
+  (communityId: string, communityName: string) => async (dispatch: AppDispatch) => {
     try {
       const mutes = await mfetchjson('/api/mutes', {
         method: 'POST',
@@ -726,8 +696,7 @@ export const muteCommunity =
   };
 
 export const unmuteCommunity =
-  (communityId: string, communityName: string) =>
-  async (dispatch: ThunkDispatch<RootState, unknown, UnknownAction>) => {
+  (communityId: string, communityName: string) => async (dispatch: AppDispatch) => {
     try {
       const res = await mfetch(`/api/mutes/communities/${communityId}`, {
         method: 'DELETE',
@@ -747,11 +716,7 @@ export const mutesAdded = (mutes: Mutes) => {
   return { type: 'main/mutesAdded', payload: mutes };
 };
 
-export const muteAdded = (mute: Mute) => {
-  return { type: 'main/muteAdded', payload: mute };
-};
-
-export const muteRemoved = (type = '', objectId = '') => {
+const muteRemoved = (type = '', objectId = '') => {
   return { type: 'main/muteRemoved', payload: { type, objectId } };
 };
 

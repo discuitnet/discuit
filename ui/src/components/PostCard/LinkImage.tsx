@@ -1,7 +1,7 @@
 import { useImageLoaded } from '../../hooks';
 import { Image } from '../../serverTypes';
 
-export interface LinkImageProps {
+interface LinkImageProps {
   image: Image;
   loading?: React.ImgHTMLAttributes<HTMLImageElement>['loading'];
   isImagePost?: boolean;

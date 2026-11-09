@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { APIError, mfetch } from '../helper';
 import { MainState, snackAlert, snackAlertError } from '../slices/mainSlice';
-import { RootState } from '../store';
+import { AppDispatch, RootState } from '../store';
 import { ButtonClose } from './Button';
 import Modal from './Modal';
 
-export interface ReportModalProps {
+interface ReportModalProps {
   target: { id: unknown } & unknown;
   targetType: string;
   noButton?: boolean;
@@ -25,7 +25,7 @@ const ReportModal = ({
   open: outerOpen,
   onClose,
 }: ReportModalProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const reasons = useSelector<RootState>(
     (state) => state.main.reportReasons
   ) as MainState['reportReasons'];

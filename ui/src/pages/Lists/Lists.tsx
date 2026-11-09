@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { ButtonClose } from '../../components/Button';
 import Dropdown from '../../components/Dropdown';
 import Link from '../../components/Link';
@@ -18,12 +18,12 @@ import {
   listsOrderChanged,
 } from '../../slices/listsSlice';
 import { MainState, snackAlert } from '../../slices/mainSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import NotFound from '../NotFound';
 import { EditListForm } from './List';
 
 const Lists = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const [isNewListOpen, setIsNewListOpen] = useState(false);
   const [lists, setLists] = useState<List[]>([]);
 
@@ -47,7 +47,10 @@ const Lists = () => {
     };
   }, []);
 
-  const { username } = useParams<{ [key: string]: string }>();
+  let { username } = useParams<{ [key: string]: string }>();
+  if (!username) throw new Error('username param is required');
+  username = username.slice(1); // @username -> username
+
   const { user, loading: userLoading, error: userError } = useFetchUser(username);
   const { order, filter, loading: listsLoading, error: listsError } = useFetchUsersLists(username);
 
@@ -85,18 +88,15 @@ const Lists = () => {
     lastAdded: 'Last added',
   };
   const renderOrderDropdown = () => {
-    const items = [];
-    for (const [key, value] of Object.entries(orderOptions)) {
-      items.push(
-        <div
-          key={key}
-          className="dropdown-item"
-          onClick={() => dispatch(listsOrderChanged(username, key as ListsOrder))}
-        >
-          {value}
-        </div>
-      );
-    }
+    const items = Object.entries(orderOptions).map(([key, value]) => (
+      <div
+        key={key}
+        className="dropdown-item"
+        onClick={() => dispatch(listsOrderChanged(username, key as ListsOrder))}
+      >
+        {value}
+      </div>
+    ));
     return (
       <Dropdown target={orderOptions[order]}>
         <div className="dropdown-list">{items}</div>
@@ -110,18 +110,15 @@ const Lists = () => {
     private: 'Private',
   };
   const renderFilterDropdown = () => {
-    const items = [];
-    for (const [key, value] of Object.entries(filterOptions)) {
-      items.push(
-        <div
-          key={key}
-          className="dropdown-item"
-          onClick={() => dispatch(listsFilterChanged(username, key as ListsFilter))}
-        >
-          {value}
-        </div>
-      );
-    }
+    const items = Object.entries(filterOptions).map(([key, value]) => (
+      <div
+        key={key}
+        className="dropdown-item"
+        onClick={() => dispatch(listsFilterChanged(username, key as ListsFilter))}
+      >
+        {value}
+      </div>
+    ));
     return (
       <Dropdown target={filterOptions[filter]}>
         <div className="dropdown-list">{items}</div>
@@ -144,7 +141,9 @@ const Lists = () => {
             <div className="left">
               {renderOrderDropdown()}
               {authedUser && authedUser.username === username && renderFilterDropdown()}
-              {authedUser && authedUser.username === username && <button onClick={toggleNewListForm}>New list</button>}
+              {authedUser && authedUser.username === username && (
+                <button onClick={toggleNewListForm}>New list</button>
+              )}
             </div>
           </div>
           <Modal open={isNewListOpen} onClose={toggleNewListForm}>

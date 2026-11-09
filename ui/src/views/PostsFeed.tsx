@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useHistory, useLocation } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import Feed from '../components/Feed';
 import { MemorizedPostCard } from '../components/PostCard/PostCard';
 import SelectBar from '../components/SelectBar';
@@ -32,6 +32,7 @@ const sortOptions: SortOption[] = [
 const sortDefault = import.meta.env.VITE_DEFAULTFEEDSORT;
 const baseURL = '/api/posts';
 
+// oxlint-disable react/only-export-components
 export const homeReloaded = (homeFeed = 'all', rememberFeedSort = false) => {
   const params = new URLSearchParams();
   let sort = sortDefault;
@@ -68,7 +69,7 @@ function useFeedSort(rememberLastSort = false): [string | null, (newSort: string
     }
   }
 
-  const history = useHistory();
+  const navigate = useNavigate();
   const [sort, _setSort] = useState(sortSaved);
 
   const setSort = (newSort: string) => {
@@ -80,7 +81,7 @@ function useFeedSort(rememberLastSort = false): [string | null, (newSort: string
       sortOptions
         .filter((option) => option.id === newSort)
         .forEach((option) => (to = option.to || ''));
-      history.replace(to);
+      navigate(to, { replace: true });
     }
   };
 

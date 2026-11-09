@@ -1,9 +1,7 @@
 import clsx from 'clsx';
-import React, { useEffect, useRef, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useHistory } from 'react-router';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { getGlobalAppData } from '../../appData';
 import Link from '../../components/Link';
 import MarkdownTextarea from '../../components/MarkdownTextarea';
@@ -15,23 +13,24 @@ import { useLoading, useQuery } from '../../hooks';
 import type { Community, Post, Image as ServerImage } from '../../serverTypes';
 import { MainState, snackAlert, snackAlertError } from '../../slices/mainSlice';
 import { postAdded } from '../../slices/postsSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import Rules from '../Community/Rules';
 import AsUser from '../Post/AsUser';
 import CommunityCard from '../Post/CommunityCard';
 import Image from './Image';
 import SelectCommunity from './SelectCommunity';
+import PageTitle from '../../components/PageTitle';
 
 const NewPost = () => {
-  const dispatch = useDispatch();
-  const history = useHistory();
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   const location = useLocation();
 
   const user = (useSelector<RootState>((state) => state.main.user) as MainState['user'])!;
   const loggedIn = user !== null;
   useEffect(() => {
-    if (!loggedIn) history.push('/login');
-  }, [loggedIn, history]);
+    if (!loggedIn) navigate('/login');
+  }, [loggedIn, navigate]);
 
   const query = useQuery();
   const isEditPost = query.has('edit');
@@ -63,10 +62,10 @@ const NewPost = () => {
     try {
       const rcomm = await mfetchjson(`/api/communities/${ncomm.id}`);
       setCommunity(rcomm);
-      const query = new URLSearchParams(history.location.search);
+      const query = new URLSearchParams(location.search);
       if (query.get('community') !== ncomm.name) {
         query.set('community', ncomm.name);
-        history.replace(`${history.location.pathname}?${query.toString()}`);
+        navigate(`${location.pathname}?${query.toString()}`, { replace: true });
       }
     } catch (error) {
       snackAlertError(error);
@@ -106,64 +105,67 @@ const NewPost = () => {
     } else {
       setLoading('loaded');
     }
-  }, [editPostId]);
+  }, [editPostId, dispatch, setLoading, isEditPost]);
 
   const [isUploading, setIsUploading] = useState(false);
   const abortController = useRef(new AbortController());
-  const handleImagesUpload = async (files?: FileList | null) => {
-    if (isUploading || !files) {
-      return;
-    }
-    // Check to see if uploading these images would reach the max image limit.
-    if (images.length + files.length > maxNumOfImages) {
-      alert(
-        `Image posts cannot contain more than ${maxNumOfImages} images. Please select fewer images and continue.`
-      );
-      return;
-    }
-    setIsUploading(true);
-    for (const file of files) {
-      try {
-        const data = new FormData();
-        data.append('image', file);
-        const res = await mfetch('/api/_uploads', {
-          signal: abortController.current.signal,
-          method: 'POST',
-          body: data,
-        });
-        if (!res.ok) {
-          setIsUploading(false);
-          if (res.status === 400) {
-            const error = await res.json();
-            if (error.code === 'file_size_exceeded') {
-              dispatch(snackAlert('Maximum file size exceeded.'));
-              break;
-            } else if (error.code === 'unsupported-image-format') {
-              console.log(file.name);
-              dispatch(
-                snackAlert(
-                  `File '${truncateStringWithDots(file.name, 20)}' is of an unsupported type.`
-                )
-              );
-              break;
-            }
-          }
-          throw new APIError(res.status, await res.json());
-        }
-        const resImage = (await res.json()) as ServerImage;
-        SetImages((images) => {
-          return [...images, resImage];
-        });
-      } catch (error) {
-        if (!(error instanceof DOMException && error.name === 'AbortError')) {
-          dispatch(snackAlertError(error));
-        }
-        setIsUploading(false);
-        break;
+  const handleImagesUpload = useCallback(
+    async (files?: FileList | null) => {
+      if (isUploading || !files) {
+        return;
       }
-    }
-    setIsUploading(false);
-  };
+      // Check to see if uploading these images would reach the max image limit.
+      if (images.length + files.length > maxNumOfImages) {
+        alert(
+          `Image posts cannot contain more than ${maxNumOfImages} images. Please select fewer images and continue.`
+        );
+        return;
+      }
+      setIsUploading(true);
+      for (const file of files) {
+        try {
+          const data = new FormData();
+          data.append('image', file);
+          const res = await mfetch('/api/_uploads', {
+            signal: abortController.current.signal,
+            method: 'POST',
+            body: data,
+          });
+          if (!res.ok) {
+            setIsUploading(false);
+            if (res.status === 400) {
+              const error = await res.json();
+              if (error.code === 'file_size_exceeded') {
+                dispatch(snackAlert('Maximum file size exceeded.'));
+                break;
+              } else if (error.code === 'unsupported-image-format') {
+                console.log(file.name);
+                dispatch(
+                  snackAlert(
+                    `File '${truncateStringWithDots(file.name, 20)}' is of an unsupported type.`
+                  )
+                );
+                break;
+              }
+            }
+            throw new APIError(res.status, await res.json());
+          }
+          const resImage = (await res.json()) as ServerImage;
+          SetImages((images) => {
+            return [...images, resImage];
+          });
+        } catch (error) {
+          if (!(error instanceof DOMException && error.name === 'AbortError')) {
+            dispatch(snackAlertError(error));
+          }
+          setIsUploading(false);
+          break;
+        }
+      }
+      setIsUploading(false);
+    },
+    [isUploading, maxNumOfImages, dispatch, images.length]
+  );
   useEffect(() => {
     // This hooks adds image clipboard pasting functionality.
     const listener = async (event: ClipboardEvent) => {
@@ -177,22 +179,25 @@ const NewPost = () => {
     return () => {
       document.removeEventListener('paste', listener);
     };
-  }, []);
+  }, [handleImagesUpload]);
   const deleteImage = (imageId: string) => {
     // TODO: send DELETE request to server.
     SetImages((images) => images.filter((image) => image.id !== imageId));
   };
 
   // For only when editing a post.
-  const returnToWhence = (post: Post) => {
-    const state = location.state as { fromPostPage: boolean };
-    if (state && state.fromPostPage) {
-      // fromPostPage property is set manually upon edit button click.
-      history.goBack();
-    } else {
-      history.replace(`/${post.communityName}/post/${post.publicId}`);
-    }
-  };
+  const returnToWhence = useCallback(
+    (post: Post) => {
+      const state = location.state as { fromPostPage: boolean };
+      if (state && state.fromPostPage) {
+        // fromPostPage property is set manually upon edit button click.
+        navigate(-1);
+      } else {
+        navigate(`/${post.communityName}/post/${post.publicId}`, { replace: true });
+      }
+    },
+    [location.state, navigate]
+  );
 
   const isPostingDisabled =
     community !== null &&
@@ -208,13 +213,13 @@ const NewPost = () => {
   };
 
   const [altTextChanges, setAltTextChanges] = useState<Record<string, string>>({});
-  const isAltMissing = () => {
+  const isAltMissing = useCallback(() => {
     return user.requireAltText && images.some((img) => !img.altText || img.altText.trim() === '');
-  };
+  }, [user.requireAltText, images]);
 
   const [_isSubmitDisabled, setIsSubmitting] = useState(false);
   const isSubmitDisabled = _isSubmitDisabled || isUploading || isPostingDisabled || isAltMissing();
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (isSubmitDisabled) return;
     if (isBanned) {
       alert('You are banned from community');
@@ -307,7 +312,24 @@ const NewPost = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [
+    isEditPost,
+    isBanned,
+    title,
+    isSubmitDisabled,
+    dispatch,
+    link,
+    altTextChanges,
+    postType,
+    isAltMissing,
+    community,
+    user.requireAltText,
+    images,
+    returnToWhence,
+    body,
+    editPostId,
+    userGroup,
+  ]);
   useEffect(() => {
     const listner = (event: KeyboardEvent) => {
       if (event.key === 'Enter' && event.ctrlKey) {
@@ -322,9 +344,9 @@ const NewPost = () => {
       if (isUploading) abortController.current.abort();
       const historyLength = getGlobalAppData().historyLength || 0;
       if (historyLength > 1) {
-        history.goBack();
+        navigate(-1);
       } else {
-        history.replace('/');
+        navigate('/', { replace: true });
       }
     }
   };
@@ -414,9 +436,7 @@ const NewPost = () => {
 
   return (
     <div className="page-content page-new">
-      <Helmet>
-        <title>{isEditPost ? 'Edit Post' : 'New Post'}</title>
-      </Helmet>
+      <PageTitle title={isEditPost ? 'Edit Post' : 'New Post'} />
       <div className="page-new-content">
         <div className="page-new-content-post">
           <SelectCommunity
@@ -619,14 +639,13 @@ const NewPost = () => {
               Submit
             </button>
             <button onClick={handleCancel}>Cancel</button>
-            {
-              isAltMissing()
-                ? <div className="form-field">
-                    <div className="form-error text-center">Your settings require alt text.</div>
-                  </div>
-                : ''
-            }
-
+            {isAltMissing() ? (
+              <div className="form-field">
+                <div className="form-error text-center">Your settings require alt text.</div>
+              </div>
+            ) : (
+              ''
+            )}
           </div>
         </div>
         <div className="new-page-sidebar">
@@ -642,13 +661,13 @@ const NewPost = () => {
             Submit
           </button>
           <button onClick={handleCancel}>Cancel</button>
-          {
-            isAltMissing()
-              ? <div className="form-field">
-                  <div className="form-error text-center">Your settings require alt text.</div>
-                </div>
-              : ''
-          }
+          {isAltMissing() ? (
+            <div className="form-field">
+              <div className="form-error text-center">Your settings require alt text.</div>
+            </div>
+          ) : (
+            ''
+          )}
         </div>
       </div>
     </div>

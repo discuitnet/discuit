@@ -25,7 +25,7 @@ const AsUser = ({
   };
   useEffect(() => {
     if (onChange) onChange(group);
-  }, [group]);
+  }, [group, onChange]);
 
   if (!(isMod || isAdmin)) return null;
 

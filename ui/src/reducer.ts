@@ -1,4 +1,4 @@
-import { combineReducers } from 'redux';
+import { combineReducers } from '@reduxjs/toolkit';
 import commentsReducer from './slices/commentsSlice';
 import communitiesReducer from './slices/communitiesSlice';
 import feedsReducer from './slices/feedsSlice';

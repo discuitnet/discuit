@@ -3,7 +3,7 @@ import React from 'react';
 import MarkdownBody from '../../components/MarkdownBody';
 import { CommunityRule } from '../../serverTypes';
 
-export const RulesItems = ({
+const RulesItems = ({
   rules,
   unordered = false,
 }: {

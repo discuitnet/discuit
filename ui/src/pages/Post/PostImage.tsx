@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import ServerImage from '../../components/ServerImage';
 import { getImageContainSize } from '../../helper';
 import { useIsMobile } from '../../hooks';
@@ -31,7 +31,7 @@ const PostImage = ({ post }: { post: Post }) => {
   }, []);
   const [cardWidth, setCardWidth] = useState(0);
   const isMobile = useIsMobile();
-  const updateImageSize = () => {
+  const updateImageSize = useCallback(() => {
     const w = document.querySelector('.post-card-body')?.clientWidth;
     if (w !== undefined) {
       let h = windowSize.height * (isMobile ? 1 : 0.8);
@@ -40,10 +40,10 @@ const PostImage = ({ post }: { post: Post }) => {
       setCardWidth(w);
       setImageSize({ width, height });
     }
-  };
+  }, [windowSize.height, image.height, image.width, isMobile]);
   useLayoutEffect(() => {
     updateImageSize();
-  }, [windowSize]);
+  }, [windowSize, updateImageSize]);
 
   const imageNoFit = imageSize.width !== Math.round(cardWidth);
 

@@ -1,5 +1,5 @@
 import { useSelector } from 'react-redux';
-import { Redirect } from 'react-router-dom';
+import { Navigate } from 'react-router';
 import { MainState } from '../slices/mainSlice';
 import { RootState } from '../store';
 import LoginForm from '../views/LoginForm';
@@ -9,7 +9,7 @@ const Login = () => {
   const loggedIn = user !== null;
 
   if (loggedIn) {
-    return <Redirect to="/" />;
+    return <Navigate to="/" replace />;
   }
 
   return (

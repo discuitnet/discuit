@@ -9,9 +9,10 @@ import { mfetchjson } from '../../helper';
 import { useLoading } from '../../hooks';
 import { Community, CommunityRule } from '../../serverTypes';
 import { snackAlertError } from '../../slices/mainSlice';
+import { AppDispatch } from '../../store';
 
 const Rules = ({ community }: { community: Community }) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const [rules, _setRules] = useState<CommunityRule[]>([]);
   const setRules = (rules: CommunityRule[]) => {
     _setRules(rules.sort((a, b) => a.zIndex - b.zIndex));

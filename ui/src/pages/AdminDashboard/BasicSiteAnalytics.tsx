@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import DashboardPage from '../../components/Dashboard/DashboardPage';
 import PageLoading from '../../components/PageLoading';
@@ -8,6 +8,7 @@ import { mfetchjson } from '../../helper';
 import { useLoading } from '../../hooks';
 import { AnalyticsEvent } from '../../serverTypes';
 import { snackAlertError } from '../../slices/mainSlice';
+import { AppDispatch } from '../../store';
 
 interface BasicSiteStats {
   version: number;
@@ -47,27 +48,30 @@ export default function BasicSiteAnalytics() {
   const [next, setNext] = useState('');
   const [loading, setLoading] = useLoading('loading');
 
-  const dispatch = useDispatch();
-  const fetchEvents = async (next = '') => {
-    try {
-      const res = (await mfetchjson(`/api/analytics/bss?next=${next}`)) as APIReponse;
-      const items = res.events.map((event) => {
-        return {
-          stat: JSON.parse(event.payload) as BasicSiteStats,
-          createdAt: new Date(event.createdAt),
-        } as Row;
-      });
-      setRows((rows) => [...rows, ...items]);
-      setNext(res.next);
-      setLoading('loaded');
-    } catch (error) {
-      dispatch(snackAlertError(error));
-    }
-  };
+  const dispatch = useDispatch<AppDispatch>();
+  const fetchEvents = useCallback(
+    async (next = '') => {
+      try {
+        const res = (await mfetchjson(`/api/analytics/bss?next=${next}`)) as APIReponse;
+        const items = res.events.map((event) => {
+          return {
+            stat: JSON.parse(event.payload) as BasicSiteStats,
+            createdAt: new Date(event.createdAt),
+          } as Row;
+        });
+        setRows((rows) => [...rows, ...items]);
+        setNext(res.next);
+        setLoading('loaded');
+      } catch (error) {
+        dispatch(snackAlertError(error));
+      }
+    },
+    [dispatch, setLoading]
+  );
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+  }, [fetchEvents]);
 
   const handleFetchMore = () => fetchEvents(next);
 

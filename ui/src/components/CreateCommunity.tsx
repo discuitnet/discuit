@@ -1,13 +1,13 @@
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { communityAboutMaxLength, communityNameMaxLength } from '../config';
 import { mfetch } from '../helper';
 import { useInputUsername } from '../hooks';
 import { Community } from '../serverTypes';
 import { sidebarCommunitiesUpdated, snackAlertError } from '../slices/mainSlice';
-import { RootState } from '../store';
+import { AppDispatch, RootState } from '../store';
 import { ButtonClose } from './Button';
 import { FormField } from './Form';
 import { InputWithCount, useInputMaxLength } from './Input';
@@ -21,8 +21,8 @@ const CreateCommunity = ({ open, onClose }: { open: boolean; onClose: () => void
     (state) => state.main.sidebarCommunities
   ) as Community[];
 
-  const dispatch = useDispatch();
-  const history = useHistory();
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
 
   const [formError, setFormError] = useState('');
 
@@ -40,7 +40,7 @@ const CreateCommunity = ({ open, onClose }: { open: boolean; onClose: () => void
         const community = await res.json();
         dispatch(sidebarCommunitiesUpdated([...communities, community]));
         onClose();
-        history.push(`/${name}`);
+        navigate(`/${name}`);
       } else if (res.status === 409) {
         setFormError('A community by that name already exists.');
       } else {

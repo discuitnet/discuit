@@ -3,6 +3,7 @@ import { ButtonClose } from './components/Button';
 import Modal from './components/Modal';
 import { useIsMobile } from './hooks';
 
+// oxlint-disable react/only-export-components
 export async function forceSwUpdate() {
   if ('serviceWorker' in navigator) {
     console.log('Force updating service worker');
