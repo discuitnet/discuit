@@ -47,8 +47,10 @@ const Lists = () => {
     };
   }, []);
 
-  const { username } = useParams<{ [key: string]: string }>();
+  let { username } = useParams<{ [key: string]: string }>();
   if (!username) throw new Error('username param is required');
+  username = username.slice(1); // @username -> username
+
   const { user, loading: userLoading, error: userError } = useFetchUser(username);
   const { order, filter, loading: listsLoading, error: listsError } = useFetchUsersLists(username);
 

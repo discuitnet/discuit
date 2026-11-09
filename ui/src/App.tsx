@@ -9,6 +9,7 @@ import {
   Routes,
   useLocation,
   useNavigationType,
+  useParams,
 } from 'react-router-dom';
 import { getGlobalAppData } from './appData';
 import AppUpdate from './AppUpdate';
@@ -279,9 +280,7 @@ const AppSwitch = () => {
       <Routes>
         {import.meta.env.MODE !== 'production' && <Route path="/elements" element={<Elements />} />}
         {import.meta.env.MODE !== 'production' && (
-          <Route path="/test-dashboard/*">
-            <ExampleDashboard />
-          </Route>
+          <Route path="/test-dashboard/*" element={<ExampleDashboard />} />
         )}
         {/*
         <Route path="/search">
@@ -320,26 +319,45 @@ const AppSwitch = () => {
         <Route path="/all" element={<Home />} />
         <Route path="/moderating" element={<Home />} />
         <Route path="/communities" element={<AllCommunities />} />
-        <Route path="/admin">
-          <Protected>
-            <AdminDashboard />
-          </Protected>
-        </Route>
+        <Route
+          path="/admin/*"
+          element={
+            <Protected>
+              <AdminDashboard />
+            </Protected>
+          }
+        />
         <Route path="/about" element={<About />} />
         <Route path="/guidelines" element={<Guidelines />} />
         <Route path="/moderator-guidelines" element={<ModeratorGuidelines />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/markdown_guide" element={<MarkdownGuide />} />
-        <Route path="/@:username" element={<User />} />
-        <Route path="/@:username/lists" element={<Lists />} />
-        <Route path="/@:username/lists/:listName" element={<List />} />
-        <Route path="/:name" element={<Community />} />
-        <Route path="/:name/modtools/*">
-          <Protected>
-            <Modtools />
-          </Protected>
-        </Route>
+        <Route
+          path="/:username/lists"
+          element={
+            <UserRoute>
+              <Lists />
+            </UserRoute>
+          }
+        />
+        <Route
+          path="/:username/lists/:listName"
+          element={
+            <UserRoute>
+              <List />
+            </UserRoute>
+          }
+        />
+        <Route path="/:name" element={<UserCommunityRoute />} />
+        <Route
+          path="/:name/modtools/*"
+          element={
+            <Protected>
+              <Modtools />
+            </Protected>
+          }
+        />
         <Route path="/:name/post/:id" element={<Post />} />
         <Route path="/:name/post/:id/:commentId" element={<Post />} />
         <Route path="*" element={<NotFound />} />
@@ -348,11 +366,22 @@ const AppSwitch = () => {
   );
 };
 
+const UserCommunityRoute = () => {
+  const { name } = useParams<{ name: string }>();
+  if (!name) throw new Error('name param is required');
+  return name.startsWith('@') ? <User /> : <Community />;
+};
+const UserRoute = ({ children }: { children: React.ReactNode }) => {
+  const { username } = useParams();
+  return username?.startsWith('@') ? children : <NotFound />;
+};
+
 /*
  * Redirects the logged out user to the login page.
  *
  */
 const Protected = ({ children }: { children: React.ReactNode }) => {
+  const location = useLocation();
   const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const loggedIn = user !== null;
 

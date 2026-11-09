@@ -56,8 +56,9 @@ function formatFilterText(filter = '') {
 }
 
 const User = () => {
-  const { username } = useParams<{ username: string }>();
+  let { name: username } = useParams<{ name: string }>();
   if (!username) throw new Error('username param is required');
+  username = username.slice(1); // @username -> username
 
   const dispatch = useDispatch();
   const navigate = useNavigate();

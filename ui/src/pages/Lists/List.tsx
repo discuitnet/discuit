@@ -29,9 +29,11 @@ import { MemorizedComment } from '../User/Comment';
 
 const List = () => {
   const dispatch = useDispatch();
-  const { username, listName: listname } = useParams<{ [key: string]: string }>();
+  let { username, listName: listname } = useParams<{ [key: string]: string }>();
   if (!username) throw new Error('username param is required');
   if (!listname) throw new Error('list name param is required');
+
+  username = username.slice(1); // @username -> username
 
   const [editModalOpen, setEditModalOpen] = useState(false);
 
@@ -150,7 +152,7 @@ const List = () => {
       await mfetchjson(listEndpoint, { method: 'DELETE' });
       const res = await mfetchjson('/api/_initial');
       dispatch(listsAdded(res.lists));
-      navigate(`/@${list?.username}/lists/${listname}`, { replace: true });
+      navigate(`/@${list?.username}/lists`, { replace: true });
     } catch (error) {
       dispatch(snackAlertError(error));
     }

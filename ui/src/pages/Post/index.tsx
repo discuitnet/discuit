@@ -52,7 +52,7 @@ import PostImage from './PostImage';
 import PostVotesBar from './PostVotesBar';
 
 const Post = () => {
-  const { id, commentId, communityName } = useParams<{ [key: string]: string }>(); // id is post.publicId
+  const { id, commentId, name: communityName } = useParams<{ [key: string]: string }>(); // id is post.publicId
   if (!id) throw new Error('id param is required');
   if (!communityName) throw new Error('community name param is required');
 
@@ -205,7 +205,7 @@ const Post = () => {
         dispatch(snackAlertError(error));
       }
     })();
-  }, [userGroup, post.publicId, post.userGroup, dispatch]);
+  }, [userGroup, post?.publicId, post?.userGroup, dispatch]);
 
   const [isPinned, setIsPinned] = useState(post ? post.isPinned : false);
   useEffect(() => {
