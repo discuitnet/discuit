@@ -26,13 +26,13 @@ import {
   unmuteUser,
   userLoggedIn,
 } from '../../slices/mainSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import ChangePassword from './ChangePassword';
 import DeleteAccount from './DeleteAccount';
 import { getDevicePreference, setDevicePreference } from './devicePrefs';
 
 const Settings = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const user = (useSelector<RootState>((state) => state.main.user) as MainState['user'])!;
   const loggedIn = user !== null;
 

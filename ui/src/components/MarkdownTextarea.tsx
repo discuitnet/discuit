@@ -22,7 +22,7 @@ const MarkdownTextarea = React.forwardRef<HTMLTextAreaElement, MarkdownTextareaP
     }: MarkdownTextareaProps,
     ref
   ) {
-    const handleInput = (event: React.FormEvent<HTMLTextAreaElement>) => {
+    const handleInput = (event: React.InputEvent<HTMLTextAreaElement>) => {
       if (onInput) onInput(event);
       if (autoAdjustHeight) {
         const textareaBorderSize = 4; // in pixels

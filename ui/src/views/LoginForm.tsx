@@ -5,9 +5,10 @@ import { Form, FormField } from '../components/Form';
 import Input, { InputPassword } from '../components/Input';
 import { APIError, mfetch } from '../helper';
 import { loginModalOpened, signupModalOpened, snackAlertError } from '../slices/mainSlice';
+import { AppDispatch } from '../store';
 
 const LoginForm = ({ isModal = false }: { isModal?: boolean }) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');

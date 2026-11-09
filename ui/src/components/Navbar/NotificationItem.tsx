@@ -12,6 +12,7 @@ import { ButtonMore } from '../Button';
 import Dropdown from '../Dropdown';
 import Image from '../Image';
 import TimeAgo from '../TimeAgo';
+import { AppDispatch } from '../../store';
 
 interface NotificationItemProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   notification: NotificationView;
@@ -43,7 +44,7 @@ const NotificationItem = ({ notification, ...rest }: NotificationItemProps) => {
   const [actionBtnHovering, setActionBtnHovering] = useState(false);
   const [dropdownActive, setDropdownActive] = useState(false);
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const handleMarkAsSeen = () => dispatch(markNotificationAsSeen(notification, !seen));
   const handleDelete = async () => {
     try {

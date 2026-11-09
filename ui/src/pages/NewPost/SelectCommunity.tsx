@@ -5,6 +5,7 @@ import { kRound, mfetchjson, selectImageCopyURL } from '../../helper';
 import { useDelayedEffect } from '../../hooks';
 import { Community } from '../../serverTypes';
 import { snackAlertError } from '../../slices/mainSlice';
+import { AppDispatch } from '../../store';
 
 interface SelectCommunityProps {
   initial?: string;
@@ -19,7 +20,7 @@ const SelectCommunity = ({
   onChange,
   disabled = false,
 }: SelectCommunityProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const [suggestions, setSuggestions] = useState<Community[]>([]);
   useEffect(() => {

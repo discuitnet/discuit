@@ -24,6 +24,7 @@ import { Post } from '../../slices/postsSlice';
 import { userHasSupporterBadge } from '../User';
 import AddComment from './AddComment';
 import CommentShareButton, { CommentShareDropdownItems } from './CommentShareButton';
+import { AppDispatch } from '../../store';
 
 const Diagnostics = false; // import.meta.env.MODE !== 'production';
 const MaxCommentDepth = 15;
@@ -58,7 +59,7 @@ const Comment = ({
   canComment,
   isAncestorLocked = false,
 }: CommentProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const postId = post.publicId;
   const loggedIn = user !== null;

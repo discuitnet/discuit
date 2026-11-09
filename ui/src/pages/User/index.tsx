@@ -30,7 +30,7 @@ import { FeedItem } from '../../slices/feedsSlice';
 import { MainState, snackAlert, snackAlertError, userLoggedIn } from '../../slices/mainSlice';
 import { Post } from '../../slices/postsSlice';
 import { selectUser, userAdded } from '../../slices/usersSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import { SVGComment } from '../../SVGs';
 import NotFound from '../NotFound';
 import { isInfiniteScrollingDisabled } from '../Settings/devicePrefs';
@@ -60,7 +60,7 @@ const User = () => {
   if (!username) throw new Error('username param is required');
   username = username.slice(1); // @username -> username
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
   const viewer = useSelector<RootState>((state) => state.main.user) as MainState['user'];

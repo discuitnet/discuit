@@ -15,7 +15,7 @@ import {
   snackAlertError,
   toggleSidebarOpen,
 } from '../../slices/mainSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import { homeReloaded } from '../../views/PostsFeed';
 import Button, { ButtonHamburger, ButtonNotifications } from '../Button';
 import Dropdown from '../Dropdown';
@@ -148,7 +148,7 @@ const Navbar = ({ offline = false }: { offline?: boolean }) => {
     location.pathname !== '/' &&
     historyLength > 1;
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
   const loggedIn = user !== null;

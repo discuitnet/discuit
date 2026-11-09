@@ -8,7 +8,7 @@ import { usernameMaxLength } from '../config';
 import { APIError, mfetch, validEmail } from '../helper';
 import { useDelayedEffect, useInputUsername } from '../hooks';
 import { loginModalOpened, snackAlertError } from '../slices/mainSlice';
-import { RootState } from '../store';
+import { AppDispatch, RootState } from '../store';
 import { ButtonClose } from './Button';
 import { Form, FormField } from './Form';
 import Input, { InputPassword, InputWithCount } from './Input';
@@ -25,7 +25,7 @@ const errors = [
 ];
 
 const Signup = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const signupsDisabled = useSelector<RootState>((state) => state.main.signupsDisabled) as boolean;
 

@@ -4,7 +4,7 @@ import { useVoting } from '../../hooks';
 import { Post } from '../../serverTypes';
 import { loginPromptToggled, snackAlertError } from '../../slices/mainSlice';
 import { postAdded } from '../../slices/postsSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 
 interface PostVotesProps {
   className?: string;
@@ -22,7 +22,7 @@ const PostVotes = ({
   mobile = false,
 }: PostVotesProps) => {
   const loggedIn = useSelector<RootState>((state) => state.main.user) !== null;
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const { upvotes, downvotes, vote, doVote } = useVoting<Post>(
     post.userVoted ? (post.userVotedUp ? true : false) : null,

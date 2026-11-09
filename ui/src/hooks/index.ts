@@ -14,6 +14,7 @@ import {
   unmuteUser,
 } from '../slices/mainSlice';
 import { selectUser, userAdded } from '../slices/usersSlice';
+import { AppDispatch } from '../store';
 
 /**
  * Run a callback function after a specific amount of time.
@@ -358,7 +359,7 @@ export function useTheme() {
 }
 
 export function useMuteUser({ userId, username }: { userId: string; username: string }) {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const isMuted = useSelector(selectIsUserMuted(userId));
   const toggleMute = () => {
     const f = isMuted ? unmuteUser : muteUser;
@@ -378,7 +379,7 @@ export function useMuteCommunity({
   communityId: string;
   communityName: string;
 }) {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const isMuted = useSelector(selectIsCommunityMuted(communityId));
   const toggleMute = () => {
     const f = isMuted ? unmuteCommunity : muteCommunity;
@@ -398,7 +399,7 @@ export function useMuteCommunity({
  *
  */
 export function useFetchUser(username: string, showSnackAlertOnError = true) {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const user = useSelector(selectUser(username));
   const [loading, setLoading] = useState(!user);
   const [error, setError] = useState<unknown>(null);
@@ -439,7 +440,7 @@ export function useFetchUser(username: string, showSnackAlertOnError = true) {
 }
 
 export function useFetchUsersLists(username: string, showSnackAlertOnError = true) {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const {
     lists,
     order,

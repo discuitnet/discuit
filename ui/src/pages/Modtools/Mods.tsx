@@ -9,11 +9,11 @@ import Modal from '../../components/Modal';
 import { mfetch } from '../../helper';
 import { Community } from '../../serverTypes';
 import { MainState, snackAlertError } from '../../slices/mainSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 
 const Mods = ({ community }: { community: Community }) => {
   const user = (useSelector<RootState>((state) => state.main.user) as MainState['user'])!;
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const [addModOpen, setAddModOpen] = useState(false);
   const handleAddModClose = () => setAddModOpen(false);

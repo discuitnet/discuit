@@ -65,7 +65,7 @@ function NavbarItem({
   children,
   disabled = false,
 }: {
-  icon: { icon: React.ReactElement; hasVariants: boolean };
+  icon: { icon: React.ReactElement<SVGProps>; hasVariants: boolean };
   to: string;
   children?: React.ReactNode;
   disabled?: boolean;

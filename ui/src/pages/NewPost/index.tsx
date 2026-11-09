@@ -14,7 +14,7 @@ import { useLoading, useQuery } from '../../hooks';
 import type { Community, Post, Image as ServerImage } from '../../serverTypes';
 import { MainState, snackAlert, snackAlertError } from '../../slices/mainSlice';
 import { postAdded } from '../../slices/postsSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import Rules from '../Community/Rules';
 import AsUser from '../Post/AsUser';
 import CommunityCard from '../Post/CommunityCard';
@@ -22,7 +22,7 @@ import Image from './Image';
 import SelectCommunity from './SelectCommunity';
 
 const NewPost = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const location = useLocation();
 

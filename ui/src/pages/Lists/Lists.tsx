@@ -18,12 +18,12 @@ import {
   listsOrderChanged,
 } from '../../slices/listsSlice';
 import { MainState, snackAlert } from '../../slices/mainSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import NotFound from '../NotFound';
 import { EditListForm } from './List';
 
 const Lists = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const [isNewListOpen, setIsNewListOpen] = useState(false);
   const [lists, setLists] = useState<List[]>([]);
 

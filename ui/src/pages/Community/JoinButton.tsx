@@ -5,7 +5,7 @@ import { mfetchjson } from '../../helper';
 import { Community } from '../../serverTypes';
 import { communityAdded, selectCommunity } from '../../slices/communitiesSlice';
 import { loginPromptToggled, MainState, snackAlertError } from '../../slices/mainSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 
 interface JoinButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   community: Community;
@@ -15,7 +15,7 @@ const JoinButton = ({ className, community: initialCommunity, ...rest }: JoinBut
   const community = useSelector(selectCommunity(initialCommunity.name)) || initialCommunity;
   const loggedIn =
     (useSelector<RootState>((state) => state.main.user) as MainState['user']) !== null;
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const joined = community ? community.userJoined : false;
   const handleFollow = async () => {

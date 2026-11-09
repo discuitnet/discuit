@@ -11,6 +11,7 @@ import { mfetchjson } from '../../helper';
 import { useLoading } from '../../hooks';
 import { User } from '../../serverTypes';
 import { snackAlertError } from '../../slices/mainSlice';
+import { AppDispatch } from '../../store';
 
 interface UsersState {
   users: User[] | null;
@@ -21,7 +22,7 @@ export default function Users() {
   const [loading, setLoading] = useLoading('loading');
   const [usersState, setUsersState] = useState<UsersState>({ users: null, next: null });
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   useEffect(() => {
     const f = async () => {
       try {

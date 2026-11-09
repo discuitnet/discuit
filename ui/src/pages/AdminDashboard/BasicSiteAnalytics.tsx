@@ -8,6 +8,7 @@ import { mfetchjson } from '../../helper';
 import { useLoading } from '../../hooks';
 import { AnalyticsEvent } from '../../serverTypes';
 import { snackAlertError } from '../../slices/mainSlice';
+import { AppDispatch } from '../../store';
 
 interface BasicSiteStats {
   version: number;
@@ -47,7 +48,7 @@ export default function BasicSiteAnalytics() {
   const [next, setNext] = useState('');
   const [loading, setLoading] = useLoading('loading');
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const fetchEvents = useCallback(
     async (next = '') => {
       try {

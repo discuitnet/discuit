@@ -26,7 +26,7 @@ import { MainState, snackAlert, snackAlertError } from '../../slices/mainSlice';
 import { SVGEdit } from '../../SVGs';
 
 import ImageEditModal from '../../components/ImageEditModal';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import PostsFeed from '../../views/PostsFeed';
 import NotFound from '../NotFound';
 import Banner from './Banner';
@@ -39,7 +39,7 @@ const Community = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const community = useSelector(selectCommunity(name));
   const loading = !(community && Array.isArray(community.mods) && Array.isArray(community.rules));

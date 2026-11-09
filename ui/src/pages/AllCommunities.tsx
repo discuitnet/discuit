@@ -26,7 +26,7 @@ import {
   snackAlert,
   snackAlertError,
 } from '../slices/mainSlice';
-import { RootState } from '../store';
+import { AppDispatch, RootState } from '../store';
 import { SVGClose, SVGSearch } from '../SVGs';
 import LoginForm from '../views/LoginForm';
 import JoinButton from './Community/JoinButton';
@@ -204,7 +204,7 @@ const RequestCommunityButton = ({
   ...props
 }: RequestCommunityButtonProps) => {
   const loggedIn = useSelector<RootState>((state) => state.main.user) !== null;
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const [open, setOpen] = useState(false);
   const handleClose = () => setOpen(false);

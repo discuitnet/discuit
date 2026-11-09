@@ -61,7 +61,7 @@ import {
   snackAlert,
   userLoggedIn,
 } from './slices/mainSlice';
-import { RootState } from './store';
+import { AppDispatch, RootState } from './store';
 import LoginForm from './views/LoginForm';
 
 // Value taken from _mixins.scss file.
@@ -70,7 +70,7 @@ const tabletBreakpoint = 1170;
 getGlobalAppData().historyLength = 0;
 
 const App = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   // Note that window.navigator.onLine cannot always be trusted. It's false
   // value can be trusted, but it's true value cannot be.

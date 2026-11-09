@@ -6,7 +6,7 @@ import { CommentsState, defaultCommentZIndex, moreCommentsAdded } from '../../sl
 import { commentsTree, countChildrenReplies, Node } from '../../slices/commentsTree';
 import { snackAlertError } from '../../slices/mainSlice';
 import { Post } from '../../slices/postsSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import { MemorizedComment } from './Comment';
 
 interface CommentSectionProps {
@@ -32,7 +32,7 @@ const CommentSection = ({
   canVote,
   canComment,
 }: CommentSectionProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const postId = post.publicId;
   // const comments = useSelector((state) => {

@@ -6,7 +6,7 @@ import Dashboard from '../../components/Dashboard';
 import { APIError, mfetch } from '../../helper';
 import { communityAdded, selectCommunity } from '../../slices/communitiesSlice';
 import { MainState, snackAlertError } from '../../slices/mainSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import { SVGSettings } from '../../SVGs';
 import Forbidden from '../Forbidden';
 import PageNotLoaded from '../PageNotLoaded';
@@ -101,7 +101,7 @@ const svgs = {
 };
 
 const Modtools = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const { name: communityName } = useParams<{ [key: string]: string }>();
   if (!communityName) throw new Error('community name param is required');
 

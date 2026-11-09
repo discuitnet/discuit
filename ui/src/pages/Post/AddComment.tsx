@@ -6,7 +6,7 @@ import { mfetch } from '../../helper';
 import { Comment } from '../../serverTypes';
 import { loginPromptToggled, snackAlert, snackAlertError } from '../../slices/mainSlice';
 import { Post } from '../../slices/postsSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import AsUser from './AsUser';
 
 const drafts = new Map<string, { body: string }>();
@@ -47,7 +47,7 @@ const AddComment = ({
   disabled = false,
   textSelection = '',
 }: AddCommentProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const userId = useSelector((state: RootState) => state.main.user?.id);
   const draftKey = JSON.stringify([userId, post.publicId, editing, editing ? id : parentCommentId]);

@@ -39,7 +39,7 @@ import { Comment, Community } from '../../serverTypes';
 import { commentsAdded, CommentsState, newCommentAdded } from '../../slices/commentsSlice';
 import { communityAdded } from '../../slices/communitiesSlice';
 import { postAdded, PostsState, Post as PostType } from '../../slices/postsSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import { SVGExternalLink } from '../../SVGs';
 import CommunityCard from './CommunityCard';
 import PostImage from './PostImage';
@@ -50,7 +50,7 @@ const Post = () => {
   if (!id) throw new Error('id param is required');
   if (!communityName) throw new Error('community name param is required');
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const navigationType = useNavigationType();
 

@@ -22,13 +22,13 @@ import { listAdded, selectList } from '../../slices/listsSlice';
 import { listsAdded, MainState, snackAlertError } from '../../slices/mainSlice';
 import { Post } from '../../slices/postsSlice';
 import { selectUser } from '../../slices/usersSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import NotFound from '../NotFound';
 import { isInfiniteScrollingDisabled } from '../Settings/devicePrefs';
 import { MemorizedComment } from '../User/Comment';
 
 const List = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   let { username, listName: listname } = useParams<{ [key: string]: string }>();
   if (!username) throw new Error('username param is required');
   if (!listname) throw new Error('list name param is required');
@@ -372,7 +372,7 @@ export const EditListForm = ({
   onSuccess?: () => void;
 }) => {
   const user = useSelector<RootState>((state) => state.main.user) as MainState['user'];
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const [isPublic, setIsPublic] = useState(list ? list.public : false);
 

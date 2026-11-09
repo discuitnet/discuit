@@ -9,6 +9,7 @@ import { mfetchjson } from '../../helper';
 import { useLoading } from '../../hooks';
 import { Community } from '../../serverTypes';
 import { snackAlertError } from '../../slices/mainSlice';
+import { AppDispatch } from '../../store';
 
 interface CommunitiesState {
   communities: Community[] | null;
@@ -26,7 +27,7 @@ export default function Communities() {
     return items.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
   };
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   useEffect(() => {
     const f = async () => {
       try {

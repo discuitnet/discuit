@@ -16,6 +16,7 @@ import LinkImage from './LinkImage';
 import PostCardHeadingDetails from './PostCardHeadingDetails';
 import PostCardImage from './PostCardImage';
 import PostVotes from './PostVotes';
+import { AppDispatch } from '../../store';
 
 export interface PostCardProps {
   index?: number; // Index in the feed.
@@ -78,7 +79,7 @@ const PostCard = ({
     }
   };
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const handleHidePost = async () => {
     try {
       await mfetchjson('/api/hidden_posts', {

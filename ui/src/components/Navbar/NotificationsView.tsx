@@ -13,7 +13,7 @@ import {
   snackAlert,
   snackAlertError,
 } from '../../slices/mainSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import { ButtonMore } from '../Button';
 import Dropdown from '../Dropdown';
 import NotificationItem from './NotificationItem';
@@ -25,7 +25,7 @@ const NotificationsView = () => {
   const { loaded, next, count, newCount } = notifications;
   const items = notifications.items as NotificationView[];
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const apiEndpoint = '/api/notifications?render=true&format=html';
 
   /**

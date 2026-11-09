@@ -16,6 +16,7 @@ import Button from '../Button';
 import Spinner from '../Spinner';
 import FeedItemComponent from './FeedItem';
 import FeedSkeleton from './FeedSkeleton';
+import { AppDispatch } from '../../store';
 
 interface FeedProps<FeedItemType> {
   className?: string;
@@ -55,7 +56,7 @@ function Feed<FeedItemType>({
   const loading = feed ? feed.loading : true;
   const hasMore = feed ? Boolean(feed.next) : false;
   const [, /*error*/ setError] = useState<unknown>(null);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const [fetching, setFetching] = useState(false);
   const fetchingRef = useRef(false);

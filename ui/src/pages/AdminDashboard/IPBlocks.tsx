@@ -13,6 +13,7 @@ import { APIError, mfetch, mfetchjson } from '../../helper';
 import { useLoading } from '../../hooks';
 import { IPBlock, SiteSettings } from '../../serverTypes';
 import { snackAlert, snackAlertError } from '../../slices/mainSlice';
+import { AppDispatch } from '../../store';
 
 interface IPBlocksResultSet {
   blocks: IPBlock[];
@@ -33,7 +34,7 @@ export default function IPBlocks() {
   const [next, setNext] = useState<string | null>(null);
 
   const [loading, setLoading] = useLoading();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   useEffect(() => {
     const f = async () => {
       try {
@@ -296,7 +297,7 @@ function NewButton({ onSuccess }: { onSuccess: (block: IPBlock) => void }) {
     setIP('');
   };
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const handleBlock = async () => {
     try {
       let expiresInNum = 0;

@@ -7,7 +7,7 @@ import { mfetch } from '../helper';
 import { useInputUsername } from '../hooks';
 import { Community } from '../serverTypes';
 import { sidebarCommunitiesUpdated, snackAlertError } from '../slices/mainSlice';
-import { RootState } from '../store';
+import { AppDispatch, RootState } from '../store';
 import { ButtonClose } from './Button';
 import { FormField } from './Form';
 import { InputWithCount, useInputMaxLength } from './Input';
@@ -21,7 +21,7 @@ const CreateCommunity = ({ open, onClose }: { open: boolean; onClose: () => void
     (state) => state.main.sidebarCommunities
   ) as Community[];
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
   const [formError, setFormError] = useState('');
