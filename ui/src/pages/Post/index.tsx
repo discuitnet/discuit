@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { Location, NavigationType, useNavigate, useNavigationType, useParams } from 'react-router';
 import Dropdown from '../../components/Dropdown';
@@ -44,6 +43,7 @@ import { SVGExternalLink } from '../../SVGs';
 import CommunityCard from './CommunityCard';
 import PostImage from './PostImage';
 import PostVotesBar from './PostVotesBar';
+import PageTitle from '../../components/PageTitle';
 
 const Post = () => {
   const { id, commentId, name: communityName } = useParams<{ [key: string]: string }>(); // id is post.publicId
@@ -318,10 +318,8 @@ const Post = () => {
 
   return (
     <div className="page-content page-post wrap">
-      <Helmet>
-        <title>{post.title}</title>
-        {commentId && <meta name="robots" content="noindex" />}
-      </Helmet>
+      <PageTitle title={post.title} />
+      {commentId && <meta name="robots" content="noindex" />}
       <Sidebar />
       <main className="left">
         <div className="post post-card">

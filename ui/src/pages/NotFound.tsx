@@ -1,16 +1,14 @@
-import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router';
 import Sidebar from '../components/Sidebar';
 import { useRemoveCanonicalTag } from '../hooks';
+import PageTitle from '../components/PageTitle';
 
 const NotFound = () => {
   useRemoveCanonicalTag();
   return (
     <div className="page-content page-notfound">
-      <Helmet>
-        <title>404: Not Found</title>
-        <meta name="robots" content="noindex" />
-      </Helmet>
+      <PageTitle title="404: Not Found" />
+      <meta name="robots" content="noindex" />
       <Sidebar />
       <h1>404: Not found!</h1>
       <p>{"The page you're looking for does not exist."}</p>

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Location,
@@ -63,6 +62,7 @@ import {
 } from './slices/mainSlice';
 import { AppDispatch, RootState } from './store';
 import LoginForm from './views/LoginForm';
+import PageTitle from './components/PageTitle';
 
 // Value taken from _mixins.scss file.
 const tabletBreakpoint = 1170;
@@ -167,12 +167,6 @@ const App = () => {
   const width = useWindowWidth();
   const chatOpen = useSelector<RootState>((state) => state.main.chatOpen) as MainState['chatOpen'];
 
-  const notifsNewCount = useSelector<RootState>(
-    (state) => state.main.notifications.newCount
-  ) as MainState['notifications']['newCount'];
-  const notifsNewCountStr = notifsNewCount > 0 ? `(${notifsNewCount}) ` : '';
-  const titleTemplate = `${notifsNewCountStr} %s - ${import.meta.env.VITE_SITENAME}`;
-
   const loginModalOpen = useSelector<RootState>(
     (state) => state.main.loginModalOpen
   ) as MainState['loginModalOpen'];
@@ -232,12 +226,8 @@ const App = () => {
 
   return (
     <>
-      <Helmet
-        defaultTitle={`${notifsNewCountStr} ${import.meta.env.VITE_SITENAME}`}
-        titleTemplate={titleTemplate}
-      >
-        <meta property="og:site_name" content={import.meta.env.VITE_SITENAME} />
-      </Helmet>
+      <PageTitle />
+      <meta property="og:site_name" content={import.meta.env.VITE_SITENAME} />
       <ScrollToTop />
       <CanonicalTag />
       <Navbar />

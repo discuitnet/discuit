@@ -2,7 +2,6 @@ import clsx from 'clsx';
 import PropTypes from 'prop-types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
-import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { usernameMaxLength } from '../config';
 import { APIError, mfetch, validEmail } from '../helper';
@@ -152,9 +151,7 @@ const Signup = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
 
   return (
     <>
-      <Helmet>
-        <style>{`.grecaptcha-badge { visibility: hidden; }`}</style>
-      </Helmet>
+      <style>{`.grecaptcha-badge { visibility: hidden; }`}</style>
       <Modal open={open} onClose={onClose} noOuterClickClose={false}>
         <div className={clsx('modal-card modal-signup', signupsDisabled && 'is-disabled')}>
           <div className="modal-card-head">

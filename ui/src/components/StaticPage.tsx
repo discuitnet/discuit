@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import React, { useEffect } from 'react';
-import { Helmet } from 'react-helmet-async';
 import Footer from './Footer';
+import PageTitle from './PageTitle';
 
 interface StaticPageProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
@@ -18,9 +18,7 @@ const StaticPage = ({ className, children, title, noWrap = false, ...props }: St
   }, []);
   return (
     <div className={clsx('page-content page-static', className)} {...props}>
-      <Helmet>
-        <title>{title}</title>
-      </Helmet>
+      <PageTitle title={title} />
       {noWrap ? <>{children}</> : <div className="wrap">{children}</div>}
       <Footer />
     </div>

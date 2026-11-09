@@ -2,7 +2,6 @@ import PullToRefresh from 'pulltorefreshjs';
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ErrorBoundary } from 'react-error-boundary';
-import { HelmetProvider } from 'react-helmet-async';
 import { Provider } from 'react-redux';
 import { BrowserRouter as Router } from 'react-router';
 import App from './App';
@@ -50,13 +49,11 @@ const root = createRoot(container!);
 
 root.render(
   <Provider store={store}>
-    <HelmetProvider>
-      <ErrorBoundary FallbackComponent={Fallback} onError={logAppError}>
-        <Router useTransitions={false}>
-          <App />
-        </Router>
-      </ErrorBoundary>
-    </HelmetProvider>
+    <ErrorBoundary FallbackComponent={Fallback} onError={logAppError}>
+      <Router useTransitions={false}>
+        <App />
+      </Router>
+    </ErrorBoundary>
   </Provider>
 );
 

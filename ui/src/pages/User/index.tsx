@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { ButtonMore } from '../../components/Button';
@@ -38,6 +37,7 @@ import BadgesList from './BadgesList';
 import BanUserButton from './BanUserButton';
 import { MemorizedComment } from './Comment';
 import UserAdminsViewModal from './UserAdminsViewModal';
+import PageTitle from '../../components/PageTitle';
 
 interface UserFeedAPIResponse {
   items: {
@@ -249,9 +249,7 @@ const User = () => {
   if (user.deleted && !viewerAdmin) {
     return (
       <div className="page-content page-notfound wrap">
-        <Helmet>
-          <title>{`@${user.username}`}</title>
-        </Helmet>
+        <PageTitle title={`@${user.username}`} />
         <h1>Account deleted.</h1>
         <Link to="/">Go home</Link>
       </div>
@@ -263,9 +261,7 @@ const User = () => {
     // User is banned and the viewer is no admin
     return (
       <div className="page-content page-notfound wrap">
-        <Helmet>
-          <title>{`@${user.username}`}</title>
-        </Helmet>
+        <PageTitle title={`@${user.username}`} />
         <h1>Account suspended.</h1>
         {loggedIn && viewer.id !== user.id && (
           <button onClick={toggleMute}>{isMuted ? 'Unmute user' : 'Mute user'}</button>
@@ -485,9 +481,7 @@ const User = () => {
 
   return (
     <div className="page-content page-user wrap page-grid">
-      <Helmet>
-        <title>{`@${user.username}`}</title>
-      </Helmet>
+      <PageTitle title={`@${user.username}`} />
       <Sidebar />
       <UserAdminsViewModal
         user={userAdminsView}

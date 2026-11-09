@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router';
 import { ButtonClose, ButtonMore } from '../../components/Button';
@@ -26,6 +25,7 @@ import { AppDispatch, RootState } from '../../store';
 import NotFound from '../NotFound';
 import { isInfiniteScrollingDisabled } from '../Settings/devicePrefs';
 import { MemorizedComment } from '../User/Comment';
+import PageTitle from '../../components/PageTitle';
 
 const List = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -173,9 +173,7 @@ const List = () => {
   return (
     <div className="page-content wrap page-grid page-list">
       <EditListModal list={list} open={editModalOpen} onClose={() => setEditModalOpen(false)} />
-      <Helmet>
-        <title>{`${listname} of @${username}`}</title>
-      </Helmet>
+      <PageTitle title={`${listname} of @${username}`} />
       <Sidebar />
       <main className="page-middle">
         <header className="card card-padding list-head">

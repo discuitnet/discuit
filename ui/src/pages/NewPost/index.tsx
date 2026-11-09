@@ -1,6 +1,5 @@
 import clsx from 'clsx';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router';
 import { getGlobalAppData } from '../../appData';
@@ -20,6 +19,7 @@ import AsUser from '../Post/AsUser';
 import CommunityCard from '../Post/CommunityCard';
 import Image from './Image';
 import SelectCommunity from './SelectCommunity';
+import PageTitle from '../../components/PageTitle';
 
 const NewPost = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -436,9 +436,7 @@ const NewPost = () => {
 
   return (
     <div className="page-content page-new">
-      <Helmet>
-        <title>{isEditPost ? 'Edit Post' : 'New Post'}</title>
-      </Helmet>
+      <PageTitle title={isEditPost ? 'Edit Post' : 'New Post'} />
       <div className="page-new-content">
         <div className="page-new-content-post">
           <SelectCommunity

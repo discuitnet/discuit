@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, Navigate, Route, Routes, useParams } from 'react-router';
 import Dashboard from '../../components/Dashboard';
@@ -16,6 +15,7 @@ import Removed from './Removed';
 import Reports from './Reports';
 import Rules from './Rules';
 import Settings from './Settings';
+import PageTitle from '../../components/PageTitle';
 
 const svgs = {
   rules: (
@@ -170,9 +170,7 @@ const Modtools = () => {
         { name: 'Moderators', to: getSidebarMenuItemLink('mods'), icon: svgs.mods },
       ]}
     >
-      <Helmet>
-        <title>Modtools</title>
-      </Helmet>
+      <PageTitle title="Modtools" />
       <Routes>
         <Route path="/" element={<Navigate to={`/${communityName}/modtools/settings`} replace />} />
         <Route path="/settings" element={<Settings community={community} />} />

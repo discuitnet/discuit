@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router';
 import {
@@ -30,6 +29,7 @@ import { AppDispatch, RootState } from '../../store';
 import ChangePassword from './ChangePassword';
 import DeleteAccount from './DeleteAccount';
 import { getDevicePreference, setDevicePreference } from './devicePrefs';
+import PageTitle from '../../components/PageTitle';
 
 const Settings = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -316,9 +316,7 @@ const Settings = () => {
 
   return (
     <div className="page-content wrap page-settings">
-      <Helmet>
-        <title>Settings</title>
-      </Helmet>
+      <PageTitle title="Settings" />
       <div className="form account-settings card">
         <h1>Account settings</h1>
         <FormSection>

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { ButtonMore } from '../../components/Button';
@@ -32,6 +31,7 @@ import NotFound from '../NotFound';
 import Banner from './Banner';
 import JoinButton from './JoinButton';
 import Rules from './Rules';
+import PageTitle from '../../components/PageTitle';
 
 const Community = () => {
   const { name } = useParams<{ [key: string]: string }>();
@@ -287,9 +287,7 @@ const Community = () => {
 
   return (
     <div className="page-content page-community wrap page-grid">
-      <Helmet>
-        <title>{`${community.name}`}</title>
-      </Helmet>
+      <PageTitle title={`${community.name}`} />
       <Sidebar />
       <main className="comm-content">
         <header className="comm-main">
