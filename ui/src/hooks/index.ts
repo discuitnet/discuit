@@ -514,6 +514,15 @@ export function useLinkClick<T = Element>(
   const handleClick: MouseEventHandler<T> = (event) => {
     if (onClick) onClick(event);
     if ((target ?? '_self') !== '_self') return;
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.shiftKey
+    ) {
+      return;
+    }
     event.preventDefault();
     if (to === locationToString(location)) {
       window.scrollTo(0, 0);
