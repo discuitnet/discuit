@@ -619,14 +619,13 @@ const NewPost = () => {
               Submit
             </button>
             <button onClick={handleCancel}>Cancel</button>
-            {
-              isAltMissing()
-                ? <div className="form-field">
-                    <div className="form-error text-center">Your settings require alt text.</div>
-                  </div>
-                : ''
-            }
-
+            {isAltMissing() ? (
+              <div className="form-field">
+                <div className="form-error text-center">Your settings require alt text.</div>
+              </div>
+            ) : (
+              ''
+            )}
           </div>
         </div>
         <div className="new-page-sidebar">
@@ -642,13 +641,13 @@ const NewPost = () => {
             Submit
           </button>
           <button onClick={handleCancel}>Cancel</button>
-          {
-            isAltMissing()
-              ? <div className="form-field">
-                  <div className="form-error text-center">Your settings require alt text.</div>
-                </div>
-              : ''
-          }
+          {isAltMissing() ? (
+            <div className="form-field">
+              <div className="form-error text-center">Your settings require alt text.</div>
+            </div>
+          ) : (
+            ''
+          )}
         </div>
       </div>
     </div>

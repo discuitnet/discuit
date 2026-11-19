@@ -4,11 +4,7 @@ import { Link } from 'react-router-dom';
 import MarkdownTextarea from '../../components/MarkdownTextarea';
 import { mfetch } from '../../helper';
 import { Comment } from '../../serverTypes';
-import {
-  loginPromptToggled,
-  snackAlert,
-  snackAlertError,
-} from '../../slices/mainSlice';
+import { loginPromptToggled, snackAlert, snackAlertError } from '../../slices/mainSlice';
 import { Post } from '../../slices/postsSlice';
 import { RootState } from '../../store';
 import AsUser from './AsUser';

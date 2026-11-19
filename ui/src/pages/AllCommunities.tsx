@@ -242,8 +242,8 @@ const RequestCommunityButton = ({
         dispatch(snackAlert('Requested!'));
         handleClose();
       } else {
-          const error = await res.json();
-          dispatch(snackAlert(error.message));
+        const error = await res.json();
+        dispatch(snackAlert(error.message));
       }
     } catch (error) {
       dispatch(snackAlertError(error));
@@ -306,7 +306,11 @@ const ListItem = React.memo(function ListItem({ community }: { community: Commun
 
   const handleClick: React.MouseEventHandler = (event) => {
     if ((event.target as Element).tagName !== 'BUTTON') {
-      history.push(to);
+      if (event.ctrlKey || event.metaKey) {
+        window.open(to);
+      } else {
+        history.push(to);
+      }
     }
   };
 
