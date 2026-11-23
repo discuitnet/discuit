@@ -50,6 +50,7 @@ interface AppConfig {
   forumCreationReqPoints: number;
   defaultFeedSort: string;
   maxImagesPerPost: number;
+  transactionalEmail: string;
 }
 
 function parseYamlConfigFile(): { define: { [index: string]: string }; config: AppConfig } {
@@ -74,6 +75,7 @@ function parseYamlConfigFile(): { define: { [index: string]: string }; config: A
     forumCreationReqPoints: configFile.forumCreationReqPoints,
     defaultFeedSort: configFile.defaultFeedSort,
     maxImagesPerPost: configFile.maxImagesPerPost,
+    transactionalEmail: configFile.transactionalEmail,
   };
 
   const define: { [key: string]: string } = {};
