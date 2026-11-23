@@ -97,6 +97,11 @@ export function onKeyEnter<T = HTMLDivElement>(
   }
 }
 
+// Returns true for any click other than a plain left click.
+export function isModifiedClick<T = Element>(event: React.MouseEvent<T>): boolean {
+  return event.button !== 0 || event.metaKey || event.altKey || event.ctrlKey || event.shiftKey;
+}
+
 export function onEscapeKey<T = HTMLDivElement>(
   event: React.KeyboardEvent<T>,
   callback: (event: React.KeyboardEvent<T>) => void,

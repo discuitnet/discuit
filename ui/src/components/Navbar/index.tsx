@@ -3,7 +3,14 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Location, useLocation, useNavigate } from 'react-router';
 import { getGlobalAppData } from '../../appData';
-import { isDeviceStandalone, kRound, mfetch, onKeyEnter, stringCount } from '../../helper';
+import {
+  isDeviceStandalone,
+  isModifiedClick,
+  kRound,
+  mfetch,
+  onKeyEnter,
+  stringCount,
+} from '../../helper';
 import { mobileBreakpointWidth, useTheme, useWindowWidth } from '../../hooks';
 import {
   chatOpenToggled,
@@ -173,7 +180,9 @@ const Navbar = ({ offline = false }: { offline?: boolean }) => {
     }
   };
 
-  const handleLogoClick = () => {
+  const handleLogoClick = (event: React.MouseEvent) => {
+    // Don't reload the feed when the logo is opened in a new tab.
+    if (isModifiedClick(event)) return;
     dispatch(homeReloaded(homeFeed, Boolean(user && user.rememberFeedSort)));
     setTimeout(() => window.scrollTo(0, 0), 10);
   };
@@ -182,8 +191,8 @@ const Navbar = ({ offline = false }: { offline?: boolean }) => {
     dispatch(toggleSidebarOpen());
   };
 
-  const handleNotifIconClick = () => {
-    if (location.pathname === '/notifications') {
+  const handleNotifIconClick = (event: React.MouseEvent) => {
+    if (!isModifiedClick(event) && location.pathname === '/notifications') {
       dispatch(notificationsReloaded());
     }
   };

@@ -309,7 +309,11 @@ const ListItem = React.memo(function ListItem({ community }: { community: Commun
 
   const handleClick: React.MouseEventHandler = (event) => {
     if ((event.target as Element).tagName !== 'BUTTON') {
-      navigate(to);
+      if (event.ctrlKey || event.metaKey) {
+        window.open(to);
+      } else {
+        navigate(to);
+      }
     }
   };
 

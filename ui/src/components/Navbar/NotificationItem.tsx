@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router';
-import { mfetchjson } from '../../helper';
+import { isModifiedClick, mfetchjson } from '../../helper';
 import { NotificationView } from '../../serverTypes';
 import {
   markNotificationAsSeen,
@@ -60,15 +60,17 @@ const NotificationItem = ({ notification, ...rest }: NotificationItemProps) => {
   const actionsRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const handleClick = (event: React.MouseEvent, to: string) => {
-    event.preventDefault();
     const target = event.target as Node | null;
-    if (
+    const isLinkClick =
       actionsRef.current &&
       !actionsRef.current.contains(target) &&
-      !document.querySelector('#modal-root')?.contains(target)
-    ) {
+      !document.querySelector('#modal-root')?.contains(target);
+    // Let the browser open Ctrl/Cmd-clicks in a new tab.
+    const leaveToBrowser = isLinkClick && to !== '#' && isModifiedClick(event);
+    if (!leaveToBrowser) event.preventDefault();
+    if (isLinkClick) {
       if (!seen) handleMarkAsSeen();
-      if (to === '#') {
+      if (to === '#' || leaveToBrowser) {
         return;
       }
       navigate(to, {

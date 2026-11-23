@@ -1,7 +1,7 @@
 import { MouseEventHandler, useEffect, useInsertionEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Location, useLocation, useNavigate } from 'react-router';
-import { APIError, mfetch, mfetchjson, usernameLegalLetters } from '../helper';
+import { APIError, isModifiedClick, mfetch, mfetchjson, usernameLegalLetters } from '../helper';
 import { List } from '../serverTypes';
 import { ListsFilter, ListsOrder, selectUsersLists, usersListsAdded } from '../slices/listsSlice';
 import {
@@ -500,6 +500,16 @@ export function useLinkClick<T = Element>(
   const handleClick: MouseEventHandler<T> = (event) => {
     if (onClick) onClick(event);
     if ((target ?? '_self') !== '_self') return;
+    const link = event.currentTarget;
+    if (link instanceof HTMLAnchorElement && isModifiedClick(event)) {
+      // Some browsers won't open the link if the click is on a button inside it.
+      const button = (event.target as Element).closest('button');
+      if (button && link.contains(button)) {
+        event.preventDefault();
+        window.open(to);
+      }
+      return;
+    }
     event.preventDefault();
     if (to === locationToString(location)) {
       window.scrollTo(0, 0);
