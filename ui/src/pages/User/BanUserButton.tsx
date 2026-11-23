@@ -7,6 +7,7 @@ import Modal from '../../components/Modal';
 import { mfetch } from '../../helper';
 import { User } from '../../serverTypes';
 import { snackAlertError } from '../../slices/mainSlice';
+import { AppDispatch } from '../../store';
 
 const BanUserButton = ({ user }: { user: User }) => {
   const [open, setOpen] = useState(false);
@@ -26,7 +27,7 @@ const BanUserButton = ({ user }: { user: User }) => {
     }
   };
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const handleBanUser = async () => {
     if (deleteContentChecked) {
       if (page !== 2) {

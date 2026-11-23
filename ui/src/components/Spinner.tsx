@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import PropTypes from 'prop-types';
 
-export interface SpinnerProps extends React.HTMLAttributes<HTMLDivElement> {
+interface SpinnerProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
   size?: number;
   color?: string;

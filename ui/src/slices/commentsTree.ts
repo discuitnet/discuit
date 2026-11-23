@@ -139,18 +139,6 @@ export function addComment(root: Node, comment: Comment) {
   return node;
 }
 
-export function updateComment(root: Node, comment: Comment) {
-  const hit = searchTree(root, comment.id, comment.depth);
-  if (hit === null) {
-    throw new Error(`Comment not found (commentId:${comment.id})`);
-  }
-  hit.comment = {
-    ...hit.comment,
-    ...comment,
-  };
-  return hit;
-}
-
 export function countChildrenReplies(node: Node) {
   let n = 0;
   if (node.children) {

@@ -2,7 +2,7 @@ import React from 'react';
 import { Badge as BadgeType } from '../../serverTypes';
 import { badgeImage } from './badgeImage';
 
-export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
+interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
   badge: BadgeType;
 }
 

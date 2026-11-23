@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 
-export interface DashboardPageProps {
+interface DashboardPageProps {
   className?: string;
   title: string;
   children?: React.ReactNode;

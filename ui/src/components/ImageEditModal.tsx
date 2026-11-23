@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ButtonClose } from './Button';
 import Modal from './Modal';
 
-export interface ImageEditModalProps {
+interface ImageEditModalProps {
   open: boolean;
   onClose: () => void;
   title: string;

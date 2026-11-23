@@ -1,4 +1,5 @@
-import { Image, UserGroup } from '../serverTypes';
+import { Image, UserGroup } from '../serverTypes.js';
+import React from 'react';
 
 export function stringCount(
   num: number,
@@ -31,7 +32,6 @@ export function kRound(num: number) {
 
 export function timeAgo(date: string | Date, suffix = ' ago', justNow = true, short = false) {
   if (!(date instanceof Date)) {
-    // eslint-disable-next-line no-param-reassign
     date = new Date(date);
   }
 
@@ -61,10 +61,6 @@ export function timeAgo(date: string | Date, suffix = ' ago', justNow = true, sh
   return `${y}${short ? 'y' : ' year'}${short || y === 1 ? '' : 's'}${suffix}`;
 }
 
-export function isScrollbarVisible() {
-  return document.documentElement.clientHeight < document.body.scrollHeight;
-}
-
 let scrollWidth: number | null = null;
 
 export function getScrollbarWidth(): number {
@@ -92,15 +88,6 @@ export function getScrollbarWidth(): number {
   return scrollbarWidth;
 }
 
-export function randWords(noWords = 5): string {
-  const words = ['apple', 'tree', 'nikola', 'fun', 'gatsby', 'team', 'sensei', 'water', 'air'];
-  let str = '';
-  for (let i = 0; i < noWords; i++) {
-    str += words[Math.floor(Math.random() * (words.length - 1))] + ' ';
-  }
-  return str;
-}
-
 export function onKeyEnter<T = HTMLDivElement>(
   event: React.KeyboardEvent<T>,
   callback: (event: React.KeyboardEvent<T>) => void
@@ -110,8 +97,7 @@ export function onKeyEnter<T = HTMLDivElement>(
   }
 }
 
-// Returns true for anything but a plain left click, like Ctrl/Cmd-click or Shift-click, which the
-// browser uses on a link to open it in a new tab or window.
+// Returns true for any click other than a plain left click.
 export function isModifiedClick<T = Element>(event: React.MouseEvent<T>): boolean {
   return event.button !== 0 || event.metaKey || event.altKey || event.ctrlKey || event.shiftKey;
 }
@@ -234,11 +220,6 @@ export function userGroupSingular(type: UserGroup, long = false): string {
   }
 }
 
-export function capitalizeFirstWord(str: string): string {
-  if (str === '') return '';
-  return str[0].toUpperCase() + str.substring(1);
-}
-
 export function toTitleCase(str: string): string {
   if (str === '') return '';
   const words = str.split(' ');
@@ -334,7 +315,7 @@ export function mfetch(url: string | URL, options: RequestInit = {}): Promise<Re
   });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 export async function mfetchjson<T = any>(
   url: string | URL,
   options: RequestInit = {}
@@ -349,8 +330,7 @@ export function isValidHttpUrl(string: string): boolean {
 
   try {
     url = new URL(string);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
+  } catch {
     return false;
   }
 
@@ -367,7 +347,7 @@ export function omitWWWFromHostname(host: string): string {
 // For the Web Push API's applicationServerKey option.
 export function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  // eslint-disable-next-line no-useless-escape
+  // oxlint-disable-next-line no-useless-escape
   const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
 
   const rawData = window.atob(base64);

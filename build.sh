@@ -8,7 +8,7 @@ go build
 
 # Build the React app
 cd ui
-npm ci
-npm run build
+pnpm ci
+pnpm run build
 cd ..
 

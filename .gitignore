@@ -1,6 +1,7 @@
 node_modules
 .vscode
 .idea
+.zed
 /ui/dist/
 /config.yaml
 /ui-config.yaml

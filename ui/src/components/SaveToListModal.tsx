@@ -5,7 +5,7 @@ import { mfetchjson } from '../helper';
 import { EditListForm } from '../pages/Lists/List';
 import { List } from '../serverTypes';
 import { MainState, saveToListModalClosed, snackAlert, snackAlertError } from '../slices/mainSlice';
-import { RootState } from '../store';
+import { AppDispatch, RootState } from '../store';
 import { ButtonClose } from './Button';
 import Modal from './Modal';
 
@@ -40,7 +40,7 @@ interface TheModalProps {
 const TheModal = ({ open, onClose, toSaveItemId, toSaveItemType }: TheModalProps) => {
   const handleClose = onClose;
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const [page, setPage] = useState<'list' | 'new'>('list');
 

@@ -4,6 +4,7 @@ import Dropdown from '../../components/Dropdown';
 import { copyToClipboard } from '../../helper';
 import { snackAlert } from '../../slices/mainSlice';
 import { Post } from '../../slices/postsSlice';
+import { AppDispatch } from '../../store';
 
 const Target = (props: React.HTMLAttributes<HTMLDivElement>) => {
   return (
@@ -30,7 +31,7 @@ const Target = (props: React.HTMLAttributes<HTMLDivElement>) => {
 };
 
 const PostShareButton = ({ post }: { post: Post }) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const url = `${window.location.origin}/${post.communityName}/post/${post.publicId}`;
   const handleCopyURL = () => {

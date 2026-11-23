@@ -40,7 +40,7 @@ export function MountTransition({
     return () => {
       clearTimeout(timer);
     };
-  }, [display]);
+  }, [display, transitionTime]);
 
   if (!keepMounted && !visible && !display) {
     return null;

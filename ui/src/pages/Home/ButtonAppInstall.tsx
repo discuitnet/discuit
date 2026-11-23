@@ -6,7 +6,7 @@ export type DeferredInstallPrompt = {
   prompt: () => void;
 };
 
-export interface ButtonAppInstallProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonAppInstallProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   deferredPrompt: DeferredInstallPrompt;
   children: React.ReactNode;
 }

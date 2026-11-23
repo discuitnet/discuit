@@ -3,7 +3,7 @@ import Image, { ImageProps } from '../../components/Image';
 import { selectImageCopyURL } from '../../helper';
 import { Community } from '../../serverTypes';
 
-export interface BannerProps extends ImageProps {
+interface BannerProps extends ImageProps {
   community: Community;
   className?: string;
   editable?: boolean;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { getGlobalAppData } from '../../appData';
 import { ButtonClose } from '../../components/Button';
 import Link from '../../components/Link';

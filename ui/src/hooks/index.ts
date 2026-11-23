@@ -1,14 +1,6 @@
-import { Location } from 'history';
-import {
-  MouseEventHandler,
-  useEffect,
-  useInsertionEffect,
-  useReducer,
-  useRef,
-  useState,
-} from 'react';
+import { MouseEventHandler, useEffect, useInsertionEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useHistory, useLocation } from 'react-router';
+import { Location, useLocation, useNavigate } from 'react-router';
 import { APIError, isModifiedClick, mfetch, mfetchjson, usernameLegalLetters } from '../helper';
 import { List } from '../serverTypes';
 import { ListsFilter, ListsOrder, selectUsersLists, usersListsAdded } from '../slices/listsSlice';
@@ -22,6 +14,7 @@ import {
   unmuteUser,
 } from '../slices/mainSlice';
 import { selectUser, userAdded } from '../slices/usersSlice';
+import { AppDispatch } from '../store';
 
 /**
  * Run a callback function after a specific amount of time.
@@ -37,7 +30,6 @@ export function useDelayedEffect(effect: () => void, delay = 1000) {
     return () => {
       window.clearTimeout(timer);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effect, delay]);
 }
 
@@ -74,7 +66,7 @@ export function useInputUsername(
   return [value, handleChange];
 }
 
-export function useWindowSize() {
+function useWindowSize() {
   const getSize = () => {
     return {
       width: window.innerWidth,
@@ -93,10 +85,6 @@ export function useWindowSize() {
 
 export function useWindowWidth() {
   return useWindowSize().width;
-}
-
-export function useWindowHeight() {
-  return useWindowSize().height;
 }
 
 export const mobileBreakpointWidth = 768;
@@ -135,7 +123,8 @@ export function useLoading(
 export function usePagination(
   initial = 1
 ): [number, (n: number, clearOtherParms?: boolean) => void] {
-  const history = useHistory();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const query = useQuery();
   let page = initial;
@@ -152,13 +141,13 @@ export function usePagination(
   const setPage = (n: number, clearOtherParms = false) => {
     let path = '';
     if (clearOtherParms) {
-      path = `${history.location.pathname}?page=${n}`;
+      path = `${location.pathname}?page=${n}`;
     } else {
-      const params = new URLSearchParams(history.location.search);
+      const params = new URLSearchParams(location.search);
       params.set('page', n.toString());
-      path = `${history.location.pathname}?${params.toString()}`;
+      path = `${location.pathname}?${params.toString()}`;
     }
-    history.push(path);
+    navigate(path);
   };
 
   return [page, setPage];
@@ -170,11 +159,13 @@ export function useQuery() {
 
 export function useIsChanged(deps: unknown[] = []): [boolean, () => void] {
   const [c, setC] = useState(0);
+  // deps comes from the caller.
+  // oxlint-disable react/exhaustive-deps
   useEffect(() => {
     if (c < 3) setC((c) => c + 1);
   }, deps);
+  // oxlint-enable react/exhaustive-deps
   const resetChanged = () => setC(1);
-  console.log('c: ', c);
   return [c > 1, resetChanged];
 }
 
@@ -273,7 +264,7 @@ export function useCanonicalTag(href: string, deps?: React.DependencyList) {
       tag.setAttribute('href', href);
       document.head.append(tag);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
   }, deps);
   useEffect(() => {
     return () => {
@@ -285,7 +276,7 @@ export function useCanonicalTag(href: string, deps?: React.DependencyList) {
 export function useRemoveCanonicalTag(deps?: React.DependencyList) {
   useEffect(() => {
     removeCanonicalTag();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
   }, deps);
 }
 
@@ -368,13 +359,8 @@ export function useTheme() {
   return { theme, setTheme, toggleTheme };
 }
 
-export function useForceUpdate() {
-  const [, forceUpdate] = useReducer((x) => x + 1, 0);
-  return forceUpdate;
-}
-
 export function useMuteUser({ userId, username }: { userId: string; username: string }) {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const isMuted = useSelector(selectIsUserMuted(userId));
   const toggleMute = () => {
     const f = isMuted ? unmuteUser : muteUser;
@@ -394,7 +380,7 @@ export function useMuteCommunity({
   communityId: string;
   communityName: string;
 }) {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const isMuted = useSelector(selectIsCommunityMuted(communityId));
   const toggleMute = () => {
     const f = isMuted ? unmuteCommunity : muteCommunity;
@@ -414,7 +400,7 @@ export function useMuteCommunity({
  *
  */
 export function useFetchUser(username: string, showSnackAlertOnError = true) {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const user = useSelector(selectUser(username));
   const [loading, setLoading] = useState(!user);
   const [error, setError] = useState<unknown>(null);
@@ -445,7 +431,7 @@ export function useFetchUser(username: string, showSnackAlertOnError = true) {
       }
     };
     f();
-  }, [username]);
+  }, [username, user, dispatch, showSnackAlertOnError]);
 
   return {
     user,
@@ -455,7 +441,7 @@ export function useFetchUser(username: string, showSnackAlertOnError = true) {
 }
 
 export function useFetchUsersLists(username: string, showSnackAlertOnError = true) {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const {
     lists,
     order,
@@ -486,7 +472,7 @@ export function useFetchUsersLists(username: string, showSnackAlertOnError = tru
       }
     };
     f();
-  }, [username, order, filter]);
+  }, [username, order, filter, dispatch, lists, showSnackAlertOnError]);
 
   return {
     lists,
@@ -508,7 +494,7 @@ export function useLinkClick<T = Element>(
   replace = false,
   state?: unknown
 ): React.MouseEventHandler<T> {
-  const history = useHistory();
+  const navigate = useNavigate();
   const location = useLocation();
 
   const handleClick: MouseEventHandler<T> = (event) => {
@@ -516,9 +502,7 @@ export function useLinkClick<T = Element>(
     if ((target ?? '_self') !== '_self') return;
     const link = event.currentTarget;
     if (link instanceof HTMLAnchorElement && isModifiedClick(event)) {
-      // Let the browser open the link in a new tab, unless the click is on a button inside the
-      // link (like the navbar's notifications button), because then browsers that stick to the
-      // spec won't open the link at all.
+      // Some browsers won't open the link if the click is on a button inside it.
       const button = (event.target as Element).closest('button');
       if (button && link.contains(button)) {
         event.preventDefault();
@@ -532,9 +516,9 @@ export function useLinkClick<T = Element>(
       return;
     }
     if (replace) {
-      history.replace(to, state);
+      navigate(to, { state, replace: true });
     } else {
-      history.push(to, state);
+      navigate(to, { state });
     }
   };
 

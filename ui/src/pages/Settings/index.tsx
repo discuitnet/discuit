@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import {
   getNotificationsPermissions,
   shouldAskForNotificationsPermissions,
@@ -26,13 +25,14 @@ import {
   unmuteUser,
   userLoggedIn,
 } from '../../slices/mainSlice';
-import { RootState } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import ChangePassword from './ChangePassword';
 import DeleteAccount from './DeleteAccount';
 import { getDevicePreference, setDevicePreference } from './devicePrefs';
+import PageTitle from '../../components/PageTitle';
 
 const Settings = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const user = (useSelector<RootState>((state) => state.main.user) as MainState['user'])!;
   const loggedIn = user !== null;
 
@@ -131,7 +131,7 @@ const Settings = () => {
     setCanEnableWebPushNotifications(
       shouldAskForNotificationsPermissions(loggedIn, applicationServerKey, false)
     );
-  }, [notificationsPermissions]);
+  }, [notificationsPermissions, loggedIn, applicationServerKey]);
 
   const handleEnablePushNotifications = async () => {
     await getNotificationsPermissions(loggedIn, applicationServerKey!);
@@ -316,9 +316,7 @@ const Settings = () => {
 
   return (
     <div className="page-content wrap page-settings">
-      <Helmet>
-        <title>Settings</title>
-      </Helmet>
+      <PageTitle title="Settings" />
       <div className="form account-settings card">
         <h1>Account settings</h1>
         <FormSection>

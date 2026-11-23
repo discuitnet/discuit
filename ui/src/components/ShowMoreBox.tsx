@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { useEffect, useRef, useState } from 'react';
 
-export interface ShowMoreBoxProps extends React.HTMLAttributes<HTMLDivElement> {
+interface ShowMoreBoxProps extends React.HTMLAttributes<HTMLDivElement> {
   maxHeight?: string;
   children?: React.ReactNode;
 

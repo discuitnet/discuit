@@ -3,9 +3,10 @@ import { useDispatch } from 'react-redux';
 import Dropdown from '../../components/Dropdown';
 import { copyToClipboard, publicURL } from '../../helper';
 import { snackAlert } from '../../slices/mainSlice';
+import { AppDispatch } from '../../store';
 
 export const CommentShareDropdownItems = ({ url }: { url: string }) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const handleCopyURL = () => {
     let text = 'Failed to copy link to clipboard.';
     if (copyToClipboard(publicURL(url))) {

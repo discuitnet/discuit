@@ -9,6 +9,16 @@ service mariadb start
 echo "Starting Redis..."
 service redis-server start
 
+# Wait for Redis, since its init script exits 0 even if it fails
+for _ in {1..60}; do
+    redis-cli ping > /dev/null 2>&1 && break
+    sleep 0.5
+done
+if ! redis-cli ping > /dev/null; then
+    echo "Redis failed to start."
+    exit 1
+fi
+
 # Set up initial database if it doesn't exist
 echo "Creating the discuit database if it doesn't already exist..."
 mysql -e "CREATE DATABASE IF NOT EXISTS discuit;"
@@ -24,7 +34,7 @@ mysql -e "GRANT ALL PRIVILEGES ON discuit.* TO 'discuit'@'127.0.0.1';"
 # Build the UI
 echo "Building the UI..."
 cd /app/ui
-npm run build
+pnpm run build
 cd ..
 
 # Start the Discuit server

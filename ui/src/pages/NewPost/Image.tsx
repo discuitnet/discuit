@@ -7,7 +7,7 @@ import Textarea from '../../components/Textarea';
 import { useIsMobile, useWindowWidth } from '../../hooks';
 import { Image as ServerImage } from '../../serverTypes';
 
-export interface ImageProps {
+interface ImageProps {
   image: ServerImage;
   onClose: () => void;
   disabled?: boolean;

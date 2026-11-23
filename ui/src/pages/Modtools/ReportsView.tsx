@@ -3,7 +3,7 @@ import React from 'react';
 import DashboardPage from '../../components/Dashboard/DashboardPage';
 import Dropdown from '../../components/Dropdown';
 
-export interface ReportsViewProps {
+interface ReportsViewProps {
   className?: string;
   title: string;
   noPosts?: number;

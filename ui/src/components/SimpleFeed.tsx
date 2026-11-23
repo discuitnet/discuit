@@ -22,17 +22,10 @@ function SimpleFeed<T>({
   className?: string;
   hasMore?: boolean;
 }) {
-  const renderItems = () => {
-    const rendered = [];
-    if (items) {
-      for (let i = 0; i < items.length; i++) {
-        rendered.push(
-          <React.Fragment key={items[i].key}>{onRenderItem(items[i].item)}</React.Fragment>
-        );
-      }
-    }
-    return rendered;
-  };
+  const renderItems = () =>
+    (items ?? []).map(({ key, item }) => (
+      <React.Fragment key={key}>{onRenderItem(item)}</React.Fragment>
+    ));
   return (
     <div className={clsx('simple-feed', className)}>
       {onRenderHead && onRenderHead()}

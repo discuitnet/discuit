@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { kRound, mfetchjson, selectImageCopyURL } from '../../helper';
 import { useDelayedEffect } from '../../hooks';
 import { Community } from '../../serverTypes';
 import { snackAlertError } from '../../slices/mainSlice';
+import { AppDispatch } from '../../store';
 
-export interface SelectCommunityProps {
+interface SelectCommunityProps {
   initial?: string;
   onFocus?: () => void;
   onChange: (community: Community) => void;
@@ -19,7 +20,7 @@ const SelectCommunity = ({
   onChange,
   disabled = false,
 }: SelectCommunityProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const [suggestions, setSuggestions] = useState<Community[]>([]);
   useEffect(() => {
@@ -47,6 +48,8 @@ const SelectCommunity = ({
         dispatch(snackAlertError(error));
       }
     })();
+    // onChange is a new function on every render.
+    // oxlint-disable-next-line react/exhaustive-deps
   }, [location]);
 
   const handleChange: React.ChangeEventHandler<HTMLInputElement> = (event) =>

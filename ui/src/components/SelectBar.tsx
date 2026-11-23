@@ -9,7 +9,7 @@ const layoutOptions = [
   { text: 'Compact', id: 'compact' },
 ];
 
-export interface SelectBarProps {
+interface SelectBarProps {
   name?: string;
   onChange?: (optionId: string) => void;
   options: ({ id: string; text: string } & unknown)[];

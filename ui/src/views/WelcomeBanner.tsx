@@ -1,10 +1,10 @@
 import clsx from 'clsx';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { createCommunityModalOpened, MainState, signupModalOpened } from '../slices/mainSlice';
 import { RootState } from '../store';
 
-export interface WelcomeBannerProps extends React.HTMLAttributes<HTMLDivElement> {
+interface WelcomeBannerProps extends React.HTMLAttributes<HTMLDivElement> {
   hideIfMember?: boolean;
 }
 

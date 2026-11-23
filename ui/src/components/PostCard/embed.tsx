@@ -3,17 +3,18 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { Post } from '../../serverTypes';
 
+// oxlint-disable react/only-export-components
 const YoutubeEmbed = ({ url }: { url: string }) => {
   // match the way YouTube parses timestamps:
   // pure number: interpret as seconds
   // xxxsyyym (either order, either can be missing): as xxx seconds + yyy minutes
   // anything else: start at time 0
   const timestampStringToNum = (s: string) => {
-    let n = Number(s);
+    const n = Number(s);
     if (Number.isInteger(n)) {
       return n;
     }
-    let matchResult = s.match(/(?:(\d+)m)?(?:(\d+)s)?(?:(\d+)m)?/i);
+    const matchResult = s.match(/(?:(\d+)m)?(?:(\d+)s)?(?:(\d+)m)?/i);
     if (matchResult === null || matchResult[0] != s) {
       // s is not xxxsyyym
       return 0;
@@ -21,8 +22,8 @@ const YoutubeEmbed = ({ url }: { url: string }) => {
       // malformed; two minute values
       return 0;
     } else {
-      let seconds = parseInt(matchResult[2]) || 0;
-      let minutes = (parseInt(matchResult[1]) || 0) + (parseInt(matchResult[3]) || 0);
+      const seconds = parseInt(matchResult[2]) || 0;
+      const minutes = (parseInt(matchResult[1]) || 0) + (parseInt(matchResult[3]) || 0);
       return minutes * 60 + seconds;
     }
   };
@@ -78,7 +79,7 @@ const YoutubeEmbed = ({ url }: { url: string }) => {
   }
   playlist = params.get('list') || '';
   timestampString = params.get('t') || '';
-  let timestamp = timestampStringToNum(timestampString);
+  const timestamp = timestampStringToNum(timestampString);
   let additionalParams = '';
   if (timestamp != 0) {
     additionalParams = `?start=${timestamp}`;

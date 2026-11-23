@@ -1,9 +1,11 @@
 {
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "semi": true,
   "tabWidth": 2,
   "printWidth": 100,
   "singleQuote": true,
   "trailingComma": "es5",
+  "sortPackageJson": false,
   "overrides": [
     {
       "files": ["*.html", "*.scss"],
@@ -12,5 +14,6 @@
         "trailingComma": "none"
       }
     }
-  ]
+  ],
+  "ignorePatterns": ["node_modules", "/dist"]
 }

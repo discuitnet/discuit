@@ -1,17 +1,16 @@
-/* eslint-disable no-undef */
 import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import { defineConfig } from 'vite';
-import viteCompression from 'vite-plugin-compression';
 import YAML from 'yaml';
-import { hostnameToURL } from './src/helper';
+import { hostnameToURL } from './src/helper/index.js';
+import precompress from './vite-precompress.ts';
 
 const { define: yamlConfigDefine, config: yamlConfig } = parseYamlConfigFile();
 
 const proxyAddr = hostnameToURL(process.env.VITE_DEV_PROXY ?? yamlConfig.addr);
 
 export default defineConfig({
-  plugins: [react(), viteCompression(), viteCompression({ algorithm: 'brotliCompress' })],
+  plugins: [react(), precompress()],
   server: {
     proxy: {
       '/api': {
@@ -26,6 +25,8 @@ export default defineConfig({
   },
   build: {
     emptyOutDir: false,
+    // Vite 6's default targets, which sw.vite.config.js has to match.
+    target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
   },
   define: yamlConfigDefine,
 });

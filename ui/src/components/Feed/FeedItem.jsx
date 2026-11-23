@@ -1,6 +1,5 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import PropTypes from 'prop-types';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 
 const FeedItem = ({
@@ -23,14 +22,17 @@ const FeedItem = ({
   useEffect(() => {
     if (inView) setRenderedOnce(true);
     onViewChange(itemKey, inView);
+    // onViewChange is a new function on every render.
+    // oxlint-disable-next-line react/exhaustive-deps
   }, [inView]);
 
-  const innerRef = useCallback((node) => {
+  // Measure the height again after every render.
+  const innerRef = (node) => {
     if (node !== null && inView) {
       const { height: h } = node.getBoundingClientRect();
       if (height !== h) onHeightChange(h);
     }
-  });
+  };
 
   return (
     <div className="feed-item" ref={ref} style={{ minHeight: height ?? '0px' }}>

@@ -1,7 +1,6 @@
-/* eslint-disable react/display-name */
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import Dropdown from '../../components/Dropdown';
 import MarkdownBody from '../../components/MarkdownBody';
 import ModalConfirm from '../../components/Modal/ModalConfirm';
@@ -25,6 +24,7 @@ import { Post } from '../../slices/postsSlice';
 import { userHasSupporterBadge } from '../User';
 import AddComment from './AddComment';
 import CommentShareButton, { CommentShareDropdownItems } from './CommentShareButton';
+import { AppDispatch } from '../../store';
 
 const Diagnostics = false; // import.meta.env.MODE !== 'production';
 const MaxCommentDepth = 15;
@@ -59,7 +59,7 @@ const Comment = ({
   canComment,
   isAncestorLocked = false,
 }: CommentProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const postId = post.publicId;
   const loggedIn = user !== null;
@@ -222,6 +222,8 @@ const Comment = ({
         dispatch(snackAlertError(error));
       }
     })();
+    // setComment isn't memoized.
+    // oxlint-disable-next-line react/exhaustive-deps
   }, [userGroup]);
 
   const [collapsed, setCollapsed] = useState(node.collapsed || false);
@@ -246,6 +248,8 @@ const Comment = ({
     if (comment.isAuthorMuted) {
       setCollapsed(true);
     }
+    // Only collapse a muted author's comment on mount.
+    // oxlint-disable-next-line react/exhaustive-deps
   }, []);
 
   const [isRepliesLoading, setIsRepliesLoading] = useState(false);
@@ -814,8 +818,6 @@ const Comment = ({
     </div>
   );
 };
-
-export default Comment;
 
 export const MemorizedComment = React.memo(Comment);
 

@@ -2,13 +2,12 @@ import clsx from 'clsx';
 import PropTypes from 'prop-types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
-import { Helmet } from 'react-helmet-async';
 import { useDispatch, useSelector } from 'react-redux';
 import { usernameMaxLength } from '../config';
 import { APIError, mfetch, validEmail } from '../helper';
 import { useDelayedEffect, useInputUsername } from '../hooks';
 import { loginModalOpened, snackAlertError } from '../slices/mainSlice';
-import { RootState } from '../store';
+import { AppDispatch, RootState } from '../store';
 import { ButtonClose } from './Button';
 import { Form, FormField } from './Form';
 import Input, { InputPassword, InputWithCount } from './Input';
@@ -25,7 +24,7 @@ const errors = [
 ];
 
 const Signup = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   const signupsDisabled = useSelector<RootState>((state) => state.main.signupsDisabled) as boolean;
 
@@ -152,9 +151,7 @@ const Signup = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
 
   return (
     <>
-      <Helmet>
-        <style>{`.grecaptcha-badge { visibility: hidden; }`}</style>
-      </Helmet>
+      <style>{`.grecaptcha-badge { visibility: hidden; }`}</style>
       <Modal open={open} onClose={onClose} noOuterClickClose={false}>
         <div className={clsx('modal-card modal-signup', signupsDisabled && 'is-disabled')}>
           <div className="modal-card-head">

@@ -4,7 +4,7 @@ import { getImageContainSize } from '../../helper';
 import { Image } from '../../serverTypes';
 import ServerImage from '../ServerImage';
 
-export interface ImageProps {
+interface ImageProps {
   image: Image;
   isMobile: boolean;
   loading?: React.ImgHTMLAttributes<HTMLImageElement>['loading'];

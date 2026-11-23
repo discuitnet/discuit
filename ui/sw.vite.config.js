@@ -1,12 +1,14 @@
 import { defineConfig } from 'vite';
-import viteCompression from 'vite-plugin-compression';
+import precompress from './vite-precompress.ts';
 
 export default defineConfig({
   manifest: true,
-  plugins: [viteCompression(), viteCompression({ algorithm: 'brotliCompress' })],
+  plugins: [precompress()],
   build: {
     outDir: 'dist-sw',
-    rollupOptions: {
+    // Keep this in sync with vite.config.ts.
+    target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
+    rolldownOptions: {
       input: './service-worker.js',
       output: {
         entryFileNames: '[name].js',

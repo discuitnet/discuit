@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { MainState, sidebarScrollYUpdated, toggleSidebarOpen } from '../slices/mainSlice';
 import { RootState } from '../store';
 import {

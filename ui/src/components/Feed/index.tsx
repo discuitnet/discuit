@@ -16,8 +16,9 @@ import Button from '../Button';
 import Spinner from '../Spinner';
 import FeedItemComponent from './FeedItem';
 import FeedSkeleton from './FeedSkeleton';
+import { AppDispatch } from '../../store';
 
-export interface FeedProps<FeedItemType> {
+interface FeedProps<FeedItemType> {
   className?: string;
   compact?: boolean;
   feedId: string;
@@ -55,6 +56,7 @@ function Feed<FeedItemType>({
   const loading = feed ? feed.loading : true;
   const hasMore = feed ? Boolean(feed.next) : false;
   const [, /*error*/ setError] = useState<unknown>(null);
+  const dispatch = useDispatch<AppDispatch>();
 
   const [fetching, setFetching] = useState(false);
   const fetchingRef = useRef(false);
@@ -84,6 +86,8 @@ function Feed<FeedItemType>({
     if (loading) {
       fetchFeedAndDispatch(null);
     }
+    // fetchFeedAndDispatch isn't memoized.
+    // oxlint-disable-next-line react/exhaustive-deps
   }, [feedId, loading]);
 
   const handleLoadMoreClick = () => {
@@ -99,7 +103,7 @@ function Feed<FeedItemType>({
     if (!loading && hasMore && spinnerInView) {
       handleLoadMoreClick();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
   }, [loading, hasMore, spinnerInView]);
 
   const windowWidth = useWindowWidth();
@@ -107,7 +111,6 @@ function Feed<FeedItemType>({
 
   const itemsInitiallyInView = useSelector(selectFeedInViewItems(feedId));
 
-  const dispatch = useDispatch();
   const itemsInView = useRef<string[]>([]);
   useEffect(() => {
     if (!loading) {
@@ -115,7 +118,7 @@ function Feed<FeedItemType>({
         dispatch(feedInViewItemsUpdated(feedId, [...itemsInView.current]));
       };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
   }, [loading]);
   const handleItemViewChange = (itemKey: string, inView: boolean) => {
     let list = itemsInView.current;

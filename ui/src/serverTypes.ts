@@ -44,7 +44,7 @@ export interface Image {
   altText: string | null;
 }
 
-export interface ImageCopy {
+interface ImageCopy {
   name?: string;
   width: number;
   height: number;
@@ -184,7 +184,7 @@ export interface Comment {
   lockedAt: string | null;
 }
 
-export type ListSort = 'addedDsc' | 'addedAsc' | 'createdDsc' | 'createdAsc';
+type ListSort = 'addedDsc' | 'addedAsc' | 'createdDsc' | 'createdAsc';
 
 export interface List {
   id: number;
@@ -239,7 +239,7 @@ export interface Notification {
   createdAt: string; // A datetime.
 }
 
-export interface NotificationNewComment {
+interface NotificationNewComment {
   postId: string;
   commentId: string;
   noComments: number;
@@ -248,7 +248,7 @@ export interface NotificationNewComment {
   post: Post;
 }
 
-export interface NotificationCommentReply {
+interface NotificationCommentReply {
   postId: string;
   parentCommentId: string;
   commentId: string;
@@ -258,7 +258,7 @@ export interface NotificationCommentReply {
   post: Post;
 }
 
-export interface NotificationNewVotes {
+interface NotificationNewVotes {
   targetType: 'post' | 'comment';
   targetId: string;
   noVotes: number;
@@ -266,7 +266,7 @@ export interface NotificationNewVotes {
   comment?: Comment;
 }
 
-export interface NotificationPostDeleted {
+interface NotificationPostDeleted {
   targetType: 'post' | 'comment';
   targetId: string;
   deletedAs: UserGroup;
@@ -274,33 +274,33 @@ export interface NotificationPostDeleted {
   comment?: Comment;
 }
 
-export interface NotificationModAdd {
+interface NotificationModAdd {
   communityName: string;
   addedBy: string;
   community: Community;
 }
 
-export interface NotificationNewBadge {
+interface NotificationNewBadge {
   badgeType: string;
   user: User;
 }
 
-export interface NotificationWelcome {
+interface NotificationWelcome {
   communityName: string;
   community: Community;
 }
 
-export interface NotificationAnnouncement {
+interface NotificationAnnouncement {
   postId: string;
   post: Post;
   community: Community;
 }
 
-export interface NotificationDeniedCommunity {
+interface NotificationDeniedCommunity {
   body: string;
 }
 
-export type TextFormat = 'html' | 'md';
+type TextFormat = 'html' | 'md';
 
 export interface NotificationView {
   id: number;

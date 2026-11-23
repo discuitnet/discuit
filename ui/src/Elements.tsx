@@ -12,9 +12,10 @@ import Spinner from './components/Spinner';
 import { FadeInAndOut } from './components/Transition';
 import { snackAlert } from './slices/mainSlice';
 import { SVGSettings } from './SVGs';
+import { AppDispatch } from './store';
 
 function Elements() {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
