@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useLocation } from 'react-router';
 import Dropdown from '../../components/Dropdown';
@@ -68,22 +68,19 @@ const Comment = ({
   const { noRepliesRendered, children } = node;
   const [comment, _setComment] = useState(node.comment!);
   const isCommentLocked = comment.locked || isAncestorLocked;
-  const setComment = useCallback(
-    (comment: CommentType) => {
-      // Beware: In place data mutation.
-      node.comment = {
-        ...node.comment,
+  const setComment = (comment: CommentType) => {
+    // Beware: In place data mutation.
+    node.comment = {
+      ...node.comment,
+      ...comment,
+    };
+    _setComment((c) => {
+      return {
+        ...c,
         ...comment,
       };
-      _setComment((c) => {
-        return {
-          ...c,
-          ...comment,
-        };
-      });
-    },
-    [node.comment]
-  );
+    });
+  };
 
   const commentShareURL = `/${community.name}/post/${postId}/${comment.id}`;
 
@@ -225,7 +222,9 @@ const Comment = ({
         dispatch(snackAlertError(error));
       }
     })();
-  }, [userGroup, comment.id, comment.postId, comment.userGroup, dispatch, setComment]);
+    // setComment isn't memoized.
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, [userGroup]);
 
   const [collapsed, setCollapsed] = useState(node.collapsed || false);
   const collapsedRef = useRef<HTMLDivElement>(null);
@@ -249,7 +248,9 @@ const Comment = ({
     if (comment.isAuthorMuted) {
       setCollapsed(true);
     }
-  }, [comment.isAuthorMuted]);
+    // Only collapse a muted author's comment on mount.
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, []);
 
   const [isRepliesLoading, setIsRepliesLoading] = useState(false);
   const handleLoadReplies = async () => {

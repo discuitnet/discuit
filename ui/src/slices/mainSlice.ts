@@ -50,10 +50,6 @@ export interface MainState {
   notifications: NotificationsResponse & { loaded: boolean };
   chatOpen: boolean;
   sidebarCommunities: Community[];
-  allCommunities: {
-    items: string[];
-    loading: boolean;
-  };
   alerts: Alert[]; // An array of { timestamp: 032948023, text: 'message' }.
   loginPromptOpen: boolean;
   signupsDisabled: boolean;
@@ -103,10 +99,6 @@ const initialState: MainState = {
   notifications: initialNotifications,
   chatOpen: false,
   sidebarCommunities: [],
-  allCommunities: {
-    items: [],
-    loading: true,
-  },
   alerts: [],
   loginPromptOpen: false,
   signupsDisabled: false,
@@ -177,22 +169,10 @@ export default function mainReducer(
         },
       };
     }
-    case 'main/userLoggedOut': {
-      return {
-        ...state,
-        user: null,
-      };
-    }
     case 'main/sidebarCommunitiesUpdated': {
       return {
         ...state,
         sidebarCommunities: action.payload as Community[],
-      };
-    }
-    case 'main/allCommunitiesUpdated': {
-      return {
-        ...state,
-        allCommunities: action.payload as { items: string[]; loading: boolean },
       };
     }
     case 'main/alertAdded': {
@@ -342,12 +322,6 @@ export default function mainReducer(
         bannedFrom: action.payload as string[],
       };
     }
-    case 'main/bannedFromAdded': {
-      return {
-        ...state,
-        bannedFrom: [...state.bannedFrom, action.payload as string],
-      };
-    }
     case 'main/signupModalOpened': {
       return {
         ...state,
@@ -378,23 +352,6 @@ export default function mainReducer(
         mutes: {
           ...state.mutes,
           ...(action.payload as Mutes),
-        },
-      };
-    }
-    case 'main/muteAdded': {
-      const mute = action.payload as Mute;
-      const communityMutes = [...(state.mutes.communityMutes || [])];
-      const userMutes = [...(state.mutes.userMutes || [])];
-      if (mute.type === 'community') {
-        communityMutes.push(mute);
-      } else {
-        userMutes.push(mute);
-      }
-      return {
-        ...state,
-        mutes: {
-          communityMutes,
-          userMutes,
         },
       };
     }

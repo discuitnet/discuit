@@ -25,7 +25,9 @@ const AsUser = ({
   };
   useEffect(() => {
     if (onChange) onChange(group);
-  }, [group, onChange]);
+    // onChange is a new function on every render.
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, [group]);
 
   if (!(isMod || isAdmin)) return null;
 

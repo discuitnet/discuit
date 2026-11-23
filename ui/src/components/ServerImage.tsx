@@ -5,7 +5,7 @@ interface ServerImageProps extends ImageProps {
   image: ImageType;
 }
 
-// oxlint-disable-next-line @typescript-eslint/no-unused-vars
+// oxlint-disable-next-line no-unused-vars
 function ServerImage({ onLoad, image, sizes, style = {}, src, ...props }: ServerImageProps) {
   let srcset = '';
   if (image.copies) {

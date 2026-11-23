@@ -1,0 +1,9 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "tags": ["-lintignore"],
+  "vite": {
+    // knip can't load vite.config.ts without ../ui-config.yaml.
+    "config": ["sw.vite.config.js"],
+    "entry": ["vite.config.ts"],
+  },
+}

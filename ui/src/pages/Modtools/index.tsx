@@ -174,18 +174,18 @@ const Modtools = () => {
       <Routes>
         <Route path="/" element={<Navigate to={`/${communityName}/modtools/settings`} replace />} />
         <Route path="/settings" element={<Settings community={community} />} />
-        <Route path="/reports" element={<Reports community={community} />} />
+        <Route path="/reports/*" element={<Reports community={community} />} />
         <Route
-          path="/removed"
+          path="/removed/*"
           element={<Removed community={community} filter="deleted" title="Removed" />}
         />
         <Route
-          path="/locked"
+          path="/locked/*"
           element={<Removed community={community} filter="locked" title="Locked" />}
         />
-        <Route path="/banned" element={<Banned community={community} />} />
-        <Route path="/mods" element={<Mods community={community} />} />
-        <Route path="/rules" element={<Rules community={community} />} />
+        <Route path="/banned/*" element={<Banned community={community} />} />
+        <Route path="/mods/*" element={<Mods community={community} />} />
+        <Route path="/rules/*" element={<Rules community={community} />} />
         <Route
           path="*"
           element={<div className="modtools-content flex flex-center">Not found.</div>}

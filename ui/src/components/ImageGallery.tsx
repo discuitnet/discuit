@@ -32,7 +32,7 @@ export default function ImageGallery({
     if (onIndexChange) {
       onIndexChange(currentImageIndex);
     }
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
   }, [currentImageIndex]);
 
   const renderImages = () => {

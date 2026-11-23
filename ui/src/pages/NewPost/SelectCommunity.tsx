@@ -48,7 +48,9 @@ const SelectCommunity = ({
         dispatch(snackAlertError(error));
       }
     })();
-  }, [location, dispatch, onChange]);
+    // onChange is a new function on every render.
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, [location]);
 
   const handleChange: React.ChangeEventHandler<HTMLInputElement> = (event) =>
     setValue(event.target.value);

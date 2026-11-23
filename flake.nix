@@ -25,7 +25,8 @@
 
         packages = pkgs: (with pkgs; [
           go_latest
-          nodejs_24
+          nodejs_26
+          pnpm
           mariadb
           redis
           vips

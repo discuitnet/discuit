@@ -1,7 +1,7 @@
-import { useSelector } from 'react-redux';
-import { RootState } from '../store';
-import { MainState } from '../slices/mainSlice';
 import { useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { MainState } from '../slices/mainSlice';
+import { RootState } from '../store';
 
 interface PageTitleProps {
   title?: string;
@@ -12,18 +12,11 @@ export default function PageTitle({ title }: PageTitleProps) {
     (state) => state.main.notifications.newCount
   ) as MainState['notifications']['newCount'];
   useEffect(() => {
-    const notifsNewCountStr = notifsNewCount > 0 ? `(${notifsNewCount}) ` : '';
-
-    const updateTitle = () => {
-      document.title = title
-        ? `${notifsNewCountStr}${title} - ${import.meta.env.VITE_SITENAME}`
-        : `${notifsNewCountStr}${import.meta.env.VITE_SITENAME}`;
-    };
-
-    updateTitle();
-
+    const prefix = notifsNewCount > 0 ? `(${notifsNewCount}) ` : '';
+    const siteName = import.meta.env.VITE_SITENAME;
+    document.title = title ? `${prefix}${title} - ${siteName}` : `${prefix}${siteName}`;
     return () => {
-      document.title = `${notifsNewCountStr}${import.meta.env.VITE_SITENAME}`;
+      document.title = `${prefix}${siteName}`;
     };
   }, [notifsNewCount, title]);
 

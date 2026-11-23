@@ -32,7 +32,7 @@ const sortOptions: SortOption[] = [
 const sortDefault = import.meta.env.VITE_DEFAULTFEEDSORT;
 const baseURL = '/api/posts';
 
-// oxlint-disable react/only-export-components
+// oxlint-disable-next-line react/only-export-components
 export const homeReloaded = (homeFeed = 'all', rememberFeedSort = false) => {
   const params = new URLSearchParams();
   let sort = sortDefault;

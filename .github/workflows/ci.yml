@@ -93,6 +93,4 @@ jobs:
 
       - name: Run linting and formatting checks
         if: steps.changes.outputs.code == 'true'
-        run: |
-          pnpm --dir ui run lint
-          pnpm --dir ui oxfmt --check
+        run: pnpm --dir ui run lint

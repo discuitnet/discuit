@@ -226,6 +226,7 @@ const App = () => {
 
   return (
     <>
+      {/* Keep this above AppSwitch so page titles can override it. */}
       <PageTitle />
       <meta property="og:site_name" content={import.meta.env.VITE_SITENAME} />
       <ScrollToTop />
@@ -268,17 +269,14 @@ const AppSwitch = () => {
   return (
     <>
       <Routes>
-        {import.meta.env.MODE !== 'production' && <Route path="/elements" element={<Elements />} />}
+        {import.meta.env.MODE !== 'production' && (
+          <Route path="/elements/*" element={<Elements />} />
+        )}
         {import.meta.env.MODE !== 'production' && (
           <Route path="/test-dashboard/*" element={<ExampleDashboard />} />
         )}
-        {/*
-        <Route path="/search">
-          <Search />
-        </Route>
-        */}
         <Route
-          path="/notifications"
+          path="/notifications/*"
           element={
             <Protected>
               <div className="page-content page-notifications wrap">
@@ -288,7 +286,7 @@ const AppSwitch = () => {
           }
         />
         <Route
-          path="/new"
+          path="/new/*"
           element={
             <Protected>
               <NewPost />
@@ -296,7 +294,7 @@ const AppSwitch = () => {
           }
         />
         <Route
-          path="/settings"
+          path="/settings/*"
           element={
             <Protected>
               <Settings />
@@ -359,12 +357,14 @@ const AppSwitch = () => {
 const UserCommunityRoute = () => {
   const { name } = useParams<{ name: string }>();
   if (!name) throw new Error('name param is required');
-  return name.startsWith('@') ? <User /> : <Community />;
+  return isUserParam(name) ? <User /> : <Community />;
 };
 const UserRoute = ({ children }: { children: React.ReactNode }) => {
   const { username } = useParams();
-  return username?.startsWith('@') ? children : <NotFound />;
+  return username && isUserParam(username) ? children : <NotFound />;
 };
+// A bare '@' isn't a username.
+const isUserParam = (name: string) => name.length > 1 && name.startsWith('@');
 
 /*
  * Redirects the logged out user to the login page.
@@ -396,7 +396,9 @@ const ScrollToTop = () => {
       window.scrollTo(0, 0);
     }
     getGlobalAppData().historyLength!++;
-  }, [location.pathname, navigationType, location.state]);
+    // Only count it as a new page when the pathname changes.
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, [location.pathname]);
 
   return null;
 };

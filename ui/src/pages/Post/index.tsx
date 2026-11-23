@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Location, NavigationType, useNavigate, useNavigationType, useParams } from 'react-router';
 import Dropdown from '../../components/Dropdown';
@@ -25,7 +25,6 @@ import AddComment from './AddComment';
 import CommentSection from './CommentSection';
 import PostDeleteModal, { PostContentDeleteModal } from './PostDeleteModal';
 import PostShareButton from './PostShareButton';
-// import CommentsSortButton from './CommentsSortButton';
 import { useLocation } from 'react-router';
 import MarkdownBody from '../../components/MarkdownBody';
 import embeddedElement from '../../components/PostCard/embed';
@@ -73,13 +72,13 @@ const Post = () => {
   }) as Community;
 
   const [postLoading, setPostLoading] = useState(post ? 'loaded' : 'loading');
-  const shouldCommentsLoad = useCallback(() => {
+  const shouldCommentsLoad = () => {
     if (!(comments && post)) return true;
     const isPop = navigationType === NavigationType.Pop;
     if (fromNotifications) return !isPop;
     if (post.fetchedAt > comments.fetchedAt) return !isPop;
     return false;
-  }, [post, navigationType, fromNotifications, comments]);
+  };
   const [commentsLoading, setCommentsLoading] = useState(
     shouldCommentsLoad() ? 'loading' : 'loaded'
   );
@@ -88,7 +87,8 @@ const Post = () => {
     if (post && !shouldCommentsLoad() && community && !fromNotifications) {
       return;
     }
-    const fetchCommunity = !community;
+    // The community in the URL might not be the post's.
+    const fetchCommunity = !(post && community);
     (async function () {
       try {
         const res = await mfetch(`/api/posts/${id}?fetchCommunity=${fetchCommunity}`);
@@ -111,7 +111,9 @@ const Post = () => {
     return () => {
       dispatch({ type: 'post/cleared' });
     };
-  }, [id, location, shouldCommentsLoad, community, dispatch, fromNotifications, post]);
+    // Only refetch when you navigate.
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, [id, location]);
 
   useEffect(() => {
     if (community && post) {
@@ -583,7 +585,6 @@ const Post = () => {
                   {stringCount(post.noComments, false, 'comment')}
                 </div>
               </div>
-              {/* <CommentsSortButton /> */}
               <AddComment
                 isMod={isMod}
                 post={post}

@@ -159,12 +159,13 @@ export function useQuery() {
 
 export function useIsChanged(deps: unknown[] = []): [boolean, () => void] {
   const [c, setC] = useState(0);
-  // oxlint-disable react-hooks/exhaustive-deps
+  // deps comes from the caller.
+  // oxlint-disable react/exhaustive-deps
   useEffect(() => {
     if (c < 3) setC((c) => c + 1);
   }, deps);
+  // oxlint-enable react/exhaustive-deps
   const resetChanged = () => setC(1);
-  console.log('c: ', c);
   return [c > 1, resetChanged];
 }
 
@@ -263,7 +264,7 @@ export function useCanonicalTag(href: string, deps?: React.DependencyList) {
       tag.setAttribute('href', href);
       document.head.append(tag);
     }
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
   }, deps);
   useEffect(() => {
     return () => {
@@ -275,7 +276,7 @@ export function useCanonicalTag(href: string, deps?: React.DependencyList) {
 export function useRemoveCanonicalTag(deps?: React.DependencyList) {
   useEffect(() => {
     removeCanonicalTag();
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
   }, deps);
 }
 

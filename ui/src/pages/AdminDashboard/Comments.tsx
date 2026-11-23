@@ -25,11 +25,9 @@ export default function Comments() {
 
   const dispatch = useDispatch<AppDispatch>();
   useEffect(() => {
-    console.log('Running ');
     const f = async () => {
       try {
         const res = await fetchSiteComments();
-        console.log(res);
         setCommentsState(res);
         setLoading('loaded');
       } catch (error) {

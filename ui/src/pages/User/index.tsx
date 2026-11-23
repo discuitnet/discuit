@@ -643,7 +643,7 @@ const User = () => {
 
 export default User;
 
-// oxlint-disable react/only-export-components
+// oxlint-disable-next-line react/only-export-components
 export function userHasSupporterBadge(user: UserType | null): boolean {
   return Boolean(
     user && (user.badges || []).find((badge) => badge.type === 'supporter') !== undefined

@@ -3,6 +3,7 @@ import rootReducer from './reducer';
 
 const store = configureStore({
   reducer: rootReducer,
+  // The reducers mutate state and keep an Event in it.
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({ immutableCheck: false, serializableCheck: false }),
 });

@@ -29,11 +29,11 @@ import PageTitle from '../../components/PageTitle';
 
 const List = () => {
   const dispatch = useDispatch<AppDispatch>();
-  let { username, listName: listname } = useParams<{ [key: string]: string }>();
-  if (!username) throw new Error('username param is required');
+  const { username: usernameParam, listName: listname } = useParams<{ [key: string]: string }>();
+  if (!usernameParam) throw new Error('username param is required');
   if (!listname) throw new Error('list name param is required');
 
-  username = username.slice(1); // @username -> username
+  const username = usernameParam.slice(1); // @username -> username
 
   const [editModalOpen, setEditModalOpen] = useState(false);
 

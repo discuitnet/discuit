@@ -310,7 +310,7 @@ export function mfetch(url: string | URL, options: RequestInit = {}): Promise<Re
   });
 }
 
-// oxlint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 export async function mfetchjson<T = any>(
   url: string | URL,
   options: RequestInit = {}
@@ -325,8 +325,7 @@ export function isValidHttpUrl(string: string): boolean {
 
   try {
     url = new URL(string);
-    // oxlint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
+  } catch {
     return false;
   }
 

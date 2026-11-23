@@ -24,17 +24,17 @@ COPY program/ ./program/
 COPY server/ ./server/
 RUN go build -ldflags "-s -w" -o discuit .
 
-# Use official Node image for the frontend build
+# Use the official pnpm image for the frontend build
 FROM ghcr.io/pnpm/pnpm:12 AS frontend-builder
 
 # The entrypoint builds the UI so it can use the deployment's config.
 WORKDIR /app/ui
-COPY ui/package*.json ./
+COPY ui/package.json ui/pnpm-lock.yaml ui/pnpm-workspace.yaml ./
 RUN pnpm ci --prefer-offline
 COPY ui/ . 
 
 # Final stage: setup the runtime environment
-FROM ghcr.io/pnpm/pnpm:24
+FROM node:26
 # Avoid prompts from the package manager during build
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -45,6 +45,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libvips-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+# Install pnpm for the entrypoint
+RUN npm install -g pnpm@12
 
 # Copy built artifacts from previous stages
 COPY --from=frontend-builder /app/ui /app/ui

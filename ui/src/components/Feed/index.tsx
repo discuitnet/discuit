@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useDispatch, useSelector } from 'react-redux';
 import { useWindowWidth } from '../../hooks';
@@ -60,36 +60,35 @@ function Feed<FeedItemType>({
 
   const [fetching, setFetching] = useState(false);
   const fetchingRef = useRef(false);
-  const fetchFeedAndDispatch = useCallback(
-    async (next: string | null) => {
-      if (fetchingRef.current) {
-        return;
+  const fetchFeedAndDispatch = async (next: string | null) => {
+    if (fetchingRef.current) {
+      return;
+    }
+    try {
+      setFetching(true);
+      fetchingRef.current = true;
+      const res = await onFetch(next);
+      if (res) {
+        dispatch(feedUpdated(feedId, res.items, res.next));
+      } else {
+        throw new Error(`onFetch (feedId: ${feedId}) returned null`);
       }
-      try {
-        setFetching(true);
-        fetchingRef.current = true;
-        const res = await onFetch(next);
-        if (res) {
-          dispatch(feedUpdated(feedId, res.items, res.next));
-        } else {
-          throw new Error(`onFetch (feedId: ${feedId}) returned null`);
-        }
-      } catch (error: unknown) {
-        setError(error);
-        dispatch(snackAlertError(error));
-      } finally {
-        fetchingRef.current = false;
-        setFetching(false);
-      }
-    },
-    [feedId, onFetch, dispatch]
-  );
+    } catch (error: unknown) {
+      setError(error);
+      dispatch(snackAlertError(error));
+    } finally {
+      fetchingRef.current = false;
+      setFetching(false);
+    }
+  };
 
   useEffect(() => {
     if (loading) {
       fetchFeedAndDispatch(null);
     }
-  }, [feedId, loading, fetchFeedAndDispatch]);
+    // fetchFeedAndDispatch isn't memoized.
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, [feedId, loading]);
 
   const handleLoadMoreClick = () => {
     if (feed && feed.next) {
@@ -104,7 +103,7 @@ function Feed<FeedItemType>({
     if (!loading && hasMore && spinnerInView) {
       handleLoadMoreClick();
     }
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
   }, [loading, hasMore, spinnerInView]);
 
   const windowWidth = useWindowWidth();
@@ -119,7 +118,7 @@ function Feed<FeedItemType>({
         dispatch(feedInViewItemsUpdated(feedId, [...itemsInView.current]));
       };
     }
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
   }, [loading]);
   const handleItemViewChange = (itemKey: string, inView: boolean) => {
     let list = itemsInView.current;

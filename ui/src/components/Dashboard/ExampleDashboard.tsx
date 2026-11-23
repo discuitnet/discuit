@@ -8,7 +8,7 @@ function ExampleDashboard() {
     <Dashboard
       title="Example dashboard"
       sidebarMenu={[
-        { name: 'Home', icon: <SVGComment />, to: '/test-dashboard/' },
+        { name: 'Home', icon: <SVGComment />, to: '/test-dashboard' },
         { name: 'About', icon: <SVGComment />, to: '/test-dashboard/about' },
         { name: 'Settings', type: 'topic' },
         { name: 'General', icon: <SVGComment />, to: '/test-dashboard/general' },

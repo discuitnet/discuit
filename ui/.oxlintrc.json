@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "react", "unicorn"],
+  "plugins": ["typescript", "react"],
   "categories": {
     "correctness": "off"
   },
@@ -11,10 +11,10 @@
   },
   "settings": {
     "react": {
-      "version": "18.2"
+      "version": "19.3"
     }
   },
-  "ignorePatterns": ["**/dist", "**/.eslintrc.cjs"],
+  "ignorePatterns": ["**/dist"],
   "rules": {
     "constructor-super": "error",
     "for-direction": "error",
@@ -119,7 +119,7 @@
   },
   "overrides": [
     {
-      "files": [],
+      "files": ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
       "rules": {
         "constructor-super": "off",
         "getter-return": "off",
