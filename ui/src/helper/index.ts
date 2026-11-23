@@ -110,6 +110,12 @@ export function onKeyEnter<T = HTMLDivElement>(
   }
 }
 
+// Returns true for anything but a plain left click, like Ctrl/Cmd-click or Shift-click, which the
+// browser uses on a link to open it in a new tab or window.
+export function isModifiedClick<T = Element>(event: React.MouseEvent<T>): boolean {
+  return event.button !== 0 || event.metaKey || event.altKey || event.ctrlKey || event.shiftKey;
+}
+
 export function onEscapeKey<T = HTMLDivElement>(
   event: React.KeyboardEvent<T>,
   callback: (event: React.KeyboardEvent<T>) => void,

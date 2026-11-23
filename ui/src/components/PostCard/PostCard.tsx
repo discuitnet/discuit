@@ -64,7 +64,7 @@ const PostCard = ({
       el = el.parentElement;
     }
     if (!isButtonClick) {
-      if (target !== '_self') {
+      if (target !== '_self' || event.ctrlKey || event.metaKey) {
         window.open(postURL);
       } else {
         history.push(postURL);
