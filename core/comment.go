@@ -275,7 +275,7 @@ func scanComments(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.I
 		}
 	}
 
-	if err := populateCommentAuthors(ctx, db, comments, viewerAdmin); err != nil {
+	if err := populateCommentAuthors(ctx, db, comments, viewerAdmin, viewer); err != nil {
 		return nil, fmt.Errorf("failed to populate comments authors: %w", err)
 	}
 
@@ -923,7 +923,7 @@ func (c *Comment) loadPostDeleted(ctx context.Context, db *sql.DB) error {
 
 // populateCommentAuthors populates the Author field of each comment of comments
 // (except for deleted comments).
-func populateCommentAuthors(ctx context.Context, db *sql.DB, comments []*Comment, viewerAdmin bool) error {
+func populateCommentAuthors(ctx context.Context, db *sql.DB, comments []*Comment, viewerAdmin bool, viewer *uid.ID) error {
 	var authorIDs []uid.ID
 	found := make(map[uid.ID]bool)
 	for _, comment := range comments {
@@ -937,7 +937,7 @@ func populateCommentAuthors(ctx context.Context, db *sql.DB, comments []*Comment
 		return nil
 	}
 
-	authors, err := GetUsersByIDs(ctx, db, authorIDs, nil)
+	authors, err := GetUsersByIDs(ctx, db, authorIDs, viewer)
 	if err != nil {
 		return err
 	}
@@ -947,6 +947,9 @@ func populateCommentAuthors(ctx context.Context, db *sql.DB, comments []*Comment
 	// authors can be matched with the comments.
 	for _, author := range authors {
 		author.UnsetToGhost()
+		if err := author.LoadModeratingCommunitiesList(ctx, db); err != nil {
+			return err
+		}
 	}
 
 	for _, comment := range comments {

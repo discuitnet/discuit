@@ -437,7 +437,7 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 		return nil, err
 	}
 
-	if err := populatePostAuthors(ctx, db, posts, viewerAdmin); err != nil {
+	if err := populatePostAuthors(ctx, db, posts, viewerAdmin, viewer); err != nil {
 		return nil, fmt.Errorf("failed to populate post authors: %w", err)
 	}
 
@@ -460,7 +460,7 @@ func scanPosts(ctx context.Context, db *sql.DB, rows *sql.Rows, viewer *uid.ID) 
 	return posts, nil
 }
 
-func populatePostAuthors(ctx context.Context, db *sql.DB, posts []*Post, viewerAdmin bool) error {
+func populatePostAuthors(ctx context.Context, db *sql.DB, posts []*Post, viewerAdmin bool, viewer *uid.ID) error {
 	var authorIDs []uid.ID
 	found := make(map[uid.ID]bool)
 	for _, c := range posts {
@@ -470,13 +470,16 @@ func populatePostAuthors(ctx context.Context, db *sql.DB, posts []*Post, viewerA
 		}
 	}
 
-	authors, err := GetUsersByIDs(ctx, db, authorIDs, nil)
+	authors, err := GetUsersByIDs(ctx, db, authorIDs, viewer)
 	if err != nil {
 		return err
 	}
 
 	for _, author := range authors {
 		author.UnsetToGhost()
+		if err := author.LoadModeratingCommunitiesList(ctx, db); err != nil {
+			return err
+		}
 	}
 
 	for _, post := range posts {
