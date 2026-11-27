@@ -477,9 +477,6 @@ func populatePostAuthors(ctx context.Context, db *sql.DB, posts []*Post, viewerA
 
 	for _, author := range authors {
 		author.UnsetToGhost()
-		if err := author.LoadModeratingCommunitiesList(ctx, db); err != nil {
-			return err
-		}
 	}
 
 	for _, post := range posts {
